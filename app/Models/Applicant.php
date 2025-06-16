@@ -19,6 +19,8 @@ class Applicant extends Model
         'cv',
         'doc_tambahan',
         'status',
+        'position_id',
+        'user_id'
     ];
 
     public function position()

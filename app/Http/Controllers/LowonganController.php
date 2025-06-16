@@ -10,7 +10,12 @@ class LowonganController extends Controller
 {
     public function index()
     {
-        $lowongans = Position::orderBy('id', 'asc')->get();
+        // Hitung jumlah pelamar per posisi
+        $lowongans = Position::withCount('applicant')
+            ->where('status', 'active')
+            ->orderBy('id', 'asc')
+            ->get();
+
         return view('lowongan', compact('lowongans'));
     }
 
