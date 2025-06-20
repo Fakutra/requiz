@@ -1,8 +1,7 @@
 <x-guest-layout>
     <!-- Session Status -->
      <div class="min-h-max flex flex-col sm:justify-center items-center">
-                    <p class="font-gabarito text-5xl">ReQuiz</p>
-                    <x-application-logo class="w-20 h-20 fill-current text-gray-500" />
+                    <x-login-logo class="w-20 h-20 fill-current text-gray-500" />
                     <p class="font-gabarito font-semibold text-[24px] ">Login To Quiz</p>
                 </div>
     <x-auth-session-status class="mb-4" :status="session('status')" />
@@ -12,7 +11,7 @@
 
         <!-- Email Address -->
         <div>
-            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autofocus autocomplete="username" placeholder="Email" />
+            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autofocus autocomplete="username" placeholder="Email / Username" />
             <x-input-error :messages="$errors->get('email')" class="mt-2" />
         </div>
 
@@ -32,13 +31,13 @@
     <!-- Remember Me -->
     <label for="remember_me" class="inline-flex items-center">
         <input id="remember_me" type="checkbox" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" name="remember">
-        <span class="ms-2 text-sm text-gray-600">{{ __('Remember me') }}</span>
+        <span class="ms-2 font-gabarito font-semibold text-[14px]">{{ __('Remember me?') }}</span>
     </label>
 
     <!-- Forgot Password -->
     @if (Route::has('password.request'))
-        <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('password.request') }}">
-            {{ __('Forgot your password?') }}
+        <a class="font-gabarito text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 text-[#3406FF]" href="{{ route('password.request') }}">
+            {{ __('Forgot Password?') }}
         </a>
     @endif
 </div>
@@ -51,4 +50,10 @@
  
 
     </form>
+    <div class="flex items-center justify-center mt-4">
+            <p class="font-gabarito font-semibold text-[14px] ">Don't have account?</p>
+            <a class="font-gabarito text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 text-[#3406FF]" href="{{ route('register') }}">
+                {{ __('Sign Up!') }}
+            </a>
+        </div>
 </x-guest-layout>

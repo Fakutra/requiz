@@ -40,7 +40,7 @@
 
             <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
         </div>
-
+        <br/>
         <div class="min-h-max flex flex-col sm:justify-center items-center">
             <p class="text-center">
                 by creating an account you agree to our terms and condition and privacy policy
