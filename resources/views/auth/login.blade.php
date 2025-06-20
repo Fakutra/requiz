@@ -1,5 +1,10 @@
 <x-guest-layout>
     <!-- Session Status -->
+     <div class="min-h-max flex flex-col sm:justify-center items-center">
+                    <p class="font-gabarito text-5xl">ReQuiz</p>
+                    <x-application-logo class="w-20 h-20 fill-current text-gray-500" />
+                    <p class="font-gabarito font-semibold text-[24px] ">Login To Quiz</p>
+                </div>
     <x-auth-session-status class="mb-4" :status="session('status')" />
 
     <form method="POST" action="{{ route('login') }}">
@@ -38,9 +43,8 @@
     @endif
 </div>
 
-           <div class="flex justify-center mt-4">
-    <x-primary-button
-        class="flex items-center justify-center bg-[#3406FF] hover:bg-[#2d05e6] w-[153px] h-[54px] text-white text-base font-medium rounded-[30px] shadow-md">
+<div class="flex justify-center mt-4">
+    <x-primary-button>
         {{ __('Log in') }}
     </x-primary-button>
 </div>
