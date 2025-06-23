@@ -14,7 +14,7 @@
       <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
           <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
               <div class="p-6 text-gray-900">
-                <form method="post" action="/lowongan" class="mb-5" enctype="multipart/form-data">
+                <form method="post" action="{{ route('apply.store', $positions) }}" class="mb-5" enctype="multipart/form-data">
                     @csrf
                     <div class="mb-3 col-lg-8">
                         <label for="name" class="form-label">Nama Lengkap</label>
@@ -79,41 +79,44 @@
                             </div>
                         @enderror
                     </div>
-
-                    
-                    {{-- <div class="mb-3 col-lg-8">
-                        <label for="status" class="form-label">Status</label>
-                        <select class="form-select" name="status">
-                            <option selected value="active">Active</option>
-                            <option value="inactive">Inactive</option>
+                    <div class="mb-3 col-md-4">
+                        <label for="pendidikan" class="form-label">Pendidikan</label>
+                        <select class="form-select" name="pendidikan">
+                          <option selected>--- Pilih ---</option>
+                          <option value="SMA/Sederajat/">SMA/Sederajat</option>
+                          <option value="Diploma">Diploma</option>
+                          <option value="S1">S1</option>
+                          <option value="S2">S2</option>
+                          <option value="S3">S3</option>
                         </select>
-                    </div> --}}
-                    {{-- <div class="mb-3 col-lg-8">
-                        <label for="description" class="form-label">Description</label>
-                        @error('description')
-                            <p class="text-danger">{{ $message }}</p>
-                        @enderror
-                        <input id="description" type="hidden" name="description">
-                        <trix-editor input="description"></trix-editor>
-                    </div> --}}
-                    {{-- <div class="mb-3">
-                        <label for="image" class="form-label">Post Image</label>
-                        <img class="img-preview img-fluid mb-3 col-sm-5">
-                        <input class="form-control @error('image') is-invalid @enderror" type="file" id="image" name="image" onchange="previewImage()">
-                        @error('image')
+                    </div>
+                    <div class="mb-3 col-lg-8">
+                        <label for="universitas" class="form-label">Universitas</label>
+                        <input type="text" class="form-control @error('universitas') is-invalid @enderror" id="universitas" name="universitas" required value="{{ old('universitas') }}">
+                        @error('universitas')
                             <div class="invalid-feedback">
                                 {{ $message }}
                             </div>
                         @enderror
-                    </div> --}}
-                    {{-- <div class="mb-3">
-                        <label for="body" class="form-label">Body</label>
-                        @error('body')
-                            <p class="text-danger">{{ $message }}</p>
+                    </div>
+                    <div class="mb-3 col-lg-6">
+                        <label for="cv" class="form-label">CV</label>
+                        <input type="file" rows="3" cols="30" class="form-control @error('cv') is-invalid @enderror" id="cv" name="cv"></input>
+                        @error('cv')
+                            <div class="invalid-feedback">
+                                {{ $message }}
+                            </div>
                         @enderror
-                        <input id="body" type="hidden" name="body" value="{{ old('body') }}">
-                        <trix-editor input="body"></trix-editor>                
-                    </div> --}}
+                    </div>
+                    <div class="mb-3 col-lg-6">
+                        <label for="doc_tambahan" class="form-label">Dokumen Tambahan (Sertifikat, dll..)</label>
+                        <input type="file" rows="3" cols="30" class="form-control @error('doc_tambahan') is-invalid @enderror" id="doc_tambahan" name="doc_tambahan"></input>
+                        @error('doc_tambahan')
+                            <div class="invalid-feedback">
+                                {{ $message }}
+                            </div>
+                        @enderror
+                    </div>
                     
                     <button type="submit" class="btn btn-primary">Daftar</button>
                 </form>

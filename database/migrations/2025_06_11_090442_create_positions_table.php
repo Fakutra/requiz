@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('positions', function (Blueprint $table) {
             $table->id();
             $table->string('name');
+            $table->string('slug');
             $table->smallInteger('quota');
             $table->enum('status', ['active', 'inactive'])->default('active');
             $table->text('description');

@@ -5,6 +5,8 @@ namespace App\Http\Controllers\AdminPanel;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Position;
+// use Cviebrock\EloquentSluggable\Services\SlugService;
+use \Cviebrock\EloquentSluggable\Services\SlugService;
 
 class PositionController extends Controller
 {
@@ -23,12 +25,13 @@ class PositionController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'slug' => 'string',
             'quota' => 'required|integer',
             'status' => 'required',
             'description' => 'required',
         ]);
 
-        $validated['description'] = strip_tags($request->description);
+        // $validated['description'] = strip_tags($request->description);
 
         Position::create($validated);
 
@@ -45,6 +48,7 @@ class PositionController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            // 'slug' => 'required|string|max:255',
             'quota' => 'required|integer',
             'status' => 'required',
             'description' => 'required',
@@ -73,6 +77,12 @@ class PositionController extends Controller
         $position->delete();
 
         return redirect()->route('position.index')->with('success', 'Position has been deleted!');
+    }
+
+    public function checkSlug(Request $request)
+    {
+        $slug = SlugService::createSlug(Position::class, 'slug', $request->name);
+        return response()->json(['slug' => $slug]);
     }
 
 }

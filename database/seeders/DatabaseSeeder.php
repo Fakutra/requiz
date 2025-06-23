@@ -36,6 +36,7 @@ class DatabaseSeeder extends Seeder
         \App\Models\Position::create(
             [
             'name' => 'Technical Support',
+            'slug' => 'technical-support',
             'quota' => 100,
             'description' => 'Dicari TS',
             ],
@@ -43,10 +44,28 @@ class DatabaseSeeder extends Seeder
         \App\Models\Position::create(
             [
             'name' => 'Technical Writer',
+            'slug' => 'technical-writer',
             'quota' => 50,
             'description' => 'Dicari TW',
             ],
         );
+
+        // \App\Models\Applicant::create(
+        //     [
+        //     'user_id' => '3',
+        //     'position_id' => '1',
+        //     'name' => 'paps',
+        //     'email' => 'paps@gmail.com',
+        //     'nik' => '1111444466669999',
+        //     'no_telp' => '081209871234',
+        //     'tpt_lahir' => 'Jakarta',
+        //     'tgl_lahir' => '01/01/2000',
+        //     'alamat' => 'Jalan Margonda',
+        //     'pendidikan' => 'S1',
+        //     'universitas' => 'ITPLN',
+            
+        //     ],
+        // );
 
     }
 }

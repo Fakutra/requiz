@@ -10,17 +10,19 @@ class Applicant extends Model
     use HasFactory;
 
     protected $fillable = [
+        'user_id',
+        'position_id',
+        'name',
+        'email',
         'nik',
         'no_telp',
         'tpt_lahir',
         'tgl_lahir',
         'alamat',
         'pendidikan',
+        'universitas',
         'cv',
         'doc_tambahan',
-        'status',
-        'position_id',
-        'user_id'
     ];
 
     public function position()

@@ -9,7 +9,7 @@
       <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
           <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
               <div class="p-6 text-gray-900">
-                <form method="post" action="/admin/position" class="mb-5" enctype="multipart/form-data">
+                <form method="post" action="{{ route('position.index') }}" class="mb-5" enctype="multipart/form-data">
                     @csrf
                     <div class="mb-3 col-lg-8">
                         <label for="name" class="form-label">Nama Posisi</label>
@@ -19,6 +19,10 @@
                                 {{ $message }}
                             </div>
                         @enderror
+                    </div>
+                    <div class="mb-3 col-lg-8">
+                        <label for="slug" class="form-label">Slug</label>
+                        <input type="text" class="form-control" id="slug" name="slug" disabled readonly>
                     </div>
                     <div class="mb-3 col-lg-8">
                         <label for="quota" class="form-label">Kuota</label>
@@ -69,4 +73,14 @@
           </div>
       </div>
   </div>
+  <script>
+    const name = document.querySelector('#name');
+    const slug = document.querySelector('#slug');
+
+    name.addEventListener('change', function() {
+        fetch('/admin/position/checkSlug?name=' + name.value)
+            .then(response => response.json())
+            .then(data => slug.value = data.slug)
+    });
+</script>
 </x-app-layout>

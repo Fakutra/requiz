@@ -32,7 +32,12 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     
     Route::get('lowongan', [LowonganController::class, 'index'])->name('lowongan.index');
-    Route::get('apply/{id}', [LowonganController::class, 'create'])->name('apply.create');
+    Route::get('apply/{slug}', [LowonganController::class, 'create'])->name('apply.create');
+    Route::post('lowongan/{position}', [LowonganController::class, 'store'])->name('apply.store');
+    
+//     Route::get('lowongan/apply/{slug}', function () {
+//     return route('lowongan.index');
+// });
 
 });
 
@@ -51,4 +56,5 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::delete('admin/position/{id}', [PositionController::class, 'destroy'])->name('position.destroy');
 
     Route::get('admin/applicant', [ApplicantController::class, 'index'])->name('applicant.index');
+    Route::get('admin/position/checkSlug', [PositionController::class, 'checkSlug'])->name('position.checkSlug');
 });
