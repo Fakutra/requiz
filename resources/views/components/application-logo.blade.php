@@ -1,4 +1,9 @@
-<svg width="118" height="118" viewBox="0 0 118 118" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<svg
+    {{ $attributes->merge(['class' => '']) }}
+    viewBox="0 0 118 118"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    xmlns:xlink="http://www.w3.org/1999/xlink">
 <rect width="118" height="118" fill="url(#pattern0_1_6573)"/>
 <defs>
 <pattern id="pattern0_1_6573" patternContentUnits="objectBoundingBox" width="1" height="1">

@@ -14,14 +14,14 @@
 
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
-    </head>
-    <body class="font-sans text-gray-900 antialiased ">
-        <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-[#EDF7FB]">
-            
 
-            <div class="w-full  sm:max-w-md mt-6 px-16 py-4 bg-white overflow-hidden sm:rounded-lg">
-                
-            {{ $slot }}
+        <!-- Favicon (optional) -->
+        <!-- <link rel="icon" href="{{ asset('favicon.png') }}" /> -->
+    </head>
+    <body class="bg-[#EDF7FB] font-sans text-gray-900 antialiased scroll-smooth">
+  <div class="min-h-screen flex flex-col sm:justify-center items-center px-4 py-6">
+    <div class="w-full max-w-lg bg-white overflow-hidden rounded-[16px] shadow-md p-6 sm:p-8 lg:p-12">
+                {{ $slot }}
             </div>
         </div>
     </body>
