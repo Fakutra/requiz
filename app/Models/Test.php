@@ -2,35 +2,33 @@
 
 namespace App\Models;
 
-use Cviebrock\EloquentSluggable\Sluggable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Cviebrock\EloquentSluggable\Sluggable;
 
-class Position extends Model
+class Test extends Model
 {
     use HasFactory, Sluggable;
 
     protected $fillable = [
         'name',
         'slug',
-        'quota',
-        'status',
-        'description',
+        'position_id',
     ];
 
-    public function user()
+    public function position()
     {
-        return $this->hasMany(User::class);
+        return $this->belongsTo(Position::class);
     }
 
-    public function applicants()
+    public function sections()
     {
-        return $this->hasMany(Applicant::class);
+        return $this->hasMany(TestSection::class);
     }
-    
-    public function test()
+
+    public function results()
     {
-        return $this->hasMany(Test::class);
+        return $this->hasMany(TestResult::class);
     }
 
     public function getRouteKeyName()
@@ -48,10 +46,3 @@ class Position extends Model
         ];
     }
 }
-
-
-
-// public function batch()
-    // {
-    //     return $this->belongsTo(Batch::class, 'batch_id');
-    // }

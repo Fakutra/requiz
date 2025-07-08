@@ -11,14 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('positions', function (Blueprint $table) {
+        Schema::create('batches', function (Blueprint $table) {
             $table->id();
-            // $table->foreignId('batch_id')->constrained()->onDelete('cascade');
             $table->string('name');
             $table->string('slug');
-            $table->smallInteger('quota');
-            $table->enum('status', ['Active', 'Inactive'])->default('Active');
-            $table->text('description');
+            $table->enum('status', ['Active', 'Closed'])->default('Closed');
+            $table->date('start_date')->nullable();
+            $table->date('end_date')->nullable();
             $table->timestamps();
         });
     }
@@ -28,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('positions');
+        Schema::dropIfExists('batches');
     }
 };

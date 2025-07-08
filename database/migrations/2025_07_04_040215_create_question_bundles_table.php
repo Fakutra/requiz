@@ -11,14 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('positions', function (Blueprint $table) {
+        Schema::create('question_bundles', function (Blueprint $table) {
             $table->id();
-            // $table->foreignId('batch_id')->constrained()->onDelete('cascade');
             $table->string('name');
-            $table->string('slug');
-            $table->smallInteger('quota');
-            $table->enum('status', ['Active', 'Inactive'])->default('Active');
-            $table->text('description');
+            $table->enum('type', ['pg', 'psikologi', 'essay']);
+            $table->text('description')->nullable();
             $table->timestamps();
         });
     }
@@ -28,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('positions');
+        Schema::dropIfExists('question_bundles');
     }
 };

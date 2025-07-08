@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\AdminPanel;
 
 use App\Http\Controllers\Controller;
+use App\Models\Batch;
 use Illuminate\Http\Request;
 use App\Models\Position;
-// use Cviebrock\EloquentSluggable\Services\SlugService;
 use \Cviebrock\EloquentSluggable\Services\SlugService;
 
 class PositionController extends Controller
@@ -16,22 +16,22 @@ class PositionController extends Controller
         return view('admin.position.index', compact('positions'));
     }
 
-    public function create()
+    public function create($slug)
     {
-        return view('admin.position.create');
+        $batchs = Batch::where('slug', $slug)->first();
+        return view('admin.batch.position.create', compact('batchs'));
     }
 
     public function store(Request $request)
     {
+        
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'slug' => 'string',
+            // 'slug' => 'string',
             'quota' => 'required|integer',
             'status' => 'required',
             'description' => 'required',
         ]);
-
-        // $validated['description'] = strip_tags($request->description);
 
         Position::create($validated);
 
@@ -44,31 +44,25 @@ class PositionController extends Controller
         return view('admin.position.edit', compact('positions'));
     }
 
-    public function update(Request $request, Position $positions, $id)
+    public function update(Request $request, $id)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            // 'slug' => 'required|string|max:255',
             'quota' => 'required|integer',
             'status' => 'required',
             'description' => 'required',
         ]);
 
-        // $validated['description'] = strip_tags($request->description);
+        $position = Position::findOrFail($id);
 
-        $positions = Position::findOrFail($id);
-        $positions->update($validated);
-        // Position::where('id', $positions->id)
-        //     ->update($validated);
+        // Deteksi perubahan name agar slug bisa regenerate
+        if ($validated['name'] !== $position->name) {
+            $position->slug = null; // trigger slug regeneration
+        }
 
-        // dd($validated);
+        $position->update($validated);
 
         return redirect()->route('position.index')->with('success', 'Position has been updated!');
-    }
-
-    public function ContactView($id)
-    {
-        //
     }
 
     public function destroy($id)
@@ -84,5 +78,4 @@ class PositionController extends Controller
         $slug = SlugService::createSlug(Position::class, 'slug', $request->name);
         return response()->json(['slug' => $slug]);
     }
-
 }

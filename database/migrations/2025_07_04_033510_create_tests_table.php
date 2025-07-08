@@ -11,14 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('positions', function (Blueprint $table) {
+        Schema::create('tests', function (Blueprint $table) {
             $table->id();
-            // $table->foreignId('batch_id')->constrained()->onDelete('cascade');
+            $table->foreignId('position_id')->constrained()->onDelete('cascade');
             $table->string('name');
-            $table->string('slug');
-            $table->smallInteger('quota');
-            $table->enum('status', ['Active', 'Inactive'])->default('Active');
-            $table->text('description');
+            $table->string('slug')->unique(); // untuk akses URL
             $table->timestamps();
         });
     }
@@ -28,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('positions');
+        Schema::dropIfExists('tests');
     }
 };

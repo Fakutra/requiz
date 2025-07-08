@@ -24,16 +24,16 @@ return new class extends Migration
             $table->text('alamat');
             $table->enum('pendidikan', ['SMA/Sederajat', 'Diploma', 'S1', 'S2', 'S3']);
             $table->string('universitas');
-            $table->string('cv')->nullable();
-            $table->string('doc_tambahan')->nullable();
+            $table->string('jurusan');
+            $table->string('cv_document');
             $table->enum('status', [
-                'seleksi administrasi',
+                'Seleksi Administrasi',
                 // 'lolos seleksi administrasi',
-                'tidak lolos seleksi administrasi',
-                'seleksi tes tulis',
-                'lolos seleksi tes tulis',
-                'tidak lolos seleksi tes tulis'
-            ])->default('seleksi administrasi');
+                'Tidak Lolos Seleksi Administrasi',
+                'Seleksi Tes Tulis',
+                'Lolos Seleksi Tes Tulis',
+                'Tidak Lolos Seleksi Tes Tulis'
+            ])->default('Seleksi Administrasi');
             $table->timestamps();
         });
     }
