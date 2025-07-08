@@ -12,8 +12,11 @@ export default {
     theme: {
         extend: {
             fontFamily: {
-                sans: ['Figtree', ...defaultTheme.fontFamily.sans],
+                gabarito: ['Gabarito', 'sans-serif'],
             },
+        },
+        fontFamily: {
+            sans: ['Gabarito', ...defaultTheme.fontFamily.sans],
         },
     },
 
