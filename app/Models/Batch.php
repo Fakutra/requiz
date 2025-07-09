@@ -28,11 +28,17 @@ class Batch extends Model
         return $this->hasMany(Applicant::class);
     }
 
+    public function getRouteKeyName()
+    {
+        return 'slug';
+    }
+
     public function sluggable(): array
     {
         return [
             'slug' => [
-                'source' => 'name'
+                'source' => 'name',
+                'onUpdate' => true,
             ]
         ];
     }

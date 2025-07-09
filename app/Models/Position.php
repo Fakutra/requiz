@@ -11,6 +11,7 @@ class Position extends Model
     use HasFactory, Sluggable;
 
     protected $fillable = [
+        'batch_id',
         'name',
         'slug',
         'quota',
@@ -21,6 +22,11 @@ class Position extends Model
     public function user()
     {
         return $this->hasMany(User::class);
+    }
+
+    public function batch()
+    {
+        return $this->belongsTo(Batch::class);
     }
 
     public function applicants()
@@ -51,7 +57,3 @@ class Position extends Model
 
 
 
-// public function batch()
-    // {
-    //     return $this->belongsTo(Batch::class, 'batch_id');
-    // }

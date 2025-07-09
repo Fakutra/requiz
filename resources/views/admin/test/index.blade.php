@@ -44,11 +44,6 @@
                                     @enderror
                                 </div>
 
-                                {{-- <div class="mb-3 col-md-12">
-                                    <label for="slug" class="form-label">Slug</label>
-                                    <input type="text" class="form-control" id="slugTest" name="slug" readonly>
-                                </div> --}}
-
                                 <div class="mb-3 col-md-12">
                                     <label for="name" class="form-label">Posisi</label>
                                     <select name="position_id" class="form-select mb-2" required>
@@ -91,7 +86,8 @@
                                     <td>{{ $test->name }}</td>
                                     <td>{{ $test->position->name }}</td>
                                     <td>
-                                        <a href="/admin/{{ $test->slug }}" class="btn btn-sm btn-outline-primary">Preview</a>
+                                        <a href="/admin/{{ $test->slug }}"
+                                            class="btn btn-sm btn-outline-primary">Preview</a>
                                     </td>
                                     {{-- <td>{{ $test->status }}</td> --}}
                                     <td>

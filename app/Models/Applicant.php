@@ -12,6 +12,7 @@ class Applicant extends Model
 
     protected $fillable = [
         'user_id',
+        'batch_id',
         'position_id',
         'name',
         'email',
@@ -32,6 +33,11 @@ class Applicant extends Model
     public function position()
     {
         return $this->belongsTo(Position::class, 'position_id');
+    }
+
+    public function batch()
+    {
+        return $this->belongsTo(Batch::class);
     }
 
     public function user()
@@ -58,10 +64,7 @@ class Applicant extends Model
 //     return 'slug';
 // }
 
-// public function batch()
-// {
-//     return $this->belongsTo(Batch::class);
-// }
+
 // public function user()
 // {
 //     return $this->belongsTo(User::class);

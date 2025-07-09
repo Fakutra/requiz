@@ -27,7 +27,7 @@ class BatchController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'slug' => 'string',
+            // 'slug' => 'string',
             'status' => 'required',
             'start_date' => 'date',
             'end_date' => 'date',
@@ -50,20 +50,13 @@ class BatchController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            // 'slug' => 'required|string|max:255',
             'status' => 'required',
             'start_date' => 'required|date',
             'end_date' => 'required|date',
         ]);
 
-        // $validated['description'] = strip_tags($request->description);
-
         $batchs = Batch::findOrFail($id);
         $batchs->update($validated);
-        // Position::where('id', $positions->id)
-        //     ->update($validated);
-
-        // dd($validated);
 
         return redirect()->route('batch.index')->with('success', 'Batch has been updated!');
     }

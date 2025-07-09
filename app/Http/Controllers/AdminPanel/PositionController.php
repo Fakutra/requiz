@@ -13,7 +13,7 @@ class PositionController extends Controller
     public function index()
     {
         $positions = Position::orderBy('id', 'asc')->get();
-        return view('admin.position.index', compact('positions'));
+        return view('admin.batch.position.index', compact('positions'));
     }
 
     public function create($slug)
@@ -22,22 +22,47 @@ class PositionController extends Controller
         return view('admin.batch.position.create', compact('batchs'));
     }
 
-    public function store(Request $request)
+    // public function store(Request $request, Batch $batch)
+    // {
+    //     $validated = $request->validate([
+    //         'name' => 'required|string|max:255',
+    //         'slug' => 'string',
+    //         'quota' => 'required|integer',
+    //         'status' => 'required',
+    //         'description' => 'required',
+    //     ]);
+
+    //     $validated['batch_id'] = $batch->id;
+
+    //     Position::create($validated);
+
+    //     return redirect('batch.index')->with('success', 'New Position has been added!');
+
+    // }
+    public function store(Request $request, $batchId)
     {
-        
-        $validated = $request->validate([
+        $request->validate([
             'name' => 'required|string|max:255',
-            // 'slug' => 'string',
-            'quota' => 'required|integer',
-            'status' => 'required',
-            'description' => 'required',
+            'quota' => 'required|integer|min:1',
+            'status' => 'required|in:Active,Inactive',
+            'description' => 'required|string',
         ]);
 
-        Position::create($validated);
+        $batch = Batch::findOrFail($batchId);
 
-        return redirect()->route('position.index')->with('success', 'New Position has been added!');
+        $position = new Position([
+            'name' => $request->name,
+            'quota' => $request->quota,
+            'status' => $request->status,
+            'description' => strip_tags($request->description),
+        ]);
+
+        $position->batch()->associate($batch);
+        $position->save();
+
+        return redirect()->route('batch.index')->with('success', 'Posisi baru berhasil ditambahkan ke batch ' . $batch->name);
     }
-
+    
     public function edit($id)
     {
         $positions = Position::findOrFail($id);
@@ -70,7 +95,7 @@ class PositionController extends Controller
         $position = Position::findOrFail($id);
         $position->delete();
 
-        return redirect()->route('position.index')->with('success', 'Position has been deleted!');
+        return redirect()->route('batch.index')->with('success', 'Position has been deleted!');
     }
 
     public function checkSlug(Request $request)
