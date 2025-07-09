@@ -22,12 +22,20 @@ use App\Http\Controllers\AdminPanel\ApplicantController;
 */
 
 Route::get('/', function () {
-    return view('welcome');
-});
-
-Route::get('/dashboard', function () {
     return view('dashboard');
-})->middleware(['auth', 'verified', 'role:user'])->name('dashboard');
+})->name('dashboard');
+
+Route::get('/job/detail', function(){
+    return view('jobdetail');
+})->name('jobdetail');
+
+Route::get('/job/applied', function(){
+    return view('client/applied');
+})->name('jobapplied');
+
+Route::get('/userprofile', function(){
+    return view('client/profile');
+})->name('userprofile');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -40,11 +48,11 @@ Route::middleware('auth')->group(function () {
     // Route::get('{slug}/{slug}/apply', [LowonganController::class, 'create'])->name('apply.create');
     Route::post('/{positionSlug}/apply', [LowonganController::class, 'store'])->name('apply.store');
     // Route::get('/{batchSlug}/{positionSlug}/apply', [LowonganController::class, 'apply'])->name('apply.store');
-
-
     
     Route::get('history', [HistoryController::class, 'index'])->name('history.index');
 
+    Route::get('/lowongan', [LowonganController::class, 'index'])->name('lowongan.index');
+    Route::get('apply/{id}', [LowonganController::class, 'create'])->name('apply.create');
 
 });
 
