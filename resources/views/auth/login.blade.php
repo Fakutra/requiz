@@ -1,8 +1,8 @@
-<x-guest-layout>
+<x-app-layout>
     <!-- Header Logo dan Judul -->
     <div class="min-h-max flex flex-col justify-center items-center mt-8 sm:mt-12">
         <x-login-logo class="w-20 h-20 fill-current text-gray-500" />
-        <p class="font-gabarito font-semibold text-[20px] sm:text-[24px] mt-2">Login To Quiz</p>
+        <p class="font-semibold text-[20px] sm:text-[24px] mt-2">Login To Quiz</p>
     </div>
 
     <!-- Status Session -->
@@ -78,4 +78,4 @@
             {{ __('Sign Up!') }}
         </a>
     </div>
-</x-guest-layout>
+</x-app-layout>

@@ -1,7 +1,6 @@
-<x-guest-layout>
+<x-app-layout>
     <!-- Header -->
     <div class="min-h-max flex flex-col justify-center items-center mt-6 sm:mt-10 text-center">
-        <x-application-logo class="w-[118px] h-[118px]"/>
         <x-signup-logo class="w-20 h-20 text-gray-500 mt-4" />
         <p class="font-gabarito font-semibold text-xl sm:text-2xl mt-2">Create Account</p>
     </div>
@@ -94,4 +93,4 @@
             </a>
         </div>
     </form>
-</x-guest-layout>
+</x-app-layout>
