@@ -31,12 +31,19 @@
                       @enderror
                   </div>
                   <div class="mb-3">
-                      <label for="status" class="form-label">Status</label>
-                      <select class="form-select" name="status">
-                        <option value="{{ $positions->status }}" selected>{{ $positions->status }}</option>
-                        <option value="inactive">Inactive</option>
-                      </select>
-                  </div>
+                    <label for="status" class="form-label">Status</label>
+                    <select class="form-select @error('status') is-invalid @enderror" name="status" id="status" required>
+                        @foreach (['Active', 'Inactive'] as $option)
+                            <option value="{{ $option }}"
+                                {{ old('status', $positions->status) === $option ? 'selected' : '' }}>
+                                {{ $option }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('status')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                    </div>                
                   <div class="mb-3">
                       <label for="description" class="form-label">Description</label>
                       @error('description')
@@ -47,7 +54,7 @@
                   </div>
                   
                   <button type="submit" class="btn btn-primary">Update Position</button>
-              </form>
+                </form>
               </div>
           </div>
       </div>
