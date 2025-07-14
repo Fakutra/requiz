@@ -23,6 +23,16 @@
 
         {{-- Datatables --}}
         {{-- <link rel="stylesheet" href="resources/css/dataTables.css" /> --}}
+        <style>
+            body {
+                background-image: url('component/bg-app.jpg');
+                background-size: cover;
+                background-position: center;
+                background-repeat: no-repeat;
+                height: full;
+                margin: 0;
+        }
+        </style>
 
     </head>
     <body class="font-sans antialiased">
