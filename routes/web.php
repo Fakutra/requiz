@@ -48,7 +48,7 @@ Route::middleware('auth')->group(function () {
     // Route::get('{slug}/{slug}/apply', [LowonganController::class, 'create'])->name('apply.create');
     Route::post('/{positionSlug}/apply', [LowonganController::class, 'store'])->name('apply.store');
     // Route::get('/{batchSlug}/{positionSlug}/apply', [LowonganController::class, 'apply'])->name('apply.store');
-    
+
     Route::get('history', [HistoryController::class, 'index'])->name('history.index');
 
     Route::get('/lowongan', [LowonganController::class, 'index'])->name('lowongan.index');
