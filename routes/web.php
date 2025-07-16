@@ -45,6 +45,10 @@ Route::middleware('auth')->group(function () {
     
     Route::get('history', [HistoryController::class, 'index'])->name('history.index');
 
+    Route::get('apply/{slug}', [LowonganController::class, 'create'])->name('apply.create');
+    Route::post('lowongan/{position}', [LowonganController::class, 'store'])->name('apply.store');
+    Route::get('/lowongan', [LowonganController::class, 'index'])->name('lowongan.index');
+    Route::get('apply/{id}', [LowonganController::class, 'create'])->name('apply.create');
 
 });
 
