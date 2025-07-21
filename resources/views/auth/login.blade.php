@@ -1,5 +1,12 @@
 <x-guest-layout>
     <!-- Session Status -->
+
+    <div class="min-h-max flex flex-col justify-center items-center mt-8 sm:mt-12">
+        <x-application-logo class="w-xl h-xl" />
+        <x-login-logo class="w-20 h-20 fill-current text-gray-500" />
+        <p class="font-semibold text-[20px] sm:text-[24px] mt-2">Login To Quiz</p>
+    </div>
+
     <x-auth-session-status class="mb-4" :status="session('status')" />
 
     <form method="POST" action="{{ route('login') }}">
