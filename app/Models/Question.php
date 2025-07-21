@@ -29,7 +29,7 @@ class Question extends Model
 
     public function bundles()
     {
-        return $this->belongsToMany(QuestionBundle::class, 'bundle_question');
+        return $this->belongsToMany(QuestionBundle::class, 'bundle_questions');
     }
 
     public function Answers()

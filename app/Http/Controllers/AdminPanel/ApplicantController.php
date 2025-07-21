@@ -6,33 +6,46 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Applicant;
 use Illuminate\Support\Facades\Storage;
-use App\Exports\ApplicantsExport;
-use Maatwebsite\Excel\Facades\Excel;
-use App\Models\Position;
+use App\Exports\ApplicantsExport; // <-- 1. Impor kelas Export Anda
+use Maatwebsite\Excel\Facades\Excel; // <-- 2. Impor Fassad Excel
+use App\Models\Position; // 1. Impor model Position
 
 class ApplicantController extends Controller
 {
     public function index(Request $request)
     {
+        // 2. Panggil method terpusat dengan seluruh request
         $applicants = $this->getFilteredApplicants($request)->paginate(10);
+
+        // 3. Ambil data posisi untuk dikirim ke view (untuk mengisi dropdown filter)
         $positions = Position::orderBy('name')->get();
+
+        // 4. Kirim data applicants dan positions ke view
         return view('admin.applicant.index', compact('applicants', 'positions'));
     }
 
-        public function export(Request $request)
-        {
-            $fileName = 'data-pelamar-' . date('Y-m-d') . '.xlsx';
-            return Excel::download(new ApplicantsExport($request), $fileName);
-        }
-
-    private function getFilteredApplicants(Request $request)
+    public function export(Request $request)
     {
+        // 5. Pastikan export juga menggunakan semua filter
+        $fileName = 'data-pelamar-' . date('Y-m-d') . '.xlsx';
+
+        // Panggil kelas Export dengan seluruh request dan unduh filenya
+        return Excel::download(new ApplicantsExport($request), $fileName);
+    }
+
+    /**
+     * Method privat untuk mengambil data pelamar dengan filter
+     */
+    private function getFilteredApplicants(Request $request) // 6. Ubah parameter menjadi Request
+    {
+        // Ambil semua input dari request
         $search = $request->input('search');
         $status = $request->input('status');
         $positionId = $request->input('position');
 
         $query = Applicant::query()->with('position')->orderBy('name', 'asc');
 
+        // Filter untuk pencarian umum (tetap seperti sebelumnya)
         $query->when($search, function ($q, $search) {
             return $q->where(function($subQ) use ($search) {
                 $subQ->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($search) . '%'])
@@ -47,10 +60,14 @@ class ApplicantController extends Controller
             });
         });
 
+        // 7. TAMBAHKAN BLOK FILTER SPESIFIK (AND conditions)
+        
+        // Filter berdasarkan Status dari dropdown
         $query->when($status, function ($q, $status) {
             return $q->where('status', $status);
         });
 
+        // Filter berdasarkan Posisi dari dropdown
         $query->when($positionId, function ($q, $positionId) {
             return $q->where('position_id', $positionId);
         });
@@ -58,8 +75,12 @@ class ApplicantController extends Controller
         return $query;
     }
 
+    /**
+     * BARU: Method untuk memperbarui data pelamar.
+     */
     public function update(Request $request, Applicant $applicant)
     {
+        // Validasi data (termasuk alamat dan thn_lulus yang sudah diperbaiki di form)
         $validatedData = $request->validate([
             'name'        => 'required|string|max:255',
             'email'       => 'required|email|max:255',
@@ -67,29 +88,39 @@ class ApplicantController extends Controller
             'no_telp'     => 'required|string|max:14',
             'tpt_lahir'   => 'required|string|max:255',
             'tgl_lahir'   => 'required|date',
-            'alamat'      => 'required|string|max:255',
+            'alamat'      => 'required|string|max:255', // Pastikan field ini ada di form
             'pendidikan'  => 'required|string|max:255',
             'universitas' => 'required|string|max:255',
             'jurusan'     => 'required|string|max:255',
-            'thn_lulus'   => 'required|string|max:4',
+            'thn_lulus'   => 'required|string|max:4',  // Pastikan name="thn_lulus" di form
             'status'      => 'required|string',
-            'cv_document' => 'nullable|file|mimes:pdf|max:3072',
+            'cv_document' => 'nullable|file|mimes:pdf|max:3072', // max 3MB
             'position_id' => 'required|exists:positions,id',
+            // 'skills' tidak perlu divalidasi jika readonly, kecuali ingin bisa diubah
         ]);
 
+        // Cek jika ada file CV baru yang di-upload
         if ($request->hasFile('cv_document')) {
+            // Hapus file lama jika ada
             if ($applicant->cv_document) {
                 Storage::delete('public/' . $applicant->cv_document);
             }
+            // Simpan file baru dan dapatkan path-nya
             $path = $request->file('cv_document')->store('cv_documents', 'public');
             $validatedData['cv_document'] = $path;
         }
 
+        // Update data pelamar
         $applicant->update($validatedData);
 
+        // Redirect kembali ke halaman index dengan pesan sukses
+        // Pastikan route 'applicant.index' ada, jika tidak sesuaikan (misal: 'admin.applicant.index')
         return redirect()->route('applicant.index')->with('success', 'Data pelamar berhasil diperbarui.');
     }
 
+    /**
+     * BARU: Method untuk menghapus data pelamar.
+     */
     public function destroy(Applicant $applicant)
     {
         $applicant->delete();
