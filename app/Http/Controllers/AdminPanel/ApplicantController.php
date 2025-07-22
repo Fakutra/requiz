@@ -385,5 +385,3 @@ class ApplicantController extends Controller
 
     //     return back()->with('success', 'Status pelamar berhasil diperbarui.');
     // }
-
-
