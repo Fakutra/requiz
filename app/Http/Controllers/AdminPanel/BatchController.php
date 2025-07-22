@@ -12,8 +12,18 @@ class BatchController extends Controller
 {
     public function index()
     {
-        $batchs = Batch::with('position')->orderBy('id', 'asc')->get();
+        // Gunakan withCount untuk efisiensi
+        $batchs = Batch::withCount('position')->orderBy('id', 'asc')->get();
         return view('admin.batch.index', compact('batchs'));
+    }
+
+    public function show(Batch $batch)
+    {
+        // Eager load relasi 'position' untuk menghindari N+1 query problem di view
+        $batch->load('position');
+
+        // Kirim data batch tunggal ke view 'show'
+        return view('admin.batch.show', compact('batch'));
     }
 
     public function store(Request $request)

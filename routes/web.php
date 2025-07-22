@@ -53,6 +53,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 
     Route::get('admin/batch', [BatchController::class, 'index'])->name('batch.index');
     Route::post('admin/batch', [BatchController::class, 'store'])->name('batch.store');
+    Route::get('admin/batch/{batch}', [BatchController::class, 'show'])->name('batch.show');
     Route::put('admin/batch/{id}', [BatchController::class, 'update'])->name('batch.update');
     Route::delete('admin/batch/{id}', [BatchController::class, 'destroy'])->name('batch.destroy');
     Route::get('admin/batch/checkSlug', [BatchController::class, 'checkSlug'])->name('batch.checkSlug');
