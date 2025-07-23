@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('question_bundles', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->enum('type', ['pg', 'psikologi', 'essay']);
+            $table->string('slug')->unique();
             $table->text('description')->nullable();
             $table->timestamps();
         });
