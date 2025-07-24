@@ -11,43 +11,43 @@
         <h3 class="text-center mb-4">UPDATE SELEKSI TAD</h3>
 
         <!-- Table Section for Selection Stages -->
-        <div class="accordion" id="selectionAccordion">
-            @php
-                $stages = [
-                    'Administrasi' => 'Seleksi Administrasi',
-                    'Tes Tulis' => 'Seleksi Tes Tulis',
-                    'Technical Test' => 'Seleksi Technical Test',
-                    'Interview' => 'Seleksi Interview',
-                ];
-            @endphp
-
-            @foreach ($stages as $label => $statusName)
+        <table class="table table-hover table-sm align-middle">
+            <thead class="table-light border-bottom">
+                <tr>
+                    <th></th>
+                    <th>Jumlah Peserta Lolos</th>
+                    <th>Jumlah Peserta Tidak Lolos</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
                 @php
-                    $passedCount = \App\Models\Applicant::where('status', 'Lolos ' . $statusName)->count();
-                    $failedCount = \App\Models\Applicant::where('status', 'Tidak Lolos ' . $statusName)->count();
+                    $stages = [
+                        'Administrasi' => 'Seleksi Administrasi',
+                        'Tes Tulis' => 'Seleksi Tes Tulis',
+                        'Technical Test' => 'Seleksi Technical Test',
+                        'Interview' => 'Seleksi Interview',
+                    ];
                 @endphp
 
-                <div class="accordion-item">
-                    <h2 class="accordion-header" id="heading_{{ Str::slug($label) }}">
-                        <button class="accordion-button" type="button" data-bs-toggle="collapse"
-                            data-bs-target="#collapse_{{ Str::slug($label) }}" aria-expanded="true"
-                            aria-controls="collapse_{{ Str::slug($label) }}">
-                            {{ $label }} -
-                            <span class="me-4 text-success">Jumlah Peserta Lolos: {{ $passedCount }}</span>
-                            <span class="text-danger">Jumlah Peserta Tidak Lolos: {{ $failedCount }}</span>
-                        </button>
-                    </h2>
-                    <div id="collapse_{{ Str::slug($label) }}" class="accordion-collapse collapse"
-                        aria-labelledby="heading_{{ Str::slug($label) }}" data-bs-parent="#selectionAccordion">
-                        <div class="accordion-body">
-                            <a href="{{ route('admin.applicant.seleksi.process', ['stage' => $statusName]) }}" class="btn btn-primary">
+                @foreach ($stages as $label => $statusName)
+                    @php
+                        $passedCount = \App\Models\Applicant::where('status', 'Lolos ' . $statusName)->count();
+                        $failedCount = \App\Models\Applicant::where('status', 'Tidak Lolos ' . $statusName)->count();
+                    @endphp
+                    <tr>
+                        <td>{{ $label }}</td>
+                        <td class="text-success">{{ $passedCount }}</td>
+                        <td class="text-danger">{{ $failedCount }}</td>
+                        <td>
+                            <a href="{{ route('admin.applicant.seleksi.process', ['stage' => $statusName]) }}" class="btn btn-primary btn-sm">
                                 Proses
                             </a>
-                        </div>
-                    </div>
-                </div>
-            @endforeach
-            </div>
-        </div>
+                        </td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+
     </div>
 </x-app-layout>
