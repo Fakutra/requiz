@@ -16,6 +16,7 @@ return new class extends Migration
             $table->foreignId('position_id')->constrained()->onDelete('cascade');
             $table->string('name');
             $table->string('slug')->unique(); // untuk akses URL
+            $table->dateTime('test_date');
             $table->timestamps();
         });
     }
