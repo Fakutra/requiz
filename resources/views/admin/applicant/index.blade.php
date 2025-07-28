@@ -5,355 +5,338 @@
         </h2>
     </x-slot>
 
-
-    {{-- Card Tab Section --}}
-    <div class="row max-w-7xl mx-auto py-4">
-        <div class="col-12">
-            <div class="card">
-                <input type="radio" class="d-none" name="summary-tab" id="tab-chart">
-                <input type="radio" class="d-none" name="summary-tab" id="tab-text">
-
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <div class="card-header-action">
-                        <label for="tab-text" class="btn btn-outline-primary tab-label">Seluruh Pelamar</label>
-                        <label for="tab-chart" class="btn btn-outline-primary tab-label">Screening</label>
-                    </div>
-                </div>
-
-                <div class="card-body">
-                    <div class="summary">
-                        {{-- Tab All Pelamar --}}
-                        <div class="summary-info" id="summary-text">
-                            <div class="row justify-content-end mb-3">
-                                <div class="col-md-6">
-                                    <form action="/admin/applicant">
-                                        <div class="input-group mb-3">
-                                            <input type="text" class="form-control" placeholder="Search.."
-                                                name="search_all" value="{{ request('search_all') }}">
-                                            <button class="btn btn-info" type="submit">Search</button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                            <div class="table-responsive">
-                                <table class="table table-striped">
-                                    <thead>
-                                        <tr>
-                                            <th>No.</th>
-                                            <th>Nama</th>
-                                            <th>Posisi</th>
-                                            <th>Umur</th>
-                                            <th>Pendidikan</th>
-                                            <th>Jurusan</th>
-                                            <th>CV</th>
-                                            <th>Aksi</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="applicant-table">
-                                        @foreach ($applicantAll as $all)
-                                            <tr>
-                                                <td>{{ ($applicantAll->currentPage() - 1) * $applicantAll->perPage() + $loop->iteration }}
-                                                </td>
-                                                <td>{{ $all->name }}</td>
-                                                <td>{{ $all->position->name }}</td>
-                                                <td>{{ $all->age }} tahun</td>
-                                                <td>{{ $all->pendidikan }} -
-                                                    {{ $all->universitas }}</td>
-                                                <td>{{ $all->jurusan }}</td>
-                                                <td>
-                                                    @if ($all->cv_document)
-                                                        <a href="{{ asset('storage/' . $all->cv_document) }}"
-                                                            target="_blank" class="btn btn-sm btn-outline-primary">Lihat
-                                                            CV</a>
-                                                    @else
-                                                        <span class="text-muted">Tidak ada
-                                                            CV</span>
-                                                    @endif
-                                                </td>
-                                                <td>
-                                                    <a href="" class="btn btn-sm btn-success"
-                                                        data-bs-toggle="modal"
-                                                        data-bs-target="#modalEdit{{ $all->id }}">Edit</a>
-                                                    <form action="/admin/applicant/{{ $all->id }}" method="post"
-                                                        class="d-inline">
-                                                        @method('delete')
-                                                        @csrf
-                                                        <button class="btn btn-sm btn-danger"
-                                                            onclick="return confirm('Are you sure?')">
-                                                            Delete
-                                                        </button>
-                                                    </form>
-                                                </td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                                <div class="mt-3">
-                                    {{ $applicantAll->withQueryString()->links() }}
-                                </div>
-                            </div>
-                        </div>
-                        @foreach ($applicantAll as $all)
-                            <!-- Modal Edit Applicant -->
-                            <div class="modal fade" id="modalEdit{{ $all->id }}" tabindex="-1"
-                                aria-labelledby="modalEditLabel{{ $all->id }}" aria-hidden="true">
-                                <div class="modal-dialog modal-lg">
-                                    <form action="{{ route('applicant.update', $all->id) }}"
-                                        id="formEditApplicant{{ $all->id }}" method="POST"
-                                        enctype="multipart/form-data" class="modal-content">
-                                        @csrf
-                                        @method('PUT')
-
-                                        <div class="modal-header">
-                                            <h5 class="modal-title" id="modalEditLabel{{ $all->id }}">
-                                                Edit Data Pelamar : {{ $all->name }}</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                                aria-label="Tutup"></button>
-                                        </div>
-
-                                        <div class="modal-body">
-                                            <div class="row g-3">
-                                                <div class="col-md-6">
-                                                    <label class="form-label">Nama</label>
-                                                    <input type="text" name="name" class="form-control"
-                                                        value="{{ $all->name }}" required>
-                                                </div>
-
-                                                <div class="col-md-6">
-                                                    <label class="form-label">Email</label>
-                                                    <input type="email" name="email" class="form-control"
-                                                        value="{{ $all->email }}" required>
-                                                </div>
-
-                                                <div class="col-md-6">
-                                                    <label class="form-label">NIK</label>
-                                                    <input type="text" name="nik" class="form-control"
-                                                        value="{{ $all->nik }}" maxlength="16" required>
-                                                </div>
-
-                                                <div class="col-md-6">
-                                                    <label class="form-label">No. Telepon</label>
-                                                    <input type="text" name="no_telp" class="form-control"
-                                                        value="{{ $all->no_telp }}" maxlength="14" required>
-                                                </div>
-
-                                                <div class="col-md-6">
-                                                    <label class="form-label">Tempat Lahir</label>
-                                                    <input type="text" name="tpt_lahir" class="form-control"
-                                                        value="{{ $all->tpt_lahir }}" required>
-                                                </div>
-
-                                                <div class="col-md-6">
-                                                    <label class="form-label">Tanggal Lahir</label>
-                                                    <input type="date" name="tgl_lahir" class="form-control"
-                                                        value="{{ $all->tgl_lahir }}" required>
-                                                </div>
-
-                                                <div class="col-md-6">
-                                                    <label class="form-label">Pendidikan</label>
-                                                    <select name="pendidikan" class="form-select" required>
-                                                        @foreach (['SMA/Sederajat', 'Diploma', 'S1', 'S2', 'S3'] as $jenjang)
-                                                            <option value="{{ $jenjang }}"
-                                                                {{ $all->pendidikan == $jenjang ? 'selected' : '' }}>
-                                                                {{ $jenjang }}
-                                                            </option>
-                                                        @endforeach
-                                                    </select>
-                                                </div>
-
-                                                <div class="col-md-6">
-                                                    <label class="form-label">Universitas</label>
-                                                    <input type="text" name="universitas" class="form-control"
-                                                        value="{{ $all->universitas }}" required>
-                                                </div>
-
-                                                <div class="col-md-6">
-                                                    <label class="form-label">Jurusan</label>
-                                                    <input type="text" name="jurusan" class="form-control"
-                                                        value="{{ $all->jurusan }}" required>
-                                                </div>
-
-                                                <div class="col-md-6">
-                                                    <label class="form-label">Status</label>
-                                                    <select name="status" class="form-select" required>
-                                                        @foreach (['Seleksi Administrasi', 'Tidak Lolos Seleksi Administrasi', 'Seleksi Tes Tulis'] as $status)
-                                                            <option value="{{ $status }}"
-                                                                {{ $all->status == $status ? 'selected' : '' }}>
-                                                                {{ $status }}
-                                                            </option>
-                                                        @endforeach
-                                                    </select>
-                                                </div>
-
-                                                <div class="col-md-12">
-                                                    <label class="form-label">CV dan Dokumen Tambahan (PDF, Max
-                                                        3MB)</label>
-                                                    <input type="file" name="cv_document" class="form-control">
-                                                    @if ($all->cv_document)
-                                                        <small class="text-muted">File saat ini: <a
-                                                                href="{{ asset('storage/' . $all->cv_document) }}"
-                                                                target="_blank">Lihat CV</a></small>
-                                                    @endif
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary"
-                                                data-bs-dismiss="modal">Batal</button>
-                                            <button type="submit" class="btn btn-primary"
-                                                id="formEditApplicant{{ $all->id }}">Simpan
-                                                Perubahan</button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        @endforeach
-
-                        {{-- Tab Screening --}}
-                        <div class="summary-chart" id="summary-chart">
-                            @foreach ($applicants as $positionName => $applicantsGroup)
-                                @php
-                                    $slugId = Str::slug($positionName, '_');
-                                @endphp
-
-                                <div class="accordion mb-3" id="accordion_{{ $slugId }}">
-                                    <div class="accordion-item">
-                                        <h2 class="accordion-header" id="heading_{{ $slugId }}">
-                                            <button class="accordion-button collapsed" type="button"
-                                                data-bs-toggle="collapse"
-                                                data-bs-target="#collapse_{{ $slugId }}" aria-expanded="false"
-                                                aria-controls="collapse_{{ $slugId }}">
-                                                {{ $positionName }} -
-                                                (
-                                                {{ $applicantsGroup->where('status', 'Seleksi Administrasi')->count() }}
-                                                / {{ $applicantsGroup->count() }}
-                                                Pelamar )
-                                            </button>
-                                        </h2>
-                                        <div id="collapse_{{ $slugId }}" class="accordion-collapse collapse"
-                                            aria-labelledby="heading_{{ $slugId }}"
-                                            data-bs-parent="#accordion_{{ $slugId }}">
-                                            <div class="accordion-body">
-                                                <form action="{{ route('applicant.update.status') }}" method="POST">
-                                                    @csrf
-                                                    <div
-                                                        class="mb-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
-
-                                                        {{-- Tombol Aksi --}}
-                                                        <div class="d-flex gap-2">
-                                                            <form method="POST"
-                                                                action="{{ route('applicant.update.status') }}">
-                                                                @csrf
-                                                                <button type="submit" name="status"
-                                                                    value="Tidak Lolos Seleksi Administrasi"
-                                                                    class="btn btn-danger btn-sm"
-                                                                    onclick="return confirm('Apakah Anda Yakin ?')">
-                                                                    Tidak Lolos
-                                                                </button>
-                                                            </form>
-
-                                                            <form method="POST"
-                                                                action="{{ route('applicant.update.status') }}">
-                                                                @csrf
-                                                                <button type="submit" name="status"
-                                                                    value="Seleksi Tes Tulis"
-                                                                    class="btn btn-success btn-sm"
-                                                                    onclick="return confirm('Apakah Anda Yakin ?')">
-                                                                    Lolos
-                                                                </button>
-                                                            </form>
-                                                        </div>
-
-                                                        {{-- Form Pencarian --}}
-                                                        <form action="/admin/applicant" method="GET"
-                                                            class="d-flex gap-2">
-                                                            <input type="text" class="form-control form-control-sm"
-                                                                name="search_screening" placeholder="Search.."
-                                                                value="{{ request('search_screening') }}">
-                                                            <button class="btn btn-info btn-sm"
-                                                                type="submit">Search</button>
-                                                        </form>
-
-                                                    </div>
-
-
-                                                    <div class="table-responsive">
-                                                        <table class="table table-striped">
-                                                            <thead>
-                                                                <tr>
-                                                                    <th><input type="checkbox" id="selectAll"></th>
-                                                                    <th>Nama</th>
-                                                                    <th>Umur</th>
-                                                                    <th>Pendidikan</th>
-                                                                    <th>Jurusan</th>
-                                                                    <th>CV</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                                @foreach ($applicantsGroup->where('status', 'Seleksi Administrasi') as $index => $applicant)
-                                                                    <tr>
-                                                                        <td><input type="checkbox"
-                                                                                class="applicant-checkbox"
-                                                                                name="selected_applicants[]"
-                                                                                value="{{ $applicant->id }}"></td>
-                                                                        <td>{{ $applicant->name }}</td>
-                                                                        <td>{{ $applicant->age }} tahun</td>
-                                                                        <td>{{ $applicant->pendidikan }} -
-                                                                            {{ $applicant->universitas }}</td>
-                                                                        <td>{{ $applicant->jurusan }}</td>
-                                                                        <td>
-                                                                            @if ($applicant->cv_document)
-                                                                                <a href="{{ asset('storage/' . $applicant->cv_document) }}"
-                                                                                    target="_blank"
-                                                                                    class="btn btn-sm btn-outline-primary">Lihat
-                                                                                    CV</a>
-                                                                            @else
-                                                                                <span class="text-muted">Tidak ada
-                                                                                    CV</span>
-                                                                            @endif
-                                                                        </td>
-                                                                    </tr>
-                                                                @endforeach
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                </form>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
-
+    <!-- Modal Sukses -->
+    <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-md">
+            <div class="modal-content">
+                <div class="modal-body text-center">
+                    <h5 class="text-success">✅ {{ session('success') }}</h5>
+                    <button type="button" class="btn btn-success mt-3" data-bs-dismiss="modal">OK</button>
                 </div>
             </div>
         </div>
     </div>
 
+    <div class="py-3">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6 text-gray-900">
 
+                    {{-- Menampilkan pesan sukses setelah update/delete --}}
+                    {{-- @if (session('success'))
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            {{ session('success') }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    @endif --}}
 
-    <script>
-        document.getElementById('select-all').addEventListener('change', function() {
-            const isChecked = this.checked;
-            const checkboxes = document.querySelectorAll('.applicant-checkbox');
-            checkboxes.forEach(cb => cb.checked = isChecked);
-        });
-    </script>
-    <script>
-        // Set tab saat halaman dimuat
-        document.addEventListener('DOMContentLoaded', function() {
-            const lastTab = localStorage.getItem('activeTab') || 'tab-text'; // default: tab All Pelamar
-            document.getElementById(lastTab).checked = true;
-        });
+                    <!-- Baris Atas: Export, Search, dan Filter -->
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            {{-- Perbaikan: Tombol Export sekarang membawa semua parameter filter --}}
+                            <a href="{{ route('admin.applicant.export', request()->query()) }}" class="btn btn-success">
+                                Export Excel
+                            </a>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <form action="{{ route('applicant.index') }}" method="GET" class="d-flex">
+                                <input type="text" class="form-control me-2" name="search" placeholder="Search.."
+                                    value="{{ request('search') }}">
+                                <button class="btn btn-primary" type="submit">Cari</button>
+                            </form>
+                            <button type="button" class="btn btn-light ms-3" data-bs-toggle="modal"
+                                data-bs-target="#filterModal">
+                                <i class="bi bi-filter fs-4"></i>
+                            </button>
+                        </div>
+                    </div>
 
-        // Simpan pilihan tab saat diklik
-        document.querySelectorAll('input[name="summary-tab"]').forEach(radio => {
-            radio.addEventListener('change', function() {
-                localStorage.setItem('activeTab', this.id);
+                    <!-- Tabel Data Pelamar -->
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>No.</th>
+                                    <th>Nama</th>
+                                    <th>Posisi</th>
+                                    <th>Umur</th>
+                                    <th>Pendidikan</th>
+                                    <th>Jurusan</th>
+                                    {{-- <th>CV</th> --}}
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse ($applicants as $applicant)
+                                    <tr>
+                                        <td>{{ ($applicants->currentPage() - 1) * $applicants->perPage() + $loop->iteration }}
+                                        </td>
+                                        <td>{{ $applicant->name }}</td>
+                                        <td>{{ $applicant->position->name }}</td>
+                                        <td>{{ $applicant->age }} tahun</td>
+                                        <td>{{ $applicant->pendidikan }} - {{ $applicant->universitas }}</td>
+                                        <td>{{ $applicant->jurusan }}</td>
+                                        {{-- <td>
+                                            @if ($applicant->cv_document)
+                                                <a href="{{ asset('storage/' . $applicant->cv_document) }}"
+                                                    target="_blank" class="btn btn-sm btn-outline-primary">Lihat CV</a>
+                                            @else
+                                                <span class="text-muted">Tidak ada CV</span>
+                                            @endif
+                                        </td> --}}
+                                        <td>
+                                            {{-- Tombol Edit yang memicu modal --}}
+                                            <a href="#" class="btn btn-sm btn-success" data-bs-toggle="modal"
+                                                data-bs-target="#editApplicantModal{{ $applicant->id }}">Edit</a>
+
+                                            {{-- Perbaikan: Form Delete menggunakan named route yang benar --}}
+                                            <form action="{{ route('admin.applicant.destroy', $applicant->id) }}"
+                                                method="post" class="d-inline">
+                                                @method('delete')
+                                                @csrf
+                                                <button class="btn btn-sm btn-danger"
+                                                    onclick="return confirm('Apakah Anda yakin ingin menghapus data ini?')">
+                                                    Delete
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+
+                                    <!-- =================================================================== -->
+                                    <!-- KODE MODAL EDIT DARI ARTIFACT DIMASUKKAN DI SINI (DALAM LOOP) -->
+                                    <!-- =================================================================== -->
+                                    <div class="modal fade" id="editApplicantModal{{ $applicant->id }}" tabindex="-1"
+                                        aria-labelledby="editModalLabel{{ $applicant->id }}" aria-hidden="true">
+                                        <div class="modal-dialog modal-lg">
+                                            <div class="modal-content">
+                                                <form action="{{ route('admin.applicant.update', $applicant->id) }}"
+                                                    method="POST" enctype="multipart/form-data">
+                                                    @csrf
+                                                    @method('PUT')
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title"
+                                                            id="editModalLabel{{ $applicant->id }}">Edit Data:
+                                                            {{ $applicant->name }}</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                            aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <div class="row g-3">
+                                                            <div class="col-md-6">
+                                                                <label class="form-label">Nama</label>
+                                                                <input type="text" name="name"
+                                                                    class="form-control" value="{{ $applicant->name }}"
+                                                                    required>
+                                                            </div>
+
+                                                            <div class="col-md-6">
+                                                                <label class="form-label">Email</label>
+                                                                <input type="email" name="email"
+                                                                    class="form-control"
+                                                                    value="{{ $applicant->email }}" required>
+                                                            </div>
+
+                                                            <div class="col-md-6">
+                                                                <label class="form-label">NIK</label>
+                                                                <input type="text" name="nik"
+                                                                    class="form-control" value="{{ $applicant->nik }}"
+                                                                    maxlength="16" required>
+                                                            </div>
+
+                                                            <div class="col-md-6">
+                                                                <label class="form-label">No. Telepon</label>
+                                                                <input type="text" name="no_telp"
+                                                                    class="form-control"
+                                                                    value="{{ $applicant->no_telp }}" maxlength="14"
+                                                                    required>
+                                                            </div>
+
+                                                            <div class="col-md-6">
+                                                                <label class="form-label">Tempat Lahir</label>
+                                                                <input type="text" name="tpt_lahir"
+                                                                    class="form-control"
+                                                                    value="{{ $applicant->tpt_lahir }}" required>
+                                                            </div>
+
+                                                            <div class="col-md-6">
+                                                                <label class="form-label">Tanggal Lahir</label>
+                                                                <input type="date" name="tgl_lahir"
+                                                                    class="form-control"
+                                                                    value="{{ $applicant->tgl_lahir }}" required>
+                                                            </div>
+
+                                                            <div class="col-md-12">
+                                                                <label class="form-label">Alamat</label>
+                                                                <textarea name="alamat" class="form-control" required>{{ $applicant->alamat }}</textarea>
+                                                            </div>
+
+                                                            <div class="col-md-6">
+                                                                <label class="form-label">Pendidikan</label>
+                                                                <select name="pendidikan" class="form-select"
+                                                                    required>
+                                                                    @foreach (['SMA/Sederajat', 'Diploma', 'S1', 'S2', 'S3'] as $jenjang)
+                                                                        <option value="{{ $jenjang }}"
+                                                                            {{ $applicant->pendidikan == $jenjang ? 'selected' : '' }}>
+                                                                            {{ $jenjang }}
+                                                                        </option>
+                                                                    @endforeach
+                                                                </select>
+                                                            </div>
+
+                                                            <div class="col-md-6">
+                                                                <label class="form-label">Universitas</label>
+                                                                <input type="text" name="universitas"
+                                                                    class="form-control"
+                                                                    value="{{ $applicant->universitas }}" required>
+                                                            </div>
+
+                                                            <div class="col-md-6">
+                                                                <label class="form-label">Jurusan</label>
+                                                                <input type="text" name="jurusan"
+                                                                    class="form-control"
+                                                                    value="{{ $applicant->jurusan }}" required>
+                                                            </div>
+
+                                                            <div class="col-md-6">
+                                                                <label class="form-label">Tahun Lulus</label>
+                                                                <input type="text" name="thn_lulus"
+                                                                    class="form-control"
+                                                                    value="{{ $applicant->thn_lulus }}" required>
+                                                            </div>
+
+                                                            <div class="col-md-6 mb-3"><label
+                                                                    for="position_id-{{ $applicant->id }}"
+                                                                    class="form-label">Posisi</label>
+                                                                <select class="form-select"
+                                                                    id="position_id-{{ $applicant->id }}"
+                                                                    name="position_id" required>
+                                                                    @foreach ($positions as $position)
+                                                                        <option value="{{ $position->id }}"
+                                                                            {{ old('position_id', $applicant->position_id) == $position->id ? 'selected' : '' }}>
+                                                                            {{ $position->name }}</option>
+                                                                    @endforeach
+                                                                </select>
+                                                            </div>
+
+                                                            <div class="col-md-6">
+                                                                <label class="form-label">Status</label>
+                                                                <select name="status" class="form-select" required>
+                                                                    @foreach (['Seleksi Administrasi', 'Tidak Lolos Seleksi Administrasi', 'Seleksi Tes Tulis', 'Lolos Seleksi Tes Tulis', 'Tidak Lolos Seleksi Tes Tulis'] as $status)
+                                                                        <option value="{{ $status }}"
+                                                                            {{ $applicant->status == $status ? 'selected' : '' }}>
+                                                                            {{ $status }}
+                                                                        </option>
+                                                                    @endforeach
+                                                                </select>
+                                                            </div>
+
+                                                            <div class="col-md-12">
+                                                                <label class="form-label">Skills</label>
+                                                                <textarea type="text" name="skills" class="form-control" required readonly>{{ $applicant->skills ?? '-' }}</textarea>
+                                                            </div>
+
+                                                            <div class="col-md-12">
+                                                                <label class="form-label">CV dan Dokumen Pendukung
+                                                                    (PDF, Max 3MB)
+                                                                </label>
+                                                                <input type="file" name="cv_document"
+                                                                    class="form-control">
+                                                                @if ($applicant->cv_document)
+                                                                    <small class="text-muted">File saat ini: <a
+                                                                            href="{{ asset('storage/' . $applicant->cv_document) }}"
+                                                                            target="_blank">Lihat CV</a></small>
+                                                                @endif
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary"
+                                                            data-bs-dismiss="modal">Batal</button>
+                                                        <button type="submit" class="btn btn-primary">Simpan
+                                                            Perubahan</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- =================================================================== -->
+
+                                @empty
+                                    <tr>
+                                        <td colspan="8" class="text-center">Data tidak ditemukan.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                        <div class="mt-3">
+                            {{ $applicants->withQueryString()->links() }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Filter (tetap di sini) -->
+    <div class="modal fade" id="filterModal" tabindex="-1" aria-labelledby="filterModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form action="{{ route('applicant.index') }}" method="GET">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="filterModalLabel">Filter Options</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="statusFilter" class="form-label">Status</label>
+                            <select class="form-select" name="status" id="statusFilter">
+                                <option value="">Semua Status</option>
+                                <option value="Seleksi Administrasi"
+                                    {{ request('status') == 'Seleksi Administrasi' ? 'selected' : '' }}>Seleksi
+                                    Administrasi</option>
+                                <option value="Tidak Lolos Seleksi Administrasi"
+                                    {{ request('status') == 'Tidak Lolos Seleksi Administrasi' ? 'selected' : '' }}>
+                                    Tidak Lolos Seleksi Administrasi</option>
+                                <option value="Seleksi Tes Tulis"
+                                    {{ request('status') == 'Seleksi Tes Tulis' ? 'selected' : '' }}>Seleksi Tes Tulis
+                                </option>
+                                <option value="Lolos Seleksi Tes Tulis"
+                                    {{ request('status') == 'Lolos Seleksi Tes Tulis' ? 'selected' : '' }}>Lolos
+                                    Seleksi Tes Tulis</option>
+                                <option value="Tidak Lolos Seleksi Tes Tulis"
+                                    {{ request('status') == 'Tidak Lolos Seleksi Tes Tulis' ? 'selected' : '' }}>Tidak
+                                    Lolos Seleksi Tes Tulis</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="positionFilter" class="form-label">Posisi</label>
+                            <select class="form-select" name="position" id="positionFilter">
+                                <option value="">Semua Posisi</option>
+                                @foreach ($positions as $position)
+                                    <option value="{{ $position->id }}"
+                                        {{ request('position') == $position->id ? 'selected' : '' }}>
+                                        {{ $position->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <a href="{{ route('applicant.index') }}" class="btn btn-secondary">Reset</a>
+                        <button type="submit" class="btn btn-primary">Terapkan Filter</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    @if (session('success'))
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                var successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                successModal.show();
             });
-        });
-    </script>
-
+        </script>
+    @endif
 </x-app-layout>

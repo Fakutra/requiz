@@ -3,54 +3,32 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use App\Models\Batch;
 use App\Models\Position;
 use Illuminate\Support\Str;
 
 class PositionSeeder extends Seeder
 {
-    public function run()
+    /**
+     * Run the database seeds.
+     */
+    public function run(): void
     {
-        $positions = [
-            [
-                'name' => 'Frontend Developer',
-                'quota' => 5,
-                'status' => 'Active',
-                'description' => 'Bertanggung jawab membangun antarmuka pengguna aplikasi.',
-            ],
-            [
-                'name' => 'Backend Developer',
-                'quota' => 4,
-                'status' => 'Active',
-                'description' => 'Menangani logika aplikasi dan koneksi ke database.',
-            ],
-            [
-                'name' => 'UI/UX Designer',
-                'quota' => 3,
-                'status' => 'Active',
-                'description' => 'Merancang tampilan dan pengalaman pengguna aplikasi.',
-            ],
-            [
-                'name' => 'Data Analyst',
-                'quota' => 2,
-                'status' => 'Active',
-                'description' => 'Menganalisis data dan memberikan insight untuk pengambilan keputusan.',
-            ],
-            [
-                'name' => 'DevOps Engineer',
-                'quota' => 2,
-                'status' => 'Active',
-                'description' => 'Mengelola infrastruktur dan proses deployment aplikasi.',
-            ],
-        ];
+        $batches = Batch::all();
 
-        foreach ($positions as $pos) {
-            Position::create([
-                'name' => $pos['name'],
-                'slug' => Str::slug($pos['name']),
-                'quota' => $pos['quota'],
-                'status' => $pos['status'],
-                'description' => $pos['description'],
-            ]);
+        foreach ($batches as $batch) {
+            for ($i = 1; $i <= 5; $i++) {
+                $positionName = "Posisi {$i} - {$batch->name}";
+
+                Position::create([
+                    'batch_id' => $batch->id,
+                    'name' => $positionName,
+                    'slug' => Str::slug($positionName),
+                    'quota' => rand(5, 20),
+                    'status' => 'Active',
+                    'description' => 'Deskripsi untuk ' . $positionName, // ⬅️ tambahkan ini
+                ]);
+            }
         }
     }
 }

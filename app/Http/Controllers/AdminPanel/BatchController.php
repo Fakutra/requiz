@@ -12,58 +12,46 @@ class BatchController extends Controller
 {
     public function index()
     {
-        // $batchs = Batch::with('position')->first(); // atau where('name', 'Batch Pertama')->first();
-        // $batchs = Batch::where('status', 'Active')->with('position')->get();
-        $batchs = Batch::with('position')->orderBy('id', 'asc')->get();
+        // Gunakan withCount untuk efisiensi
+        $batchs = Batch::withCount('position')->orderBy('id', 'asc')->get();
         return view('admin.batch.index', compact('batchs'));
     }
 
-    public function create()
+    public function show(Batch $batch)
     {
-        return view('admin.batch.create');
+        // Eager load relasi 'position' untuk menghindari N+1 query problem di view
+        $batch->load('position');
+
+        // Kirim data batch tunggal ke view 'show'
+        return view('admin.batch.show', compact('batch'));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'slug' => 'string',
+            // 'slug' => 'string',
             'status' => 'required',
             'start_date' => 'date',
             'end_date' => 'date',
         ]);
-
-        // $validated['description'] = strip_tags($request->description);
 
         Batch::create($validated);
 
         return redirect()->route('batch.index')->with('success', 'New Batch has been added!');
     }
 
-    public function edit($id)
-    {
-        $batchs = Batch::findOrFail($id);
-        return view('admin.batch.edit', compact('batchs'));
-    }
-
-    public function update(Request $request, Batch $batchs, $id)
+    public function update(Request $request, $id)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            // 'slug' => 'required|string|max:255',
             'status' => 'required',
             'start_date' => 'required|date',
             'end_date' => 'required|date',
         ]);
 
-        // $validated['description'] = strip_tags($request->description);
-
         $batchs = Batch::findOrFail($id);
         $batchs->update($validated);
-        // Position::where('id', $positions->id)
-        //     ->update($validated);
-
-        // dd($validated);
 
         return redirect()->route('batch.index')->with('success', 'Batch has been updated!');
     }

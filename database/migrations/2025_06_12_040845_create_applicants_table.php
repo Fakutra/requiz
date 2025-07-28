@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('applicants', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('batch_id')->constrained()->onDelete('cascade');
             $table->foreignId('position_id')->constrained()->onDelete('cascade');
             $table->string('name');
             $table->string('email');
@@ -25,10 +26,12 @@ return new class extends Migration
             $table->enum('pendidikan', ['SMA/Sederajat', 'Diploma', 'S1', 'S2', 'S3']);
             $table->string('universitas');
             $table->string('jurusan');
+            $table->string('thn_lulus')->nullable();
+            $table->text('skills')->nullable();
             $table->string('cv_document');
             $table->enum('status', [
                 'Seleksi Administrasi',
-                // 'lolos seleksi administrasi',
+                'Lolos Seleksi Administrasi',
                 'Tidak Lolos Seleksi Administrasi',
                 'Seleksi Tes Tulis',
                 'Lolos Seleksi Tes Tulis',

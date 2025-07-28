@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('questions', function (Blueprint $table) {
             $table->id();
-            $table->enum('type', ['pg', 'multiple', 'poin', 'essay']);
-            $table->string('category')->nullable(); // contoh: 'umum', 'teknis', 'psikologi'
+            $table->enum('type', ['PG', 'Multiple', 'Poin', 'Essay']);
+            $table->enum('category',['Umum', 'Teknis', 'Psikologi'])->nullable(); // contoh: 'umum', 'teknis', 'psikologi'
             $table->text('question');
 
             $table->string('option_a')->nullable();
