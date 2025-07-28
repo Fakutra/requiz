@@ -7,6 +7,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>{{ config('app.name', 'ReQuiz') }}</title>
+    <link rel="icon" type="image/png" href="/app-logo.svg"/>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
@@ -68,48 +69,111 @@
 
     {{-- Datatables --}}
     {{-- <link rel="stylesheet" href="resources/css/dataTables.css" /> --}}
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
 </head>
 
-<body class="font-sans antialiased">
-    <div class="min-h-screen bg-gray-100">
-        @include('layouts.navigation')
+<body x-data="{ sidebarOpen: false }" class="font-sans antialiased">
+    <div class="min-h-screen bg-gray-100 flex">
+        <!-- Sidebar -->
+        <aside 
+            class="fixed inset-y-0 left-0 z-40 w-64 bg-white border-r shadow-md transform transition-transform duration-300 ease-in-out sm:relative sm:translate-x-0"
+            :class="{ '-translate-x-full': !sidebarOpen, 'translate-x-0': sidebarOpen }">
+            
+            <div class="p-6 flex flex-col gap-6">
+                <!-- Logo -->
+                <a href="{{ route('admin.dashboard') }}" class="flex justify-center">
+                    <x-application-logo class="h-10 w-auto fill-current text-gray-800" />
+                </a>
 
-        <!-- Page Heading -->
-        @if (isset($header))
-            <header class="bg-white shadow">
-                <div class="max-w-7xl mx-auto py-3 px-4 sm:px-6 lg:px-8">
-                    {{ $header }}
-                </div>
-            </header>
-        @endif
+                <!-- Nav Links -->
+                <nav class="flex flex-col gap-3">
+                    <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
+                        {{ __('Dashboard') }}
+                    </x-nav-link>
+                    <x-nav-link :href="route('batch.index')" :active="request()->routeIs('batch.index')">
+                        {{ __('Batch') }}
+                    </x-nav-link>
 
-        <!-- Page Content -->
-        <main>
-            {{ $slot }}
-        </main>
+                    <!-- Applicant Dropdown -->
+                    <div x-data="{ open: false }" class="relative">
+                        <button @click="open = !open"
+                            class="flex justify-between items-center w-full px-3 py-2 text-sm font-medium text-left text-gray-700 hover:text-blue-600">
+                            {{ __('Applicant') }}
+                            <svg class="h-4 w-4 transform transition-transform duration-200"
+                                 :class="{ 'rotate-180': open }"
+                                 xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd"
+                                      d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                      clip-rule="evenodd" />
+                            </svg>
+                        </button>
+
+                        <div x-show="open" x-cloak class="mt-2 space-y-1 pl-4 text-sm transition-all duration-300">
+                            <a href="{{ route('applicant.index') }}" class="block text-gray-600 hover:text-blue-600">Pelamar</a>
+                            <a href="{{ route('admin.applicant.seleksi.index') }}" class="block text-gray-600 hover:text-blue-600">Seleksi</a>
+                            <a href="#" class="block text-gray-600 hover:text-blue-600">Jadwal Wawancara</a>
+                            <a href="#" class="block text-gray-600 hover:text-blue-600">Hasil Akhir</a>
+                        </div>
+                    </div>
+
+                    <x-nav-link :href="route('test.index')" :active="request()->routeIs('test.index')">
+                        {{ __('Quiz') }}
+                    </x-nav-link>
+                    <x-nav-link :href="route('question.index')" :active="request()->routeIs('question.index')">
+                        {{ __('Questions') }}
+                    </x-nav-link>
+                    <x-nav-link :href="route('bundle.index')" :active="request()->routeIs('bundle.index')">
+                        {{ __('Bundles') }}
+                    </x-nav-link>
+                </nav>
+            </div>
+        </aside>
+        <!-- Overlay untuk mobile -->
+<div 
+    x-show="sidebarOpen"
+    @click="sidebarOpen = false"
+    class="fixed inset-0 z-30 sm:hidden"
+    x-transition:enter="transition-opacity ease-linear duration-200"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+    x-transition:leave="transition-opacity ease-linear duration-200"
+    x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0"
+    x-cloak>
+</div>
+
+
+        <!-- Konten Utama -->
+        <div class="flex-1 flex flex-col">
+            <!-- Toggle Sidebar Button (Mobile Only) -->
+            <div class="bg-white shadow px-4 py-2 sm:hidden">
+                <button @click="sidebarOpen = !sidebarOpen" class="text-gray-700 focus:outline-none">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="hidden sm:block">
+                @include('layouts.navigation')
+            </div>
+
+            @if (isset($header))
+                <header class="bg-white shadow">
+                    <div class="max-w-7xl mx-auto py-3 px-4 sm:px-6 lg:px-8">
+                        {{ $header }}
+                    </div>
+                </header>
+            @endif
+
+            <main class="p-4">
+                {{ $slot }}
+            </main>
+        </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-j1CDi7MgGQ12Z7Qab0qlWQ/Qqz24Gc6BM0thvEMVjHnfYGF0rmFCozFSxQBxwHKO" crossorigin="anonymous">
-        // document.addEventListener('DOMContentLoaded', function() {
-        //     const selectAll = document.getElementById('selectAll');
-        //     const checkboxes = document.querySelectorAll('.applicant-checkbox');
-
-        //     if (selectAll) {
-        //         selectAll.addEventListener('change', function() {
-        //             checkboxes.forEach(cb => cb.checked = this.checked);
-        //         });
-
-        //         checkboxes.forEach(cb => {
-        //             cb.addEventListener('change', function() {
-        //                 selectAll.checked = [...checkboxes].every(i => i.checked);
-        //             });
-        //         });
-        //     }
-        // });
-    </script>
-
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </body>
+
 
 </html>
