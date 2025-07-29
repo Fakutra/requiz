@@ -18,8 +18,8 @@
                 @auth
                     @if (Auth::user()->role === 'admin')
                         <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">Dashboard</x-nav-link>
-                        <x-nav-link :href="route('position.index')" :active="request()->routeIs('position.index')">Positions</x-nav-link>
-                        <x-nav-link :href="route('applicant.index')" :active="request()->routeIs('applicant.index')">Applicant</x-nav-link>
+                        <x-nav-link href="#" :active="request()->routeIs('position.index')">Positions</x-nav-link>
+                        <x-nav-link href="#" :active="request()->routeIs('applicant.index')">Applicant</x-nav-link>
                     @endif
                 @endauth
             </div>
