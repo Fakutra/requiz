@@ -5,6 +5,7 @@ use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\LowonganController;
 use App\Http\Controllers\AdminPanel\TestController;
+use App\Http\Controllers\AdminPanel\TestSectionController;
 use App\Http\Controllers\AdminPanel\AdminController;
 use App\Http\Controllers\AdminPanel\BatchController;
 use App\Http\Controllers\AdminPanel\PositionController;
@@ -71,13 +72,31 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 
     // Menampilkan daftar test
     Route::get('admin/test', [TestController::class, 'index'])->name('test.index');
-    // Route::get('admin/test/create', [TestController::class, 'create'])->name('test.create');
+    Route::get('admin/test/{test}', [TestController::class, 'show'])->name('test.show');
     Route::post('admin/test', [TestController::class, 'store'])->name('test.store');
-    // Route::get('admin/test/{id}/edit', [TestController::class, 'edit'])->name('test.edit');
-    Route::put('admin/test/{id}', [TestController::class, 'update'])->name('test.update');
-    Route::delete('admin/test/{id}', [TestController::class, 'destroy'])->name('test.destroy');
-    // Route::get('admin/test/{id}', [TestController::class, 'show'])->name('test.show');
+    Route::put('admin/test/{test}', [TestController::class, 'update'])->name('test.update');
+    Route::delete('admin/test/{test}', [TestController::class, 'destroy'])->name('test.destroy');
     Route::get('admin/test/checkSlug', [TestController::class, 'checkSlug'])->name('test.checkSlug');
+
+    // Rute untuk membuat section baru (nested di bawah test)
+    Route::post('admin/test/{test}/section', [TestSectionController::class, 'store'])
+        ->name('section.store');
+
+    // Rute untuk mengecek slug section
+    Route::get('admin/section/checkSlug', [TestSectionController::class, 'checkSlug'])
+        ->name('section.checkSlug');
+
+    Route::put('admin/section/{section}', [TestSectionController::class, 'update'])->name('section.update');
+    Route::delete('admin/test/section/{section}', [TestSectionController::class, 'destroy'])->name('section.destroy');
+    Route::get('admin/test/section/checkSlug', [TestSectionController::class, 'checkSlug'])->name('section.checkSlug');
+
+    // Grupkan rute yang beroperasi pada section tunggal
+    // Route::controller(TestSectionController::class)->group(function () {
+    //     // URL: PUT admin/section/{section}
+    //     Route::put('admin/section/{section}', 'update')->name('section.update');
+    //     // URL: DELETE admin/section/{section}
+    //     Route::delete('admin/section/{section}', 'destroy')->name('section.destroy');
+    // });
 
     // Question
     Route::get('admin/question', [QuestionController::class, 'index'])->name('question.index');

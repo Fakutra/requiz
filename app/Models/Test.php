@@ -14,6 +14,7 @@ class Test extends Model
         'name',
         'slug',
         'position_id',
+        'test_date',
     ];
 
     public function position()
@@ -21,7 +22,7 @@ class Test extends Model
         return $this->belongsTo(Position::class);
     }
 
-    public function sections()
+    public function section()
     {
         return $this->hasMany(TestSection::class);
     }
