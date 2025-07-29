@@ -3,6 +3,8 @@
 namespace Database\Seeders;
 
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+
+use App\Models\Position;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -12,43 +14,38 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // \App\Models\User::factory(10)->create();
 
-        \App\Models\User::factory()->create(
-            [
-            'name' => 'Admin',
-            'email' => 'admin@iconpln.co.id',
-            'role' => 'admin',
-            ],
-        );
-        \App\Models\User::factory()->create(
-            [
-            'name' => 'Wahyu',
-            'email' => 'why@gmail.com',
-            ],
-        );
-        \App\Models\User::factory()->create(
-            [
-            'name' => 'Fatur',
-            'email' => 'fatur@gmail.com',
-            ],
-        );
-        \App\Models\Position::create(
-            [
-            'name' => 'Technical Support',
-            'slug' => 'technical-support',
-            'quota' => 100,
-            'description' => 'Dicari TS',
-            ],
-        );
-        \App\Models\Position::create(
-            [
-            'name' => 'Technical Writer',
-            'slug' => 'technical-writer',
-            'quota' => 50,
-            'description' => 'Dicari TW',
-            ],
-        );
+        $this->call([
+            UserSeeder::class,
+            BatchSeeder::class,
+            ApplicantSeeder::class,
+            QuestionSeeder::class,
+        ]);
+
+    }
+}
+
+
+
+// \App\Models\Position::create(
+        //     [
+        //     'batch_id' => '2',
+        //     'name' => 'Technical Support',
+        //     'slug' => 'technical-support',
+        //     'quota' => 100,
+        //     'description' => 'Dicari TS',
+        //     ],
+        // );
+        // \App\Models\Position::create(
+        //     [
+        //     'batch_id' => '1',
+        //     'name' => 'Technical Writter',
+        //     'slug' => 'technical-writter',
+        //     'quota' => 50,
+        //     'description' => 'Dicari TW',
+        //     ],
+        // );
+        
 
         // \App\Models\Applicant::create(
         //     [
@@ -66,6 +63,3 @@ class DatabaseSeeder extends Seeder
             
         //     ],
         // );
-
-    }
-}

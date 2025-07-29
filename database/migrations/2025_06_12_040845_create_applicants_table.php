@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('applicants', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('batch_id')->constrained()->onDelete('cascade');
             $table->foreignId('position_id')->constrained()->onDelete('cascade');
             $table->string('name');
             $table->string('email');
@@ -24,16 +25,18 @@ return new class extends Migration
             $table->text('alamat');
             $table->enum('pendidikan', ['SMA/Sederajat', 'Diploma', 'S1', 'S2', 'S3']);
             $table->string('universitas');
-            $table->string('cv')->nullable();
-            $table->string('doc_tambahan')->nullable();
+            $table->string('jurusan');
+            $table->string('thn_lulus')->nullable();
+            $table->text('skills')->nullable();
+            $table->string('cv_document');
             $table->enum('status', [
-                'seleksi administrasi',
-                // 'lolos seleksi administrasi',
-                'tidak lolos seleksi administrasi',
-                'seleksi tes tulis',
-                'lolos seleksi tes tulis',
-                'tidak lolos seleksi tes tulis'
-            ])->default('seleksi administrasi');
+                'Seleksi Administrasi',
+                'Lolos Seleksi Administrasi',
+                'Tidak Lolos Seleksi Administrasi',
+                'Seleksi Tes Tulis',
+                'Lolos Seleksi Tes Tulis',
+                'Tidak Lolos Seleksi Tes Tulis'
+            ])->default('Seleksi Administrasi');
             $table->timestamps();
         });
     }

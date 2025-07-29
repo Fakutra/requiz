@@ -9,7 +9,7 @@
       <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
           <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
               <div class="p-6 text-gray-900">
-                <form method="post" action="{{ route('position.index') }}" class="mb-5" enctype="multipart/form-data">
+                <form method="post" action="{{ route('position.store', $batchs->id) }}" class="mb-5" enctype="multipart/form-data">
                     @csrf
                     <div class="mb-3 col-lg-8">
                         <label for="name" class="form-label">Nama Posisi</label>
@@ -35,11 +35,15 @@
                     </div>
                     <div class="mb-3 col-lg-8">
                         <label for="status" class="form-label">Status</label>
-                        <select class="form-select" name="status">
-                            <option selected value="active">Active</option>
-                            <option value="inactive">Inactive</option>
+                        <select class="form-select @error('status') is-invalid @enderror" name="status" id="status" required>
+                            <option value="">-- Pilih Status --</option>
+                            <option value="Active" {{ old('status') == 'Active' ? 'selected' : '' }}>Active</option>
+                            <option value="Inactive" {{ old('status') == 'Inactive' ? 'selected' : '' }}>Inactive</option>
                         </select>
-                    </div>
+                        @error('status')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>                    
                     <div class="mb-3 col-lg-8">
                         <label for="description" class="form-label">Description</label>
                         @error('description')
@@ -48,25 +52,6 @@
                         <input id="description" type="hidden" name="description">
                         <trix-editor input="description"></trix-editor>
                     </div>
-                    {{-- <div class="mb-3">
-                        <label for="image" class="form-label">Post Image</label>
-                        <img class="img-preview img-fluid mb-3 col-sm-5">
-                        <input class="form-control @error('image') is-invalid @enderror" type="file" id="image" name="image" onchange="previewImage()">
-                        @error('image')
-                            <div class="invalid-feedback">
-                                {{ $message }}
-                            </div>
-                        @enderror
-                    </div> --}}
-                    {{-- <div class="mb-3">
-                        <label for="body" class="form-label">Body</label>
-                        @error('body')
-                            <p class="text-danger">{{ $message }}</p>
-                        @enderror
-                        <input id="body" type="hidden" name="body" value="{{ old('body') }}">
-                        <trix-editor input="body"></trix-editor>                
-                    </div> --}}
-                    
                     <button type="submit" class="btn btn-primary">Create Position</button>
                 </form>
               </div>
@@ -78,7 +63,7 @@
     const slug = document.querySelector('#slug');
 
     name.addEventListener('change', function() {
-        fetch('/admin/position/checkSlug?name=' + name.value)
+        fetch('/admin/batch/position/checkSlug?name=' + name.value)
             .then(response => response.json())
             .then(data => slug.value = data.slug)
     });

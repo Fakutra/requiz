@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\AdminPanel;
 
 use App\Http\Controllers\Controller;
+use App\Models\Batch;
 use Illuminate\Http\Request;
 use App\Models\Position;
-// use Cviebrock\EloquentSluggable\Services\SlugService;
 use \Cviebrock\EloquentSluggable\Services\SlugService;
 
 class PositionController extends Controller
@@ -13,70 +13,52 @@ class PositionController extends Controller
     public function index()
     {
         $positions = Position::orderBy('id', 'asc')->get();
-        return view('admin.position.index', compact('positions'));
+        return view('admin.batch.position.index', compact('positions'));
     }
 
-    public function create()
+    public function store(Request $request, Batch $batch)
     {
-        return view('admin.position.create');
-    }
-
-    public function store(Request $request)
-    {
+        // 1. Validasi semua data yang masuk dari form
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'slug' => 'string',
-            'quota' => 'required|integer',
-            'status' => 'required',
-            'description' => 'required',
+            'quota' => 'required|integer|min:1',
+            'status' => 'required|string',
+            'description' => 'required|string', // Validasi untuk Trix Editor
         ]);
 
-        // $validated['description'] = strip_tags($request->description);
+        // 2. Buat posisi baru menggunakan relasi dari Batch
+        // Ini secara otomatis akan mengisi 'batch_id'
+        $batch->position()->create($validated);
 
-        Position::create($validated);
-
-        return redirect()->route('position.index')->with('success', 'New Position has been added!');
+        // 3. Arahkan kembali ke halaman sebelumnya dengan pesan sukses
+        return redirect()->route('batch.show', $batch)->with('success', 'Posisi baru telah berhasil ditambahkan!');
     }
 
-    public function edit($id)
+    public function update(Request $request, Position $position)
     {
-        $positions = Position::findOrFail($id);
-        return view('admin.position.edit', compact('positions'));
-    }
-
-    public function update(Request $request, Position $positions, $id)
-    {
+        // 1. Validasi data yang masuk
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            // 'slug' => 'required|string|max:255',
-            'quota' => 'required|integer',
-            'status' => 'required',
-            'description' => 'required',
+            'quota' => 'required|integer|min:1',
+            'status' => 'required|string',
+            'description' => 'required|string',
         ]);
 
-        // $validated['description'] = strip_tags($request->description);
+        // 2. Update posisi menggunakan data yang sudah divalidasi
+        $position->update($validated);
 
-        $positions = Position::findOrFail($id);
-        $positions->update($validated);
-        // Position::where('id', $positions->id)
-        //     ->update($validated);
-
-        // dd($validated);
-
-        return redirect()->route('position.index')->with('success', 'Position has been updated!');
-    }
-
-    public function ContactView($id)
-    {
-        //
+        // 3. Arahkan kembali dengan pesan sukses
+        return redirect()->route('batch.show', $position->batch)->with('success', 'Posisi telah berhasil diperbarui!');
     }
 
     public function destroy($id)
     {
         $position = Position::findOrFail($id);
+        $batch = $position->batch; // Ambil batch sebelum dihapus
         $position->delete();
 
-        return redirect()->route('position.index')->with('success', 'Position has been deleted!');
+        // Ubah redirect ke halaman show batch
+        return redirect()->route('batch.show', $batch)->with('success', 'Position has been deleted!');
     }
 
     public function checkSlug(Request $request)
@@ -84,5 +66,4 @@ class PositionController extends Controller
         $slug = SlugService::createSlug(Position::class, 'slug', $request->name);
         return response()->json(['slug' => $slug]);
     }
-
 }
