@@ -48,8 +48,11 @@ class QuestionController extends Controller
         // Mengambil hasil dengan urutan terbaru dan paginasi
         $questions = $query->latest()->paginate(10)->appends($request->query()); // Diubah ke latest() agar lebih umum
 
+         // Ambil semua daftar kategori yang unik dari tabel untuk mengisi dropdown
+        $categories = Question::pluck('category')->unique();
+
         // Mengirim data ke view
-        return view('admin.question.index', compact('questions'));
+        return view('admin.question.index', compact('questions', 'categories'));
     }
 
     /**
@@ -57,28 +60,28 @@ class QuestionController extends Controller
      */
     public function store(Request $request)
     {
-        // 1. Validasi Input
+        // 1. Validasi Input (disesuaikan agar lebih akurat)
         $validator = Validator::make($request->all(), [
             'type' => ['required', 'in:PG,Multiple,Poin,Essay'],
-            'category' => ['required', 'in:Umum,Teknis,Psikologi'],
+            'category' => ['required', 'string'],
             'question' => ['required', 'string', 'min:5'],
             'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
-
-            // Opsi hanya wajib jika tipe bukan Essay
-            'option_a' => ['required_if:type,PG,Multiple,Poin', 'nullable', 'string'],
-            'option_b' => ['required_if:type,PG,Multiple,Poin', 'nullable', 'string'],
+            
+            // Opsi wajib jika tipe bukan Essay
+            'option_a' => ['exclude_if:type,Essay', 'required', 'string'],
+            'option_b' => ['exclude_if:type,Essay', 'required', 'string'],
             'option_c' => ['nullable', 'string'],
             'option_d' => ['nullable', 'string'],
             'option_e' => ['nullable', 'string'],
-
+            
             // Poin hanya wajib jika tipe adalah Poin
             'point_a' => ['required_if:type,Poin', 'nullable', 'integer'],
             'point_b' => ['required_if:type,Poin', 'nullable', 'integer'],
             'point_c' => ['required_if:type,Poin', 'nullable', 'integer'],
             'point_d' => ['required_if:type,Poin', 'nullable', 'integer'],
             'point_e' => ['required_if:type,Poin', 'nullable', 'integer'],
-
-            // Jawaban wajib jika tipe PG (string) atau Multiple (array)
+            
+            // Jawaban wajib jika tipe PG atau Multiple
             'answer' => ['required_if:type,PG,Multiple', 'nullable'],
         ]);
 
@@ -90,63 +93,43 @@ class QuestionController extends Controller
         }
 
         // 2. Menyiapkan Data
-        $data = $request->only([
-            'type', 'category', 'question',
-            'option_a', 'option_b', 'option_c', 'option_d', 'option_e',
-            'point_a', 'point_b', 'point_c', 'point_d', 'point_e',
-        ]);
+        $data = $request->except(['_token', 'image']);
 
-        // 3. Menangani Jawaban berdasarkan Tipe Soal
-        if ($request->type === 'Multiple') {
-            // Jika tipe Multiple, jawaban adalah array. Kita gabungkan menjadi string.
-            if (is_array($request->answer)) {
-                $data['answer'] = implode(',', $request->answer);
-            } else {
+        // 3. Menangani & Membersihkan Data berdasarkan Tipe Soal
+        switch ($request->type) {
+            case 'Multiple':
+                $data['answer'] = is_array($request->answer) ? implode(',', $request->answer) : null;
+                // Kosongkan semua poin
+                $data = array_merge($data, ['point_a' => null, 'point_b' => null, 'point_c' => null, 'point_d' => null, 'point_e' => null]);
+                break;
+            case 'PG':
+                // Kosongkan semua poin
+                $data = array_merge($data, ['point_a' => null, 'point_b' => null, 'point_c' => null, 'point_d' => null, 'point_e' => null]);
+                break;
+            case 'Poin':
+                // Kosongkan jawaban
                 $data['answer'] = null;
-            }
-        } elseif ($request->type === 'PG') {
-            // Jika tipe PG, jawaban sudah berupa string.
-            $data['answer'] = $request->answer;
-        } else {
-            // Untuk tipe Poin dan Essay, tidak ada jawaban benar.
-            $data['answer'] = null;
+                break;
+            case 'Essay':
+                // Kosongkan semua opsi, poin, dan jawaban
+                $data = array_merge($data, [
+                    'option_a' => null, 'option_b' => null, 'option_c' => null, 'option_d' => null, 'option_e' => null,
+                    'point_a' => null, 'point_b' => null, 'point_c' => null, 'point_d' => null, 'point_e' => null,
+                    'answer' => null
+                ]);
+                break;
         }
-        
-        // Membersihkan data poin jika tipe bukan 'Poin'
-        if ($request->type !== 'Poin') {
-            $data['point_a'] = null;
-            $data['point_b'] = null;
-            $data['point_c'] = null;
-            $data['point_d'] = null;
-            $data['point_e'] = null;
-        }
-        
-        // Membersihkan data opsi jika tipe 'Essay'
-        if ($request->type === 'Essay') {
-            $data['option_a'] = null;
-            $data['option_b'] = null;
-            $data['option_c'] = null;
-            $data['option_d'] = null;
-            $data['option_e'] = null;
-        }
-
 
         // 4. Menangani Upload Gambar
         if ($request->hasFile('image')) {
-            // Simpan gambar ke storage/app/public/questions
             $path = $request->file('image')->store('public/questions');
-            // Simpan path yang dapat diakses publik
             $data['image_path'] = Storage::url($path);
         }
 
         // 5. Simpan ke Database
-        try {
-            Question::create($data);
-            return redirect()->route('question.index')->with('success', 'Question created successfully!');
-        } catch (\Exception $e) {
-            // Jika ada error saat menyimpan, kembalikan dengan pesan error
-            return redirect()->back()->withInput()->with('error', 'Failed to save question. Error: ' . $e->getMessage());
-        }
+        Question::create($data);
+
+        return redirect()->route('question.index')->with('success', 'Question created successfully!');
     }
 
     /**
@@ -157,77 +140,81 @@ class QuestionController extends Controller
      * @return \Illuminate\Http\RedirectResponse
      */
     public function update(Request $request, Question $question)
-{
-    // 1. Validasi Input (sama seperti store)
-    $validator = Validator::make($request->all(), [
-        'type' => ['required', 'in:PG,Multiple,Poin,Essay'],
-        'category' => ['required', 'in:Umum,Teknis,Psikologi'],
-        'question' => ['required', 'string', 'min:5'],
-        'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
-        'option_a' => ['required_if:type,PG,Multiple,Poin', 'nullable', 'string'],
-        'option_b' => ['required_if:type,PG,Multiple,Poin', 'nullable', 'string'],
-        'option_c' => ['required_if:type,PG,Multiple,Poin', 'nullable', 'string'],
-        'option_d' => ['required_if:type,PG,Multiple,Poin', 'nullable', 'string'],
-        'option_e' => ['required_if:type,PG,Multiple,Poin', 'nullable', 'string'],
-        'point_a' => ['required_if:type,PG,Multiple,Poin', 'nullable', 'string'],
-        'point_b' => ['required_if:type,PG,Multiple,Poin', 'nullable', 'string'],
-        'point_c' => ['required_if:type,PG,Multiple,Poin', 'nullable', 'string'],
-        'point_d' => ['required_if:type,PG,Multiple,Poin', 'nullable', 'string'],
-        'point_e' => ['required_if:type,PG,Multiple,Poin', 'nullable', 'string'],
-        'answer' => ['required_if:type,PG,Multiple', 'nullable'],
-    ]);
+    {
+        // 1. Validasi Input (perbaikan pada validasi point)
+        $validator = Validator::make($request->all(), [
+            'type' => ['required', 'in:PG,Multiple,Poin,Essay'],
+            'category' => ['required', 'string'],
+            'question' => ['required', 'string', 'min:5'],
+            'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
+            
+            // Opsi wajib jika tipe bukan Essay
+            'option_a' => ['exclude_if:type,Essay', 'required', 'string'],
+            'option_b' => ['exclude_if:type,Essay', 'required', 'string'],
+            'option_c' => ['nullable', 'string'],
+            'option_d' => ['nullable', 'string'],
+            'option_e' => ['nullable', 'string'],
 
-    if ($validator->fails()) {
-        return redirect()->back()
-            ->withErrors($validator)
-            ->withInput()
-            ->with('error', 'Update failed! Please check the form fields.');
-    }
+            // Poin hanya wajib jika tipe adalah Poin
+            'point_a' => ['required_if:type,Poin', 'nullable', 'integer'],
+            'point_b' => ['required_if:type,Poin', 'nullable', 'integer'],
+            'point_c' => ['required_if:type,Poin', 'nullable', 'integer'],
+            'point_d' => ['required_if:type,Poin', 'nullable', 'integer'],
+            'point_e' => ['required_if:type,Poin', 'nullable', 'integer'],
+            
+            // Jawaban wajib jika tipe PG atau Multiple
+            'answer' => ['required_if:type,PG,Multiple', 'nullable'],
+        ]);
 
-    // 2. Menyiapkan Data
-    $data = $request->except(['_token', '_method', 'image']);
-
-    // 3. Menangani & Membersihkan Data berdasarkan Tipe Soal
-    // Logika ini sangat penting untuk menjaga konsistensi data
-    switch ($request->type) {
-        case 'Multiple':
-            $data['answer'] = is_array($request->answer) ? implode(',', $request->answer) : null;
-            $data = array_merge($data, ['point_a' => null, 'point_b' => null, 'point_c' => null, 'point_d' => null, 'point_e' => null]);
-            break;
-        case 'PG':
-            $data['answer'] = $request->answer;
-            $data = array_merge($data, ['point_a' => null, 'point_b' => null, 'point_c' => null, 'point_d' => null, 'point_e' => null]);
-            break;
-        case 'Poin':
-            $data['answer'] = null;
-            break;
-        case 'Essay':
-            $data = array_merge($data, [
-                'option_a' => null, 'option_b' => null, 'option_c' => null, 'option_d' => null, 'option_e' => null,
-                'point_a' => null, 'point_b' => null, 'point_c' => null, 'point_d' => null, 'point_e' => null,
-                'answer' => null
-            ]);
-            break;
-    }
-
-
-    // 4. Menangani Upload Gambar Baru
-    if ($request->hasFile('image')) {
-        // Hapus gambar lama jika ada
-        if ($question->image_path) {
-            $oldPath = str_replace('/storage/', 'public/', $question->image_path);
-            Storage::delete($oldPath);
+        if ($validator->fails()) {
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput()
+                ->with('error', 'Update failed! Please check the form fields.');
         }
-        // Simpan gambar baru
-        $path = $request->file('image')->store('public/questions');
-        $data['image_path'] = Storage::url($path);
+
+        // (Sisa dari fungsi update Anda sudah benar)
+        // 2. Menyiapkan Data
+        $data = $request->except(['_token', '_method', 'image']);
+
+        // 3. Menangani & Membersihkan Data berdasarkan Tipe Soal
+        switch ($request->type) {
+            case 'Multiple':
+                $data['answer'] = is_array($request->answer) ? implode(',', $request->answer) : null;
+                $data = array_merge($data, ['point_a' => null, 'point_b' => null, 'point_c' => null, 'point_d' => null, 'point_e' => null]);
+                break;
+            case 'PG':
+                $data['answer'] = $request->answer;
+                $data = array_merge($data, ['point_a' => null, 'point_b' => null, 'point_c' => null, 'point_d' => null, 'point_e' => null]);
+                break;
+            case 'Poin':
+                $data['answer'] = null;
+                break;
+            case 'Essay':
+                $data = array_merge($data, [
+                    'option_a' => null, 'option_b' => null, 'option_c' => null, 'option_d' => null, 'option_e' => null,
+                    'point_a' => null, 'point_b' => null, 'point_c' => null, 'point_d' => null, 'point_e' => null,
+                    'answer' => null
+                ]);
+                break;
+        }
+
+
+        // 4. Menangani Upload Gambar Baru
+        if ($request->hasFile('image')) {
+            if ($question->image_path) {
+                $oldPath = str_replace('/storage/', 'public/', $question->image_path);
+                Storage::delete($oldPath);
+            }
+            $path = $request->file('image')->store('public/questions');
+            $data['image_path'] = Storage::url($path);
+        }
+
+        // 5. Update ke Database
+        $question->update($data);
+
+        return redirect()->route('question.index')->with('success', 'Question updated successfully!');
     }
-
-    // 5. Update ke Database
-    $question->update($data);
-
-    return redirect()->route('question.index')->with('success', 'Question updated successfully!');
-}
 
     /**
      * Menghapus pertanyaan dari database.

@@ -76,7 +76,6 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::delete('/admin/applicant/{id}', [ApplicantController::class, 'destroy'])->name('admin.applicant.destroySeleksi');
     Route::get('/admin/applicant/seleksi/{stage}', [ApplicantController::class, 'showStageApplicants'])->name('admin.applicant.seleksi.process');
 
-
     // Menampilkan daftar test
     Route::get('admin/test', [TestController::class, 'index'])->name('test.index');
     Route::get('admin/test/{test}', [TestController::class, 'show'])->name('test.show');
@@ -96,14 +95,6 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::put('admin/section/{section}', [TestSectionController::class, 'update'])->name('section.update');
     Route::delete('admin/test/section/{section}', [TestSectionController::class, 'destroy'])->name('section.destroy');
     Route::get('admin/test/section/checkSlug', [TestSectionController::class, 'checkSlug'])->name('section.checkSlug');
-
-    // Grupkan rute yang beroperasi pada section tunggal
-    // Route::controller(TestSectionController::class)->group(function () {
-    //     // URL: PUT admin/section/{section}
-    //     Route::put('admin/section/{section}', 'update')->name('section.update');
-    //     // URL: DELETE admin/section/{section}
-    //     Route::delete('admin/section/{section}', 'destroy')->name('section.destroy');
-    // });
 
     // Question
     Route::get('admin/question', [QuestionController::class, 'index'])->name('question.index');

@@ -47,13 +47,14 @@
                                 <div>
                                     <select name="category" class="form-select">
                                         <option value="">All Categories</option>
-                                        <option value="Umum" {{ request('category') == 'Umum' ? 'selected' : '' }}>
-                                            Umum</option>
-                                        <option value="Teknis" {{ request('category') == 'Teknis' ? 'selected' : '' }}>
-                                            Teknis</option>
-                                        <option value="Psikologi"
-                                            {{ request('category') == 'Psikologi' ? 'selected' : '' }}>Psikologi
-                                        </option>
+
+                                        {{-- Lakukan perulangan untuk setiap kategori dari database --}}
+                                        @foreach ($categories as $category)
+                                            <option value="{{ $category }}"
+                                                {{ request('category') == $category ? 'selected' : '' }}>
+                                                {{ $category }}
+                                            </option>
+                                        @endforeach
                                     </select>
                                 </div>
                                 <div class="d-flex gap-2">
@@ -89,9 +90,25 @@
                                         <td>
                                             <div class="d-flex gap-2">
                                                 {{-- Tombol Edit yang sudah ada --}}
-                                                <button type="button" class="btn btn-sm btn-warning edit-btn"
+                                                <button type="button" class="btn btn-warning btn-sm edit-question-btn"
                                                     data-bs-toggle="modal" data-bs-target="#editQuestionModal"
-                                                    data-question='{{ $question->toJson() }}'>
+                                                    data-id="{{ $question->id }}"
+                                                    data-action="{{ route('question.update', $question->id) }}"
+                                                    data-type="{{ $question->type }}"
+                                                    data-category="{{ $question->category }}"
+                                                    data-question="{{ $question->question }}"
+                                                    data-option_a="{{ $question->option_a }}"
+                                                    data-option_b="{{ $question->option_b }}"
+                                                    data-option_c="{{ $question->option_c }}"
+                                                    data-option_d="{{ $question->option_d }}"
+                                                    data-option_e="{{ $question->option_e }}"
+                                                    data-point_a="{{ $question->point_a }}"
+                                                    data-point_b="{{ $question->point_b }}"
+                                                    data-point_c="{{ $question->point_c }}"
+                                                    data-point_d="{{ $question->point_d }}"
+                                                    data-point_e="{{ $question->point_e }}"
+                                                    data-answer="{{ $question->answer }}"
+                                                    data-image_path="{{ $question->image_path ? asset($question->image_path) : 'None' }}">
                                                     Edit
                                                 </button>
 
@@ -189,21 +206,20 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    {{-- Form untuk membuat pertanyaan baru --}}
-                    <form action="{{ route('question.store') }}" method="POST" enctype="multipart/form-data">
+                    <form action="{{ route('question.store') }}" method="POST" enctype="multipart/form-data"
+                        id="createQuestionForm">
                         @csrf
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="type" class="form-label">Type</label>
-                                <select class="form-select @error('type') is-invalid @enderror" id="type"
+                                <label for="create_type" class="form-label">Type</label>
+                                <select class="form-select @error('type') is-invalid @enderror" id="create_type"
                                     name="type" required>
                                     <option value="PG" {{ old('type') == 'PG' ? 'selected' : '' }}>PG</option>
                                     <option value="Essay" {{ old('type') == 'Essay' ? 'selected' : '' }}>Essay
                                     </option>
                                     <option value="Poin" {{ old('type') == 'Poin' ? 'selected' : '' }}>Poin</option>
                                     <option value="Multiple" {{ old('type') == 'Multiple' ? 'selected' : '' }}>
-                                        Multiple
-                                    </option>
+                                        Multiple</option>
                                 </select>
                                 @error('type')
                                     <div class="invalid-feedback">{{ $message }}</div>
@@ -211,54 +227,44 @@
                             </div>
 
                             <div class="col-md-6 mb-3">
-                                <label for="category" class="form-label">Category</label>
-                                <select class="form-select @error('category') is-invalid @enderror" id="category"
-                                    name="category" required>
-                                    {{-- <option value="Umum" {{ old('category') == 'Umum' ? 'selected' : '' }}>Umum
-                                    </option> --}}
-                                    <option value="Umum" {{ old('category') == 'Umum' ? 'selected' : '' }}>Umum
-                                    </option>
-                                    <option value="Teknis" {{ old('category') == 'Teknis' ? 'selected' : '' }}>Teknis
-                                    </option>
-                                    <option value="Psikologi" {{ old('category') == 'Psikologi' ? 'selected' : '' }}>
-                                        Psikologi</option>
-                                </select>
+                                <label for="create_category" class="form-label">Category</label>
+                                <input type="text" class="form-control @error('category') is-invalid @enderror"
+                                    id="create_category" name="category" value="{{ old('category') }}" required>
                                 @error('category')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label for="question" class="form-label">Question</label>
-                            <textarea class="form-control @error('question') is-invalid @enderror" id="question" name="question" rows="3"
-                                required>{{ old('question') }}</textarea>
+                            <label for="create_question" class="form-label">Question</label>
+                            <textarea class="form-control @error('question') is-invalid @enderror" id="create_question" name="question"
+                                rows="3" required>{{ old('question') }}</textarea>
                             @error('question')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
 
-                        {{-- Container untuk Opsi Jawaban (A-E) --}}
-                        <div id="options-container">
+                        {{-- Ganti id menjadi 'create_options_container' --}}
+                        <div id="create_options_container">
                             <hr>
-                            <p class="fw-bold">Options</p>
+                            <p class="fw-bold">Options & Points</p>
                             @foreach (['a', 'b', 'c', 'd', 'e'] as $option)
                                 <div class="row mb-2">
-                                    {{-- Input Option --}}
                                     <div class="col-md-8">
-                                        <label for="option_{{ $option }}" class="form-label">Option
+                                        <label for="create_option_{{ $option }}" class="form-label">Option
                                             {{ strtoupper($option) }}</label>
                                         <input type="text"
                                             class="form-control @error('option_' . $option) is-invalid @enderror"
-                                            id="option_{{ $option }}" name="option_{{ $option }}"
+                                            id="create_option_{{ $option }}" name="option_{{ $option }}"
                                             value="{{ old('option_' . $option) }}">
                                     </div>
-                                    {{-- Input Point (khusus untuk tipe Poin) --}}
-                                    <div class="col-md-4 point-input-wrapper">
-                                        <label for="point_{{ $option }}" class="form-label">Point
+                                    {{-- Ganti class menjadi 'create-point-input-wrapper' --}}
+                                    <div class="col-md-4 create-point-input-wrapper">
+                                        <label for="create_point_{{ $option }}" class="form-label">Point
                                             {{ strtoupper($option) }}</label>
                                         <input type="number"
                                             class="form-control @error('point_' . $option) is-invalid @enderror"
-                                            id="point_{{ $option }}" name="point_{{ $option }}"
+                                            id="create_point_{{ $option }}" name="point_{{ $option }}"
                                             value="{{ old('point_' . $option) ?? 0 }}">
                                     </div>
                                 </div>
@@ -267,10 +273,10 @@
 
                         <hr>
 
-                        {{-- Jawaban untuk Tipe PG (Single Choice) --}}
-                        <div class="mb-3" id="pg-answer-container">
-                            <label for="answer" class="form-label">Correct Answer</label>
-                            <select class="form-select @error('answer') is-invalid @enderror" id="answer"
+                        {{-- Ganti id menjadi 'create_pg_answer_container' --}}
+                        <div class="mb-3" id="create_pg_answer_container">
+                            <label for="create_answer_pg" class="form-label">Correct Answer</label>
+                            <select class="form-select @error('answer') is-invalid @enderror" id="create_answer_pg"
                                 name="answer">
                                 <option value="">Select Correct Answer</option>
                                 <option value="A" {{ old('answer') == 'A' ? 'selected' : '' }}>Option A</option>
@@ -281,24 +287,24 @@
                             </select>
                         </div>
 
-                        {{-- Jawaban untuk Tipe Multiple (Multiple Choice) --}}
-                        <div class="mb-3" id="multiple-answer-container">
+                        {{-- Ganti id menjadi 'create_multiple_answer_container' --}}
+                        <div class="mb-3" id="create_multiple_answer_container">
                             <label class="form-label">Correct Answers</label>
                             @foreach (['A', 'B', 'C', 'D', 'E'] as $option)
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="answer[]"
-                                        value="{{ $option }}" id="answer_{{ $option }}"
+                                        value="{{ $option }}" id="create_answer_check_{{ $option }}"
                                         {{ is_array(old('answer')) && in_array($option, old('answer')) ? 'checked' : '' }}>
-                                    <label class="form-check-label" for="answer_{{ $option }}">
-                                        Option {{ $option }}
-                                    </label>
+                                    <label class="form-check-label"
+                                        for="create_answer_check_{{ $option }}">Option
+                                        {{ $option }}</label>
                                 </div>
                             @endforeach
                         </div>
 
                         <div class="mb-3">
-                            <label for="image" class="form-label">Image (Optional)</label>
-                            <input class="form-control" type="file" id="image" name="image">
+                            <label for="create_image" class="form-label">Image (Optional)</label>
+                            <input class="form-control" type="file" id="create_image" name="image">
                         </div>
 
                         <div class="modal-footer">
@@ -339,11 +345,9 @@
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="edit_category" class="form-label">Category</label>
-                                <select class="form-select" id="edit_category" name="category" required>
-                                    <option value="Umum">Umum</option>
-                                    <option value="Teknis">Teknis</option>
-                                    <option value="Psikologi">Psikologi</option>
-                                </select>
+                                {{-- Atribut 'value' akan diisi oleh JavaScript saat modal muncul --}}
+                                <input type="text" class="form-control" id="edit_category" name="category"
+                                    required>
                             </div>
                         </div>
 
@@ -428,126 +432,146 @@
         </script>
     @endif
 
+    {{-- Script untuk menangani modal edit pertanyaan --}}
     <script>
-        // Menunggu seluruh konten halaman dimuat sebelum menjalankan skrip
         document.addEventListener('DOMContentLoaded', function() {
-            const editModal = document.getElementById('editQuestionModal');
-            if (editModal) {
-                // Fungsi untuk mengatur tampilan field di MODAL EDIT
-                const toggleEditFields = () => {
-                    const selectedType = document.getElementById('edit_type').value;
-                    const optionsContainer = document.getElementById('edit_options_container');
-                    const pgAnswerContainer = document.getElementById('edit_pg_answer_container');
-                    const multipleAnswerContainer = document.getElementById('edit_multiple_answer_container');
-                    const pointInputs = document.querySelectorAll('.edit-point-input-wrapper');
+            // Tangkap event saat modal akan ditampilkan
+            var editQuestionModal = document.getElementById('editQuestionModal');
+            editQuestionModal.addEventListener('show.bs.modal', function(event) {
+                // Dapatkan tombol yang memicu modal
+                var button = event.relatedTarget;
 
-                    // Sembunyikan semua elemen kondisional
-                    optionsContainer.style.display = 'none';
-                    pgAnswerContainer.style.display = 'none';
-                    multipleAnswerContainer.style.display = 'none';
-                    pointInputs.forEach(input => input.style.display = 'none');
+                // Ekstrak data dari atribut data-*
+                var action = button.getAttribute('data-action');
+                var type = button.getAttribute('data-type');
+                var category = button.getAttribute('data-category');
+                var questionText = button.getAttribute('data-question');
+                var answer = button.getAttribute('data-answer');
+                var imagePath = button.getAttribute('data-image_path');
 
-                    // Tampilkan berdasarkan tipe
-                    if (['PG', 'Multiple', 'Poin'].includes(selectedType)) {
-                        optionsContainer.style.display = 'block';
-                    }
-                    if (selectedType === 'PG') {
-                        pgAnswerContainer.style.display = 'block';
-                    } else if (selectedType === 'Multiple') {
-                        multipleAnswerContainer.style.display = 'block';
-                    } else if (selectedType === 'Poin') {
-                        pointInputs.forEach(input => input.style.display = 'block');
-                    }
-                };
+                // Dapatkan elemen form di dalam modal
+                var form = document.getElementById('editQuestionForm');
+                var modal = this; // 'this' merujuk ke modal
 
-                // Tambahkan event listener ke select type di modal edit
-                document.getElementById('edit_type').addEventListener('change', toggleEditFields);
+                // Set action form
+                form.action = action;
 
-                // Event listener saat modal edit ditampilkan
-                editModal.addEventListener('show.bs.modal', function(event) {
-                    const button = event.relatedTarget; // Tombol yang memicu modal
-                    const question = JSON.parse(button.getAttribute(
-                        'data-question')); // Ambil data dan parse dari JSON
+                // Isi nilai form
+                modal.querySelector('#edit_type').value = type;
+                modal.querySelector('input[name="category"]').value = category;
+                modal.querySelector('#edit_question').value = questionText;
 
-                    // 1. Set action form
-                    const form = document.getElementById('editQuestionForm');
-                    const baseUrl = "{{ url('admin/question') }}";
-                    form.action = `${baseUrl}/${question.id}`;
-
-                    // 2. Isi semua field form dengan data question
-                    document.getElementById('edit_type').value = question.type;
-                    document.getElementById('edit_category').value = question.category;
-                    document.getElementById('edit_question').value = question.question;
-
-                    // Isi Opsi Jawaban
-                    const options = ['a', 'b', 'c', 'd', 'e'];
-                    options.forEach(opt => {
-                        document.getElementById(`edit_option_${opt}`).value = question[
-                            `option_${opt}`] || '';
-                        document.getElementById(`edit_point_${opt}`).value = question[
-                            `point_${opt}`] || 0;
-                    });
-
-                    // Reset jawaban sebelumnya
-                    document.getElementById('edit_answer').value = '';
-                    document.querySelectorAll('#edit_multiple_answer_container input[type="checkbox"]')
-                        .forEach(chk => chk.checked = false);
-
-                    // 3. Set jawaban yang benar berdasarkan tipe
-                    if (question.type === 'PG') {
-                        document.getElementById('edit_answer').value = question.answer;
-                    } else if (question.type === 'Multiple') {
-                        const answers = question.answer.split(',');
-                        answers.forEach(ans => {
-                            const checkbox = document.getElementById(`edit_answer_check_${ans}`);
-                            if (checkbox) checkbox.checked = true;
-                        });
-                    }
-
-                    // 4. Tampilkan path gambar saat ini
-                    document.getElementById('current_image_text').textContent = question.image_path ?
-                        question.image_path : 'None';
-
-                    // 5. Panggil fungsi untuk menyesuaikan tampilan field
-                    toggleEditFields();
+                // Isi nilai options dan points
+                ['a', 'b', 'c', 'd', 'e'].forEach(function(opt) {
+                    var optionValue = button.getAttribute('data-option_' + opt);
+                    var pointValue = button.getAttribute('data-point_' + opt);
+                    modal.querySelector('#edit_option_' + opt).value = optionValue;
+                    modal.querySelector('#edit_point_' + opt).value = pointValue ||
+                        0; // Default ke 0 jika null
                 });
-            }
 
-            const typeSelect = document.getElementById('type');
-            const optionsContainer = document.getElementById('options-container');
-            const pointInputs = document.querySelectorAll('.point-input-wrapper');
-            const pgAnswerContainer = document.getElementById('pg-answer-container');
-            const multipleAnswerContainer = document.getElementById('multiple-answer-container');
+                // Reset semua jawaban sebelum diisi
+                modal.querySelector('#edit_answer').value = '';
+                modal.querySelectorAll('input[name="answer[]"]').forEach(function(chk) {
+                    chk.checked = false;
+                });
 
-            // Fungsi untuk mengatur tampilan field berdasarkan tipe soal
-            function toggleFields() {
-                const selectedType = typeSelect.value;
+                // Atur jawaban berdasarkan tipe
+                if (type === 'PG') {
+                    modal.querySelector('#edit_answer').value = answer;
+                } else if (type === 'Multiple' && answer) {
+                    var answers = answer.split(',');
+                    answers.forEach(function(ans) {
+                        var checkbox = modal.querySelector('#edit_answer_check_' + ans);
+                        if (checkbox) {
+                            checkbox.checked = true;
+                        }
+                    });
+                }
 
-                // Sembunyikan semua elemen kondisional terlebih dahulu
+                // Tampilkan path gambar saat ini
+                modal.querySelector('#current_image_text').textContent = imagePath;
+
+                // Panggil fungsi untuk menampilkan/menyembunyikan field berdasarkan tipe soal
+                // (Anda mungkin sudah punya fungsi ini, panggil lagi di sini)
+                toggleEditFields(type);
+            });
+
+            // Fungsi untuk menampilkan/menyembunyikan field (wajib ada)
+            function toggleEditFields(type) {
+                const optionsContainer = document.getElementById('edit_options_container');
+                const pgAnswerContainer = document.getElementById('edit_pg_answer_container');
+                const multipleAnswerContainer = document.getElementById('edit_multiple_answer_container');
+
+                // Sembunyikan semua kontainer dulu
                 optionsContainer.style.display = 'none';
                 pgAnswerContainer.style.display = 'none';
                 multipleAnswerContainer.style.display = 'none';
-                pointInputs.forEach(input => input.style.display = 'none');
 
-                // Tampilkan elemen berdasarkan tipe yang dipilih
-                if (selectedType === 'PG') {
+                if (type === 'PG' || type === 'Multiple' || type === 'Poin') {
                     optionsContainer.style.display = 'block';
+                }
+                if (type === 'PG') {
                     pgAnswerContainer.style.display = 'block';
-                } else if (selectedType === 'Poin') {
-                    optionsContainer.style.display = 'block';
-                    pointInputs.forEach(input => input.style.display = 'block');
-                } else if (selectedType === 'Multiple') {
-                    optionsContainer.style.display = 'block';
+                }
+                if (type === 'Multiple') {
                     multipleAnswerContainer.style.display = 'block';
                 }
-                // Untuk 'Essay', semua elemen di atas akan tetap tersembunyi
             }
 
-            // Tambahkan event listener untuk memanggil fungsi saat pilihan berubah
-            typeSelect.addEventListener('change', toggleFields);
+            // Listener untuk select type di modal edit
+            document.getElementById('edit_type').addEventListener('change', function() {
+                toggleEditFields(this.value);
+            });
 
-            // Panggil fungsi sekali saat halaman dimuat untuk mengatur state awal
-            toggleFields();
+        });
+    </script>
+
+    {{-- Script untuk menangani field dinamis di modal CREATE --}}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Fungsi untuk menampilkan/menyembunyikan field di modal CREATE
+            function toggleCreateFields(type) {
+                const optionsContainer = document.getElementById('create_options_container');
+                const pgAnswerContainer = document.getElementById('create_pg_answer_container');
+                const multipleAnswerContainer = document.getElementById('create_multiple_answer_container');
+                const pointInputs = optionsContainer.querySelectorAll('.create-point-input-wrapper');
+
+                // 1. Atur visibilitas utama
+                optionsContainer.style.display = 'none';
+                pgAnswerContainer.style.display = 'none';
+                multipleAnswerContainer.style.display = 'none';
+                pointInputs.forEach(input => input.style.display = 'none'); // Sembunyikan input poin by default
+
+                // 2. Tampilkan field berdasarkan tipe
+                switch (type) {
+                    case 'PG':
+                        optionsContainer.style.display = 'block';
+                        pgAnswerContainer.style.display = 'block';
+                        break;
+                    case 'Multiple':
+                        optionsContainer.style.display = 'block';
+                        multipleAnswerContainer.style.display = 'block';
+                        break;
+                    case 'Poin':
+                        optionsContainer.style.display = 'block';
+                        pointInputs.forEach(input => input.style.display = 'block'); // Tampilkan hanya untuk Poin
+                        break;
+                    case 'Essay':
+                        // Semua field opsi dan jawaban tetap tersembunyi
+                        break;
+                }
+            }
+
+            // Listener untuk select type di modal CREATE
+            const createTypeSelect = document.getElementById('create_type');
+            createTypeSelect.addEventListener('change', function() {
+                toggleCreateFields(this.value);
+            });
+
+            // Panggil fungsi saat DOM selesai dimuat untuk mengatur state awal
+            // Ini penting jika ada validation error dan form di-populate ulang dengan `old('type')`
+            toggleCreateFields(createTypeSelect.value);
         });
     </script>
 

@@ -1,7 +1,8 @@
+{{-- File: resources/views/admin/bundle/partials/add-question-modal.blade.php --}}
+
 <div class="modal fade" id="addQuestionModal-{{ $bundle->id }}" tabindex="-1"
     aria-labelledby="addQuestionModalLabel-{{ $bundle->id }}" aria-hidden="true">
 
-    {{-- Kita hapus 'modal-dialog-scrollable' karena scroll akan kita atur manual di dalam body --}}
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header border-bottom">
@@ -16,37 +17,52 @@
                 <div class="modal-body">
                     {{-- Toolbar untuk Filter dan Aksi --}}
                     <div class="p-3 bg-white rounded-3 mb-3 shadow-sm">
-                        <div class="row align-items-center">
-                            <div class="col-sm-8">
+                        {{-- BARIS INI DIMODIFIKASI untuk menampung filter kategori --}}
+                        <div class="row g-2 align-items-center">
+                            <div class="col-md-5">
                                 <input type="text" class="form-control question-search-input"
-                                    placeholder="Cari soal di sini..."
-                                    data-target-list="#question-list-{{ $bundle->id }}">
+                                    placeholder="Cari soal..." data-target-list="#question-list-{{ $bundle->id }}">
                             </div>
-                            <div class="col-sm-4">
+
+                            <div class="col-md-3">
                                 <div class="form-check form-switch pt-2 pt-sm-0 ps-sm-4">
                                     <input class="form-check-input select-all-questions" type="checkbox" role="switch"
                                         data-target-list="#question-list-{{ $bundle->id }}">
                                     <label class="form-check-label">Pilih Semua</label>
                                 </div>
                             </div>
+
+                            {{-- Filter Kategori (BARU) --}}
+                            <div class="col-md-4">
+                                <select class="form-select question-category-filter"
+                                    data-target-list="#question-list-{{ $bundle->id }}">
+                                    <option value="">Semua Kategori</option>
+                                    @foreach ($categories as $category)
+                                        <option value="{{ $category }}">{{ $category }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
                         </div>
                     </div>
 
-                    {{-- ============================================= --}}
-                    {{-- MULAI: Area Scroll Manual --}}
-                    {{-- ============================================= --}}
                     <div class="question-scroll-area" style="max-height: 45vh; overflow-y: auto;">
                         <div class="list-group question-list" id="question-list-{{ $bundle->id }}">
-                            {{-- Hapus logika flag manual dan @if yang tidak perlu --}}
                             @forelse ($availableQuestions as $question)
-                                <label class="list-group-item list-group-item-action">
+                                {{-- LABEL INI DIMODIFIKASI dengan atribut data-category dan badge --}}
+                                <label class="list-group-item list-group-item-action"
+                                    data-category="{{ $question->category }}">
                                     <div class="d-flex w-100 justify-content-between">
                                         <div>
                                             <input class="form-check-input me-3" type="checkbox" name="question_ids[]"
                                                 value="{{ $question->id }}">
                                             <span class="fw-bold">{{ $question->question }}</span>
                                         </div>
-                                        <span class="badge bg-info text-dark rounded-pill">{{ $question->type }}</span>
+                                        <div class="d-flex align-items-center gap-1">
+                                            <span
+                                                class="badge bg-secondary text-dark rounded-pill">{{ $question->category }}</span>
+                                            <span
+                                                class="badge bg-info text-dark rounded-pill">{{ $question->type }}</span>
+                                        </div>
                                     </div>
                                 </label>
                             @empty
@@ -57,10 +73,6 @@
                             @endforelse
                         </div>
                     </div>
-                    {{-- ============================================= --}}
-                    {{-- SELESAI: Area Scroll Manual --}}
-                    {{-- ============================================= --}}
-
                 </div>
                 <div class="modal-footer d-flex justify-content-between">
                     <span class="text-muted selection-counter">0 soal terpilih</span>
@@ -74,6 +86,3 @@
         </div>
     </div>
 </div>
-
-{{-- JAVASCRIPT ANDA TETAP SAMA DAN TIDAK PERLU DIUBAH --}}
-<script></script>

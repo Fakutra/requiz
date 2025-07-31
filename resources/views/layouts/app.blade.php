@@ -80,20 +80,6 @@
 		    </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-j1CDi7MgGQ12Z7Qab0qlWQ/Qqz24Gc6BM0thvEMVjHnfYGF0rmFCozFSxQBxwHKO" crossorigin="anonymous">
-        // document.addEventListener('DOMContentLoaded', function() {
-        //     const selectAll = document.getElementById('selectAll');
-        //     const checkboxes = document.querySelectorAll('.applicant-checkbox');
-        //     if (selectAll) {
-        //         selectAll.addEventListener('change', function() {
-        //             checkboxes.forEach(cb => cb.checked = this.checked);
-        //         });
-        //         checkboxes.forEach(cb => {
-        //             cb.addEventListener('change', function() {
-        //                 selectAll.checked = [...checkboxes].every(i => i.checked);
-        //             });
-        //         });
-        //     }
-        // });
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>

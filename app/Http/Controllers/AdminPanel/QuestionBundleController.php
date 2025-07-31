@@ -26,24 +26,22 @@ class QuestionBundleController extends Controller
      */
     public function show(QuestionBundle $bundle)
     {
-        // 1. Ambil soal yang SUDAH ADA di dalam bundle dan paginasi hasilnya.
-        // Ini untuk ditampilkan di tabel utama halaman detail.
+        // 1. Ambil soal yang SUDAH ADA di dalam bundle untuk tabel utama.
         $questionsInBundle = $bundle->questions()->paginate(10);
 
-        // 2. OPTIMASI: Ambil soal yang BELUM ADA di dalam bundle untuk modal.
-        // Langkah ini jauh lebih efisien daripada Question::all().
-
-        // 2a. Dapatkan semua ID soal yang sudah ada di dalam bundle ini.
+        // 2. Ambil soal yang BELUM ADA di dalam bundle untuk modal.
         $existingQuestionIds = $bundle->questions()->pluck('questions.id');
-
-        // 2b. Ambil semua soal dari tabel 'questions' KECUALI yang ID-nya sudah ada.
         $availableQuestions = Question::whereNotIn('id', $existingQuestionIds)->get();
 
-        // 3. Kirim semua data yang diperlukan ke view.
+        // 3. BARU: Siapkan daftar kategori unik dari soal yang tersedia.
+        $categories = $availableQuestions->pluck('category')->unique()->sort();
+
+        // 4. Kirim semua data yang diperlukan ke view.
         return view('admin.bundle.show', compact(
             'bundle',
             'questionsInBundle',
-            'availableQuestions'
+            'availableQuestions',
+            'categories' // <-- Tambahkan variabel ini
         ));
     }
 
