@@ -1,0 +1,71 @@
+/* Custom styles for the application status stepper */
+.stepper-item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 10rem; /* 160px */
+}
+
+.stepper-item .step-counter {
+    z-index: 10;
+    width: 3rem; /* 48px */
+    height: 3rem; /* 48px */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px; /* rounded-full */
+    font-weight: 600; /* font-semibold */
+}
+
+/* Status: Selesai */
+.stepper-item.completed .step-counter {
+    background-color: #2563eb; /* bg-blue-600 */
+    color: #ffffff; /* text-white */
+}
+
+/* Status: Aktif */
+.stepper-item.active .step-counter {
+    background-color: #2563eb; /* bg-blue-600 */
+    color: #ffffff; /* text-white */
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1),
+        0 4px 6px -4px rgb(0 0 0 / 0.1); /* shadow-lg */
+    transform: scale(1.1);
+}
+
+/* Status: Menunggu */
+.stepper-item.pending .step-counter {
+    background-color: #e5e7eb; /* bg-gray-200 */
+    color: #6b7280; /* text-gray-500 */
+}
+
+.stepper-item .step-name {
+    text-align: center;
+    font-size: 0.875rem; /* 14px */
+    margin-top: 0.5rem; /* mt-2 */
+}
+
+/* Garis Penghubung */
+.stepper-item .step-line {
+    position: absolute;
+    top: 1.5rem; /* top-6 */
+    height: 2px; /* h-0.5 */
+    width: 100%;
+}
+
+.stepper-item.completed .step-line {
+    background-color: #2563eb; /* bg-blue-600 */
+}
+
+.stepper-item.pending .step-line {
+    background-color: #e5e7eb; /* bg-gray-200 */
+}
+
+.stepper-item:first-child .step-line {
+    left: 50%;
+}
+
+.stepper-item:last-child .step-line {
+    right: 50%;
+}

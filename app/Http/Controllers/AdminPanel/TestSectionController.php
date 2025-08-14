@@ -15,7 +15,7 @@ class TestSectionController extends Controller
         $validated = $request->validate([
             'test_id' => 'required|exists:tests,id',
             'name' => 'required|string|max:255', // diubah dari 'title'
-            'type' => 'required|in:pg,multiple,poin,essay', // sesuaikan dengan enum
+            // 'type' => 'required|in:pg,multiple,poin,essay', // sesuaikan dengan enum
             'question_bundle_id' => 'nullable|exists:question_bundles,id',
             'duration_minutes' => 'required|integer|min:1', // diubah dari 'duration'
             'shuffle_questions' => 'sometimes|boolean',
@@ -35,7 +35,7 @@ class TestSectionController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'type' => 'required|in:pg,multiple,poin,essay',
+            // 'type' => 'required|in:pg,multiple,poin,essay',
             'question_bundle_id' => 'nullable|exists:question_bundles,id',
             'duration_minutes' => 'required|integer|min:1',
             'shuffle_questions' => 'sometimes|boolean',

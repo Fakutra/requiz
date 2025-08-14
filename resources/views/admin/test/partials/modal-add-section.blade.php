@@ -14,7 +14,7 @@
                         <input type="text" class="form-control" name="name" required>
                     </div>
                     <div class="row">
-                        <div class="col-md-6 mb-3">
+                        {{-- <div class="col-md-6 mb-3">
                             <label for="type" class="form-label">Tipe Section</label>
                             <select name="type" class="form-select" required>
                                 <option value="pg">Pilihan Ganda (PG)</option>
@@ -22,7 +22,7 @@
                                 <option value="poin">Poin (Skoring)</option>
                                 <option value="essay">Essay</option>
                             </select>
-                        </div>
+                        </div> --}}
                         <div class="col-md-6 mb-3">
                             <label for="duration_minutes" class="form-label">Durasi (menit)</label>
                             <input type="number" class="form-control" name="duration_minutes" required min="1">
