@@ -21,12 +21,15 @@
     {{-- Datatables --}}
     {{-- <link rel="stylesheet" href="resources/css/dataTables.css" /> --}}
 
+
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
+    <style>[x-cloak] { display: none !important; }</style>
+
 </head>
 
-<body class="font-sans antialiased bg-white" x-data="{ sidebarOpen: false }">
+<body class="font-sans antialiased bg-white">
     <div class="min-h-screen bg-gray-100">
         <div class="max-w-7xl mx-auto">
             <!-- Header -->
@@ -45,12 +48,14 @@
             <div class="flex">
                 <!-- Sidebar -->
                 @php
-                $name = Auth::user()->username;
+                $name = Auth::user()->name;
                 $initials = collect(explode(' ', $name))->map(fn($word) => strtoupper(substr($word, 0, 1)))->join('');
                 @endphp
                 <aside
                     class="w-64 bg-white p-6 2xl:mt-6 2xl:rounded-xl absolute z-30 inset-y-0 left-0 transform -translate-x-full transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0"
-                    :class="{ '-translate-x-full': !sidebarOpen, 'translate-x-0': sidebarOpen }" x-data="{ userOpen: false, jobOpen: false, quizOpen: false }">
+                    :class="{ '-translate-x-full': !sidebarOpen, 'translate-x-0': sidebarOpen }" x-data="{ userOpen: {{ request()->is('admin/applicant*') || request()->is('admin') || request()->is('selection') ? 'true' : 'false' }},
+                            jobOpen: {{ request()->is('admin/batch') ? 'true' : 'false' }},
+                            quizOpen: {{ request()->is('quiz') ? 'true' : 'false' }} }">
                     <div class="flex items-center justify-between mb-8">
                         <div>
                             <div class="flex gap-3">
@@ -58,7 +63,7 @@
                                     <span>{{ $initials }}</span>
                                 </div>
                                 <div>
-                                    <h4 class="font-bold text-lg">{{ Auth::user()->username }}</h4>
+                                    <h4 class="font-bold text-lg">{{ Auth::user()->name }}</h4>
                                     <span class="text-sm text-slate-700">Administrator</span>
                                 </div>
                             </div>
@@ -73,8 +78,8 @@
                         </button>
                     </div>
 
-                    <nav class="space-y-4">
-                        <a href="#" class="flex items-center py-1 {{ request()->is('admin/dashboard') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-3 px-3' : 'text-gray-600' }}">
+                    <nav class="space-y-5">
+                        <a href="{{ route('admin.dashboard') }}" class="flex items-center no-underline {{ request()->is('admin/dashboard') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-2' : 'text-gray-600' }}">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 me-4">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
                             </svg>
@@ -104,10 +109,10 @@
                             <div
                                 x-show="userOpen"
                                 x-transition
-                                class="mt-4 ml-10 space-y-4 text-sm text-gray-600">
-                                <a href="{{ route('applicant.index') }}" class="block hover:text-blue-600 {{ request()->is('applicant') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-3 px-3' : 'text-gray-600' }}">Applicant</a>
-                                <a href="#" class="block hover:text-blue-600 {{ request()->is('selection') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-3 px-3' : 'text-gray-600' }}">Selection</a>
-                                <a href="#" class="block hover:text-blue-600 {{ request()->is('applicant') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-3 px-3' : 'text-gray-600' }}">Admin List</a>
+                                class="mt-3 ml-10 space-y-4 text-sm text-gray-600">
+                                <a href="{{ route('applicant.index') }}" class="block hover:text-blue-600 no-underline {{ request()->is('admin/applicant') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">Applicant</a>
+                                <a href="{{ route('admin.applicant.seleksi.index') }}" class="block hover:text-blue-600 no-underline {{ request()->is('admin/applicant/seleksi') || request()->is('admin/applicant/seleksi/*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">Selection</a>
+                                <a href="#" class="block hover:text-blue-600 no-underline {{ request()->is('admin/admin') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">Admin List</a>
                             </div>
                         </div>
                         <!-- Menu Job dengan Submenu -->
@@ -118,7 +123,7 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 me-4">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0 1 12 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 0 1-.673-.38m0 0A2.18 2.18 0 0 1 3 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 0 1 3.413-.387m7.5 0V5.25A2.25 2.25 0 0 0 13.5 3h-3a2.25 2.25 0 0 0-2.25 2.25v.894m7.5 0a48.667 48.667 0 0 0-7.5 0M12 12.75h.008v.008H12v-.008Z" />
                                 </svg>
-                                Mengelola Job
+                                Mengelola Batch
                                 <svg
                                     class="w-4 h-4 ml-auto transform"
                                     :class="{ 'rotate-180': openMenu === 'job' }"
@@ -134,8 +139,7 @@
                                 x-show="jobOpen"
                                 x-transition
                                 class="mt-4 ml-10 space-y-4 text-sm text-gray-600">
-                                <a href="{{ route('batch.index') }}" class="block hover:text-blue-600 {{ request()->is('batch') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-3 px-3' : 'text-gray-600' }}">Batch</a>
-                                <a href="#" class="block hover:text-blue-600 {{ request()->is('selection') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-3 px-3' : 'text-gray-600' }}">Job List</a>
+                                <a href="{{ route('batch.index') }}" class="block hover:text-blue-600 no-underline {{ request()->is('admin/batch') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">Batch</a>
                             </div>
                         </div>
                         <!-- Menu dengan Submenu Kuis -->
@@ -162,12 +166,12 @@
                                 x-show="quizOpen"
                                 x-transition
                                 class="mt-4 ml-10 space-y-4 text-sm text-gray-600">
-                                <a href="#" class="block hover:text-blue-600 {{ request()->is('applicant') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-3 px-3' : 'text-gray-600' }}">Quiz</a>
-                                <a href="{{ route('question.index') }}" class="block hover:text-blue-600 {{ request()->is('selection') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-3 px-3' : 'text-gray-600' }}">Question</a>
-                                <a href="{{ route('bundle.index') }}" class="block hover:text-blue-600 {{ request()->is('applicant') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-3 px-3' : 'text-gray-600' }}">Bundle</a>
+                                <a href="#" class="block hover:text-blue-600 no-underline {{ request()->is('admin/quiz') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">Quiz</a>
+                                <a href="{{ route('question.index') }}" class="block hover:text-blue-600 no-underline {{ request()->is('admin/question') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">Question</a>
+                                <a href="{{ route('bundle.index') }}" class="block hover:text-blue-600 no-underline {{ request()->is('admin/bundle') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">Bundle</a>
                             </div>
                         </div>
-                        <a href="#" class="flex items-center text-gray-700 py-1">
+                        <a href="#" class="flex items-center no-underline {{ request()->is('admin/report') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-3 px-3' : 'text-gray-600' }}">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 me-4">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
                             </svg>
@@ -190,13 +194,13 @@
 
                 <!-- Overlay -->
                 <div
-                    class="fixed inset-0 bg-black bg-opacity-40 z-20 lg:hidden"
+                    class="fixed bg-black bg-opacity-0 z-20 lg:hidden"
                     x-show="sidebarOpen"
                     @click="sidebarOpen = false"
                     x-transition.opacity></div>
 
                 <!-- Page Content -->
-                <main class="flex-1 px-4 py-6 max-w-7xl mx-auto">
+                <main class="flex-1 p-8 md:p-8 max-w-7xl mx-auto">
                     {{ $slot }}
                 </main>
             </div>
@@ -226,5 +230,9 @@
         © 2025 ReQuiz. All rights reserved.
     </div>
 </footer>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-j1CDi7MgGQ12Z7Qab0qlWQ/Qqz24Gc6BM0thvEMVjHnfYGF0rmFCozFSxQBxwHKO" crossorigin="anonymous">
+</script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 </html>

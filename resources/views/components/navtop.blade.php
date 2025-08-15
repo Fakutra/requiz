@@ -11,9 +11,7 @@
             <!-- Main Nav -->
             <div class="hidden sm:flex space-x-6 items-center">
                 <x-nav-link class="text-xl font-medium {{ request()->is('/') ? 'font-semibold text-[#009DA9] underline underline-offset-8' : 'text-gray-600' }}" href="{{ route('welcome') }}">Home</x-nav-link>
-                <x-nav-link class="text-xl font-medium" href="#about">About</x-nav-link>
-                <x-nav-link class="text-xl font-medium" href="#faq">FAQ</x-nav-link>
-                <x-nav-link class="text-xl font-medium" href="#job">Job</x-nav-link>
+                <x-nav-link class="text-xl font-medium {{ request()->is('joblist') ? 'font-semibold text-[#009DA9] underline underline-offset-8' : 'text-gray-600' }}" href="{{ route('joblist') }}">Job</x-nav-link>
 
                 @auth
                     @if (Auth::user()->role === 'admin')

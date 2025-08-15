@@ -11,25 +11,31 @@
                 <h1 class="font-bold text-3xl">Lowongan tersedia</h1>
                 <div class="grid grid-cols-1 mt-4 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     <!-- Card 1 -->
-                    <div class="bg-white rounded-2xl shadow-md p-6 hover:shadow-lg transition duration-300">
-                        <h2 class="text-xl font-semibold mb-1">Junior Technical Support Grade I</h2>
-                        <p class="text-gray-600 mb-4">Let's join with us</p>
+                    <div class="bg-white flex flex-col justify-between h-full rounded-2xl shadow-md p-6 hover:shadow-lg transition duration-300">
+                        <div>
+                            <h2 class="text-xl font-semibold mb-1">Junior Technical Support Grade I</h2>
+                            <p class="text-gray-600 mb-4">Let's join with us</p>
+                        </div>
                         <a href="" class="w-full block text-center bg-[#009DA9] text-white px-4 py-3 rounded-lg hover:bg-blue-600">
                             Lihat Detail
                         </a>
                     </div>
                     <!-- Card 1 -->
-                    <div class="bg-white rounded-2xl shadow-md p-6 hover:shadow-lg transition duration-300">
-                        <h2 class="text-xl font-semibold mb-1">Judul Card</h2>
-                        <p class="text-gray-600 mb-4">Isi konten deskripsi singkat card ini.</p>
+                    <div class="bg-white flex flex-col justify-between h-full rounded-2xl shadow-md p-6 hover:shadow-lg transition duration-300">
+                        <div>
+                            <h2 class="text-xl font-semibold mb-1">Junior Technical</h2>
+                            <p class="text-gray-600 mb-4">Let's join with us</p>
+                        </div>
                         <a href="" class="w-full block text-center bg-[#009DA9] text-white px-4 py-3 rounded-lg hover:bg-blue-600">
                             Lihat Detail
                         </a>
                     </div>
                     <!-- Card 1 -->
-                    <div class="bg-white rounded-2xl shadow-md p-6 hover:shadow-lg transition duration-300">
-                        <h2 class="text-xl font-semibold mb-1">Judul Card</h2>
-                        <p class="text-gray-600 mb-4">Isi konten deskripsi singkat card ini.</p>
+                    <div class="bg-white flex flex-col justify-between h-full rounded-2xl shadow-md p-6 hover:shadow-lg transition duration-300">
+                        <div>
+                            <h2 class="text-xl font-semibold mb-1">Junior Technical de I</h2>
+                            <p class="text-gray-600 mb-4">Let's join with us</p>
+                        </div>
                         <a href="" class="w-full block text-center bg-[#009DA9] text-white px-4 py-3 rounded-lg hover:bg-blue-600">
                             Lihat Detail
                         </a>
@@ -76,8 +82,15 @@
         <div class="w-full px-8" id="about">
             <div class="max-w-7xl py-10 mx-auto">
                 <h1 class="font-bold text-3xl">Tentang Kami</h1>
-                <div class="max-w-7xl mt-4 text-2xl">
-                    Sebagai salah satu supporting operasional dan pemeliharaannya PLN, PLN Iconplus bekerja sama dengan mitra dalam penyediaan tenaga kerja. Recruitment ini diselenggarakan untuk memenuhi kebutuhan tersebut.
+                <div class="flex flex-col sm:flex-row gap-2 sm:gap-5 mt-4">
+                    <div class="flex-1">
+                        <img src="{{ url('/img/icon.webp') }}" class="rounded-2xl w-full" />
+                    </div>
+                    <div class="flex-1">
+                        <div class="max-w-7xl mt-4 text-2xl">
+                            Sebagai salah satu supporting operasional dan pemeliharaannya PLN, PLN Iconplus bekerja sama dengan mitra dalam penyediaan tenaga kerja. Recruitment ini diselenggarakan untuk memenuhi kebutuhan tersebut.
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

@@ -20,11 +20,14 @@
 
     {{-- Datatables --}}
     {{-- <link rel="stylesheet" href="resources/css/dataTables.css" /> --}}
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <style>[x-cloak] { display: none !important; }</style>
 
 </head>
 
-<body class="font-sans antialiased">
-    <div class="bg-gray-100">
+<body class="bg-gray-100">
+    <div class="min-h-screen flex flex-col">
         @include('components.navtop')
 
         <!-- Page Heading -->
@@ -37,35 +40,35 @@
         @endif
 
         <!-- Page Content -->
-        <main>
+        <main class="flex-grow">
             {{ $slot }}
         </main>
+
+        <footer class="bg-gray-900 text-gray-200 py-10 px-8">
+            <div class="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-4">
+                <!-- Brand -->
+                <div>
+                    <h3 class="text-3xl font-bold mb-4">ReQuiz</h3>
+                    <div>
+                        <h4 class="text-lg font-semibold">Kontak</h4>
+                        <p class="text-sm text-gray-400">Email: support@namabrand.com</p>
+                        <p class="text-sm text-gray-400">Telepon: +62 812 3456 7890</p>
+                        <div class="flex space-x-4 mt-4">
+                            <a href="#" class="hover:text-white"><i class="fab fa-facebook"></i></a>
+                            <a href="#" class="hover:text-white"><i class="fab fa-instagram"></i></a>
+                            <a href="#" class="hover:text-white"><i class="fab fa-twitter"></i></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-10 border-t border-gray-700 pt-6 text-center text-sm text-gray-500">
+                © 2025 ReQuiz. All rights reserved.
+            </div>
+        </footer>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js" integrity="sha384-j1CDi7MgGQ12Z7Qab0qlWQ/Qqz24Gc6BM0thvEMVjHnfYGF0rmFCozFSxQBxwHKO" crossorigin="anonymous"></script>
 </body>
-
-<footer class="bg-gray-900 text-gray-200 py-10 px-8">
-    <div class="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-4">
-        <!-- Brand -->
-        <div>
-            <h3 class="text-3xl font-bold mb-4">ReQuiz</h3>
-            <div>
-                <h4 class="text-lg font-semibold">Kontak</h4>
-                <p class="text-sm text-gray-400">Email: support@namabrand.com</p>
-                <p class="text-sm text-gray-400">Telepon: +62 812 3456 7890</p>
-                <div class="flex space-x-4 mt-4">
-                    <a href="#" class="hover:text-white"><i class="fab fa-facebook"></i></a>
-                    <a href="#" class="hover:text-white"><i class="fab fa-instagram"></i></a>
-                    <a href="#" class="hover:text-white"><i class="fab fa-twitter"></i></a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="mt-10 border-t border-gray-700 pt-6 text-center text-sm text-gray-500">
-        © 2025 ReQuiz. All rights reserved.
-    </div>
-</footer>
 
 <script>
     function toggleAccordion(button) {
