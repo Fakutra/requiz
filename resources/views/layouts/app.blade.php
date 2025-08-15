@@ -7,7 +7,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>{{ config('app.name', 'ReQuiz') }}</title>
-	
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
@@ -23,24 +23,29 @@
             background-color: #0d6efd;
             color: white;
         }
+
         #tab-chart:checked~.card-body #summary-chart,
         #tab-text:checked~.card-body #summary-text {
             display: block;
         }
+
         #summary-chart,
         #summary-text {
             display: none;
         }
+
         .tab-label {
             cursor: pointer;
             margin-right: 5px;
         }
+
         .dummy-chart {
             width: 100%;
             height: 200px;
             background: linear-gradient(to right, #0d6efd 40%, #dee2e6 40%);
             position: relative;
         }
+
         .dummy-chart::before {
             content: '';
             position: absolute;
@@ -57,7 +62,7 @@
 
     {{-- Datatables --}}
     {{-- <link rel="stylesheet" href="resources/css/dataTables.css" /> --}}
-	
+
 </head>
 
 <body class="font-sans antialiased">
@@ -66,18 +71,18 @@
 
         <!-- Page Heading -->
         @if (isset($header))
-            <header class="bg-white shadow">
-                <div class="max-w-7xl mx-auto py-3 px-4 sm:px-6 lg:px-8">
-                    {{ $header }}
-                </div>
-            </header>
+        <header class="bg-white shadow">
+            <div class="max-w-7xl mx-auto py-3 px-4 sm:px-6 lg:px-8">
+                {{ $header }}
+            </div>
+        </header>
         @endif
 
         <!-- Page Content -->
         <main>
             {{ $slot }}
         </main>
-		    </div>
+    </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-j1CDi7MgGQ12Z7Qab0qlWQ/Qqz24Gc6BM0thvEMVjHnfYGF0rmFCozFSxQBxwHKO" crossorigin="anonymous">
     </script>

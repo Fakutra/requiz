@@ -12,21 +12,21 @@ use App\Http\Controllers\AdminPanel\PositionController;
 use App\Http\Controllers\AdminPanel\ApplicantController;
 use App\Http\Controllers\AdminPanel\QuestionBundleController;
 use App\Http\Controllers\AdminPanel\QuestionController;
+use Illuminate\Support\Facades\Auth;
 
-/*
-|--------------------------------------------------------------------------
-| Web Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "web" middleware group. Make something great!
-|
-*/
 
 Route::get('/', function () {
     return view('welcome');
-});
+})->name('welcome');
+
+
+Route::get('/joblist', function () {
+    return view('joblist');
+})->name('joblist');
+
+Route::get('/jobdetail', function() {
+    return view('jobdetail');
+})->name('jobdetail');
 
 Route::get('/dashboard', function () {
     return view('dashboard');
@@ -40,8 +40,6 @@ Route::middleware('auth')->group(function () {
     Route::get('lowongan', [LowonganController::class, 'index'])->name('lowongan.index');
     Route::post('/{position:slug}/apply', [LowonganController::class, 'store'])->name('apply.store');
     Route::get('history', [HistoryController::class, 'index'])->name('history.index');
-
-
 });
 
 require __DIR__.'/auth.php';
@@ -50,6 +48,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin', function () {
         return view('admin/dashboard');
     });
+    
     Route::get('admin/dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
 
     Route::get('admin/batch', [BatchController::class, 'index'])->name('batch.index');
