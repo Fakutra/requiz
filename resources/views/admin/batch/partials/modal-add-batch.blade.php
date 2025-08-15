@@ -1,60 +1,66 @@
-<!-- Modal Create Batch -->
-<div class="modal fade" id="tambahBatch" tabindex="-1" aria-labelledby="modalTambahBatch" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h1 class="modal-title fs-5" id="modalTambahBatch">Tambah Batch Baru</h1>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form method="post" id="formTambahBatch" action="{{ route('batch.store') }}" class="mb-5"
-                    enctype="multipart/form-data">
-                    @csrf
-                    <div class="mb-3 col-md-12">
-                        <label for="name" class="form-label">Nama Batch</label>
-                        <input type="text" class="form-control @error('name') is-invalid @enderror" id="nameBatch"
-                            name="name" required autofocus value="{{ old('name') }}">
-                        @error('name')
-                            <div class="invalid-feedback">
-                                {{ $message }}
-                            </div>
-                        @enderror
-                    </div>
+<!-- Form -->
+<form method="POST" action="{{ route('batch.store') }}" enctype="multipart/form-data" class="space-y-4" x-data="{ loading: false }" @submit="loading = true">
+    @csrf
 
-                    <div class="mb-3 col-md-12">
-                        <label for="status" class="form-label">Status</label>
-                        <select class="form-select" name="status">
-                            <option selected>--- Pilih ---</option>
-                            <option value="Active">Active</option>
-                            <option value="Closed">Closed</option>
-                        </select>
-                    </div>
-                    <div class="mb-3 col-sm-4">
-                        <label for="start_date" class="form-label">Start Date</label>
-                        <input type="date" class="form-control @error('start_date') is-invalid @enderror"
-                            id="start_date" name="start_date" required value="">
-                        @error('start_date')
-                            <div class="invalid-feedback">
-                                {{ $message }}
-                            </div>
-                        @enderror
-                    </div>
-                    <div class="mb-3 col-sm-4">
-                        <label for="end_date" class="form-label">End Date</label>
-                        <input type="date" class="form-control @error('end_date') is-invalid @enderror"
-                            id="end_date" name="end_date" required value="">
-                        @error('end_date')
-                            <div class="invalid-feedback">
-                                {{ $message }}
-                            </div>
-                        @enderror
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="submit" form="formTambahBatch" class="btn btn-primary">Submit</button>
-            </div>
+    <!-- Nama Batch -->
+    <div>
+        <label for="name" class="block text-sm font-medium text-gray-700">Nama Batch</label>
+        <input type="text" id="name" name="name"
+            class="mt-1 block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+            required autofocus value="{{ old('name') }}" placeholder="Nama Batch">
+        @error('name')
+        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+        @enderror
+    </div>
+
+    <!-- Status -->
+    <div>
+        <label for="status" class="block text-sm font-medium text-gray-700">Status</label>
+        <select name="status" id="status"
+            class="mt-1 block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+            <option value="" selected>--- Pilih ---</option>
+            <option value="Active">Active</option>
+            <option value="Closed">Closed</option>
+        </select>
+    </div>
+
+    <div class="flex justify-between gap-3">
+        <!-- Start Date -->
+        <div class="flex-1">
+            <label for="start_date" class="block text-sm font-medium text-gray-700">Start Date</label>
+            <input type="date" id="start_date" name="start_date"
+                class="mt-1 block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                required>
+            @error('start_date')
+            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+            @enderror
+        </div>
+
+        <!-- End Date -->
+        <div class="flex-1">
+            <label for="end_date" class="block text-sm font-medium text-gray-700">End Date</label>
+            <input type="date" id="end_date" name="end_date"
+                class="mt-1 block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                required>
+            @error('end_date')
+            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+            @enderror
         </div>
     </div>
-</div>
+
+    <!-- Footer -->
+    <div class="flex justify-end space-x-2 pt-4">
+        <button type="button" @click="showAddBatch = false"
+            class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 transition">Close</button>
+        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
+            <span x-show="!loading">Simpan</span>
+            <svg x-show="loading" class="animate-spin h-5 w-5 text-white"
+                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor"
+                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z">
+                </path>
+            </svg>
+        </button>
+    </div>
+</form>

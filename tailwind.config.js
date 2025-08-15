@@ -9,11 +9,16 @@ export default {
         "./resources/views/**/*.blade.php",
     ],
 
+    safelist: [
+        'backdrop-blur-sm', // tambahkan ini
+        'backdrop-blur-md',
+        'backdrop-blur-lg'
+    ],
+
     theme: {
         extend: {
             fontFamily: {
-                sans: ["Figtree", ...defaultTheme.fontFamily.sans],
-                gabarito: ["Gabarito", "sans-serif"],
+                sans: ["Gabarito", ...defaultTheme.fontFamily.sans],
             },
         },
     },
