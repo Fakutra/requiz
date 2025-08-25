@@ -1,0 +1,66 @@
+/* public/css/quiz.css */
+.question-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 1rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+.question-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+.q-number {
+    font-weight: 700;
+    color: #111827;
+}
+.q-type {
+    font-size: 0.75rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    background: #eef2ff;
+    color: #3730a3;
+}
+.q-text {
+    margin: 0.5rem 0 1rem;
+}
+.q-image img {
+    max-width: 100%;
+    border-radius: 0.75rem;
+}
+.q-options {
+    display: grid;
+    gap: 0.5rem;
+}
+.q-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+}
+.opt-label {
+    font-weight: 600;
+    margin-right: 0.25rem;
+}
+.q-essay {
+    width: 100%;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+}
+.btn-primary {
+    background: #2563eb;
+    color: #fff;
+    padding: 0.6rem 1rem;
+    border-radius: 999px;
+    font-weight: 600;
+}
+.btn-primary:hover {
+    background: #1d4ed8;
+}
+.quiz-timer {
+    text-align: right;
+}

@@ -4,13 +4,16 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\LowonganController;
+use App\Http\Controllers\QuizController;
 use App\Http\Controllers\AdminPanel\TestController;
+use App\Http\Controllers\AdminPanel\TestSectionController;
 use App\Http\Controllers\AdminPanel\AdminController;
 use App\Http\Controllers\AdminPanel\BatchController;
 use App\Http\Controllers\AdminPanel\PositionController;
 use App\Http\Controllers\AdminPanel\ApplicantController;
 use App\Http\Controllers\AdminPanel\QuestionBundleController;
 use App\Http\Controllers\AdminPanel\QuestionController;
+use App\Http\Controllers\AdminPanel\QuizResultController;
 use Illuminate\Support\Facades\Auth;
 
 
@@ -40,6 +43,10 @@ Route::middleware('auth')->group(function () {
     
     Route::post('/{position:slug}/apply', [LowonganController::class, 'store'])->name('apply.store');
     Route::get('history', [HistoryController::class, 'index'])->name('history.index');
+
+    Route::get('/quiz/{slug}', [QuizController::class, 'start'])->name('quiz.start');            // mulai / lanjut ke section berjalan
+    Route::post('/quiz/{slug}', [QuizController::class, 'submitSection'])->name('quiz.submit');  // submit 1 section
+    Route::get('/quiz/{slug}/finish', [QuizController::class, 'finish'])->name('quiz.finish');   // ringkasan akhir
 });
 
 require __DIR__.'/auth.php';
@@ -77,16 +84,25 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::delete('/admin/applicant/{id}', [ApplicantController::class, 'destroy'])->name('admin.applicant.destroySeleksi');
     Route::get('/admin/applicant/seleksi/{stage}', [ApplicantController::class, 'showStageApplicants'])->name('admin.applicant.seleksi.process');
 
-
     // Menampilkan daftar test
     Route::get('admin/test', [TestController::class, 'index'])->name('test.index');
-    // Route::get('admin/test/create', [TestController::class, 'create'])->name('test.create');
+    Route::get('admin/test/{test}', [TestController::class, 'show'])->name('test.show');
     Route::post('admin/test', [TestController::class, 'store'])->name('test.store');
-    // Route::get('admin/test/{id}/edit', [TestController::class, 'edit'])->name('test.edit');
-    Route::put('admin/test/{id}', [TestController::class, 'update'])->name('test.update');
-    Route::delete('admin/test/{id}', [TestController::class, 'destroy'])->name('test.destroy');
-    // Route::get('admin/test/{id}', [TestController::class, 'show'])->name('test.show');
+    Route::put('admin/test/{test}', [TestController::class, 'update'])->name('test.update');
+    Route::delete('admin/test/{test}', [TestController::class, 'destroy'])->name('test.destroy');
     Route::get('admin/test/checkSlug', [TestController::class, 'checkSlug'])->name('test.checkSlug');
+
+    // Rute untuk membuat section baru (nested di bawah test)
+    Route::post('admin/test/{test}/section', [TestSectionController::class, 'store'])
+        ->name('section.store');
+
+    // Rute untuk mengecek slug section
+    Route::get('admin/section/checkSlug', [TestSectionController::class, 'checkSlug'])
+        ->name('section.checkSlug');
+
+    Route::put('admin/section/{section}', [TestSectionController::class, 'update'])->name('section.update');
+    Route::delete('admin/section/{section}', [TestSectionController::class, 'destroy'])->name('section.destroy');
+    Route::get('admin/test/section/checkSlug', [TestSectionController::class, 'checkSlug'])->name('section.checkSlug');
 
     // Question
     Route::get('admin/question', [QuestionController::class, 'index'])->name('question.index');
@@ -111,5 +127,8 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     // Route untuk menghapus soal dari bundle tertentu
     Route::delete('admin/bundle/{bundle}/questions/{question}', [QuestionBundleController::class, 'removeQuestion'])
         ->name('bundle.questions.remove');
+
+    Route::get('admin/quiz-results', [QuizResultController::class, 'index'])->name('quiz_results.index');
+    Route::get('admin/quiz-results/{testResult}', [QuizResultController::class, 'show'])->name('quiz_results.show');
 
 });

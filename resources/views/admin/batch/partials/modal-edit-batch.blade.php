@@ -1,4 +1,9 @@
+<<<<<<< HEAD
 <form action="{{ route('batch.update', $batch->id) }}" method="POST" x-data="{ loading: false }" @submit="loading = true" @click.stop>
+=======
+<form action="{{ route('batch.update', $batch->id) }}" method="POST" x-data="{ loading: false }" @submit="loading = true"
+    @click.stop>
+>>>>>>> origin/main
     @csrf
     @method('PUT')
     <div class="mb-3">

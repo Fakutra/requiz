@@ -9,6 +9,19 @@ class TestSectionResult extends Model
 {
     use HasFactory;
 
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'test_result_id', // Tambahkan baris ini
+        'test_section_id', // Tambahkan baris ini
+        'started_at',
+        'finished_at',
+        'score'
+    ];
+
     public function testResult()
     {
         return $this->belongsTo(TestResult::class);

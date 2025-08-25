@@ -14,6 +14,7 @@ class Test extends Model
         'name',
         'slug',
         'position_id',
+        'test_date',
     ];
 
     public function position()

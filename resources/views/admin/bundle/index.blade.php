@@ -53,15 +53,14 @@
                                                         data-bs-target="#editBundle{{ $bundle->id }}">
                                                         <i class="bi bi-pencil-square"></i>
                                                     </button>
-                                                    <button class="btn btn-danger btn-sm" type="button"
-                                                        onclick="if(confirm('Apakah Anda yakin ingin menghapus bundle ini?')) { document.getElementById('delete-form-{{ $bundle->id }}').submit(); }">
-                                                        <i class="bi bi-trash"></i>
-                                                    </button>
-                                                    <form id="delete-form-{{ $bundle->id }}"
-                                                        action="{{ route('bundle.destroy', $bundle->id) }}"
-                                                        method="post" class="d-none">
+                                                    <form action="{{ route('bundle.destroy', $bundle) }}" method="post"
+                                                        class="d-inline"
+                                                        onsubmit="return confirm('Anda yakin ingin menghapus bundle ini?')">
                                                         @method('delete')
                                                         @csrf
+                                                        <button type="submit" class="btn btn-danger btn-sm">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
                                                     </form>
                                                 </div>
                                             </div>

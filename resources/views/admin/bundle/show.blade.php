@@ -155,19 +155,44 @@
     {{-- Modal untuk Tambah Soal --}}
     @include('admin.bundle.partials.add-question-modal', [
         'bundle' => $bundle,
-        'availableQuestions' => $availableQuestions, // ✅ PERBAIKAN
+        'availableQuestions' => $availableQuestions,
+        'categories' => $categories, // <-- TAMBAHKAN INI
     ])
 
+    {{-- MODIFIKASI: Ganti seluruh blok script ini dengan yang baru --}}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Fungsi ini akan dijalankan untuk setiap modal tambah soal yang ada di halaman
             document.querySelectorAll('[id^="addQuestionModal-"]').forEach(modalElement => {
                 const questionList = modalElement.querySelector('.question-list');
                 const searchInput = modalElement.querySelector('.question-search-input');
+                // BARU: Ambil elemen filter kategori
+                const categoryFilter = modalElement.querySelector('.question-category-filter');
                 const selectAllSwitch = modalElement.querySelector('.select-all-questions');
                 const counter = modalElement.querySelector('.selection-counter');
 
-                if (!questionList) return;
+                if (!questionList || !categoryFilter) return; // Pastikan filter kategori ada
+
+                // FUNGSI BARU: Menggabungkan logika filter pencarian dan kategori
+                const applyFilters = () => {
+                    const searchText = searchInput.value.toLowerCase();
+                    const selectedCategory = categoryFilter.value;
+                    const labels = questionList.getElementsByTagName('label');
+
+                    Array.from(labels).forEach(label => {
+                        const questionText = label.textContent.toLowerCase();
+                        const questionCategory = label.dataset
+                            .category; // Ambil dari data-category
+
+                        // Cek kedua kondisi
+                        const textMatch = questionText.includes(searchText);
+                        const categoryMatch = (selectedCategory === "" || questionCategory ===
+                            selectedCategory);
+
+                        // Tampilkan hanya jika kedua kondisi terpenuhi
+                        label.style.display = (textMatch && categoryMatch) ? '' : 'none';
+                    });
+                };
 
                 // Fungsi untuk mengupdate jumlah soal yang terpilih
                 const updateCounter = () => {
@@ -176,22 +201,14 @@
                     counter.textContent = `${count} soal terpilih`;
                 };
 
-                // 1. Logika untuk PENCARIAN SOAL
-                searchInput.addEventListener('input', function() {
-                    const filter = this.value.toLowerCase();
-                    const labels = questionList.getElementsByTagName('label');
+                // 1. Event listener untuk PENCARIAN dan FILTER KATEGORI
+                searchInput.addEventListener('input', applyFilters);
+                categoryFilter.addEventListener('change', applyFilters);
 
-                    Array.from(labels).forEach(label => {
-                        const text = label.textContent.toLowerCase();
-                        label.style.display = text.includes(filter) ? '' : 'none';
-                    });
-                });
-
-                // 2. Logika untuk "PILIH SEMUA"
+                // 2. Logika untuk "PILIH SEMUA" (tidak perlu diubah)
                 selectAllSwitch.addEventListener('change', function() {
                     const checkboxes = questionList.querySelectorAll('input[type="checkbox"]');
                     checkboxes.forEach(checkbox => {
-                        // Hanya pengaruhi checkbox yang terlihat (tidak terfilter oleh pencarian)
                         if (checkbox.closest('label').style.display !== 'none') {
                             checkbox.checked = this.checked;
                         }
@@ -199,7 +216,7 @@
                     updateCounter();
                 });
 
-                // 3. Logika untuk mengupdate counter saat checkbox individu diklik
+                // 3. Logika untuk counter (tidak perlu diubah)
                 questionList.addEventListener('change', function(event) {
                     if (event.target.matches('input[type="checkbox"]')) {
                         updateCounter();

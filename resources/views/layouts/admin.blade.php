@@ -138,7 +138,11 @@
                                 x-show="jobOpen"
                                 x-transition
                                 class="mt-4 ml-10 space-y-4 text-sm text-gray-600">
+<<<<<<< HEAD
                                 <a href="{{ route('batch.index') }}" class="block hover:text-blue-600 no-underline {{ request()->is('admin/batch*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">Batch</a>
+=======
+                                <a href="{{ route('batch.index') }}" class="block hover:text-blue-600 no-underline {{ request()->is('admin/batch') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">Batch</a>
+>>>>>>> origin/main
                             </div>
                         </div>
                         <!-- Menu dengan Submenu Kuis -->
@@ -165,6 +169,10 @@
                                 x-show="quizOpen"
                                 x-transition
                                 class="mt-4 ml-10 space-y-4 text-sm text-gray-600">
+<<<<<<< HEAD
+=======
+                                <a href="#" class="block hover:text-blue-600 no-underline {{ request()->is('admin/quiz') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">Quiz</a>
+>>>>>>> origin/main
                                 <a href="{{ route('question.index') }}" class="block hover:text-blue-600 no-underline {{ request()->is('admin/question') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">Question</a>
                                 <a href="{{ route('bundle.index') }}" class="block hover:text-blue-600 no-underline {{ request()->is('admin/bundle') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">Bundle</a>
                             </div>

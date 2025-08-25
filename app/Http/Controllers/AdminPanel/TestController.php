@@ -4,7 +4,9 @@ namespace App\Http\Controllers\AdminPanel;
 
 use App\Models\Test;
 use App\Models\Position;
+use App\Models\TestSection;
 use Illuminate\Http\Request;
+use App\Models\QuestionBundle;
 use App\Http\Controllers\Controller;
 use \Cviebrock\EloquentSluggable\Services\SlugService;
 
@@ -12,19 +14,35 @@ class TestController extends Controller
 {
     public function index()
     {
-        $tests = Test::with('position')->orderBy('created_at', 'asc')->get();
-        $positions = Position::orderBy('name')->get();
+        // Ambil semua data posisi
+        $positions = Position::all();
 
+        // Gunakan withCount untuk efisiensi
+        $tests = Test::withCount('sections')->orderBy('id', 'asc')->get();
+        
+        // Kirim kedua variabel ('tests' dan 'positions') ke view
         return view('admin.test.index', compact('tests', 'positions'));
     }
 
+    public function show(Test $test)
+    {
+        // Ambil semua question bundle untuk dropdown di modal
+        $question_bundles = QuestionBundle::all();
 
+        // Load relasi sections dan urutkan berdasarkan kolom 'order' secara ascending.
+        $test->load(['sections' => function ($query) {
+            $query->orderBy('order', 'asc');
+        }]);
+
+        return view('admin.test.show', compact('test', 'question_bundles'));
+    }
 
     public function store(Request $request)
     {
         
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'test_date' => 'required|date',
             // 'slug' => 'string',
             'position_id' => 'required',
         ]);
@@ -34,33 +52,38 @@ class TestController extends Controller
         return redirect()->route('test.index')->with('success', 'New Quiz has been added!');
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, Test $test)
     {
-        $validated = $request->validate([
+        // Validasi input dari form
+        $rules = [
             'name' => 'required|string|max:255',
-            'position_id' => 'required',
-            // 'status' => 'required',
-            // 'description' => 'required',
-        ]);
+            'test_date' => 'required|date',
+            'position_id' => 'required|exists:positions,id', // Pastikan position_id valid
+        ];
 
-        $test = Test::findOrFail($id);
+        $validatedData = $request->validate($rules);
 
-        // Deteksi perubahan name agar slug bisa regenerate
-        if ($validated['name'] !== $test->name) {
-            $test->slug = null; // trigger slug regeneration
-        }
+        // Lakukan update data
+        // Karena 'onUpdate' => true di model, slug akan otomatis ter-update jika 'name' berubah
+        $test->update($validatedData);
 
-        $test->update($validated);
-
+        // Redirect kembali ke halaman index dengan pesan sukses
         return redirect()->route('test.index')->with('success', 'Quiz has been updated!');
     }
 
-    public function destroy($id)
+    public function destroy(Test $test)
     {
-        $test = Test::findOrFail($id);
-        $test->delete();
+        try {
+            // Hapus data test dari database.
+            $test->delete();
 
-        return redirect()->route('test.index')->with('success', 'Quiz has been deleted!');
+            // Redirect kembali ke halaman index dengan pesan sukses.
+            return redirect()->route('test.index')->with('success', 'Quiz berhasil dihapus!');
+
+        } catch (\Exception $e) {
+            // Jika terjadi error, redirect kembali dengan pesan error.
+            return redirect()->route('test.index')->with('error', 'Gagal menghapus quiz. Error: ' . $e->getMessage());
+        }
     }
 
     public function checkSlug(Request $request)
@@ -68,23 +91,5 @@ class TestController extends Controller
         $slug = SlugService::createSlug(Test::class, 'slug', $request->name);
         return response()->json(['slug' => $slug]);
     }
-
+    
 }
-
-
-// public function update(Request $request, Test $test)
-    // {
-    //     $request->validate([
-    //         'title' => 'required|string|max:255',
-    //         'type' => 'required',
-    //     ]);
-
-    //     $test->update($request->all());
-    //     return back()->with('success', 'Test berhasil diperbarui');
-    // }
-
-    // public function destroy(Test $test)
-    // {
-    //     $test->delete();
-    //     return back()->with('success', 'Test berhasil dihapus');
-    // }

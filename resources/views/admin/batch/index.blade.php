@@ -1,9 +1,15 @@
 {{-- resources/views/admin/batch/index.blade.php --}}
 <x-app-admin>
     <div x-data="{ showAddBatch: false, showEditBatch: false }">
+<<<<<<< HEAD
         <div class="flex flex-col gap-3 items-center justify-between sm:flex-row sm:items-center sm:justify-between mb-6">
             <h1 class="text-2xl font-bold text-blue-950 w-full sm:w-auto">Kelola Batch</h1>
             <button @click="showAddBatch = true, showEditBatch = false" class="w-full sm:w-auto inline-flex items-center justify-center gap-1 rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700" data-bs-toggle="modal" data-bs-target="#tambahBatch">
+=======
+        <div class="flex items-center justify-between mb-6">
+            <h1 class="text-2xl font-bold text-blue-950">Kelola Batch</h1>
+            <button @click="showAddBatch = true, showEditBatch = false" class="bg-blue-600 rounded py-2 px-3 flex text-white" data-bs-toggle="modal" data-bs-target="#tambahBatch">
+>>>>>>> origin/main
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6 me-2">
                     <path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM12.75 9a.75.75 0 0 0-1.5 0v2.25H9a.75.75 0 0 0 0 1.5h2.25V15a.75.75 0 0 0 1.5 0v-2.25H15a.75.75 0 0 0 0-1.5h-2.25V9Z" clip-rule="evenodd" />
                 </svg>
@@ -24,7 +30,11 @@
                 @forelse ($batchs as $batch)
                 <div>
                     <div class="flex flex-col md:flex-row justify-between items-center bg-white rounded-lg border border-zinc-300 p-4 mb-4">
+<<<<<<< HEAD
                         <div class="w-full md:w-auto md:me-3 mb-2 md:mb-0">
+=======
+                        <div class="md:me-3 mb-2 md:mb-0">
+>>>>>>> origin/main
                             <h5 class="mb-0 font-bold flex items-center">
                                 {{ $batch->name }}
                                 <span class="ms-3 px-2 py-1 rounded text-white text-xs font-medium 
@@ -41,7 +51,12 @@
                                 {{ $batch->position_count }} Posisi
                             </small>
                         </div>
+<<<<<<< HEAD
                         <div class="flex flex-wrap gap-2 w-full justify-between sm:w-auto mt-1">
+=======
+                        <div class="flex flex-wrap gap-2">
+                            {{-- TOMBOL BARU UNTUK KE HALAMAN SHOW --}}
+>>>>>>> origin/main
                             <a href="{{ route('batch.show', $batch) }}"
                                 class="text-blue-500 px-1 flex items-center">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.0" stroke="currentColor" class="size-5">

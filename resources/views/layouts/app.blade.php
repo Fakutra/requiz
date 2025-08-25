@@ -11,16 +11,15 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
-
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-4Q6Gf2aSP4eDXB8Miphtr37CMZZQ5oXLH2yaXMJ2w8e2ZtHTl7GptT4jmndRuHDT" crossorigin="anonymous">
-
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
 
+    {{-- Styles khusus halaman tertentu --}}
+    @stack('styles')
 
     {{-- Tambahkan CSS untuk tab dan chart dummy --}}
     <style>
@@ -61,7 +60,6 @@
             background: #0d6efd;
         }
     </style>
-
     <!-- Trix -->
     <link rel="stylesheet" type="text/css" href="https://unpkg.com/trix@2.0.8/dist/trix.css">
     <script type="text/javascript" src="https://unpkg.com/trix@2.0.8/dist/trix.umd.min.js"></script>
@@ -71,18 +69,9 @@
 
 </head>
 
-<body x-data="{ sidebarOpen: false }" class="font-sans antialiased">
-    <div class="min-h-screen bg-gray-100 flex">
-        <!-- Sidebar -->
-        <aside 
-            class="fixed inset-y-0 left-0 z-40 w-64 bg-white border-r shadow-md transform transition-transform duration-300 ease-in-out sm:relative sm:translate-x-0"
-            :class="{ '-translate-x-full': !sidebarOpen, 'translate-x-0': sidebarOpen }">
-            
-            <div class="p-6 flex flex-col gap-6">
-                <!-- Logo -->
-                <a href="{{ route('admin.dashboard') }}" class="flex justify-center">
-                    <x-application-logo class="h-10 w-auto fill-current text-gray-800" />
-                </a>
+<body class="font-sans antialiased">
+    <div class="min-h-screen bg-gray-100">
+        @include('layouts.navigation')
 
         <!-- Page Heading -->
         @if (isset($header))
@@ -180,6 +169,11 @@
             </main>
         </div>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-j1CDi7MgGQ12Z7Qab0qlWQ/Qqz24Gc6BM0thvEMVjHnfYGF0rmFCozFSxQBxwHKO" crossorigin="anonymous">
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </body>
 
 
