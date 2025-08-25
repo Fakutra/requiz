@@ -22,34 +22,10 @@
                     <!-- Card 1 -->
                     <div class="bg-white flex flex-col justify-between h-full rounded-2xl shadow-md p-6 hover:shadow-lg transition duration-300">
                         <div>
-<<<<<<< HEAD
                             <h2 class="text-xl font-semibold mb-1">Junior Technical de I</h2>
                             <p class="text-gray-600 mb-4">Let's join with us</p>
                         </div>
-                        <a href="" class="w-full block text-center bg-[#009DA9] text-white px-4 py-3 rounded-lg hover:bg-[#008A95]">
-=======
-                            <h2 class="text-xl font-semibold mb-1">Junior Technical Support Grade I</h2>
-                            <p class="text-gray-600 mb-4">Let's join with us</p>
-                        </div>
-                        <a href="" class="w-full block text-center bg-[#009DA9] text-white px-4 py-3 rounded-lg hover:bg-blue-600">
->>>>>>> origin/main
-                            Lihat Detail
-                        </a>
-                    </div>
-                    <!-- Card 1 -->
-                    <div class="bg-white flex flex-col justify-between h-full rounded-2xl shadow-md p-6 hover:shadow-lg transition duration-300">
-                        <div>
-<<<<<<< HEAD
-                            <h2 class="text-xl font-semibold mb-1">Junior Technical de I</h2>
-                            <p class="text-gray-600 mb-4">Let's join with us</p>
-                        </div>
-                        <a href="" class="w-full block text-center bg-[#009DA9] text-white px-4 py-3 rounded-lg hover:bg-[#008A95]">
-=======
-                            <h2 class="text-xl font-semibold mb-1">Junior Technical</h2>
-                            <p class="text-gray-600 mb-4">Let's join with us</p>
-                        </div>
-                        <a href="" class="w-full block text-center bg-[#009DA9] text-white px-4 py-3 rounded-lg hover:bg-blue-600">
->>>>>>> origin/main
+                        <a href="{{ route('jobdetail') }}" class="w-full block text-center bg-[#009DA9] text-white px-4 py-3 rounded-lg hover:bg-[#008A95]">
                             Lihat Detail
                         </a>
                     </div>
@@ -59,11 +35,17 @@
                             <h2 class="text-xl font-semibold mb-1">Junior Technical de I</h2>
                             <p class="text-gray-600 mb-4">Let's join with us</p>
                         </div>
-<<<<<<< HEAD
-                        <a href="" class="w-full block text-center bg-[#009DA9] text-white px-4 py-3 rounded-lg hover:bg-[#008A95]">
-=======
-                        <a href="" class="w-full block text-center bg-[#009DA9] text-white px-4 py-3 rounded-lg hover:bg-blue-600">
->>>>>>> origin/main
+                        <a href="{{ route('jobdetail') }}" class="w-full block text-center bg-[#009DA9] text-white px-4 py-3 rounded-lg hover:bg-[#008A95]">
+                            Lihat Detail
+                        </a>
+                    </div>
+                    <!-- Card 1 -->
+                    <div class="bg-white flex flex-col justify-between h-full rounded-2xl shadow-md p-6 hover:shadow-lg transition duration-300">
+                        <div>
+                            <h2 class="text-xl font-semibold mb-1">Junior Technical de I</h2>
+                            <p class="text-gray-600 mb-4">Let's join with us</p>
+                        </div>
+                        <a href="{{ route('jobdetail') }}" class="w-full block text-center bg-[#009DA9] text-white px-4 py-3 rounded-lg hover:bg-[#008A95]">
                             Lihat Detail
                         </a>
                     </div>
