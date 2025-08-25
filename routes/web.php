@@ -63,18 +63,33 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::delete('admin/batch/position/{id}', [PositionController::class, 'destroy'])->name('position.destroy');
     Route::get('admin/batch/position/checkSlug', [PositionController::class, 'checkSlug'])->name('position.checkSlug');
 
-    Route::get('admin/applicant', [ApplicantController::class, 'index'])->name('applicant.index');
-    Route::get('/admin/applicant/export', [ApplicantController::class, 'export'])->name('admin.applicant.export');
-    Route::put('admin/applicant/{applicant}', [ApplicantController::class, 'update'])->name('admin.applicant.update');
-    Route::delete('admin/applicant/{applicant}', [ApplicantController::class, 'destroy'])->name('admin.applicant.destroy');
-    Route::get('admin/applicant/seleksi', [ApplicantController::class, 'seleksiIndex'])->name('admin.applicant.seleksi.index');
-    Route::get('admin/applicant/seleksi/{stage}', [ApplicantController::class, 'process'])->name('admin.applicant.seleksi.process');
-    Route::post('admin/applicant/seleksi/update-status', [ApplicantController::class, 'updateStatus'])->name('admin.applicant.seleksi.update-status');// Route untuk edit applicant
-    Route::get('/admin/applicant/{id}/edit', [ApplicantController::class, 'edit'])->name('admin.applicant.edit');
-    Route::put('/admin/applicant/{id}', [ApplicantController::class, 'update'])->name('applicant.update');
-    Route::delete('/admin/applicant/{id}', [ApplicantController::class, 'destroy'])->name('admin.applicant.destroySeleksi');
-    Route::get('/admin/applicant/seleksi/{stage}', [ApplicantController::class, 'showStageApplicants'])->name('admin.applicant.seleksi.process');
+    // Halaman utama daftar applicant
+    Route::get('admin/applicant', [ApplicantController::class, 'index'])
+        ->name('admin.applicant.index');
 
+    // Export data
+    Route::get('admin/applicant/export', [ApplicantController::class, 'export'])
+        ->name('admin.applicant.export');
+
+    // CRUD applicant
+    Route::get('admin/applicant/{id}/edit', [ApplicantController::class, 'edit'])
+        ->name('admin.applicant.edit');
+    Route::put('admin/applicant/{id}', [ApplicantController::class, 'update'])
+        ->name('admin.applicant.update');
+    Route::delete('admin/applicant/{id}', [ApplicantController::class, 'destroy'])
+        ->name('admin.applicant.destroy');
+
+    // Seleksi
+    Route::get('admin/applicant/seleksi', [ApplicantController::class, 'seleksiIndex'])
+        ->name('admin.applicant.seleksi.index');
+    Route::get('admin/applicant/seleksi/{stage}', [ApplicantController::class, 'process'])
+        ->name('admin.applicant.seleksi.process');
+    Route::post('admin/applicant/seleksi/update-status', [ApplicantController::class, 'updateStatus'])
+        ->name('admin.applicant.seleksi.update-status');
+    Route::post('/admin/applicants/seleksi/send-email',[ApplicantController::class, 'sendEmail'])
+        ->name('admin.applicant.seleksi.sendEmail');
+
+        
     // Menampilkan daftar test
     Route::get('admin/test', [TestController::class, 'index'])->name('test.index');
     Route::get('admin/test/{test}', [TestController::class, 'show'])->name('test.show');
@@ -93,7 +108,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 
     Route::put('admin/section/{section}', [TestSectionController::class, 'update'])->name('section.update');
     Route::delete('admin/test/section/{section}', [TestSectionController::class, 'destroy'])->name('section.destroy');
-    Route::get('admin/test/section/checkSlug', [TestSectionController::class, 'checkSlug'])->name('section.checkSlug');
+    // Route::get('admin/test/section/checkSlug', [TestSectionController::class, 'checkSlug'])->name('section.checkSlug');
 
     // Question
     Route::get('admin/question', [QuestionController::class, 'index'])->name('question.index');

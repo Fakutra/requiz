@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Applicant;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Mail;
 use App\Exports\ApplicantsExport; // <-- 1. Impor kelas Export Anda
 use Maatwebsite\Excel\Facades\Excel; // <-- 2. Impor Fassad Excel
 use App\Models\Position; // 1. Impor model Position
@@ -132,18 +133,34 @@ class ApplicantController extends Controller
         return redirect()->route('applicant.seleksi.index')->with('success', 'Data pelamar berhasil dihapus.');
     }
 
-    public function seleksiIndex(Request $request)
+    public function seleksiIndex()
     {
-        $applicants = $this->getFilteredApplicants($request)->paginate(10);
-        $selectionStages = [
-            'Seleksi Administrasi',
-            'Lolos Administrasi', 
-            'Seleksi Tes Tulis', 
-            'Lolos Seleksi Tes Tulis',
-            'Seleksi Interview'
+        $rekap = [
+            'Administrasi' => [
+                'lolos' => Applicant::where('status', 'Seleksi Tes Tulis')->count(),
+                'gagal' => Applicant::where('status', 'Tidak Lolos Seleksi Administrasi')->count(),
+                'route' => 'Seleksi Administrasi',
+            ],
+            'Tes Tulis' => [
+                'lolos' => Applicant::where('status', 'Seleksi Tes Praktek')->count(),
+                'gagal' => Applicant::where('status', 'Tidak Lolos Seleksi Tes Tulis')->count(),
+                'route' => 'Seleksi Tes Tulis',
+            ],
+            'Tes Praktek' => [
+                'lolos' => Applicant::where('status', 'Interview')->count(),
+                'gagal' => Applicant::where('status', 'Tidak Lolos Seleksi Tes Praktek')->count(),
+                'route' => 'Seleksi Tes Praktek',
+            ],
+            'Interview' => [
+                'lolos' => Applicant::where('status', 'Lolos Interview')->count(),
+                'gagal' => Applicant::where('status', 'Tidak Lolos Interview')->count(),
+                'route' => 'Interview',
+            ],
         ];
-        return view('admin.applicant.seleksi.index', compact('applicants', 'selectionStages'));
+
+        return view('admin.applicant.seleksi.index', compact('rekap'));
     }
+
     public function editSeleksi($id)
     {
         $applicant = Applicant::with('position')->findOrFail($id);
@@ -151,20 +168,75 @@ class ApplicantController extends Controller
         return view('admin.applicants.edit-seleksi', compact('applicant'));
     }
 
-    public function process(Request $request, $stage)
-    {
-        $previousStageStatus = match ($stage) {
-        'Seleksi Tes Tulis' => 'Lolos Seleksi Administrasi',
-        'Technical Test' => 'Lolos Seleksi Tes Tulis',
-        'Interview' => 'Lolos Technical Test',
-        default => 'Seleksi Administrasi',
-        
-    };
 
-    $applicants = Applicant::where('status', $previousStageStatus)->get();
+public function process(Request $request, string $stage)
+{
+    $positions  = Position::all();
+    $allJurusan = Applicant::whereNotNull('jurusan')->distinct()->pluck('jurusan');
 
-    return view('admin.applicant.seleksi.process', compact('applicants', 'stage'));
+    $q = Applicant::with('position');
+
+    // Default: tampilkan yang sedang di tahap ini
+    if ($request->filled('status')) {
+        $q->where('status', $request->status);
+    } else {
+        $q->where('status', $stage);
     }
+
+    if ($s = $request->search) {
+        $q->where(function($x) use ($s) {
+            $x->where('name','like',"%$s%")
+              ->orWhere('email','like',"%$s%")
+              ->orWhere('jurusan','like',"%$s%");
+        });
+    }
+
+    if ($request->filled('position')) $q->where('position_id', $request->position);
+    if ($request->filled('jurusan'))  $q->where('jurusan', $request->jurusan);
+
+    // $applicants = $q->withQueryString()->paginate(20);
+    $applicants = $q->paginate(20)->appends(request()->query());
+
+    return view('admin.applicant.seleksi.process', compact('applicants','positions','allJurusan','stage'));
+}
+
+
+
+/**
+ * (Opsional) helper untuk menentukan stage berikutnya saat filter "lolos"
+ */
+private function nextStage(string $stage): string
+{
+    $map = [
+        'Seleksi Administrasi'  => 'Seleksi Tes Tulis',
+        'Seleksi Tes Tulis'     => 'Seleksi Technical Test',
+        'Seleksi Technical Test'=> 'Seleksi Interview',
+        'Seleksi Interview'     => 'Interview',
+        'Interview'             => 'Interview', // terakhir
+    ];
+    return $map[$stage] ?? $stage;
+}
+
+    public function sendEmail(Request $request)
+    {
+        $request->validate([
+            'recipients' => 'required|string',
+            'subject' => 'required|string|max:255',
+            'message' => 'required|string',
+        ]);
+
+        $recipients = explode(',', $request->recipients);
+
+        foreach ($recipients as $recipient) {
+            Mail::raw($request->message, function ($mail) use ($recipient, $request) {
+                $mail->to(trim($recipient))
+                    ->subject($request->subject);
+            });
+        }
+
+        return back()->with('success', 'Email berhasil dikirim ke ' . count($recipients) . ' peserta.');
+    }
+
 
     public function updateStatus(Request $request)
     {
@@ -179,19 +251,15 @@ class ApplicantController extends Controller
             $selectedStatus = $request->status[$applicantId] ?? null;
 
             if ($selectedStatus === 'lolos') {
-                $applicant->status = 'Lolos ' . $request->stage;
-
-                // Jika ada tahap berikutnya, pindahkan ke sana
                 if ($request->stage === 'Seleksi Administrasi') {
-                    $applicant->status = 'Lolos Seleksi Administrasi';
+                    $applicant->status = 'Seleksi Tes Tulis';
                 } elseif ($request->stage === 'Seleksi Tes Tulis') {
-                    $applicant->status = 'Lolos Seleksi Tes Tulis';
-                } elseif ($request->stage === 'Technical Test') {
-                    $applicant->status = 'Lolos Technical Test';
+                    $applicant->status = 'Seleksi Tes Praktek';
+                } elseif ($request->stage === 'Seleksi Tes Praktek') {
+                    $applicant->status = 'Interview';
                 } elseif ($request->stage === 'Interview') {
                     $applicant->status = 'Lolos Interview';
                 }
-
             } elseif ($selectedStatus === 'tidak_lolos') {
                 $applicant->status = 'Tidak Lolos ' . $request->stage;
             }
@@ -201,6 +269,7 @@ class ApplicantController extends Controller
 
         return back()->with('success', 'Status peserta berhasil diperbarui.');
     }
+
 
     public function showStageApplicants($stage)
     {
