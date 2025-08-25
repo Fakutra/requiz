@@ -22,7 +22,7 @@ class Test extends Model
         return $this->belongsTo(Position::class);
     }
 
-    public function section()
+    public function sections()
     {
         return $this->hasMany(TestSection::class);
     }

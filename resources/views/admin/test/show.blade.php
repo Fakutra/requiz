@@ -33,26 +33,25 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="card shadow-sm">
                 <div class="card-body p-0">
-                    @if ($test->section->isNotEmpty())
+                    @if ($test->sections->isNotEmpty())
                         <div class="table-responsive">
                             <table class="table table-hover table-striped mb-0">
                                 <thead class="table-dark">
                                     <tr>
                                         <th class="text-center">No.</th>
                                         <th>Nama Section</th>
-                                        <th class="text-center">Tipe</th>
+                                        <th class="text-center">Urutan</th>
                                         <th class="text-center">Durasi</th>
                                         <th class="text-center">Acak Soal/Opsi</th>
                                         <th class="text-center">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach ($test->section as $section)
+                                    @foreach ($test->sections->sortBy('order') as $section)
                                         <tr>
                                             <td class="text-center">{{ $loop->iteration }}</td>
                                             <td>{{ $section->name }}</td>
-                                            <td class="text-center"><span
-                                                    class="badge bg-info">{{ strtoupper($section->type) }}</span></td>
+                                            <td class="text-center">{{ $section->order }}</td>
                                             <td class="text-center">{{ $section->duration_minutes }} mnt</td>
                                             <td class="text-center">
                                                 @if ($section->shuffle_questions)
@@ -70,12 +69,15 @@
                                                     data-bs-target="#editSection{{ $section->id }}">
                                                     <i class="bi bi-pencil"></i>
                                                 </button>
-                                                <form action="{{ route('section.destroy', $section->slug) }}"
-                                                    method="post" class="d-inline"
-                                                    onsubmit="return confirm('Anda yakin?')">
-                                                    @method('delete') @csrf
-                                                    <button class="btn btn-sm btn-danger"><i
-                                                            class="bi bi-trash"></i></button>
+                                                <form action="{{ route('section.destroy', $section) }}" method="POST"
+                                                    class="d-inline">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="btn btn-sm btn-danger"
+                                                        onclick="return confirm('Apakah Anda yakin ingin menghapus section ini?')"
+                                                        title="Hapus Section">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
                                                 </form>
                                             </td>
                                         </tr>

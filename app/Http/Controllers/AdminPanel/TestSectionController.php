@@ -4,6 +4,7 @@ namespace App\Http\Controllers\AdminPanel;
 
 use App\Http\Controllers\Controller;
 use App\Models\TestSection;
+use App\Models\Test; // Add this import statement
 use Illuminate\Http\Request;
 use \Cviebrock\EloquentSluggable\Services\SlugService;
 
@@ -11,20 +12,24 @@ class TestSectionController extends Controller
 {
     public function store(Request $request)
     {
-        // Sesuaikan aturan validasi
         $validated = $request->validate([
             'test_id' => 'required|exists:tests,id',
-            'name' => 'required|string|max:255', // diubah dari 'title'
-            // 'type' => 'required|in:pg,multiple,poin,essay', // sesuaikan dengan enum
+            'name' => 'required|string|max:255',
             'question_bundle_id' => 'nullable|exists:question_bundles,id',
-            'duration_minutes' => 'required|integer|min:1', // diubah dari 'duration'
+            'duration_minutes' => 'required|integer|min:1',
             'shuffle_questions' => 'sometimes|boolean',
             'shuffle_options' => 'sometimes|boolean',
         ]);
         
-        // Konversi checkbox jika tidak dicentang
         $validated['shuffle_questions'] = $request->has('shuffle_questions');
         $validated['shuffle_options'] = $request->has('shuffle_options');
+        
+        // --- LOGIKA PENAMBAHAN ORDER ---
+        // Cari nilai order tertinggi untuk test_id yang sama
+        $maxOrder = TestSection::where('test_id', $validated['test_id'])->max('order');
+        // Tetapkan nilai order baru: maxOrder + 1 (jika belum ada, akan jadi 1)
+        $validated['order'] = ($maxOrder ?? 0) + 1;
+        // --- AKHIR LOGIKA PENAMBAHAN ORDER ---
 
         TestSection::create($validated);
 
@@ -35,16 +40,16 @@ class TestSectionController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            // 'type' => 'required|in:pg,multiple,poin,essay',
             'question_bundle_id' => 'nullable|exists:question_bundles,id',
             'duration_minutes' => 'required|integer|min:1',
             'shuffle_questions' => 'sometimes|boolean',
             'shuffle_options' => 'sometimes|boolean',
+            'order' => 'required|integer|min:1', // Tambahkan validasi untuk order
         ]);
         
         $validated['shuffle_questions'] = $request->has('shuffle_questions');
         $validated['shuffle_options'] = $request->has('shuffle_options');
-
+        
         $section->update($validated);
 
         return redirect()->route('test.show', $section->test)->with('success', 'Section berhasil diperbarui!');
@@ -52,9 +57,10 @@ class TestSectionController extends Controller
 
     public function destroy(TestSection $section)
     {
-        $testId = $section->test;
+        $test = $section->test; // Simpan test parent sebelum section dihapus
         $section->delete();
-        return redirect()->route('test.show', $testId)->with('success', 'Section berhasil dihapus!');
+
+        return redirect()->route('test.show', $test)->with('success', 'Section berhasil dihapus!');
     }
 
     public function checkSlug(Request $request)

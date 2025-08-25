@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('slug')->unique(); // untuk akses URL
             $table->dateTime('test_date');
+            // $table->dateTime('test_end');
             $table->timestamps();
         });
     }

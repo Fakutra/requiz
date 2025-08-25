@@ -18,7 +18,7 @@ class TestController extends Controller
         $positions = Position::all();
 
         // Gunakan withCount untuk efisiensi
-        $tests = Test::withCount('section')->orderBy('id', 'asc')->get();
+        $tests = Test::withCount('sections')->orderBy('id', 'asc')->get();
         
         // Kirim kedua variabel ('tests' dan 'positions') ke view
         return view('admin.test.index', compact('tests', 'positions'));
@@ -29,8 +29,10 @@ class TestController extends Controller
         // Ambil semua question bundle untuk dropdown di modal
         $question_bundles = QuestionBundle::all();
 
-        // Load relasi section untuk ditampilkan
-        $test->load('section'); 
+        // Load relasi sections dan urutkan berdasarkan kolom 'order' secara ascending.
+        $test->load(['sections' => function ($query) {
+            $query->orderBy('order', 'asc');
+        }]);
 
         return view('admin.test.show', compact('test', 'question_bundles'));
     }
