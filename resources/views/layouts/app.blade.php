@@ -7,7 +7,6 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>{{ config('app.name', 'ReQuiz') }}</title>
-    <link rel="icon" type="image/png" href="/app-logo.svg"/>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
@@ -69,7 +68,6 @@
 
     {{-- Datatables --}}
     {{-- <link rel="stylesheet" href="resources/css/dataTables.css" /> --}}
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
 </head>
 
@@ -86,28 +84,37 @@
                     <x-application-logo class="h-10 w-auto fill-current text-gray-800" />
                 </a>
 
-                <!-- Nav Links -->
-                <nav class="flex flex-col gap-3">
-                    <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
-                        {{ __('Dashboard') }}
-                    </x-nav-link>
-                    <x-nav-link :href="route('batch.index')" :active="request()->routeIs('batch.index')">
-                        {{ __('Batch') }}
-                    </x-nav-link>
+        <!-- Page Heading -->
+        @if (isset($header))
+        <header class="bg-white shadow">
+            <div class="max-w-7xl mx-auto py-3 px-4 sm:px-6 lg:px-8">
+                {{ $header }}
+            </div>
+        </header>
+        @endif
 
-                    <!-- Applicant Dropdown -->
-                    <div x-data="{ open: false }" class="relative">
-                        <button @click="open = !open"
-                            class="flex justify-between items-center w-full px-3 py-2 text-sm font-medium text-left text-gray-700 hover:text-blue-600">
-                            {{ __('Applicant') }}
-                            <svg class="h-4 w-4 transform transition-transform duration-200"
-                                 :class="{ 'rotate-180': open }"
-                                 xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd"
-                                      d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                                      clip-rule="evenodd" />
-                            </svg>
-                        </button>
+        <!-- Page Content -->
+        <main>
+            {{ $slot }}
+        </main>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-j1CDi7MgGQ12Z7Qab0qlWQ/Qqz24Gc6BM0thvEMVjHnfYGF0rmFCozFSxQBxwHKO" crossorigin="anonymous">
+        // document.addEventListener('DOMContentLoaded', function() {
+        //     const selectAll = document.getElementById('selectAll');
+        //     const checkboxes = document.querySelectorAll('.applicant-checkbox');
+        //     if (selectAll) {
+        //         selectAll.addEventListener('change', function() {
+        //             checkboxes.forEach(cb => cb.checked = this.checked);
+        //         });
+        //         checkboxes.forEach(cb => {
+        //             cb.addEventListener('change', function() {
+        //                 selectAll.checked = [...checkboxes].every(i => i.checked);
+        //             });
+        //         });
+        //     }
+        // });
+    </script>
 
                         <div x-show="open" x-cloak class="mt-2 space-y-1 pl-4 text-sm transition-all duration-300">
                             <a href="{{ route('applicant.index') }}" class="block text-gray-600 hover:text-blue-600">Pelamar</a>

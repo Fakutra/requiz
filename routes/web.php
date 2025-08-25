@@ -18,9 +18,16 @@ Route::get('/', function () {
     return view('welcome');
 })->name('welcome');
 
-Route::get('/cek', function () {
-    dd(Auth::user());
-});
+
+Route::get('/joblist', function () {
+    return view('joblist');
+})->name('joblist');
+
+Route::get('/jobdetail', function() {
+    return view('jobdetail');
+})->name('jobdetail');
+
+Route::get('lowongan', [LowonganController::class, 'index'])->name('lowongan.index');
 
 Route::get('/dashboard', function () {
     return view('dashboard');
@@ -31,7 +38,6 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     
-    Route::get('lowongan', [LowonganController::class, 'index'])->name('lowongan.index');
     Route::post('/{position:slug}/apply', [LowonganController::class, 'store'])->name('apply.store');
     Route::get('history', [HistoryController::class, 'index'])->name('history.index');
 });
@@ -44,6 +50,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin', function () {
         return view('admin/dashboard');
     });
+    
     Route::get('admin/dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
 
     Route::get('admin/batch', [BatchController::class, 'index'])->name('batch.index');

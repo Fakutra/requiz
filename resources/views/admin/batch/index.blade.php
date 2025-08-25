@@ -1,43 +1,38 @@
 {{-- resources/views/admin/batch/index.blade.php --}}
-<x-app-layout>
-    <x-slot name="header">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight mb-0">
-                {{ __('Batch Management') }}
-            </h2>
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#tambahBatch">
-                <i class="bi bi-plus-circle me-2"></i>Create New Batch
+<x-app-admin>
+    <div x-data="{ showAddBatch: false, showEditBatch: false }">
+        <div class="flex flex-col gap-3 items-center justify-between sm:flex-row sm:items-center sm:justify-between mb-6">
+            <h1 class="text-2xl font-bold text-blue-950 w-full sm:w-auto">Kelola Batch</h1>
+            <button @click="showAddBatch = true, showEditBatch = false" class="w-full sm:w-auto inline-flex items-center justify-center gap-1 rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700" data-bs-toggle="modal" data-bs-target="#tambahBatch">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6 me-2">
+                    <path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM12.75 9a.75.75 0 0 0-1.5 0v2.25H9a.75.75 0 0 0 0 1.5h2.25V15a.75.75 0 0 0 1.5 0v-2.25H15a.75.75 0 0 0 0-1.5h-2.25V9Z" clip-rule="evenodd" />
+                </svg>
+                <span>Create New Batch</span>
             </button>
         </div>
-
-        {{-- Modal Notifikasi Sukses --}}
-        @if (session('success'))
-            <div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered">
-                    <div class="modal-content">
-                        <div class="modal-body text-center p-4">
-                            <h5 class="text-success mb-3">✅ {{ session('success') }}</h5>
-                            <button type="button" class="btn btn-success" data-bs-dismiss="modal">OK</button>
-                        </div>
-                    </div>
-                </div>
+        <!-- Modal Create -->
+        <div x-show="showAddBatch" x-transition.opacity x-cloak class="fixed inset-0 backdrop-blur-md bg-black/20 flex items-center justify-center z-50">
+            <div @click.away="showAddBatch = false" class="bg-white rounded-xl shadow-lg w-full max-w-lg p-6 relative">
+                <button @click="showAddBatch = false" class="absolute top-3 right-3">✕</button>
+                <h2 class="text-lg font-semibold mb-4">Tambah Batch</h2>
+                @include('admin.batch.partials.modal-add-batch')
             </div>
-        @endif
-    </x-slot>
+        </div>
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="list-group">
+        <div class="bg-white shadow-zinc-400/50 rounded-lg p-6">
+            <div class="space-y-2">
                 @forelse ($batchs as $batch)
-                    <div
-                        class="list-group-item list-group-item-action d-flex flex-column flex-md-row justify-content-between align-items-center mb-2">
-                        <div class="me-md-3 mb-2 mb-md-0">
-                            <h5 class="mb-0 fw-bold d-inline-flex align-items-center">
+                <div>
+                    <div class="flex flex-col md:flex-row justify-between items-center bg-white rounded-lg border border-zinc-300 p-4 mb-4">
+                        <div class="w-full md:w-auto md:me-3 mb-2 md:mb-0">
+                            <h5 class="mb-0 font-bold flex items-center">
                                 {{ $batch->name }}
-                                <span
-                                    class="badge {{ $batch->status == 'Active' ? 'bg-success' : 'bg-danger' }} ms-3">{{ $batch->status }}</span>
+                                <span class="ms-3 px-2 py-1 rounded text-white text-xs font-medium 
+                        {{ $batch->status == 'Active' ? 'bg-green-500' : 'bg-red-500' }}">
+                                    {{ $batch->status }}
+                                </span>
                             </h5>
-                            <small class="text-muted d-block mt-1">
+                            <small class="text-gray-500 block mt-1 flex items-center">
                                 <i class="bi bi-calendar-range"></i>
                                 {{ \Carbon\Carbon::parse($batch->start_date)->translatedFormat('d F Y') }} -
                                 {{ \Carbon\Carbon::parse($batch->end_date)->translatedFormat('d F Y') }}
@@ -46,127 +41,49 @@
                                 {{ $batch->position_count }} Posisi
                             </small>
                         </div>
-                        <div class="btn-group" role="group">
-                            {{-- TOMBOL BARU UNTUK KE HALAMAN SHOW --}}
-                            <a href="{{ route('batch.show', $batch) }}" class="btn btn-primary btn-sm">
-                                <i class="bi bi-gear"></i> Kelola Posisi
+                        <div class="flex flex-wrap gap-2 w-full justify-between sm:w-auto mt-1">
+                            <a href="{{ route('batch.show', $batch) }}"
+                                class="text-blue-500 px-1 flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.0" stroke="currentColor" class="size-5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                                </svg>
                             </a>
-                            <button class="btn btn-info btn-sm text-white" data-bs-toggle="modal"
+
+                            <button @click="showEditBatch = true, showAddBatch = false" class="text-yellow-400 px-1 flex items-center"
+                                data-bs-toggle="modal"
                                 data-bs-target="#editBatch{{ $batch->id }}">
-                                <i class="bi bi-pencil-square"></i> Edit
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.0" stroke="currentColor" class="size-5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" />
+                                </svg>
                             </button>
-                            <form action="{{ route('batch.destroy', $batch->id) }}" method="post" class="d-inline"
+
+                            <!-- Modal Edit -->
+                            <div x-show="showEditBatch" x-transition.opacity x-cloak class="fixed inset-0 backdrop-blur-md bg-black/20 flex items-center justify-center z-50">
+                                <div @click.away="showEditBatch = false" class="bg-white rounded-xl shadow-lg w-full max-w-lg p-6 relative">
+                                    <button @click="showEditBatch = false" class="absolute top-3 right-3">✕</button>
+                                    <h2 class="text-lg font-semibold mb-4">Edit Batch</h2>
+                                    @include('admin.batch.partials.modal-edit-batch', ['batch' => $batch])
+                                </div>
+                            </div>
+
+                            <form action="{{ route('batch.destroy', $batch->id) }}" method="post" class="inline"
                                 onsubmit="return confirm('Anda yakin ingin menghapus batch ini?')">
                                 @method('delete')
                                 @csrf
-                                <button type="submit" class="btn btn-danger btn-sm">
-                                    <i class="bi bi-trash"></i> Hapus
+                                <button type="submit" class="text-red-600 px-1 flex items-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.0" stroke="currentColor" class="size-5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                    </svg>
                                 </button>
                             </form>
                         </div>
                     </div>
-                    {{-- Modal Edit Batch masih diperlukan di sini --}}
-                    @include('admin.batch.partials.modal-edit-batch', ['batch' => $batch])
+                </div>
                 @empty
-                    <div class="list-group-item">
-                        <p class="text-center text-muted my-3">Belum ada batch yang dibuat.</p>
-                    </div>
+                <p>Tidak ada batch.</p>
                 @endforelse
             </div>
         </div>
     </div>
-
-    {{-- ... (Modal Tambah Batch & script JS Anda) ... --}}
-    {{-- Modal Create Batch (Tidak ada perubahan, tetap di sini) --}}
-    <div class="modal fade" id="tambahBatch" tabindex="-1" aria-labelledby="modalTambahBatch" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h1 class="modal-title fs-5" id="modalTambahBatch">Tambah Batch Baru</h1>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <form method="post" id="formTambahBatch" action="{{ route('batch.store') }}">
-                    <div class="modal-body">
-                        @csrf
-                        {{-- Nama Batch --}}
-                        <div class="mb-3">
-                            <label for="name" class="form-label">Nama Batch</label>
-                            <input type="text" class="form-control @error('name') is-invalid @enderror"
-                                id="nameBatch" name="name" required autofocus value="{{ old('name') }}">
-                            @error('name')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                        {{-- Status --}}
-                        <div class="mb-3">
-                            <label for="status" class="form-label">Status</label>
-                            <select class="form-select @error('status') is-invalid @enderror" name="status" required>
-                                <option value="" selected disabled>--- Pilih Status ---</option>
-                                <option value="Active" @selected(old('status') == 'Active')>Active</option>
-                                <option value="Closed" @selected(old('status') == 'Closed')>Closed</option>
-                            </select>
-                            @error('status')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                        {{-- Tanggal --}}
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="start_date" class="form-label">Start Date</label>
-                                <input type="date" class="form-control @error('start_date') is-invalid @enderror"
-                                    id="start_date" name="start_date" required value="{{ old('start_date') }}">
-                                @error('start_date')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="end_date" class="form-label">End Date</label>
-                                <input type="date" class="form-control @error('end_date') is-invalid @enderror"
-                                    id="end_date" name="end_date" required value="{{ old('end_date') }}">
-                                @error('end_date')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                        <button type="submit" class="btn btn-primary">Submit</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    {{-- @push('scripts') --}}
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Script untuk menampilkan modal sukses jika ada session 'success'
-            @if (session('success'))
-                var successModal = new bootstrap.Modal(document.getElementById('successModal'));
-                successModal.show();
-            @endif
-
-            // Script untuk membuka kembali modal yang relevan jika ada error validasi
-            @if ($errors->any())
-                // Cek jika error berasal dari form 'tambahBatch'
-                @if ($errors->has('name') || $errors->has('status') || $errors->has('start_date') || $errors->has('end_date'))
-                    @if (!old('batch_id_edit')) // Hanya buka jika bukan dari edit batch
-                        var tambahBatchModal = new bootstrap.Modal(document.getElementById('tambahBatch'));
-                        tambahBatchModal.show();
-                    @endif
-                @endif
-
-                // Cek jika error berasal dari form 'editBatch'
-                var editBatchId = '{{ old('batch_id_edit') }}';
-                if (editBatchId) {
-                    var editBatchModal = new bootstrap.Modal(document.getElementById('editBatch' + editBatchId));
-                    editBatchModal.show();
-                }
-
-                // Logika serupa bisa ditambahkan untuk modal posisi jika diperlukan
-            @endif
-        });
-    </script>
-    {{-- @endpush --}}
-</x-app-layout>
+</x-app-admin>
