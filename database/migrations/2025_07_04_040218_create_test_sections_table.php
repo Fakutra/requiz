@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('test_id')->constrained()->onDelete('cascade');
             $table->string('name'); // contoh: "PG Umum", "Essay Teknis"
             $table->string('slug')->unique(); // untuk akses URL
-            // $table->enum('type', ['pg', 'multiple', 'poin', 'essay']);
+            $table->smallInteger('order')->default(0);
             $table->foreignId('question_bundle_id')->nullable()->constrained()->onDelete('set null');
             $table->integer('duration_minutes');
             $table->boolean('shuffle_questions')->default(false);

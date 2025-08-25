@@ -14,18 +14,11 @@
                         <input type="text" class="form-control" name="name" value="{{ $section->name }}" required>
                     </div>
                     <div class="row">
-                        {{-- <div class="col-md-6 mb-3">
-                            <label for="type" class="form-label">Tipe Section</label>
-                            <select name="type" class="form-select" required>
-                                <option value="pg" {{ $section->type == 'pg' ? 'selected' : '' }}>Pilihan Ganda (PG)
-                                </option>
-                                <option value="multiple" {{ $section->type == 'multiple' ? 'selected' : '' }}>Multiple
-                                    Answer</option>
-                                <option value="poin" {{ $section->type == 'poin' ? 'selected' : '' }}>Poin (Skoring)
-                                </option>
-                                <option value="essay" {{ $section->type == 'essay' ? 'selected' : '' }}>Essay</option>
-                            </select>
-                        </div> --}}
+                        <div class="col-md-6 mb-3">
+                            <label for="order{{ $section->id }}" class="form-label">Urutan</label>
+                            <input type="number" class="form-control" id="order{{ $section->id }}" name="order"
+                                value="{{ old('order', $section->order) }}" min="1" required>
+                        </div>
                         <div class="col-md-6 mb-3">
                             <label for="duration_minutes" class="form-label">Durasi (menit)</label>
                             <input type="number" class="form-control" name="duration_minutes"

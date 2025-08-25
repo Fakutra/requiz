@@ -36,7 +36,7 @@ class Position extends Model
     
     public function test()
     {
-        return $this->hasMany(Test::class);
+        return $this->hasOne(Test::class);
     }
 
     public function getRouteKeyName()
@@ -54,6 +54,3 @@ class Position extends Model
         ];
     }
 }
-
-
-

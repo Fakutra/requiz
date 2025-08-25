@@ -4,28 +4,23 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Cviebrock\EloquentSluggable\Sluggable; // PASTIKAN ANDA SUDAH MENGIMPORT INI
+use Cviebrock\EloquentSluggable\Sluggable;
 
 class TestSection extends Model
 {
-    // Tambahkan use Sluggable
     use HasFactory, Sluggable;
 
-    // Sesuaikan $fillable dengan skema database
     protected $fillable = [
         'test_id',
-        'name', // diubah dari 'title'
+        'name',
         'slug',
-        'type',
         'question_bundle_id',
-        'duration_minutes', // diubah dari 'duration'
+        'duration_minutes',
         'shuffle_questions',
         'shuffle_options',
+        'order', // Pastikan kolom ini ada di database Anda
     ];
 
-    /**
-     * Casting tipe data untuk boolean.
-     */
     protected $casts = [
         'shuffle_questions' => 'boolean',
         'shuffle_options' => 'boolean',
@@ -36,11 +31,11 @@ class TestSection extends Model
         return $this->belongsTo(Test::class);
     }
 
-    public function bundle()
+    public function questionBundle()
     {
-        return $this->belongsTo(QuestionBundle::class, 'question_bundle_id');
+        return $this->belongsTo(QuestionBundle::class);
     }
-    
+
     public function sectionResults()
     {
         return $this->hasMany(TestSectionResult::class);
@@ -61,4 +56,3 @@ class TestSection extends Model
         ];
     }
 }
-

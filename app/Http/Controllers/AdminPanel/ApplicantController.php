@@ -16,7 +16,7 @@ class ApplicantController extends Controller
     public function index(Request $request)
     {
         // 2. Panggil method terpusat dengan seluruh request
-        $applicants = $this->getFilteredApplicants($request)->paginate(10);
+        $applicants = $this->getFilteredApplicants($request)->orderBy('id','asc')->paginate(10);
 
         // 3. Ambil data posisi untuk dikirim ke view (untuk mengisi dropdown filter)
         $positions = Position::orderBy('name')->get();
