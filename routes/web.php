@@ -14,6 +14,7 @@ use App\Http\Controllers\AdminPanel\ApplicantController;
 use App\Http\Controllers\AdminPanel\QuestionBundleController;
 use App\Http\Controllers\AdminPanel\QuestionController;
 use App\Http\Controllers\AdminPanel\QuizResultController;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Auth;
 
 
