@@ -6,6 +6,10 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Applicant;
 use Illuminate\Support\Facades\Storage;
+use App\Models\SelectionLog;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use App\Exports\ApplicantsExport; // <-- 1. Impor kelas Export Anda
@@ -136,28 +140,43 @@ class ApplicantController extends Controller
 
     public function seleksiIndex()
     {
-        $rekap = [
-            'Administrasi' => [
-                'lolos' => Applicant::where('status', 'Seleksi Tes Tulis')->count(),
-                'gagal' => Applicant::where('status', 'Tidak Lolos Seleksi Administrasi')->count(),
-                'route' => 'Seleksi Administrasi',
-            ],
-            'Tes Tulis' => [
-                'lolos' => Applicant::where('status', 'Seleksi Tes Praktek')->count(),
-                'gagal' => Applicant::where('status', 'Tidak Lolos Seleksi Tes Tulis')->count(),
-                'route' => 'Seleksi Tes Tulis',
-            ],
-            'Tes Praktek' => [
-                'lolos' => Applicant::where('status', 'Interview')->count(),
-                'gagal' => Applicant::where('status', 'Tidak Lolos Seleksi Tes Praktek')->count(),
-                'route' => 'Seleksi Tes Praktek',
-            ],
-            'Interview' => [
-                'lolos' => Applicant::where('status', 'Lolos Interview')->count(),
-                'gagal' => Applicant::where('status', 'Tidak Lolos Interview')->count(),
-                'route' => 'Interview',
-            ],
+        $stages = [
+            'Seleksi Administrasi',
+            'Seleksi Tes Tulis',
+            'Seleksi Tes Praktek',
+            'Interview',
         ];
+
+        $rekap = [];
+
+        foreach ($stages as $stage) {
+            $stageKey = Str::slug($stage);
+
+            // Ambil id log TERBARU per applicant untuk stage ini
+            $latestIds = SelectionLog::where('stage_key', $stageKey)
+                ->select(DB::raw('MAX(id) AS id'))
+                ->groupBy('applicant_id')
+                ->pluck('id');
+
+            if ($latestIds->isEmpty()) {
+                // Belum ada log: tampilkan 0 tapi tetap render baris
+                $rekap[$stage] = ['lolos' => 0, 'gagal' => 0, 'route' => $stage];
+                continue;
+            }
+
+            $counts = SelectionLog::whereIn('id', $latestIds)
+                ->selectRaw("
+                    SUM(CASE WHEN result='lolos' THEN 1 ELSE 0 END) AS lolos,
+                    SUM(CASE WHEN result='tidak_lolos' THEN 1 ELSE 0 END) AS gagal
+                ")
+                ->first();
+
+            $rekap[$stage] = [
+                'lolos' => (int) ($counts->lolos ?? 0),
+                'gagal' => (int) ($counts->gagal ?? 0),
+                'route' => $stage,
+            ];
+        }
 
         return view('admin.applicant.seleksi.index', compact('rekap'));
     }
@@ -170,36 +189,97 @@ class ApplicantController extends Controller
     }
 
 
-public function process(Request $request, string $stage)
-{
-    $positions  = Position::all();
-    $allJurusan = Applicant::whereNotNull('jurusan')->distinct()->pluck('jurusan');
+    public function process(Request $request, string $stage)
+    {
+        // (Opsional) Jika param route berbentuk slug "seleksi-administrasi", normalisasi ke label
+        if (str_contains($stage, '-') && !str_contains($stage, ' ')) {
+            $stage = Str::of($stage)->replace('-', ' ')->title();
+        }
 
-    $q = Applicant::with('position');
+        $positions  = Position::orderBy('name')->get();
+        $allJurusan = Applicant::whereNotNull('jurusan')->distinct()->pluck('jurusan')->sort()->values();
+        $stageKey   = Str::slug($stage);
 
-    // Default: tampilkan yang sedang di tahap ini
-    if ($request->filled('status')) {
-        $q->where('status', $request->status);
-    } else {
-        $q->where('status', $stage);
+        // Helper: terapkan filter umum
+        $applyFilters = function ($q) use ($request) {
+            if ($s = $request->get('search')) {
+                $q->where(function ($x) use ($s) {
+                    $x->where('name', 'like', "%{$s}%")
+                    ->orWhere('email', 'like', "%{$s}%")
+                    ->orWhere('jurusan', 'like', "%{$s}%");
+                });
+            }
+            if ($request->filled('position')) {
+                $q->where('position_id', $request->get('position'));
+            }
+            if ($request->filled('jurusan')) {
+                $q->where('jurusan', $request->get('jurusan'));
+            }
+            return $q;
+        };
+
+        // LOG terbaru per pelamar untuk stage ini
+        $latestIdsSub = SelectionLog::where('stage_key', $stageKey)
+            ->select(DB::raw('MAX(id) AS id'))
+            ->groupBy('applicant_id');
+
+        $latestLogs = SelectionLog::whereIn('id', $latestIdsSub)->get(['applicant_id','result']);
+        $passedIds  = $latestLogs->where('result','lolos')->pluck('applicant_id')->unique();
+        $failedIds  = $latestLogs->where('result','tidak_lolos')->pluck('applicant_id')->unique();
+
+        // 1) Sedang di tahap ini (status = $stage)
+        $cur = $applyFilters(Applicant::with('position')->where('status', $stage))
+            ->get()
+            ->each(function ($a) use ($stage) {
+                $a->_stage_status = $stage; // contoh: "Seleksi Administrasi"
+                $a->_stage_class  = 'text-gray-800';
+                $a->_stage_badge  = 'bg-gray-100 text-gray-800 border border-gray-200';
+            });
+
+        // 2) Sudah LOLOS di tahap ini (dari log)
+        $passed = $applyFilters(Applicant::with('position')->whereIn('id', $passedIds))
+            ->get()
+            ->each(function ($a) use ($stage) {
+                $a->_stage_status = 'Lolos ' . $stage; // "Lolos Seleksi Administrasi"
+                $a->_stage_class  = 'text-green-700';
+                $a->_stage_badge  = 'bg-green-100 text-green-700 border border-green-200';
+            });
+
+        // 3) TIDAK LOLOS di tahap ini (dari log)
+        $failed = $applyFilters(Applicant::with('position')->whereIn('id', $failedIds))
+            ->get()
+            ->each(function ($a) use ($stage) {
+                $a->_stage_status = 'Tidak Lolos ' . $stage;
+                $a->_stage_class  = 'text-red-700';
+                $a->_stage_badge  = 'bg-red-100 text-red-700 border border-red-200';
+            });
+
+        // Gabung, unik per ID, filter by 'status' bila ada, sort, paginate
+        $merged = $cur->merge($passed)->merge($failed)->unique('id');
+
+        if ($request->filled('status')) {
+            $want   = $request->get('status'); // nilai valid: "$stage", "Lolos $stage", "Tidak Lolos $stage"
+            $merged = $merged->filter(fn ($a) => ($a->_stage_status ?? $stage) === $want)->values();
+        }
+
+        $merged   = $merged->sortBy('name')->values();
+        $perPage  = 20;
+        $page     = max(1, (int) $request->query('page', 1));
+        $pageData = $merged->forPage($page, $perPage)->values();
+
+        $applicants = new LengthAwarePaginator(
+            $pageData,
+            $merged->count(),
+            $perPage,
+            $page,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+
+        return view('admin.applicant.seleksi.process', compact(
+            'applicants', 'positions', 'allJurusan', 'stage'
+        ));
     }
 
-    if ($s = $request->search) {
-        $q->where(function($x) use ($s) {
-            $x->where('name','like',"%$s%")
-              ->orWhere('email','like',"%$s%")
-              ->orWhere('jurusan','like',"%$s%");
-        });
-    }
-
-    if ($request->filled('position')) $q->where('position_id', $request->position);
-    if ($request->filled('jurusan'))  $q->where('jurusan', $request->jurusan);
-
-    // $applicants = $q->withQueryString()->paginate(20);
-    $applicants = $q->paginate(20)->appends(request()->query());
-
-    return view('admin.applicant.seleksi.process', compact('applicants','positions','allJurusan','stage'));
-}
 
 
 
@@ -284,34 +364,66 @@ private function nextStage(string $stage): string
     public function updateStatus(Request $request)
     {
         $request->validate([
-            'stage' => 'required|string',
+            'stage'               => 'required|string', // contoh: "Seleksi Administrasi"
             'selected_applicants' => 'required|array',
-            'status' => 'required|array',
+            'status'              => 'required|array',  // [id => 'lolos'|'tidak_lolos']
         ]);
 
-        foreach ($request->selected_applicants as $applicantId) {
-            $applicant = Applicant::findOrFail($applicantId);
-            $selectedStatus = $request->status[$applicantId] ?? null;
+        $stage    = (string) $request->stage;
+        $stageKey = Str::slug($stage);
 
-            if ($selectedStatus === 'lolos') {
-                if ($request->stage === 'Seleksi Administrasi') {
-                    $applicant->status = 'Seleksi Tes Tulis';
-                } elseif ($request->stage === 'Seleksi Tes Tulis') {
-                    $applicant->status = 'Seleksi Tes Praktek';
-                } elseif ($request->stage === 'Seleksi Tes Praktek') {
-                    $applicant->status = 'Interview';
-                } elseif ($request->stage === 'Interview') {
-                    $applicant->status = 'Lolos Interview';
+        DB::transaction(function () use ($request, $stage, $stageKey) {
+            foreach ($request->selected_applicants as $applicantId) {
+                $applicant = Applicant::with('position')->findOrFail($applicantId);
+                $action    = $request->status[$applicantId] ?? null;
+
+                if ($action === 'lolos') {
+                    // Tentukan tahap berikutnya
+                    $next = match ($stage) {
+                        'Seleksi Administrasi' => 'Seleksi Tes Tulis',
+                        'Seleksi Tes Tulis'    => 'Seleksi Tes Praktek',
+                        'Seleksi Tes Praktek'  => 'Interview',
+                        'Interview'            => 'Lolos Interview',
+                        default                => $applicant->status,
+                    };
+
+                    // Update status applicant
+                    $applicant->status = $next;
+                    $applicant->save();
+
+                    // Tulis LOG: lolos di tahap saat ini
+                    SelectionLog::create([
+                        'applicant_id' => $applicant->id,
+                        'stage'        => $stage,
+                        'stage_key'    => $stageKey,
+                        'result'       => 'lolos',
+                        'position_id'  => $applicant->position_id,
+                        'jurusan'      => $applicant->jurusan,
+                        'acted_by'     => auth()->id(),
+                    ]);
+
+                } elseif ($action === 'tidak_lolos') {
+                    // Update status applicant: Tidak Lolos {tahap ini}
+                    $applicant->status = 'Tidak Lolos '.$stage;
+                    $applicant->save();
+
+                    // Tulis LOG: tidak_lolos di tahap saat ini
+                    SelectionLog::create([
+                        'applicant_id' => $applicant->id,
+                        'stage'        => $stage,
+                        'stage_key'    => $stageKey,
+                        'result'       => 'tidak_lolos',
+                        'position_id'  => $applicant->position_id,
+                        'jurusan'      => $applicant->jurusan,
+                        'acted_by'     => auth()->id(),
+                    ]);
                 }
-            } elseif ($selectedStatus === 'tidak_lolos') {
-                $applicant->status = 'Tidak Lolos ' . $request->stage;
             }
+        });
 
-            $applicant->save();
-        }
-
-        return back()->with('success', 'Status peserta berhasil diperbarui.');
+        return back()->with('success', 'Status peserta & log berhasil diperbarui.');
     }
+
 
 
     public function showStageApplicants($stage)

@@ -38,7 +38,7 @@ return new class extends Migration
                 'Tidak Lolos Seleksi Tes Praktek',
                 'Interview',
                 'Tidak Lolos Interview',
-                'Lolosi Interview'
+                'Lolos Interview'
             ])->default('Seleksi Administrasi');
             $table->timestamps();
         });
