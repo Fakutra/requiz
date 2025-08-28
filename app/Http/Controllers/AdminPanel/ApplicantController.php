@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Applicant;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 use App\Exports\ApplicantsExport; // <-- 1. Impor kelas Export Anda
 use Maatwebsite\Excel\Facades\Excel; // <-- 2. Impor Fassad Excel
 use App\Models\Position; // 1. Impor model Position
@@ -220,21 +221,63 @@ private function nextStage(string $stage): string
     public function sendEmail(Request $request)
     {
         $request->validate([
-            'recipients' => 'required|string',
-            'subject' => 'required|string|max:255',
-            'message' => 'required|string',
+            'recipients' => 'required|string',             // akan diisi dari hidden input (join koma)
+            'subject'    => 'required|string|max:255',
+            'message'    => 'required|string|max:20000',
         ]);
 
-        $recipients = explode(',', $request->recipients);
+        // Normalisasi pemisah: baris baru & titik koma -> koma
+        $raw = str_replace(["\r\n", "\n", ";"], ",", $request->recipients);
 
-        foreach ($recipients as $recipient) {
-            Mail::raw($request->message, function ($mail) use ($recipient, $request) {
-                $mail->to(trim($recipient))
-                    ->subject($request->subject);
-            });
+        // Pecah jadi array email unik & rapi
+        $emails = collect(explode(',', $raw))
+            ->map(fn ($e) => trim($e))
+            ->filter()         // buang kosong
+            ->unique()
+            ->values();
+
+        if ($emails->isEmpty()) {
+            return back()
+                ->withErrors(['recipients' => 'Belum ada penerima yang dipilih.'])
+                ->withInput();
         }
 
-        return back()->with('success', 'Email berhasil dikirim ke ' . count($recipients) . ' peserta.');
+        // Validasi format email satu per satu
+        $invalid = $emails->reject(fn ($e) => filter_var($e, FILTER_VALIDATE_EMAIL));
+        if ($invalid->isNotEmpty()) {
+            return back()
+                ->withErrors(['recipients' => 'Email tidak valid: '.$invalid->implode(', ')])
+                ->withInput();
+        }
+
+        // Kirim satu per satu (sederhana; bisa diganti queue bila banyak)
+        $failed = [];
+        foreach ($emails as $to) {
+            try {
+                Mail::raw($request->message, function ($mail) use ($to, $request) {
+                    $mail->to($to)
+                        ->subject($request->subject)
+                        ->from(config('mail.from.address'), config('mail.from.name'));
+                });
+            } catch (\Throwable $e) {
+                $failed[] = $to;
+                Log::error('Gagal kirim email', ['to' => $to, 'error' => $e->getMessage()]);
+            }
+        }
+
+        $total  = $emails->count();
+        $sent   = $total - count($failed);
+
+        if ($sent === 0) {
+            return back()->with('error', 'Semua pengiriman gagal. Cek konfigurasi MAIL_* di .env dan log aplikasi.');
+        }
+
+        $msg = "Email terkirim ke {$sent} dari {$total} penerima.";
+        if (!empty($failed)) {
+            $msg .= ' Gagal: '.implode(', ', $failed);
+        }
+
+        return back()->with('success', $msg);
     }
 
 

@@ -23,6 +23,7 @@
 
 
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
     <style>[x-cloak] { display: none !important; }</style>
@@ -469,18 +470,19 @@
 
 {{-- ✅ Popup notifikasi sukses --}}
 @if (session('success'))
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            Swal.fire({
-                icon: 'success',
-                title: 'Berhasil',
-                text: @json(session('success')), // lebih aman daripada {{ }}
-                confirmButtonColor: '#3085d6',
-                confirmButtonText: 'OK'
-            });
-        });
-    </script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  Swal.fire({
+    icon: 'success',
+    title: 'Berhasil',
+    text: @json(session('success')), // lebih aman daripada konkatenasi manual
+    confirmButtonColor: '#3085d6',
+    confirmButtonText: 'OK'
+  });
+});
+</script>
 @endif
+
 
 </footer>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"
