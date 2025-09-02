@@ -189,155 +189,135 @@ class ApplicantController extends Controller
     }
 
 
+    // App\Http\Controllers\AdminPanel\ApplicantController.php
+
     public function process(Request $request, string $stage)
     {
-        // (Opsional) Jika param route berbentuk slug "seleksi-administrasi", normalisasi ke label
-        if (str_contains($stage, '-') && !str_contains($stage, ' ')) {
-            $stage = Str::of($stage)->replace('-', ' ')->title();
-        }
+        $positions  = \App\Models\Position::orderBy('name')->get();
+        $allJurusan = \App\Models\Applicant::whereNotNull('jurusan')->distinct()->pluck('jurusan');
 
-        $positions  = Position::orderBy('name')->get();
-        $allJurusan = Applicant::whereNotNull('jurusan')->distinct()->pluck('jurusan')->sort()->values();
-        $stageKey   = Str::slug($stage);
+        $nextStage = $this->nextStage($stage);
 
-        // Helper: terapkan filter umum
-        $applyFilters = function ($q) use ($request) {
-            if ($s = $request->get('search')) {
-                $q->where(function ($x) use ($s) {
-                    $x->where('name', 'like', "%{$s}%")
-                    ->orWhere('email', 'like', "%{$s}%")
-                    ->orWhere('jurusan', 'like', "%{$s}%");
-                });
-            }
-            if ($request->filled('position')) {
-                $q->where('position_id', $request->get('position'));
-            }
-            if ($request->filled('jurusan')) {
-                $q->where('jurusan', $request->get('jurusan'));
-            }
-            return $q;
-        };
-
-        // LOG terbaru per pelamar untuk stage ini
-        $latestIdsSub = SelectionLog::where('stage_key', $stageKey)
-            ->select(DB::raw('MAX(id) AS id'))
-            ->groupBy('applicant_id');
-
-        $latestLogs = SelectionLog::whereIn('id', $latestIdsSub)->get(['applicant_id','result']);
-        $passedIds  = $latestLogs->where('result','lolos')->pluck('applicant_id')->unique();
-        $failedIds  = $latestLogs->where('result','tidak_lolos')->pluck('applicant_id')->unique();
-
-        // 1) Sedang di tahap ini (status = $stage)
-        $cur = $applyFilters(Applicant::with('position')->where('status', $stage))
-            ->get()
-            ->each(function ($a) use ($stage) {
-                $a->_stage_status = $stage; // contoh: "Seleksi Administrasi"
-                $a->_stage_class  = 'text-gray-800';
-                $a->_stage_badge  = 'bg-gray-100 text-gray-800 border border-gray-200';
-            });
-
-        // 2) Sudah LOLOS di tahap ini (dari log)
-        $passed = $applyFilters(Applicant::with('position')->whereIn('id', $passedIds))
-            ->get()
-            ->each(function ($a) use ($stage) {
-                $a->_stage_status = 'Lolos ' . $stage; // "Lolos Seleksi Administrasi"
-                $a->_stage_class  = 'text-green-700';
-                $a->_stage_badge  = 'bg-green-100 text-green-700 border border-green-200';
-            });
-
-        // 3) TIDAK LOLOS di tahap ini (dari log)
-        $failed = $applyFilters(Applicant::with('position')->whereIn('id', $failedIds))
-            ->get()
-            ->each(function ($a) use ($stage) {
-                $a->_stage_status = 'Tidak Lolos ' . $stage;
-                $a->_stage_class  = 'text-red-700';
-                $a->_stage_badge  = 'bg-red-100 text-red-700 border border-red-200';
-            });
-
-        // Gabung, unik per ID, filter by 'status' bila ada, sort, paginate
-        $merged = $cur->merge($passed)->merge($failed)->unique('id');
+        $q = \App\Models\Applicant::with('position');
 
         if ($request->filled('status')) {
-            $want   = $request->get('status'); // nilai valid: "$stage", "Lolos $stage", "Tidak Lolos $stage"
-            $merged = $merged->filter(fn ($a) => ($a->_stage_status ?? $stage) === $want)->values();
+            $q->where('status', $request->status);
+        } else {
+            // tampilkan: sedang tahap ini, lolos tahap ini (2 pola), dan tidak lolos tahap ini
+            $q->where(function ($w) use ($stage, $nextStage) {
+                $w->where('status', $stage)                 // sedang tahap ini
+                ->orWhere('status', 'Lolos '.$stage)      // eksplisit
+                ->orWhere('status', $nextStage)           // sudah pindah (means lolos tahap ini)
+                ->orWhere('status', 'Tidak Lolos '.$stage);
+            });
         }
 
-        $merged   = $merged->sortBy('name')->values();
-        $perPage  = 20;
-        $page     = max(1, (int) $request->query('page', 1));
-        $pageData = $merged->forPage($page, $perPage)->values();
+        if ($s = $request->search) {
+            $q->where(function($x) use ($s) {
+                $x->where('name','like',"%{$s}%")
+                ->orWhere('email','like',"%{$s}%")
+                ->orWhere('jurusan','like',"%{$s}%");
+            });
+        }
+        if ($request->filled('position')) $q->where('position_id', $request->position);
+        if ($request->filled('jurusan'))  $q->where('jurusan', $request->jurusan);
 
-        $applicants = new LengthAwarePaginator(
-            $pageData,
-            $merged->count(),
-            $perPage,
-            $page,
-            ['path' => $request->url(), 'query' => $request->query()]
-        );
+        $applicants = $q->orderBy('name')->paginate(20)->appends($request->query());
 
-        return view('admin.applicant.seleksi.process', compact(
-            'applicants', 'positions', 'allJurusan', 'stage'
-        ));
+        // Tandai state untuk blade (badge + auto select lolos)
+        $applicants->getCollection()->transform(function ($a) use ($stage, $nextStage) {
+            if ($a->status === $stage) {
+                $a->_stage_state  = 'current';
+                $a->_stage_status = $stage;
+                $a->_stage_badge  = 'bg-gray-100 text-gray-800 border border-gray-200';
+            } elseif ($a->status === 'Tidak Lolos '.$stage) {
+                $a->_stage_state  = 'gagal';
+                $a->_stage_status = 'Tidak Lolos '.$stage;
+                $a->_stage_badge  = 'bg-red-50 text-red-700 border border-red-200';
+            } elseif ($a->status === 'Lolos '.$stage || $a->status === $nextStage) {
+                // dianggap Lolos tahap ini
+                $a->_stage_state  = 'lolos';
+                $a->_stage_status = 'Lolos '.$stage;
+                $a->_stage_badge  = 'bg-green-50 text-green-700 border border-green-200';
+            } else {
+                $a->_stage_state  = 'other';
+                $a->_stage_status = $a->status;
+                $a->_stage_badge  = 'bg-slate-50 text-slate-600 border border-slate-200';
+            }
+            return $a;
+        });
+
+        return view('admin.applicant.seleksi.process', compact('applicants','positions','allJurusan','stage'));
     }
 
-
-
-
-/**
- * (Opsional) helper untuk menentukan stage berikutnya saat filter "lolos"
- */
-private function nextStage(string $stage): string
-{
-    $map = [
-        'Seleksi Administrasi'  => 'Seleksi Tes Tulis',
-        'Seleksi Tes Tulis'     => 'Seleksi Technical Test',
-        'Seleksi Technical Test'=> 'Seleksi Interview',
-        'Seleksi Interview'     => 'Interview',
-        'Interview'             => 'Interview', // terakhir
-    ];
-    return $map[$stage] ?? $stage;
-}
+    // Pastikan map next stage benar
+    private function nextStage(string $stage): string
+    {
+        $map = [
+            'Seleksi Administrasi' => 'Seleksi Tes Tulis',
+            'Seleksi Tes Tulis'    => 'Seleksi Tes Praktek',
+            'Seleksi Tes Praktek'  => 'Interview',
+            'Interview'            => 'Lolos Interview', // terminal
+        ];
+        return $map[$stage] ?? $stage;
+    }
 
     public function sendEmail(Request $request)
     {
         $request->validate([
-            'recipients' => 'required|string',             // akan diisi dari hidden input (join koma)
-            'subject'    => 'required|string|max:255',
-            'message'    => 'required|string|max:20000',
+            'recipients'    => 'required|string',           // join koma (dibuat di modal)
+            'recipient_ids' => 'required|string',           // join koma (untuk ambil nama)
+            'stage'         => 'required|string',
+            'use_template'  => 'nullable|boolean',
+            'subject'       => 'nullable|string|max:255',
+            'message'       => 'nullable|string|max:20000',
+            'attachment'    => 'required|file|mimes:pdf|max:5120', // max 5MB
         ]);
 
-        // Normalisasi pemisah: baris baru & titik koma -> koma
-        $raw = str_replace(["\r\n", "\n", ";"], ",", $request->recipients);
+        $useTemplate = $request->boolean('use_template', true);
 
-        // Pecah jadi array email unik & rapi
-        $emails = collect(explode(',', $raw))
-            ->map(fn ($e) => trim($e))
-            ->filter()         // buang kosong
+        $rawEmails = str_replace(["\r\n", "\n", ";"], ",", $request->recipients);
+        $emails = collect(explode(',', $rawEmails))
+            ->map(fn($e) => trim($e))
+            ->filter()
             ->unique()
             ->values();
 
-        if ($emails->isEmpty()) {
-            return back()
-                ->withErrors(['recipients' => 'Belum ada penerima yang dipilih.'])
-                ->withInput();
+        $ids = collect(explode(',', $request->recipient_ids))
+            ->map(fn($v) => trim($v))
+            ->filter()
+            ->map(fn($v) => (int) $v)
+            ->values();
+
+        $applicants = \App\Models\Applicant::whereIn('id', $ids)->get();
+
+        if ($emails->isEmpty() || $applicants->isEmpty()) {
+            return back()->withErrors(['recipients' => 'Penerima tidak valid/ kosong.'])->withInput();
         }
 
-        // Validasi format email satu per satu
-        $invalid = $emails->reject(fn ($e) => filter_var($e, FILTER_VALIDATE_EMAIL));
-        if ($invalid->isNotEmpty()) {
-            return back()
-                ->withErrors(['recipients' => 'Email tidak valid: '.$invalid->implode(', ')])
-                ->withInput();
-        }
-
-        // Kirim satu per satu (sederhana; bisa diganti queue bila banyak)
+        $file   = $request->file('attachment');
         $failed = [];
+        $total  = $emails->count();
+
         foreach ($emails as $to) {
+            $fullName = optional($applicants->firstWhere('email', $to))->name ?? $to;
+
+            if ($useTemplate) {
+                ['subject' => $subject, 'message' => $body] = $this->defaultEmailForStage($request->stage, $fullName);
+            } else {
+                $subject = $request->input('subject', 'Informasi Seleksi');
+                $body    = $request->input('message', '');
+            }
+
             try {
-                Mail::raw($request->message, function ($mail) use ($to, $request) {
+                Mail::raw($body, function ($mail) use ($to, $subject, $file) {
                     $mail->to($to)
-                        ->subject($request->subject)
-                        ->from(config('mail.from.address'), config('mail.from.name'));
+                        ->subject($subject)
+                        ->from(config('mail.from.address'), config('mail.from.name'))
+                        ->attach($file->getRealPath(), [
+                            'as'   => $file->getClientOriginalName(),
+                            'mime' => 'application/pdf',
+                        ]);
                 });
             } catch (\Throwable $e) {
                 $failed[] = $to;
@@ -345,54 +325,52 @@ private function nextStage(string $stage): string
             }
         }
 
-        $total  = $emails->count();
-        $sent   = $total - count($failed);
-
+        $sent = $total - count($failed);
         if ($sent === 0) {
-            return back()->with('error', 'Semua pengiriman gagal. Cek konfigurasi MAIL_* di .env dan log aplikasi.');
+            return back()->with('error', 'Semua pengiriman gagal. Cek konfigurasi email & log aplikasi.');
         }
 
         $msg = "Email terkirim ke {$sent} dari {$total} penerima.";
-        if (!empty($failed)) {
-            $msg .= ' Gagal: '.implode(', ', $failed);
-        }
+        if (!empty($failed)) $msg .= ' Gagal: ' . implode(', ', $failed);
 
         return back()->with('success', $msg);
+    }
+
+    private function defaultEmailForStage(string $stage, string $fullName): array
+    {
+        $subject = "Pemberitahuan Hasil {$stage}";
+        $body = "Kepada {$fullName}
+
+    Selamat anda lolos pada tahap {$stage}. Silahkan cek jadwal anda di file yang telah dikirimkan.
+
+    Demikian
+    Admin ReQuiz";
+        return ['subject' => $subject, 'message' => $body];
     }
 
 
     public function updateStatus(Request $request)
     {
         $request->validate([
-            'stage'               => 'required|string', // contoh: "Seleksi Administrasi"
+            'stage'               => 'required|string',
             'selected_applicants' => 'required|array',
-            'status'              => 'required|array',  // [id => 'lolos'|'tidak_lolos']
+            'status'              => 'required|array', // [id => 'lolos'|'tidak_lolos']
         ]);
 
         $stage    = (string) $request->stage;
-        $stageKey = Str::slug($stage);
+        $stageKey = \Illuminate\Support\Str::slug($stage);
 
         DB::transaction(function () use ($request, $stage, $stageKey) {
             foreach ($request->selected_applicants as $applicantId) {
-                $applicant = Applicant::with('position')->findOrFail($applicantId);
+                $applicant = \App\Models\Applicant::with('position')->findOrFail($applicantId);
                 $action    = $request->status[$applicantId] ?? null;
 
                 if ($action === 'lolos') {
-                    // Tentukan tahap berikutnya
-                    $next = match ($stage) {
-                        'Seleksi Administrasi' => 'Seleksi Tes Tulis',
-                        'Seleksi Tes Tulis'    => 'Seleksi Tes Praktek',
-                        'Seleksi Tes Praktek'  => 'Interview',
-                        'Interview'            => 'Lolos Interview',
-                        default                => $applicant->status,
-                    };
-
-                    // Update status applicant
+                    $next = $this->nextStage($stage);
                     $applicant->status = $next;
                     $applicant->save();
 
-                    // Tulis LOG: lolos di tahap saat ini
-                    SelectionLog::create([
+                    \App\Models\SelectionLog::create([
                         'applicant_id' => $applicant->id,
                         'stage'        => $stage,
                         'stage_key'    => $stageKey,
@@ -403,12 +381,10 @@ private function nextStage(string $stage): string
                     ]);
 
                 } elseif ($action === 'tidak_lolos') {
-                    // Update status applicant: Tidak Lolos {tahap ini}
                     $applicant->status = 'Tidak Lolos '.$stage;
                     $applicant->save();
 
-                    // Tulis LOG: tidak_lolos di tahap saat ini
-                    SelectionLog::create([
+                    \App\Models\SelectionLog::create([
                         'applicant_id' => $applicant->id,
                         'stage'        => $stage,
                         'stage_key'    => $stageKey,
