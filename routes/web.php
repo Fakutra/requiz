@@ -1,20 +1,21 @@
 <?php
 
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\QuizController;
 use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\LowonganController;
-use App\Http\Controllers\QuizController;
 use App\Http\Controllers\AdminPanel\TestController;
-use App\Http\Controllers\AdminPanel\TestSectionController;
 use App\Http\Controllers\AdminPanel\AdminController;
 use App\Http\Controllers\AdminPanel\BatchController;
 use App\Http\Controllers\AdminPanel\PositionController;
-use App\Http\Controllers\AdminPanel\ApplicantController;
-use App\Http\Controllers\AdminPanel\QuestionBundleController;
 use App\Http\Controllers\AdminPanel\QuestionController;
+use App\Http\Controllers\AdminPanel\ApplicantController;
 use App\Http\Controllers\AdminPanel\QuizResultController;
-use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\AdminPanel\TestSectionController;
+use App\Http\Controllers\AdminPanel\EssayGradingController;
+use App\Http\Controllers\AdminPanel\QuestionBundleController;
 
 
 Route::get('/', function () {
