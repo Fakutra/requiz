@@ -14,13 +14,11 @@ use App\Http\Controllers\AdminPanel\ApplicantController;
 use App\Http\Controllers\AdminPanel\QuestionBundleController;
 use App\Http\Controllers\AdminPanel\QuestionController;
 use App\Http\Controllers\AdminPanel\QuizResultController;
-use Illuminate\Support\Facades\Auth;
-
+use App\Http\Controllers\AdminPanel\EssayGradingController;
 
 Route::get('/', function () {
     return view('welcome');
 })->name('welcome');
-
 
 Route::get('/joblist', function () {
     return view('joblist');
@@ -38,23 +36,31 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    
+
     Route::get('lowongan', [LowonganController::class, 'index'])->name('lowongan.index');
     Route::post('/{position:slug}/apply', [LowonganController::class, 'store'])->name('apply.store');
     Route::get('history', [HistoryController::class, 'index'])->name('history.index');
 
-    Route::get('/quiz/{slug}', [QuizController::class, 'start'])->name('quiz.start');            // mulai / lanjut ke section berjalan
-    Route::post('/quiz/{slug}', [QuizController::class, 'submitSection'])->name('quiz.submit');  // submit 1 section
-    Route::get('/quiz/{slug}/finish', [QuizController::class, 'finish'])->name('quiz.finish');   // ringkasan akhir
+    // ==== QUIZ ====
+    // Start wajib signed + throttle untuk cegah brute-force slug
+    Route::get('/quiz/{slug}', [QuizController::class, 'start'])
+        ->middleware(['throttle:20,1', 'signed'])
+        ->name('quiz.start');
+
+    // Submit/autosave/finish tetap biasa (dicek di controller)
+    Route::post('/quiz/{slug}', [QuizController::class, 'submitSection'])->name('quiz.submit');
+    Route::post('/quiz/{slug}/autosave', [QuizController::class, 'autosave'])->name('quiz.autosave');
+    Route::get('/quiz/{slug}/finish', [QuizController::class, 'finish'])->name('quiz.finish');
+
+    // (opsional) keepalive agar sesi tetap hidup saat pengerjaan
+    Route::get('/keepalive', fn () => response()->noContent())->name('keepalive');
 });
 
 require __DIR__.'/auth.php';
 
 Route::middleware(['auth', 'role:admin'])->group(function () {
-    Route::get('/admin', function () {
-        return view('admin/dashboard');
-    });
-    
+    Route::get('/admin', function () { return view('admin/dashboard'); });
+
     Route::get('admin/dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
 
     Route::get('admin/batch', [BatchController::class, 'index'])->name('batch.index');
@@ -75,13 +81,13 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::delete('admin/applicant/{applicant}', [ApplicantController::class, 'destroy'])->name('admin.applicant.destroy');
     Route::get('admin/applicant/seleksi', [ApplicantController::class, 'seleksiIndex'])->name('admin.applicant.seleksi.index');
     Route::get('admin/applicant/seleksi/{stage}', [ApplicantController::class, 'process'])->name('admin.applicant.seleksi.process');
-    Route::post('admin/applicant/seleksi/update-status', [ApplicantController::class, 'updateStatus'])->name('admin.applicant.seleksi.update-status');// Route untuk edit applicant
+    Route::post('admin/applicant/seleksi/update-status', [ApplicantController::class, 'updateStatus'])->name('admin.applicant.seleksi.update-status');
     Route::get('/admin/applicant/{id}/edit', [ApplicantController::class, 'edit'])->name('admin.applicant.edit');
     Route::put('/admin/applicant/{id}', [ApplicantController::class, 'update'])->name('applicant.update');
     Route::delete('/admin/applicant/{id}', [ApplicantController::class, 'destroy'])->name('admin.applicant.destroySeleksi');
     Route::get('/admin/applicant/seleksi/{stage}', [ApplicantController::class, 'showStageApplicants'])->name('admin.applicant.seleksi.process');
 
-    // Menampilkan daftar test
+    // Test
     Route::get('admin/test', [TestController::class, 'index'])->name('test.index');
     Route::get('admin/test/{test}', [TestController::class, 'show'])->name('test.show');
     Route::post('admin/test', [TestController::class, 'store'])->name('test.store');
@@ -89,14 +95,8 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::delete('admin/test/{test}', [TestController::class, 'destroy'])->name('test.destroy');
     Route::get('admin/test/checkSlug', [TestController::class, 'checkSlug'])->name('test.checkSlug');
 
-    // Rute untuk membuat section baru (nested di bawah test)
-    Route::post('admin/test/{test}/section', [TestSectionController::class, 'store'])
-        ->name('section.store');
-
-    // Rute untuk mengecek slug section
-    Route::get('admin/section/checkSlug', [TestSectionController::class, 'checkSlug'])
-        ->name('section.checkSlug');
-
+    Route::post('admin/test/{test}/section', [TestSectionController::class, 'store'])->name('section.store');
+    Route::get('admin/section/checkSlug', [TestSectionController::class, 'checkSlug'])->name('section.checkSlug');
     Route::put('admin/section/{section}', [TestSectionController::class, 'update'])->name('section.update');
     Route::delete('admin/section/{section}', [TestSectionController::class, 'destroy'])->name('section.destroy');
     Route::get('admin/test/section/checkSlug', [TestSectionController::class, 'checkSlug'])->name('section.checkSlug');
@@ -104,28 +104,26 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     // Question
     Route::get('admin/question', [QuestionController::class, 'index'])->name('question.index');
     Route::post('admin/question', [QuestionController::class, 'store'])->name('question.store');
-    Route::put('admin/question/{question}', [QuestionController::class, 'update'])->name('question.update'); 
+    Route::put('admin/question/{question}', [QuestionController::class, 'update'])->name('question.update');
     Route::delete('admin/question/{question}', [QuestionController::class, 'destroy'])->name('question.destroy');
-    // Route untuk fitur import Excel
     Route::post('admin/question/import', [QuestionController::class, 'import'])->name('question.import');
     Route::get('admin/question/template', [QuestionController::class, 'downloadTemplate'])->name('question.template');
 
+    // Bundle
     Route::get('admin/bundle', [QuestionBundleController::class, 'index'])->name('bundle.index');
     Route::get('admin/bundle/{bundle}', [QuestionBundleController::class, 'show'])->name('bundle.show');
     Route::post('admin/bundle', [QuestionBundleController::class, 'store'])->name('bundle.store');
     Route::put('admin/bundle/{bundle}', [QuestionBundleController::class, 'update'])->name('bundle.update');
     Route::delete('admin/bundle/{bundle}', [QuestionBundleController::class, 'destroy'])->name('bundle.destroy');
     Route::get('admin/bundle/checkSlug', [QuestionBundleController::class, 'checkSlug'])->name('bundle.checkSlug');
+    Route::post('admin/bundle/{bundle}/questions', [QuestionBundleController::class, 'addQuestion'])->name('bundle.questions.add');
+    Route::delete('admin/bundle/{bundle}/questions/{question}', [QuestionBundleController::class, 'removeQuestion'])->name('bundle.questions.remove');
 
-    // Route untuk menambah soal ke bundle tertentu
-    Route::post('admin/bundle/{bundle}/questions', [QuestionBundleController::class, 'addQuestion'])
-        ->name('bundle.questions.add');
-
-    // Route untuk menghapus soal dari bundle tertentu
-    Route::delete('admin/bundle/{bundle}/questions/{question}', [QuestionBundleController::class, 'removeQuestion'])
-        ->name('bundle.questions.remove');
-
+    // Hasil kuis
     Route::get('admin/quiz-results', [QuizResultController::class, 'index'])->name('quiz_results.index');
     Route::get('admin/quiz-results/{testResult}', [QuizResultController::class, 'show'])->name('quiz_results.show');
 
+    // Essay grading
+    Route::get('essay-grading', [EssayGradingController::class, 'index'])->name('essay_grading.index');
+    Route::patch('essay-grading/result/{testResult}', [EssayGradingController::class, 'updateResult'])->name('essay_grading.update_result');
 });

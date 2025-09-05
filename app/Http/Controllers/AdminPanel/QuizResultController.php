@@ -3,154 +3,169 @@
 namespace App\Http\Controllers\AdminPanel;
 
 use App\Http\Controllers\Controller;
+use App\Models\Answer;
 use App\Models\TestResult;
-use App\Models\Question;
-use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 
 class QuizResultController extends Controller
 {
-    public function index(Request $request)
+    /**
+     * Daftar hasil: susun kolom Section 1..N berdasarkan urutan section di quiz-nya.
+     */
+    public function index()
     {
-        // List semua hasil (terbaru di atas), bisa ditambah filter jika perlu
+        // Ambil hasil + urutan section per test
         $results = TestResult::with([
-                'applicant',           // name, email, dll
-                'applicant.position',  // posisi yang dilamar
-                'test.position',       // posisi pada test
-            ])
-            ->latest('finished_at')
-            ->latest('started_at')
-            ->paginate(20)
-            ->withQueryString();
-
-        return view('admin.quiz-results.index', compact('results'));
-    }
-
-    public function show(TestResult $testResult)
-    {
-        // Muat detail lengkap untuk tampilan per section + per soal
-        $testResult->load([
             'applicant',
-            'applicant.position',
             'test.position',
-            'sectionResults.testSection',
-            'sectionResults.answers.question',
-        ]);
+            'test.sections' => fn ($q) => $q->orderBy('order')->orderBy('id'),
+            'sectionResults',
+        ])->orderBy('id', 'desc')->paginate(15);
 
-        // Hitung total skor (fallback jika kolom score null)
-        $totalScore = $testResult->score ?? $testResult->sectionResults->sum('score');
+        // Hitung jumlah section maksimum di semua test untuk header kolom
+        $maxSections = $results->getCollection()
+            ->map(fn ($r) => $r->test?->sections?->count() ?? 0)
+            ->max() ?? 0;
 
-        // Siapkan data terformat per section -> per answer
-        $sections = $testResult->sectionResults->map(function ($sr) {
-            $sectionName = optional($sr->testSection)->name ?? 'Section';
-            $sectionScore = $sr->score;
+        // Tambahkan properti bantuan "orderedSectionResults" agar blade bisa akses nilai per urutan section
+        $results->getCollection()->transform(function (TestResult $r) {
+            $ordered = $r->test?->sections?->map(function ($section) use ($r) {
+                return $r->sectionResults->firstWhere('test_section_id', $section->id);
+            }) ?? collect();
 
-            $answers = $sr->answers->map(function ($ans) {
-                /** @var Question $q */
-                $q = $ans->question;
-                $type = $q->type ?? '-';
-                $userAns = (string) $ans->answer;
-                $correctAns = (string) ($q->answer ?? '');
-
-                // Tampilkan jawaban user dalam format "A. Teks" / "A,B. ..."
-                $userAnsPretty = $this->formatAnswerPretty($q, $userAns);
-
-                // Tampilkan jawaban benar dalam format yang sama
-                $correctPretty = $this->formatAnswerPretty($q, $correctAns);
-
-                // Tentukan benar/salah/pending
-                $judge = $this->judge($q, $userAns);
-
-                return [
-                    'question_text'  => $q->question,
-                    'type'           => $type,
-                    'user_answer'    => $userAnsPretty ?: '—',
-                    'correct_answer' => $correctPretty ?: '—',
-                    'score'          => is_null($ans->score) ? '—' : $ans->score,
-                    'status'         => $judge, // 'correct' | 'wrong' | 'pending' (essay/no key)
-                ];
-            });
-
-            return [
-                'name'    => $sectionName,
-                'score'   => $sectionScore,
-                'answers' => $answers,
-            ];
+            // simpan koleksi berurutan ke instance (hanya untuk tampilan)
+            $r->orderedSectionResults = $ordered->values();
+            return $r;
         });
 
-        return view('admin.quiz-results.show', compact('testResult', 'totalScore', 'sections'));
+        return view('admin.quiz-results.index', [
+            'results'     => $results,
+            'maxSections' => (int) $maxSections,
+        ]);
     }
 
     /**
-     * Menentukan status jawaban (correct / wrong / pending) berdasarkan tipe soal.
+     * Detail 1 hasil: selalu render SEMUA section & SEMUA soal.
+     * Untuk yang tidak dikerjakan, tampilkan jawaban "" dan skor 0.
      */
-    private function judge(Question $q, string $userRaw): string
+    public function show(TestResult $testResult)
     {
-        $type = $q->type;
+        // Eager load lengkap: urutan section + soal
+        $testResult->load([
+            'applicant',
+            'test.position',
+            'test.sections' => fn ($q) => $q->orderBy('order')->orderBy('id'),
+            'sectionResults',
+        ]);
 
-        if ($type === 'Essay') {
-            // Essay dinilai manual → pending (meskipun score bisa terisi nanti)
-            return 'pending';
-        }
+        // Ambil semua Answer milik result ini sekali saja (hemat query)
+        $allAnswers = Answer::where('test_result_id', $testResult->id)->get()
+            ->groupBy('test_section_id'); // => [test_section_id => collect<Answer>]
 
-        if ($type === 'PG') {
-            if ($userRaw === '') return 'wrong';
-            return strtoupper($userRaw) === strtoupper((string) $q->answer) ? 'correct' : 'wrong';
-        }
+        $sectionsPayload = [];
+        $grandTotal = 0;
 
-        if ($type === 'Multiple') {
-            // Bandingkan set persis
-            $correct = collect(explode(',', (string) $q->answer))
-                ->map(fn ($x) => strtoupper(trim($x)))
-                ->filter();
-            $user = collect(explode(',', $userRaw))
-                ->map(fn ($x) => strtoupper(trim($x)))
-                ->filter();
-            if ($user->isEmpty()) return 'wrong';
-            return $user->diff($correct)->isEmpty() && $correct->diff($user)->isEmpty() ? 'correct' : 'wrong';
-        }
+        foreach ($testResult->test->sections as $section) {
+            $sr  = $testResult->sectionResults->firstWhere('test_section_id', $section->id);
+            $answersInSection = $allAnswers->get($section->id, collect())->keyBy('question_id');
 
-        if ($type === 'Poin') {
-            // Tidak ada "benar/salah", lebih ke poin; anggap correct jika poin > 0
-            $map = [
-                'A' => $q->point_a, 'B' => $q->point_b, 'C' => $q->point_c,
-                'D' => $q->point_d, 'E' => $q->point_e,
+            // Ambil semua soal di section ini (jika ada bundle)
+            $questions = optional($section->questionBundle)->questions ?? collect();
+
+            $rows = [];
+            $sectionScore = 0;
+
+            foreach ($questions as $q) {
+                // Cek ada jawaban di DB?
+                $ansRow = $answersInSection->get($q->id);
+
+                // Normalisasi tipe dan nilai default
+                $type = (string) $q->type;
+
+                // Default untuk soal yang tidak sempat dikerjakan:
+                // - userAnswer: "" (string kosong)
+                // - selectedLetters: [] (untuk pilihan ganda)
+                // - score: 0 (sesuai permintaan Anda—termasuk essay)
+                $userAnswerRaw   = $ansRow ? (string) $ansRow->answer : '';
+                $score           = $ansRow ? (is_null($ansRow->score) ? 0 : (float) $ansRow->score) : 0;
+
+                // Opsi terstruktur A–E untuk tampilan
+                $options = [
+                    'A' => $q->option_a,
+                    'B' => $q->option_b,
+                    'C' => $q->option_c,
+                    'D' => $q->option_d,
+                    'E' => $q->option_e,
+                ];
+
+                // Poin per opsi (untuk tipe Poin)
+                $optionPoints = [
+                    'A' => $q->point_a,
+                    'B' => $q->point_b,
+                    'C' => $q->point_c,
+                    'D' => $q->point_d,
+                    'E' => $q->point_e,
+                ];
+
+                // Jawaban benar (untuk PG/Multiple)
+                $correctLetters = [];
+                $correctAnswer  = null;
+                if (in_array($type, ['PG', 'Multiple'])) {
+                    $correctLetters = collect(explode(',', (string) $q->answer))
+                        ->map(fn ($x) => strtoupper(trim($x)))
+                        ->filter()
+                        ->values()
+                        ->all();
+                    $correctAnswer  = implode(',', $correctLetters);
+                }
+
+                // Huruf yang dipilih user (untuk PG/Multiple/Poin)
+                $selectedLetters = [];
+                if (in_array($type, ['PG', 'Multiple', 'Poin'])) {
+                    $selectedLetters = collect(explode(',', (string) $userAnswerRaw))
+                        ->map(fn ($x) => strtoupper(trim($x)))
+                        ->filter()
+                        ->values()
+                        ->all();
+                }
+
+                // Status benar/salah untuk PG/Multiple (berbasis skor yang sudah kita tetapkan 0 default)
+                $status = null;
+                if (in_array($type, ['PG', 'Multiple'])) {
+                    $status = $score > 0 ? 'correct' : 'wrong';
+                }
+
+                $rows[] = [
+                    'type'             => $type,
+                    'question_text'    => (string) $q->question,
+                    'options'          => $options,
+                    'option_points'    => $optionPoints,
+                    'selected_letters' => $selectedLetters,
+                    'correct_letters'  => $correctLetters,
+                    'correct_answer'   => $correctAnswer,
+                    'user_answer'      => $type === 'Essay' ? $userAnswerRaw : implode(',', $selectedLetters),
+                    'score'            => $score,
+                    'status'           => $status, // null untuk Essay/Poin di tampilan Anda
+                ];
+
+                $sectionScore += $score;
+            }
+
+            // Jika bundle kosong, tetap tampilkan section kosong
+            $sectionsPayload[] = [
+                'id'     => $section->id,
+                'name'   => $section->name,
+                'score'  => $sr ? (is_null($sr->score) ? $sectionScore : (float) $sr->score) : $sectionScore,
+                'answers'=> $rows,
             ];
-            $p = $map[strtoupper($userRaw)] ?? 0;
-            return $p > 0 ? 'correct' : 'wrong';
+
+            $grandTotal += end($sectionsPayload)['score'];
         }
 
-        return 'pending';
-    }
-
-    /**
-     * Mengubah "A,B" menjadi "A. <teks A>; B. <teks B>"
-     * Untuk Essay, kembalikan teks mentah.
-     */
-    private function formatAnswerPretty(Question $q, string $letters): string
-    {
-        if ($q->type === 'Essay') {
-            return trim($letters);
-        }
-
-        $letters = trim($letters);
-        if ($letters === '') return '';
-
-        $opts = [
-            'A' => $q->option_a,
-            'B' => $q->option_b,
-            'C' => $q->option_c,
-            'D' => $q->option_d,
-            'E' => $q->option_e,
-        ];
-
-        $parts = collect(explode(',', $letters))
-            ->map(fn ($x) => strtoupper(trim($x)))
-            ->filter()
-            ->map(function ($L) use ($opts) {
-                $text = $opts[$L] ?? '';
-                return $text !== '' ? "{$L}. {$text}" : $L;
-            });
-
-        return $parts->join('; ');
+        return view('admin.quiz-results.show', [
+            'testResult' => $testResult,
+            'sections'   => $sectionsPayload,
+            'totalScore' => $grandTotal,
+        ]);
     }
 }

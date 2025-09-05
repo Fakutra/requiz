@@ -18,6 +18,7 @@ return new class extends Migration
             $table->decimal('score', 5, 2)->nullable(); // Skor per section
             $table->timestamp('started_at')->nullable();
             $table->timestamp('finished_at')->nullable();
+            $table->json('shuffle_state')->nullable();
             $table->timestamps();
         });
     }

@@ -1,0 +1,33 @@
+/* public/css/quiz-protect.css */
+
+/* ====== Proteksi "Copy" di area soal/opsi ====== */
+.nocopy,
+.nocopy * {
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+    user-select: none !important;
+}
+
+/* Izinkan seleksi di elemen form agar pengguna tetap bisa mengetik/memilih di input */
+.nocopy input,
+.nocopy textarea,
+.nocopy button,
+.nocopy label {
+    -webkit-user-select: auto !important;
+    -moz-user-select: auto !important;
+    -ms-user-select: auto !important;
+    user-select: auto !important;
+}
+
+/* Nonaktifkan drag image + cegah klik kanan image (dibantu JS juga) */
+.nocopy img {
+    -webkit-user-drag: none;
+    user-drag: none;
+    pointer-events: none; /* supaya nggak bisa drag untuk copy */
+}
+
+/* (Opsional) Kosongkan highlight agar tidak terlihat menyeleksi */
+.nocopy ::selection {
+    background: transparent;
+}
