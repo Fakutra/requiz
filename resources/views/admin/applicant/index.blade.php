@@ -44,7 +44,7 @@
 
             {{-- Form Search + Button Filter --}}
             <div class="flex items-center gap-3">
-                <form action="{{ route('applicant.index') }}" method="GET" class="flex items-center gap-2">
+                <form action="{{ route('admin.applicant.index') }}" method="GET" class="flex items-center gap-2">
                     <input type="text" name="search" placeholder="Search..."
                         value="{{ request('search') }}"
                         class="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm" />
@@ -299,7 +299,7 @@
         <div x-show="showFilter" x-cloak
             class="fixed inset-0 flex items-center justify-center z-50 bg-black/30 backdrop-blur-sm">
             <div @click.away="showFilter = false" class="bg-white rounded-lg shadow-lg w-full max-w-md mx-auto">
-                <form action="{{ route('applicant.index') }}" method="GET" class="p-6">
+                <form action="{{ route('admin.applicant.index') }}" method="GET" class="p-6">
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="text-lg font-semibold">Filter Options</h2>
                         <button type="button" @click="showFilter = false" class="text-gray-500 hover:text-gray-700 text-xl">
@@ -335,7 +335,7 @@
                         </select>
                     </div>
                     <div class="flex justify-between mt-6">
-                        <a href="{{ route('applicant.index') }}"
+                        <a href="{{ route('admin.applicant.index') }}"
                             class="inline-flex justify-center px-4 py-2 bg-gray-200 hover:bg-gray-300 text-sm font-medium text-gray-800 rounded-md">
                             Reset
                         </a>

@@ -31,16 +31,14 @@ return new class extends Migration
             $table->string('cv_document');
             $table->enum('status', [
                 'Seleksi Administrasi',
-                'Tes Tulis',
-                'Technical Test',
-                'Interview',
-                'Offering',
                 'Tidak Lolos Seleksi Administrasi',
-                'Tidak Lolos Tes Tulis',
-                'Tidak Lolos Technical Test',
+                'Seleksi Tes Tulis',
+                'Tidak Lolos Seleksi Tes Tulis',
+                'Seleksi Tes Praktek',
+                'Tidak Lolos Seleksi Tes Praktek',
+                'Interview',
                 'Tidak Lolos Interview',
-                'Menolak Offering',
-                'Menerima Offering',
+                'Lolos Interview'
             ])->default('Seleksi Administrasi');
             $table->timestamps();
         });
