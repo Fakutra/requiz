@@ -10,8 +10,12 @@
 
             <!-- Main Nav -->
             <div class="hidden sm:flex space-x-6 items-center">
-                <x-nav-link class="text-xl font-medium {{ request()->is('/') ? 'font-semibold text-[#009DA9] underline underline-offset-8' : 'text-gray-600' }}" href="{{ route('welcome') }}">Home</x-nav-link>
-                <x-nav-link class="text-xl font-medium {{ request()->is('joblist') ? 'font-semibold text-[#009DA9] underline underline-offset-8' : 'text-gray-600' }}" href="{{ route('joblist') }}">Job</x-nav-link>
+                <x-nav-link
+                    class="text-xl font-medium {{ request()->is('/') ? 'font-semibold text-[#009DA9] underline underline-offset-8' : 'text-gray-600' }}"
+                    href="{{ route('welcome') }}">Home</x-nav-link>
+                <x-nav-link
+                    class="text-xl font-medium {{ request()->is('joblist') ? 'font-semibold text-[#009DA9] underline underline-offset-8' : 'text-gray-600' }}"
+                    href="{{ route('joblist') }}">Job</x-nav-link>
 
                 @auth
                     @if (Auth::user()->role === 'admin')
@@ -30,26 +34,33 @@
                             <button class="flex items-center text-sm font-medium text-gray-600 hover:text-gray-800">
                                 {{ Auth::user()->name }}
                                 <svg class="ml-1 w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                    <path fill-rule="evenodd"
+                                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4-4-4a1 1 0 010-1.414z"
+                                        clip-rule="evenodd" />
                                 </svg>
                             </button>
                         </x-slot>
 
                         <x-slot name="content">
-                            @if(Auth::user()->role === 'user')
+                            @if (Auth::user()->role === 'user')
                                 <x-dropdown-link :href="route('profile.edit')">Profile</x-dropdown-link>
                             @endif
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
-                                <x-dropdown-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();">
+                                <x-dropdown-link :href="route('logout')"
+                                    onclick="event.preventDefault(); this.closest('form').submit();">
                                     Log Out
                                 </x-dropdown-link>
                             </form>
                         </x-slot>
                     </x-dropdown>
                 @else
-                    <x-nav-link class="text-xl font-medium {{ request()->is('login') ? 'font-semibold text-[#009DA9] underline underline-offset-8' : 'text-gray-600' }}" href="{{ route('login') }}">Login</x-nav-link>
-                    <x-nav-link class="text-xl font-medium {{ request()->is('register') ? 'font-semibold text-[#009DA9] underline underline-offset-8' : 'text-gray-600' }}" href="{{ route('register') }}">Register</x-nav-link>
+                    <x-nav-link
+                        class="text-xl font-medium {{ request()->is('login') ? 'font-semibold text-[#009DA9] underline underline-offset-8' : 'text-gray-600' }}"
+                        href="{{ route('login') }}">Login</x-nav-link>
+                    <x-nav-link
+                        class="text-xl font-medium {{ request()->is('register') ? 'font-semibold text-[#009DA9] underline underline-offset-8' : 'text-gray-600' }}"
+                        href="{{ route('register') }}">Register</x-nav-link>
                 @endauth
             </div>
 
@@ -58,11 +69,10 @@
                 <button @click="open = ! open" class="text-gray-500 focus:outline-none">
                     <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path :class="{ 'hidden': open, 'inline-flex': !open }" class="inline-flex"
-                              stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M4 6h16M4 12h16M4 18h16"/>
-                        <path :class="{ 'hidden': !open, 'inline-flex': open }" class="hidden"
-                              stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M6 18L18 6M6 6l12 12"/>
+                            stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6h16M4 12h16M4 18h16" />
+                        <path :class="{ 'hidden': !open, 'inline-flex': open }" class="hidden" stroke-linecap="round"
+                            stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </button>
             </div>
@@ -79,7 +89,7 @@
             @if (Auth::user()->role === 'admin')
                 <x-responsive-nav-link :href="route('admin.dashboard')">Dashboard</x-responsive-nav-link>
                 {{-- <x-responsive-nav-link :href="route('position.index')">Positions</x-responsive-nav-link> --}}
-                <x-responsive-nav-link :href="route('applicant.index')">Applicant</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('admin.applicant.index')">Applicant</x-responsive-nav-link>
             @endif
 
             <form method="POST" action="{{ route('logout') }}">
