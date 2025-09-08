@@ -40,7 +40,7 @@ class ApplicantSeeder extends Seeder
                 'jurusan' => $faker->word,
                 'thn_lulus' => $faker->year(),
                 'skills' => $faker->word,
-                'cv_document' => 'cv-applicant/4NRPoc9Px7yNoI9x890W9lzh0aS9FChn0EfRaYP9.pdf',
+                'cv_document' => 'cv-applicant/9GTbM67htVVoADJhYEso29B7UiW8l9YU5YSsQOR0.pdf',
                 'status' => 'Seleksi Administrasi',
             ]);
         }

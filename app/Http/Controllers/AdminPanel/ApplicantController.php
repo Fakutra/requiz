@@ -194,13 +194,14 @@ class ApplicantController extends Controller
      */
     public function process(Request $request, string $stage)
     {
-        $positions  = \App\Models\Position::orderBy('name')->get();
-        $allJurusan = \App\Models\Applicant::whereNotNull('jurusan')->distinct()->pluck('jurusan');
+        $positions  = Position::orderBy('name')->get();
+        $allJurusan = Applicant::whereNotNull('jurusan')
+                        ->select('jurusan')->distinct()->orderBy('jurusan')->pluck('jurusan');
 
         $nextStage  = $this->nextStageExact($stage);
         $failEnum   = $this->failEnumFor($stage);
 
-        $q = \App\Models\Applicant::with('position');
+        $q = Applicant::with('position');
 
         // ===== Filter status tahap ini =====
         if ($request->filled('status')) {
@@ -211,23 +212,35 @@ class ApplicantController extends Controller
                 $q->where('status', $stage);
 
             } elseif ($st === '__NEXT__') {
-                // Sudah pindah ke tahap berikutnya (anggap lolos tahap ini)
-                $q->where('status', $nextStage);
+                // "Lolos tahap ini"
+                if ($stage === 'Offering') {
+                    // Lolos Offering = Menerima Offering
+                    $q->where('status', 'Menerima Offering');
+                } else {
+                    // Lolos = sudah pindah ke tahap berikutnya
+                    $q->where('status', $nextStage);
+                }
 
             } elseif ($st === '__FAILED__') {
-                // Gagal pada tahap ini (enum spesifik)
+                // Gagal tahap ini = enum gagal spesifik
                 $q->where('status', $failEnum);
 
             } else {
-                // Fallback: enum lain yang valid
+                // Fallback enum lain (aman)
                 $q->where('status', $st);
             }
         } else {
             // Default: tampilkan semua yang relevan dgn tahap ini
             $q->where(function ($w) use ($stage, $nextStage, $failEnum) {
-                $w->where('status', $stage)
-                  ->orWhere('status', $nextStage)
-                  ->orWhere('status', $failEnum);
+                if ($stage === 'Offering') {
+                    // Offering: tampilkan "sedang Offering", "Menerima Offering", dan "Menolak Offering"
+                    $w->whereIn('status', ['Offering', 'Menerima Offering', 'Menolak Offering']);
+                } else {
+                    // Tahap lain: sedang tahap ini, sudah next (anggap lolos), dan gagal tahap ini
+                    $w->where('status', $stage)
+                    ->orWhere('status', $nextStage)
+                    ->orWhere('status', $failEnum);
+                }
             });
         }
 
@@ -235,37 +248,40 @@ class ApplicantController extends Controller
         if ($s = $request->search) {
             $q->where(function($x) use ($s) {
                 $x->where('name','like',"%{$s}%")
-                  ->orWhere('email','like',"%{$s}%")
-                  ->orWhere('jurusan','like',"%{$s}%");
+                ->orWhere('email','like',"%{$s}%")
+                ->orWhere('jurusan','like',"%{$s}%");
             });
         }
-
         if ($request->filled('position')) $q->where('position_id', $request->position);
         if ($request->filled('jurusan'))  $q->where('jurusan', $request->jurusan);
 
-        $applicants = $q->orderBy('name')
-            ->paginate(20)
-            ->withQueryString();
+        $applicants = $q->orderBy('name')->paginate(20)->withQueryString();
 
-        // Tandai state (badge/status) untuk Blade
+        // ===== Mapping badge/label untuk kolom "Status Seleksi" + auto select email =====
         $applicants->setCollection(
             $applicants->getCollection()->transform(function ($a) use ($stage, $nextStage, $failEnum) {
                 if ($a->status === $stage) {
                     $a->_stage_state  = 'current';
                     $a->_stage_status = $stage;
                     $a->_stage_badge  = 'bg-gray-100 text-gray-800 border border-gray-200';
-                } elseif ($a->status === $failEnum) {
+
+                } elseif ($a->status === $failEnum || ($stage === 'Offering' && $a->status === 'Menolak Offering')) {
+                    // ❌ Gagal (termasuk Menolak Offering)
                     $a->_stage_state  = 'gagal';
-                    $a->_stage_status = $failEnum;
+                    $a->_stage_status = $stage === 'Offering' ? 'Menolak Offering' : $failEnum;
                     $a->_stage_badge  = 'bg-red-50 text-red-700 border border-red-200';
+
                 } elseif (
-                    $a->status === $nextStage ||
-                    ($stage === 'Offering' && in_array($a->status, ['Menerima Offering','Menolak Offering']))
+                    // ✅ Lolos
+                    ($stage !== 'Offering' && $a->status === $nextStage) ||
+                    ($stage === 'Offering' && $a->status === 'Menerima Offering')
                 ) {
                     $a->_stage_state  = 'lolos';
-                    $a->_stage_status = $stage === 'Offering' ? $a->status : "Lolos {$stage}";
+                    $a->_stage_status = $stage === 'Offering' ? 'Menerima Offering' : "Lolos {$stage}";
                     $a->_stage_badge  = 'bg-green-50 text-green-700 border border-green-200';
+
                 } else {
+                    // Status lain (biarkan apa adanya)
                     $a->_stage_state  = 'other';
                     $a->_stage_status = $a->status;
                     $a->_stage_badge  = 'bg-slate-50 text-slate-600 border border-slate-200';
@@ -274,11 +290,11 @@ class ApplicantController extends Controller
             })
         );
 
-        // Kirim helper ke Blade supaya bisa tampilkan label filter
         return view('admin.applicant.seleksi.process', compact(
             'applicants','positions','allJurusan','stage','nextStage','failEnum'
         ));
     }
+
 
     /**
      * Kirim email (tetap).
