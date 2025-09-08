@@ -76,7 +76,7 @@
                                 class="absolute z-50 mt-2 w-48 rounded-md shadow-lg origin-top-left left-0"
                                 style="display: none;">
                                 <div class="rounded-md ring-1 ring-black ring-opacity-5 py-1 bg-white">
-                                    <a href="{{ route('applicant.index') }}"
+                                    <a href="{{ route('admin.applicant.index') }}"
                                         class="block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 transition">
                                         {{ __('Pelamar') }}
                                     </a>
@@ -208,7 +208,7 @@
                 </x-responsive-nav-link>
             </div>
             <div class="pt-2 pb-3 space-y-1">
-                <x-responsive-nav-link :href="route('applicant.index')" :active="request()->routeIs('applicant.index')">
+                <x-responsive-nav-link :href="route('admin.applicant.index')" :active="request()->routeIs('applicant.index')">
                     {{ __('Applicant') }}
                 </x-responsive-nav-link>
             </div>

@@ -77,7 +77,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::delete('admin/batch/position/{id}', [PositionController::class, 'destroy'])->name('position.destroy');
     Route::get('admin/batch/position/checkSlug', [PositionController::class, 'checkSlug'])->name('position.checkSlug');
 
-    Route::get('admin/applicant', [ApplicantController::class, 'index'])->name('applicant.index');
+    Route::get('admin/applicant', [ApplicantController::class, 'index'])->name('admin.applicant.index');
     Route::get('/admin/applicant/export', [ApplicantController::class, 'export'])->name('admin.applicant.export');
     Route::put('admin/applicant/{applicant}', [ApplicantController::class, 'update'])->name('admin.applicant.update');
     Route::delete('admin/applicant/{applicant}', [ApplicantController::class, 'destroy'])->name('admin.applicant.destroy');
@@ -88,6 +88,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::put('/admin/applicant/{id}', [ApplicantController::class, 'update'])->name('applicant.update');
     Route::delete('/admin/applicant/{id}', [ApplicantController::class, 'destroy'])->name('admin.applicant.destroySeleksi');
     Route::get('/admin/applicant/seleksi/{stage}', [ApplicantController::class, 'showStageApplicants'])->name('admin.applicant.seleksi.process');
+    Route::post('admin/applicant/seleksi/send-email', [ApplicantController::class, 'sendEmail'])->name('admin.applicant.seleksi.sendEmail');
 
     // Menampilkan daftar test
     Route::get('admin/test', [TestController::class, 'index'])->name('test.index');

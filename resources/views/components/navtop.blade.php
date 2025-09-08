@@ -78,7 +78,7 @@
         @auth
             @if (Auth::user()->role === 'admin')
                 <x-responsive-nav-link :href="route('admin.dashboard')">Dashboard</x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('position.index')">Positions</x-responsive-nav-link>
+                {{-- <x-responsive-nav-link :href="route('position.index')">Positions</x-responsive-nav-link> --}}
                 <x-responsive-nav-link :href="route('applicant.index')">Applicant</x-responsive-nav-link>
             @endif
 
