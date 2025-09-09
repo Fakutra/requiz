@@ -310,8 +310,8 @@ class QuizController extends Controller
             $signed = URL::signedRoute('quiz.start', ['slug' => $slug]);
             return redirect()->to($signed)
                 ->with('status', $isTimeUp
-                    ? 'Waktu habis. Beralih ke section berikutnya.'
-                    : 'Section tersimpan. Lanjut ke section berikutnya.');
+                    ? 'Waktu habis. Beralih ke Quiz berikutnya.'
+                    : 'Jawaban tersimpan. Silahkan lanjut ke Quiz berikutnya.');
         }
 
         // Selesai semua section
