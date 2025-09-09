@@ -87,7 +87,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin/applicant/{id}/edit', [ApplicantController::class, 'edit'])->name('admin.applicant.edit');
     Route::put('/admin/applicant/{id}', [ApplicantController::class, 'update'])->name('applicant.update');
     Route::delete('/admin/applicant/{id}', [ApplicantController::class, 'destroy'])->name('admin.applicant.destroySeleksi');
-    Route::get('/admin/applicant/seleksi/{stage}', [ApplicantController::class, 'showStageApplicants'])->name('admin.applicant.seleksi.process');
+    // Route::get('/admin/applicant/seleksi/{stage}', [ApplicantController::class, 'showStageApplicants'])->name('admin.applicant.seleksi.process');
     Route::post('admin/applicant/seleksi/send-email', [ApplicantController::class, 'sendEmail'])->name('admin.applicant.seleksi.sendEmail');
 
     // Menampilkan daftar test

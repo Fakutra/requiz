@@ -106,6 +106,7 @@
                 <th class="p-3 border-b">Posisi</th>
                 <th class="p-3 border-b">Umur</th>
                 <th class="p-3 border-b">Status Seleksi</th>
+                <th class="p-3 border-b">Status Email</th>
                 <th class="p-3 border-b">Aksi</th>
               </tr>
             </thead>
@@ -170,6 +171,20 @@
                     </span>
                   </td>
                   <td class="p-3 border-b align-top">
+                      @if($applicant->_email_sent)
+                          <span class="inline-flex items-center gap-1 text-green-600" title="Terkirim">
+                              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none"
+                                  viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                      d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              {{-- <span class="text-xs">OK</span> --}}
+                          </span>
+                      @else
+                          <span class="text-gray-400">-</span>
+                      @endif
+                  </td>
+                  <td class="p-3 border-b align-top">
                     <div class="flex items-center gap-3 text-gray-500">
                       <a href="#" @click.prevent class="text-blue-400" title="Lihat">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="size-5">
@@ -215,21 +230,60 @@
           <input type="hidden" name="recipient_ids" id="recipient_ids">
           <input type="hidden" name="stage" value="{{ $stage }}">
 
-          <label class="inline-flex items-center gap-2 mb-3">
-            <input type="checkbox" name="use_template" id="use_template" value="1" checked @change="toggleManualRequired($event)">
+          {{-- Pakai template --}}
+          <label class="inline-flex items-center gap-2 mb-3 select-none">
+            <input
+              type="checkbox"
+              name="use_template"
+              id="use_template"
+              value="1"
+              x-model="useTemplate"
+              @change="lockInputs(useTemplate)"
+            >
             <span>Gunakan template otomatis (nama + tahap)</span>
           </label>
 
+          {{-- Subjek --}}
           <div class="mb-4">
             <label class="block text-gray-700 font-medium mb-1">Subjek</label>
-            <input type="text" name="subject" class="w-full border rounded-lg px-3 py-2" placeholder="Subjek (opsional jika pakai template)">
+            <input
+              x-ref="subject"
+              type="text"
+              name="subject"
+              placeholder="Subjek (opsional jika pakai template)"
+              class="w-full border rounded-lg px-3 py-2"
+              :disabled="useTemplate"
+              :readonly="useTemplate"
+              :required="!useTemplate"
+              @keydown="useTemplate && $event.preventDefault()"
+              @paste="useTemplate && $event.preventDefault()"
+              @drop="useTemplate && $event.preventDefault()"
+              @focus="useTemplate && $el.blur()"
+              :class="useTemplate ? 'bg-gray-100 cursor-not-allowed opacity-70 pointer-events-none' : ''"
+            >
           </div>
 
+          {{-- Pesan --}}
           <div class="mb-4">
             <label class="block text-gray-700 font-medium mb-1">Pesan</label>
-            <textarea name="message" rows="6" class="w-full border rounded-lg px-3 py-2" placeholder="Pesan (opsional jika pakai template)"></textarea>
+            <textarea
+              x-ref="message"
+              name="message"
+              rows="6"
+              placeholder="Pesan (opsional jika pakai template)"
+              class="w-full border rounded-lg px-3 py-2"
+              :disabled="useTemplate"
+              :readonly="useTemplate"
+              :required="!useTemplate"
+              @keydown="useTemplate && $event.preventDefault()"
+              @paste="useTemplate && $event.preventDefault()"
+              @drop="useTemplate && $event.preventDefault()"
+              @focus="useTemplate && $el.blur()"
+              :class="useTemplate ? 'bg-gray-100 cursor-not-allowed opacity-70 pointer-events-none' : ''"
+            ></textarea>
           </div>
 
+          {{-- Lampiran PDF --}}
           <div class="mb-6">
             <label class="block text-gray-700 font-medium mb-1">Lampiran Jadwal (PDF, max 5MB)</label>
             <input type="file" name="attachment" accept="application/pdf,.pdf" class="w-full border rounded-lg px-3 py-2" required>
@@ -250,57 +304,62 @@
       return {
         emailModalOpen: false,
         selectedEmails: [],
+        useTemplate: true,
 
         init() {
           const selectAll = document.getElementById('selectAll');
           if (selectAll) {
             selectAll.addEventListener('change', (e) => {
-              document.querySelectorAll('.applicant-checkbox').forEach(cb => {
-                cb.checked = e.target.checked;
-              });
+              document.querySelectorAll('.applicant-checkbox').forEach(cb => cb.checked = e.target.checked);
             });
           }
+          // kunci awal + pantau perubahan
+          this.$nextTick(() => this.lockInputs(this.useTemplate));
+          this.$watch('useTemplate', (val) => this.lockInputs(val));
+        },
+
+        // Kunci/lepaskan input manual
+        lockInputs(lock) {
+          const subj = this.$refs.subject, msg = this.$refs.message;
+          [subj, msg].forEach(el => {
+            if (!el) return;
+            el.disabled = lock;
+            el.readOnly = lock;
+            el.required = !lock;
+            el.setAttribute('aria-disabled', lock ? 'true' : 'false');
+            if (lock && document.activeElement === el) el.blur();
+          });
         },
 
         submitStatus(action) {
           const form = document.getElementById('statusForm');
           const container = document.getElementById('statusInputs');
           container.innerHTML = '';
-
           const checked = Array.from(document.querySelectorAll('.applicant-checkbox:checked'));
-          if (checked.length === 0) {
-            alert('Pilih minimal satu peserta dulu.');
-            return;
-          }
-
+          if (checked.length === 0) { alert('Pilih minimal satu peserta dulu.'); return; }
           checked.forEach(cb => {
-            const id = cb.value;
             const input = document.createElement('input');
             input.type = 'hidden';
-            input.name = `status[${id}]`;
+            input.name = `status[${cb.value}]`;
             input.value = (action === 'lolos') ? 'lolos' : 'tidak_lolos';
             container.appendChild(input);
           });
-
           form.submit();
         },
 
         openEmailModalAuto() {
-          const recipients = [];
-          const recipientIds = [];
-
+          const recipients = [], recipientIds = [];
           document.querySelectorAll('.applicant-checkbox').forEach(cb => {
             if (cb.dataset.stageState === 'lolos') {
               recipients.push(cb.dataset.email);
               recipientIds.push(cb.value);
-              cb.checked = true; // opsional
+              cb.checked = true;
             }
           });
+          if (recipients.length === 0) { alert('Tidak ada peserta dengan status lolos pada halaman ini.'); return; }
 
-          if (recipients.length === 0) {
-            alert('Tidak ada peserta dengan status lolos pada halaman ini.');
-            return;
-          }
+          this.useTemplate = true;
+          this.$nextTick(() => this.lockInputs(true));
 
           this.selectedEmails = recipients;
           document.getElementById('recipients').value = recipients.join(',');
@@ -308,26 +367,29 @@
           this.emailModalOpen = true;
         },
 
-        closeEmailModal() {
-          this.emailModalOpen = false;
-        },
+        closeEmailModal() { this.emailModalOpen = false; },
 
         validateAndSubmit(e) {
-          if (this.selectedEmails.length === 0) {
-            e.preventDefault();
-            alert('Tidak ada penerima terpilih.');
-          }
-        },
+          const form = e.target;
+          const file = form.querySelector('input[type="file"][name="attachment"]')?.files?.[0];
+          if (!file) { e.preventDefault(); alert('Wajib unggah lampiran PDF.'); return; }
+          const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+          if (!isPdf) { e.preventDefault(); alert('Lampiran harus PDF.'); return; }
+          if (file.size > 5 * 1024 * 1024) { e.preventDefault(); alert('Ukuran PDF maksimal 5 MB.'); return; }
 
-        toggleManualRequired(ev) {
-          const checked = ev.target.checked;
-          const form = ev.target.form;
-          const subj = form.querySelector('input[name="subject"]');
-          const msg  = form.querySelector('textarea[name="message"]');
-          if (!checked) { subj.required = true; msg.required = true; }
-          else { subj.required = false; msg.required = false; }
+          if (!this.useTemplate) {
+            const subject = form.querySelector('[name="subject"]')?.value?.trim() ?? '';
+            const message = form.querySelector('[name="message"]')?.value?.trim() ?? '';
+            if (!subject || !message) {
+              e.preventDefault();
+              alert('Subjek dan pesan wajib diisi bila template dimatikan.');
+            }
+          }
         }
-      }
+      };
     }
   </script>
+
+
+
 </x-app-admin>
