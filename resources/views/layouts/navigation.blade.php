@@ -100,6 +100,10 @@
                             {{ __('Bundles') }}
                         </x-nav-link>
 
+                        <x-nav-link :href="route('tech-schedule.index')" :active="request()->routeIs('tech-schedule.index')">
+                            {{ __('Technical Test') }}
+                        </x-nav-link>
+
                         <!-- Penilaian Dropdown (Quiz Result & Penilaian Essay) -->
                         <div x-data="{ open: false }" class="relative">
                             <button @click="open = !open" @keydown.escape.window="open = false"

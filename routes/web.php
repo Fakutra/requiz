@@ -16,6 +16,9 @@ use App\Http\Controllers\AdminPanel\QuizResultController;
 use App\Http\Controllers\AdminPanel\TestSectionController;
 use App\Http\Controllers\AdminPanel\EssayGradingController;
 use App\Http\Controllers\AdminPanel\QuestionBundleController;
+use App\Http\Controllers\AdminPanel\TechnicalTestAnswerController;
+use App\Http\Controllers\AdminPanel\TechnicalTestScheduleController;
+
 
 
 Route::get('/', function () {
@@ -56,6 +59,10 @@ Route::middleware('auth')->group(function () {
 
     // (opsional) keepalive agar sesi tetap hidup saat pengerjaan
     Route::get('/keepalive', fn () => response()->noContent())->name('keepalive');
+
+    // peserta upload jawaban untuk suatu schedule
+    Route::post('technical-test/schedule/{schedule}/answer', [TechnicalTestAnswerController::class, 'store'])
+        ->name('technical.answers.store');
 });
 
 require __DIR__.'/auth.php';
@@ -129,4 +136,10 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     // Essay grading
     Route::get('essay-grading', [EssayGradingController::class, 'index'])->name('essay_grading.index');
     Route::patch('essay-grading/result/{testResult}', [EssayGradingController::class, 'updateResult'])->name('essay_grading.update_result');
+
+    // Technical Test Schedules (index + CRUD sederhana)
+    Route::get  ('admin/tech-schedule',               [TechnicalTestScheduleController::class, 'index'])->name('tech-schedule.index');
+    Route::post ('admin/tech-schedule',               [TechnicalTestScheduleController::class, 'store'])->name('tech-schedule.store');
+    Route::put  ('admin/tech-schedule/{schedule}',    [TechnicalTestScheduleController::class, 'update'])->name('tech-schedule.update');
+    Route::delete('admin/tech-schedule/{schedule}',   [TechnicalTestScheduleController::class, 'destroy'])->name('tech-schedule.destroy');
 });
