@@ -122,7 +122,7 @@
                                                 </div>
 
                                                 <div class="mb-3">
-                                                    <label class="form-label">Schedule Date & Time</label>
+                                                    <label class="form-label">Schedule Date</label>
                                                     <input type="datetime-local" name="schedule_date"
                                                         class="form-control"
                                                         value="{{ optional($sch->schedule_date)?->format('Y-m-d\TH:i') }}"
@@ -130,7 +130,7 @@
                                                 </div>
 
                                                 <div class="mb-3">
-                                                    <label class="form-label">Upload Deadline (opsional)</label>
+                                                    <label class="form-label">Upload Deadline</label>
                                                     <input type="datetime-local" name="upload_deadline"
                                                         class="form-control"
                                                         value="{{ optional($sch->upload_deadline)?->format('Y-m-d\TH:i') }}">
@@ -144,19 +144,19 @@
 
                                                 <div class="row">
                                                     <div class="col-md-6 mb-3">
-                                                        <label class="form-label">Zoom ID (opsional)</label>
+                                                        <label class="form-label">Zoom ID</label>
                                                         <input type="text" name="zoom_id" class="form-control"
                                                             value="{{ $sch->zoom_id }}">
                                                     </div>
                                                     <div class="col-md-6 mb-3">
-                                                        <label class="form-label">Zoom Passcode (opsional)</label>
+                                                        <label class="form-label">Zoom Passcode</label>
                                                         <input type="text" name="zoom_passcode"
                                                             class="form-control" value="{{ $sch->zoom_passcode }}">
                                                     </div>
                                                 </div>
 
                                                 <div class="mb-3">
-                                                    <label class="form-label">Keterangan / Instruksi (opsional)</label>
+                                                    <label class="form-label">Note / Keterangan</label>
                                                     <textarea name="keterangan" rows="3" class="form-control">{{ $sch->keterangan }}</textarea>
                                                 </div>
                                             </div>
@@ -215,12 +215,12 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Schedule Date & Time</label>
+                            <label class="form-label">Schedule Date</label>
                             <input type="datetime-local" name="schedule_date" class="form-control" required>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Upload Deadline (opsional)</label>
+                            <label class="form-label">Upload Deadline</label>
                             <input type="datetime-local" name="upload_deadline" class="form-control">
                         </div>
 
@@ -232,17 +232,17 @@
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Zoom ID (opsional)</label>
+                                <label class="form-label">Zoom ID</label>
                                 <input type="text" name="zoom_id" class="form-control">
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Zoom Passcode (opsional)</label>
+                                <label class="form-label">Zoom Passcode</label>
                                 <input type="text" name="zoom_passcode" class="form-control">
                             </div>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Keterangan / Instruksi (opsional)</label>
+                            <label class="form-label">Note / Keterangan</label>
                             <textarea name="keterangan" rows="3" class="form-control"></textarea>
                         </div>
                     </div>

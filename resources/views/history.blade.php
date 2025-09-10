@@ -276,7 +276,7 @@
                                     {{-- Ringkasan jawaban terbaru --}}
                                     @if ($latest)
                                         <div class="mt-5 text-sm text-gray-700">
-                                            <div class="font-medium">Pengumpulan Terbaru:</div>
+                                            <div class="font-medium">Upload Terbaru:</div>
                                             <div>
                                                 PDF:
                                                 <a class="text-blue-600 hover:underline"
@@ -293,16 +293,16 @@
                                                 Dikumpulkan:
                                                 {{ $latest->submitted_at->translatedFormat('d F Y, H:i') }}
                                             </div>
-                                            @if (!is_null($latest->score))
+                                            {{-- @if (!is_null($latest->score))
                                                 <div class="mt-1">
                                                     Nilai: <span class="font-semibold">{{ $latest->score }}</span>
                                                 </div>
-                                            @endif
-                                            @if ($latest->keterangan)
+                                            @endif --}}
+                                            {{-- @if ($latest->keterangan)
                                                 <div class="mt-1 text-gray-600">
                                                     Catatan Admin: {{ $latest->keterangan }}
                                                 </div>
-                                            @endif
+                                            @endif --}}
                                         </div>
                                     @endif
 
