@@ -90,7 +90,33 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::put('admin/applicant/{applicant}', [ApplicantController::class, 'update'])->name('admin.applicant.update');
     Route::delete('admin/applicant/{applicant}', [ApplicantController::class, 'destroy'])->name('admin.applicant.destroy');
     Route::get('admin/applicant/seleksi', [ApplicantController::class, 'seleksiIndex'])->name('admin.applicant.seleksi.index');
-    Route::get('admin/applicant/seleksi/{stage}', [ApplicantController::class, 'process'])->name('admin.applicant.seleksi.process');
+    // Route::get('admin/applicant/seleksi/{stage}', [ApplicantController::class, 'process'])->name('admin.applicant.seleksi.process');
+    /* ====== Seleksi per tahap (nama route sesuai di Blade) ====== */
+    Route::get('admin/applicant/seleksi/administrasi',
+        [ApplicantController::class, 'process'])
+        ->defaults('stage', 'Seleksi Administrasi')
+        ->name('admin.applicant.seleksi.administrasi');
+
+    Route::get('admin/applicant/seleksi/tes-tulis',
+        [ApplicantController::class, 'process'])
+        ->defaults('stage', 'Tes Tulis')
+        ->name('admin.applicant.seleksi.tes_tulis');
+
+    Route::get('admin/applicant/seleksi/technical-test',
+        [ApplicantController::class, 'process'])
+        ->defaults('stage', 'Technical Test')
+        ->name('admin.applicant.seleksi.technical_test');
+
+    Route::get('admin/applicant/seleksi/interview',
+        [ApplicantController::class, 'process'])
+        ->defaults('stage', 'Interview')
+        ->name('admin.applicant.seleksi.interview');
+
+    Route::get('admin/applicant/seleksi/offering',
+        [ApplicantController::class, 'process'])
+        ->defaults('stage', 'Offering')
+        ->name('admin.applicant.seleksi.offering');
+
     Route::post('admin/applicant/seleksi/update-status', [ApplicantController::class, 'updateStatus'])->name('admin.applicant.seleksi.update-status');// Route untuk edit applicant
     Route::get('/admin/applicant/{id}/edit', [ApplicantController::class, 'edit'])->name('admin.applicant.edit');
     Route::put('/admin/applicant/{id}', [ApplicantController::class, 'update'])->name('applicant.update');

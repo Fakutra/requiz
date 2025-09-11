@@ -1,40 +1,134 @@
+{{-- resources/views/admin/applicant/seleksi/index.blade.php --}}
 <x-app-admin>
-    <h1 class="text-2xl font-bold text-blue-950 mb-6">Rekapitulasi Seleksi TAD Per Tahap</h1>
-    <div class="bg-white shadow-zinc-400/50 rounded-lg p-6">
-        <!-- Table Section for Selection Stages -->
-        <table class="min-w-full">
-            <thead class="bg-gray-100 text-left text-sm font-medium text-gray-700">
-                <tr>
-                    <th class="px-4 py-2"></th>
-                    <th class="px-4 py-2">Jumlah Peserta Lolos</th>
-                    <th class="px-4 py-2">Jumlah Peserta Tidak Lolos</th>
-                    <th class="px-4 py-2">Aksi</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach ($rekap as $label => $data)
-                <tr>
-                        <td class="px-4 py-2">{{ $label }}</td>
-                        <td class="text-green-500 px-4 py-2">{{ $data['lolos'] }}</td>
-                        <td class="text-red-600 px-4 py-2">{{ $data['gagal'] }}</td>
-                        <td class="px-4 py-2">
-                            <a href="{{ route('admin.applicant.seleksi.process', ['stage' => $data['route']]) }}"
-                               class="text-blue-400 flex gap-2 items-center hover:underline">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                    stroke-width="2.0" stroke="currentColor" class="size-5">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 
-                                        9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 
-                                        19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                                </svg>
-                                Lihat Detail
-                            </a>
-                        </td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
+  {{-- Header bar ala figma --}}
+  <div class="bg-white rounded-lg shadow-sm border p-4 mb-5">
+    <div class="grid grid-cols-3 items-center">
+      {{-- Kiri: BATCH + dropdown kecil --}}
+      <div class="flex items-center gap-2">
+        <span class="text-sm font-semibold text-gray-700 tracking-wide">BATCH :</span>
+        <select id="batchSelect" class="h-8 text-sm border rounded px-2 w-20">
+          @php $hasBatch = !empty($currentBatchId); @endphp
+          @if(($batches ?? collect())->isEmpty())
+            <option value="">-</option>
+          @else
+            @foreach ($batches as $b)
+              {{-- Tampilkan angka (mis. 1, 2, 3) namun value tetap id batch --}}
+              @php
+                $label = is_numeric($b->name ?? null) ? $b->name : ($loop->iteration);
+              @endphp
+              <option value="{{ $b->id }}" {{ (string)$currentBatchId === (string)$b->id ? 'selected' : '' }}>
+                {{ $label }}
+              </option>
+            @endforeach
+          @endif
+        </select>
+      </div>
+
+      {{-- Tengah: Judul --}}
+      <div class="text-center">
+        <h2 class="text-sm md:text-base font-semibold text-gray-700">UPDATE SELEKSI TAD</h2>
+      </div>
+
+      {{-- Kanan: Jumlah pelamar --}}
+      <div class="text-right text-sm text-gray-700">
+        <span>Jumlah Pelamar : </span>
+        <strong>{{ $totalApplicants ?? 0 }}</strong>
+      </div>
     </div>
+  </div>
+
+  {{-- Flash + validation --}}
+  @if (session('success'))
+    <div class="mb-4 p-3 rounded bg-green-100 text-green-800">{{ session('success') }}</div>
+  @endif
+  @if (session('error'))
+    <div class="mb-4 p-3 rounded bg-red-100 text-red-800">{{ session('error') }}</div>
+  @endif
+  @if ($errors->any())
+    <div class="mb-4 p-3 rounded bg-red-100 text-red-800">
+      <strong>Gagal:</strong>
+      <ul class="list-disc ml-5">
+        @foreach ($errors->all() as $e)
+          <li>{{ $e }}</li>
+        @endforeach
+      </ul>
+    </div>
+  @endif
+
+  {{-- Tabel rekap tahap --}}
+  <div class="bg-white rounded-lg shadow-sm border">
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <tbody class="divide-y">
+          @php
+            $map = [
+              'Seleksi Administrasi' => 'admin.applicant.seleksi.administrasi',
+              'Tes Tulis'            => 'admin.applicant.seleksi.tes_tulis',
+              'Technical Test'       => 'admin.applicant.seleksi.technical_test',
+              'Interview'            => 'admin.applicant.seleksi.interview',
+              'Offering'             => 'admin.applicant.seleksi.offering',
+            ];
+          @endphp
+
+          @forelse ($rekap as $row)
+            @php
+              $label = $row['label'] ?? '-';
+              $lolos = (int)($row['lolos'] ?? 0);
+              $gagal = (int)($row['gagal'] ?? 0);
+              $rn    = $row['route_name'] ?? ($map[$label] ?? null);
+            @endphp
+            <tr class="hover:bg-gray-50">
+              {{-- Tahap (kiri) --}}
+              <td class="px-6 py-4 w-[28%] text-gray-700">{{ $label }}</td>
+
+              {{-- Jumlah Lolos (tengah kiri) --}}
+              <td class="px-6 py-4 w-[28%]">
+                <span class="text-green-600">Jumlah Peserta Lolos: {{ $lolos }}</span>
+              </td>
+
+              {{-- Jumlah Gagal (tengah kanan) --}}
+              <td class="px-6 py-4 w-[28%]">
+                <span class="text-red-600">Jumlah Peserta Gagal: {{ $gagal }}</span>
+              </td>
+
+              {{-- Aksi (kanan) --}}
+              <td class="px-6 py-4 w-[16%] text-right">
+                @if($rn)
+                  <a href="{{ route($rn, ['batch' => $currentBatchId]) }}"
+                    class="inline-flex items-center gap-2 rounded bg-blue-700 text-white px-4 py-1.5 hover:bg-blue-800 transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
+                      <path d="M6.3 5.3a1 1 0 0 0-1.6.8v7.8a1 1 0 0 0 1.6.8l6.2-3.9a1 1 0 0 0 0-1.6L6.3 5.3Z" />
+                    </svg>
+                    Proses
+                  </a>
+                @else
+                  <span class="text-gray-400">—</span>
+                @endif
+              </td>
+            </tr>
+          @empty
+            <tr>
+              <td colspan="4" class="px-6 py-10 text-center text-gray-500">
+                Belum ada data untuk batch ini.
+              </td>
+            </tr>
+          @endforelse
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {{-- Auto-redirect saat batch berubah --}}
+  <script>
+    (function () {
+      const sel = document.getElementById('batchSelect');
+      if (!sel) return;
+      sel.addEventListener('change', function () {
+        const base = @json(route('admin.applicant.seleksi.index'));
+        const val  = this.value;
+        const url  = val ? `${base}?batch=${encodeURIComponent(val)}` : base;
+        window.location.href = url;
+      });
+    })();
+  </script>
 </x-app-admin>
