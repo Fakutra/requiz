@@ -8,14 +8,14 @@
     <div class="py-3">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
-            {{-- Status (tetap pakai banner) --}}
+            {{-- Status (banner) --}}
             @if (session('status'))
                 <div class="mb-4 rounded-lg bg-yellow-50 text-yellow-800 px-4 py-2 text-sm">
                     {{ session('status') }}
                 </div>
             @endif
 
-            {{-- Validation errors (tetap pakai banner) --}}
+            {{-- Validation errors (banner) --}}
             @if ($errors->any())
                 <div class="mb-4 rounded-lg bg-red-50 text-red-800 px-4 py-3 text-sm">
                     <div class="font-semibold mb-1">Periksa input:</div>
@@ -199,7 +199,7 @@
                                 </p>
 
                                 <button type="button"
-                                    class="start-test-btn inline-block px-6 py-2 bg-blue-600 text-white font-medium text-sm leading-tight rounded-full shadow-md hover:bg-blue-700 hover:shadow-lg focus:outline-none focus:ring-0 active:bg-blue-800 transition duration-150 ease-in-out {{ $canEnter ? '' : 'opacity-50 cursor-not-allowed hover:bg-blue-600' }}"
+                                    class="start-test-btn inline-block px-6 py-2 bg-blue-600 text-white text-sm font-medium rounded-full shadow-md hover:bg-blue-700 hover:shadow-lg focus:outline-none focus:ring-0 active:bg-blue-800 transition duration-150 ease-in-out {{ $canEnter ? '' : 'opacity-50 cursor-not-allowed hover:bg-blue-600' }}"
                                     data-url="{{ $signedUrl }}" data-title="{{ $applicant->position->name }}"
                                     {{ $canEnter ? '' : 'disabled' }}>
                                     Mulai Tes
@@ -293,16 +293,6 @@
                                                 Dikumpulkan:
                                                 {{ $latest->submitted_at->translatedFormat('d F Y, H:i') }}
                                             </div>
-                                            {{-- @if (!is_null($latest->score))
-                                                <div class="mt-1">
-                                                    Nilai: <span class="font-semibold">{{ $latest->score }}</span>
-                                                </div>
-                                            @endif --}}
-                                            {{-- @if ($latest->keterangan)
-                                                <div class="mt-1 text-gray-600">
-                                                    Catatan Admin: {{ $latest->keterangan }}
-                                                </div>
-                                            @endif --}}
                                         </div>
                                     @endif
 
@@ -320,7 +310,6 @@
 
                                     {{-- Modal Upload --}}
                                     <div id="uploadModal-{{ $sched->id }}" class="fixed inset-0 z-50 hidden">
-                                        {{-- overlay: klik luar menutup --}}
                                         <div class="absolute inset-0 bg-black/50"
                                             data-close-upload="{{ $sched->id }}"></div>
                                         <div class="relative mx-auto my-12 max-w-md bg-white rounded-2xl shadow-xl p-6">
@@ -370,6 +359,86 @@
                                 @endif
                             </div>
                         @endif
+
+                        {{-- Aksi: Interview (jadwal per posisi - tampilan sama dengan Technical Test) --}}
+                        @if ($applicant->status === 'Interview' && $applicant->position)
+                            @php
+                                // Ambil jadwal interview terbaru (Carbon|null, tanpa optional())
+                                $iSch = ($applicant->position->interviewSchedules ?? collect())
+                                    ->sortByDesc('schedule_start')
+                                    ->first();
+
+                                $now = now();
+                                $start = $iSch?->schedule_start;
+                                $end = $iSch?->schedule_end;
+
+                                // Join aktif 10 menit sebelum mulai hingga sesi berakhir
+                                $earlyMinutes = 10;
+                                $canEarly = $start ? $now->gte($start->copy()->subMinutes($earlyMinutes)) : false;
+                                $inWindow = $start && $end ? $now->between($start, $end, true) : false;
+                                $canJoin = $iSch && $iSch->zoom_link ? $inWindow || $canEarly : false;
+                            @endphp
+
+                            <div class="mt-6 p-4 rounded-xl border border-indigo-200 bg-indigo-50">
+                                <h4 class="text-md font-semibold text-indigo-800 mb-3">Interview</h4>
+
+                                @if ($iSch)
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                                        <div>
+                                            <div class="text-gray-600">Jadwal</div>
+                                            <div class="font-medium text-gray-900">
+                                                {{ $start?->translatedFormat('l, d F Y, H:i') ?? '—' }}
+                                                —
+                                                {{ $end?->translatedFormat('H:i') ?? '—' }}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div class="text-gray-600">Meeting</div>
+                                            <div class="font-medium">
+                                                @if ($iSch->zoom_link)
+                                                    <a href="{{ $iSch->zoom_link }}" target="_blank"
+                                                        class="text-blue-600 hover:underline">
+                                                        Buka Link Zoom
+                                                    </a>
+                                                @else
+                                                    <span class="text-gray-500">Belum ada link</span>
+                                                @endif
+                                                @if ($iSch->zoom_id || $iSch->zoom_passcode)
+                                                    <div class="text-gray-500">
+                                                        ID: {{ $iSch->zoom_id ?? '—' }}
+                                                    </div>
+                                                    <div class="text-gray-500">
+                                                        Passcode: {{ $iSch->zoom_passcode ?? '—' }}
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    @if ($iSch->keterangan)
+                                        <div class="mt-4 text-sm text-gray-700">
+                                            <div class="font-semibold text-gray-800">Keterangan:</div>
+                                            <div class="whitespace-pre-line">{{ $iSch->keterangan }}</div>
+                                        </div>
+                                    @endif
+
+                                    {{-- <div class="mt-5">
+                                        <a href="{{ $iSch->zoom_link ?? '#' }}"
+                                            class="px-5 py-2 rounded-full bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 {{ $canJoin ? '' : 'opacity-50 cursor-not-allowed hover:bg-indigo-600' }}"
+                                            {{ $canJoin ? '' : 'aria-disabled=true tabindex=-1' }}>
+                                            Join Interview
+                                        </a>
+                                        <div class="text-xs text-gray-500 mt-2">
+                                            Tombol aktif {{ $earlyMinutes }} menit sebelum mulai hingga sesi berakhir.
+                                        </div>
+                                    </div> --}}
+                                @else
+                                    <div class="text-sm text-gray-600">
+                                        Jadwal Interview belum ditentukan untuk posisi ini.
+                                    </div>
+                                @endif
+                            </div>
+                        @endif
                     </div>
                 @empty
                     <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
@@ -394,9 +463,13 @@
             <div class="mt-6 flex justify-end gap-2">
                 <button type="button"
                     class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
-                    data-close-start-modal>Batal</button>
+                    data-close-start-modal>
+                    Batal
+                </button>
                 <button type="button" class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
-                    id="confirmStartBtn">Mulai</button>
+                    id="confirmStartBtn">
+                    Mulai
+                </button>
             </div>
         </div>
     </div>
@@ -418,7 +491,9 @@
                 </div>
                 <div class="mt-6 text-right">
                     <button type="button" class="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700"
-                        data-close-success>OK</button>
+                        data-close-success>
+                        OK
+                    </button>
                 </div>
             </div>
         </div>
@@ -468,7 +543,7 @@
             });
         })();
 
-        // ===== Modal Upload Technical Test (generic handler untuk banyak jadwal)
+        // ===== Modal Upload Technical Test (generic handler)
         (function() {
             document.querySelectorAll('[data-open-upload]').forEach(btn => {
                 btn.addEventListener('click', () => {
@@ -480,7 +555,7 @@
                     modal.classList.remove('hidden');
                     document.body.classList.add('overflow-hidden');
 
-                    // close via overlay or close button
+                    // close via overlay or button with data-close-upload
                     modal.addEventListener('click', (e) => {
                         if (e.target === modal || e.target.matches(
                                 `[data-close-upload="${id}"]`)) {
@@ -502,7 +577,7 @@
             });
         })();
 
-        // ===== Modal Success Upload (auto show jika ada di DOM)
+        // ===== Modal Success Upload (auto show)
         (function() {
             const modal = document.getElementById('successUploadModal');
             if (!modal) return;

@@ -45,6 +45,12 @@ class Position extends Model
         return $this->hasMany(\App\Models\TechnicalTestSchedule::class, 'position_id');
     }
 
+    // app/Models/Position.php
+    public function interviewSchedules()
+    {
+        return $this->hasMany(\App\Models\InterviewSchedule::class);
+    }
+
     public function getRouteKeyName()
     {
         return 'slug';

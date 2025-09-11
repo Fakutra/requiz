@@ -18,6 +18,7 @@ use App\Http\Controllers\AdminPanel\EssayGradingController;
 use App\Http\Controllers\AdminPanel\QuestionBundleController;
 use App\Http\Controllers\AdminPanel\TechnicalTestAnswerController;
 use App\Http\Controllers\AdminPanel\TechnicalTestScheduleController;
+use App\Http\Controllers\AdminPanel\InterviewScheduleController;
 
 
 
@@ -142,4 +143,10 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::post ('admin/tech-schedule',               [TechnicalTestScheduleController::class, 'store'])->name('tech-schedule.store');
     Route::put  ('admin/tech-schedule/{schedule}',    [TechnicalTestScheduleController::class, 'update'])->name('tech-schedule.update');
     Route::delete('admin/tech-schedule/{schedule}',   [TechnicalTestScheduleController::class, 'destroy'])->name('tech-schedule.destroy');
+
+    // Interview Schedules (index + CRUD sederhana)
+    Route::get   ('admin/interview-schedule',             [InterviewScheduleController::class, 'index'])->name('interview-schedule.index');
+    Route::post  ('admin/interview-schedule',             [InterviewScheduleController::class, 'store'])->name('interview-schedule.store');
+    Route::put   ('admin/interview-schedule/{schedule}',  [InterviewScheduleController::class, 'update'])->name('interview-schedule.update');
+    Route::delete('admin/interview-schedule/{schedule}',  [InterviewScheduleController::class, 'destroy'])->name('interview-schedule.destroy');
 });
