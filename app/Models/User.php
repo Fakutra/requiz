@@ -24,6 +24,11 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'phone_number',
+        'birthplace',
+        'birthdate',
+        'address',
+        'identity_num',
     ];
 
     /**
@@ -44,6 +49,7 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
+        'tgl_lahir' => 'date',
     ];
 
     public function position()

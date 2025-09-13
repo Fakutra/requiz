@@ -8,9 +8,9 @@
         </div>
         <div class="px-8 md:px-18">
             <div class="max-w-7xl mx-auto py-6">
-                <div class="mb-7">
-                    <h4 class="mb-2 text-lg">Menampilkan XX data lowongan aktif</h4>
-                    <form>
+                <div class="mb-4">
+                    <h4 class="mb-2 text-lg">Menampilkan <span class="font-semibold">{{ $positions->total() }}</span> lowongan aktif</h4>
+                    <form method="GET" action="{{ route('joblist') }}">
                         <div class="flex flex-col sm:flex-row justify-between gap-4">
                             <div class="flex-1">
                                 <div class="relative">
@@ -21,7 +21,7 @@
                                         </svg>
                                     </span>
                                     <input
-                                        type="text"
+                                        type="text" name="q" value="{{ $q }}"
                                         placeholder="Cari lowongan..."
                                         class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#009DA9] focus:border-[#009DA9] sm:text-sm" />
                                 </div>
@@ -29,11 +29,9 @@
                             <div class="flex-2">
                                 <select name="#" class="block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm">
                                     <option value="#">Pilih Jenjang pendidikan</option>
-                                    <option value="#">SMA/SMK</option>
-                                    <option value="#">D3</option>
-                                    <option value="#">D4</option>
-                                    <option value="#">S1</option>
-                                    <option value="#">S2</option>
+                                    @foreach (['Diploma 3','D4/S1','S2','S3'] as $opt)
+                                    <option value="{{ $opt }}" {{ $edu === $opt ? 'selected' : '' }}>{{ $opt }}</option>
+                                    @endforeach
                                 </select>
                             </div>
                             <div>
@@ -42,57 +40,54 @@
                         </div>
                     </form>
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <!-- Card 1 -->
+                <div class="bg-yellow-50 rounded rounded-lg p-3 border border-1 border-yellow-500 flex gap-2 text-yellow-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                    </svg>
+                    <h4>Anda hanya dapat melamar pada satu job yang tersedia, mohon untuk melamar job yang sesuai dengan kualifikasi yang Anda miliki.</h4>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-7">
+                    @forelse ($positions as $position)
                     <div class="bg-white flex flex-col justify-between h-full rounded-2xl shadow-md p-6 hover:shadow-lg transition duration-300">
                         <div>
-                            <h2 class="text-xl font-semibold mb-1">Junior Technical Support Grade I</h2>
-                            <p class="text-gray-600 mb-4">Let's join with us</p>
+                            <h2 class="text-xl font-semibold mb-1">[{{ $position->batch?->name ?? '-' }}] - {{ $position->name }}</h2>
                         </div>
-                        <a href="{{ route('jobdetail') }}" class="w-full block text-center bg-[#009DA9] text-white px-4 py-3 rounded-lg hover:bg-[#008A95]">
-                            Lihat Detail
-                        </a>
-                    </div>
-                    <!-- Card 1 -->
-                    <div class="bg-white flex flex-col justify-between h-full rounded-2xl shadow-md p-6 hover:shadow-lg transition duration-300">
-                        <div>
-                            <h2 class="text-xl font-semibold mb-1">Junior Technical Support Grade I</h2>
-                            <p class="text-gray-600 mb-4">Let's join with us</p>
+                        <div class="text-md text-gray-500">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-7.007 11.55A5.981 5.981 0 0 0 6.75 15.75v-1.5" />
+                                </svg>
+                                <span>Diploma 3</span>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                </svg>
+                                Batas lamaran: {{ $position->batch?->end_date_formatted }}
+                            </div>
                         </div>
-                        <a href="{{ route('jobdetail') }}" class="w-full block text-center bg-[#009DA9] text-white px-4 py-3 rounded-lg hover:bg-[#008A95]">
-                            Lihat Detail
-                        </a>
-                    </div>
-                    <!-- Card 1 -->
-                    <div class="bg-white flex flex-col justify-between h-full rounded-2xl shadow-md p-6 hover:shadow-lg transition duration-300">
-                        <div>
-                            <h2 class="text-xl font-semibold mb-1">Junior Technical Support Grade I</h2>
-                            <p class="text-gray-600 mb-4">Let's join with us</p>
+                        {{-- CTA --}}
+                        <div class="mt-5">
+                            <a href="{{ route('jobdetail', $position) }}"
+                                class="w-full block text-center bg-[#009DA9] text-white px-4 py-3 rounded-lg hover:bg-[#008A95]">
+                                Lihat Detail
+                            </a>
                         </div>
-                        <a href="{{ route('jobdetail') }}" class="w-full block text-center bg-[#009DA9] text-white px-4 py-3 rounded-lg hover:bg-[#008A95]">
-                            Lihat Detail
-                        </a>
                     </div>
-                    <!-- Card 1 -->
-                    <div class="bg-white flex flex-col justify-between h-full rounded-2xl shadow-md p-6 hover:shadow-lg transition duration-300">
-                        <div>
-                            <h2 class="text-xl font-semibold mb-1">Junior Technical Support Grade I</h2>
-                            <p class="text-gray-600 mb-4">Let's join with us</p>
-                        </div>
-                        <a href="{{ route('jobdetail') }}" class="w-full block text-center bg-[#009DA9] text-white px-4 py-3 rounded-lg hover:bg-[#008A95]">
-                            Lihat Detail
-                        </a>
+                    @empty
+                    <div class="flex-col justify-items-center md:p-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-14 text-red-600">
+                            <path fill-rule="evenodd" d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003ZM12 8.25a.75.75 0 0 1 .75.75v3.75a.75.75 0 0 1-1.5 0V9a.75.75 0 0 1 .75-.75Zm0 8.25a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" clip-rule="evenodd" />
+                        </svg>
+                        <h1 class="font-bold text-2xl mt-1 text-center">Tidak dapat menampilkan data</h1>
+                        <p class="text-gray-400 text-lg text-center">Belum ada lowongan pekerjaan yang buka saat ini, silahkan untuk memeriksa kembali dalam beberapa waktu ke depan.</p>
                     </div>
-                    <!-- Card 1 -->
-                    <div class="bg-white flex flex-col justify-between h-full rounded-2xl shadow-md p-6 hover:shadow-lg transition duration-300">
-                        <div>
-                            <h2 class="text-xl font-semibold mb-1">Junior Technical Support Grade I</h2>
-                            <p class="text-gray-600 mb-4">Let's join with us</p>
-                        </div>
-                        <a href="{{ route('jobdetail') }}" class="w-full block text-center bg-[#009DA9] text-white px-4 py-3 rounded-lg hover:bg-[#008A95]">
-                            Lihat Detail
-                        </a>
-                    </div>
+                    @endforelse
+                </div>
+
+                {{-- Pagination --}}
+                <div class="mt-8">
+                    {{ $positions->links() }}
                 </div>
             </div>
         </div>

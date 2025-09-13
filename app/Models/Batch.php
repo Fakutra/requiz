@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Cviebrock\EloquentSluggable\Sluggable;
@@ -41,5 +42,9 @@ class Batch extends Model
                 'onUpdate' => true,
             ]
         ];
+    }
+
+    public function getEndDateFormattedAttribute(){
+        return $this->end_date ? Carbon::parse($this->end_date)->translatedFormat('d F Y') : null;
     }
 }

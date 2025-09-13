@@ -14,13 +14,6 @@ class Applicant extends Model
         'user_id',
         'batch_id',
         'position_id',
-        'name',
-        'email',
-        'nik',
-        'no_telp',
-        'tpt_lahir',
-        'tgl_lahir',
-        'alamat',
         'pendidikan',
         'universitas',
         'jurusan',
@@ -28,6 +21,7 @@ class Applicant extends Model
         'skills',
         'cv_document',
         'status',
+        'additional_doc',
     ];
 
     // Di model Applicant
@@ -58,6 +52,7 @@ class Applicant extends Model
     {
         return Carbon::parse($this->tgl_lahir)->age;
     }
+
     public function getCurrentStageAttribute()
     {
         $status = $this->status;
