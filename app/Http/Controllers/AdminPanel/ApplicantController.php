@@ -5,49 +5,48 @@ namespace App\Http\Controllers\AdminPanel;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Applicant;
+use App\Models\SelectionLog;
+use App\Models\Position;
+use App\Models\EmailLog;
+use App\Models\Batch; // pastikan model Batch ada
 use Illuminate\Support\Facades\Storage;
-use App\Exports\ApplicantsExport; // <-- 1. Impor kelas Export Anda
-use Maatwebsite\Excel\Facades\Excel; // <-- 2. Impor Fassad Excel
-use App\Models\Position; // 1. Impor model Position
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use App\Exports\ApplicantsExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ApplicantController extends Controller
 {
     public function index(Request $request)
     {
-        // 2. Panggil method terpusat dengan seluruh request
-        $applicants = $this->getFilteredApplicants($request)->orderBy('id','asc')->paginate(10);
+        $applicants = $this->getFilteredApplicants($request)
+            ->orderBy('id', 'asc')
+            ->paginate(10);
 
-        // 3. Ambil data posisi untuk dikirim ke view (untuk mengisi dropdown filter)
         $positions = Position::orderBy('name')->get();
 
-        // 4. Kirim data applicants dan positions ke view
         return view('admin.applicant.index', compact('applicants', 'positions'));
     }
 
     public function export(Request $request)
     {
-        // 5. Pastikan export juga menggunakan semua filter
         $fileName = 'data-pelamar-' . date('Y-m-d') . '.xlsx';
-
-        // Panggil kelas Export dengan seluruh request dan unduh filenya
         return Excel::download(new ApplicantsExport($request), $fileName);
     }
 
-    /**
-     * Method privat untuk mengambil data pelamar dengan filter
-     */
-    private function getFilteredApplicants(Request $request) // 6. Ubah parameter menjadi Request
+    private function getFilteredApplicants(Request $request)
     {
-        // Ambil semua input dari request
-        $search = $request->input('search');
-        $status = $request->input('status');
+        $search     = $request->input('search');
+        $status     = $request->input('status');
         $positionId = $request->input('position');
 
         $query = Applicant::query()->with('position')->orderBy('name', 'asc');
 
-        // Filter untuk pencarian umum (tetap seperti sebelumnya)
         $query->when($search, function ($q, $search) {
-            return $q->where(function($subQ) use ($search) {
+            return $q->where(function ($subQ) use ($search) {
                 $subQ->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($search) . '%'])
                     ->orWhereRaw('LOWER(email) LIKE ?', ['%' . strtolower($search) . '%'])
                     ->orWhereRaw('LOWER(pendidikan) LIKE ?', ['%' . strtolower($search) . '%'])
@@ -60,328 +59,487 @@ class ApplicantController extends Controller
             });
         });
 
-        // 7. TAMBAHKAN BLOK FILTER SPESIFIK (AND conditions)
-        
-        // Filter berdasarkan Status dari dropdown
-        $query->when($status, function ($q, $status) {
-            return $q->where('status', $status);
-        });
-
-        // Filter berdasarkan Posisi dari dropdown
-        $query->when($positionId, function ($q, $positionId) {
-            return $q->where('position_id', $positionId);
-        });
+        $query->when($status, fn ($q) => $q->where('status', $status));
+        $query->when($positionId, fn ($q) => $q->where('position_id', $positionId));
 
         return $query;
     }
 
-    /**
-     * BARU: Method untuk memperbarui data pelamar.
-     */
     public function update(Request $request, Applicant $applicant)
     {
-        // Validasi data (termasuk alamat dan thn_lulus yang sudah diperbaiki di form)
-        $validatedData = $request->validate([
-            'name'        => 'required|string|max:255',
-            'email'       => 'required|email|max:255',
-            'nik'         => 'required|string|max:16',
-            'no_telp'     => 'required|string|max:14',
-            'tpt_lahir'   => 'required|string|max:255',
-            'tgl_lahir'   => 'required|date',
-            'alamat'      => 'required|string|max:255', // Pastikan field ini ada di form
-            'pendidikan'  => 'required|string|max:255',
-            'universitas' => 'required|string|max:255',
-            'jurusan'     => 'required|string|max:255',
-            'thn_lulus'   => 'required|string|max:4',  // Pastikan name="thn_lulus" di form
-            'status'      => 'required|string',
-            'cv_document' => 'nullable|file|mimes:pdf|max:3072', // max 3MB
-            'position_id' => 'required|exists:positions,id',
-            // 'skills' tidak perlu divalidasi jika readonly, kecuali ingin bisa diubah
+        $allowedPendidikan = ['SMA/Sederajat','Diploma','S1','S2','S3'];
+        $allowedStatus = [
+            'Seleksi Administrasi','Tes Tulis','Technical Test','Interview','Offering',
+            'Tidak Lolos Seleksi Administrasi','Tidak Lolos Seleksi Tes Tulis',
+            'Tidak Lolos Technical Test','Tidak Lolos interview',
+            'Menerima Offering','Menolak Offering',
+        ];
+
+        $data = $request->validate([
+            'name'        => ['required','string','max:255'],
+            // kalau mau unik di tabel applicants, pakai baris di bawah ini,
+            // kalau tidak, ganti saja dengan: ['required','email','max:255']
+            'email'       => ['required','email','max:255', Rule::unique('applicants','email')->ignore($applicant->id)],
+            'nik'         => ['required','string','max:16'],
+            'no_telp'     => ['required','string','max:14'],
+            'tpt_lahir'   => ['required','string','max:255'],
+            'tgl_lahir'   => ['required','date'],
+            'alamat'      => ['required','string','max:255'],
+            'pendidikan'  => ['required', Rule::in($allowedPendidikan)],
+            'universitas' => ['required','string','max:255'],
+            'jurusan'     => ['required','string','max:255'],
+            'thn_lulus'   => ['nullable','digits:4'],
+            'status'      => ['required', Rule::in($allowedStatus)],
+            'cv_document' => ['nullable','file','mimes:pdf','max:3072'], // 3 MB
+            'position_id' => ['required','exists:positions,id'],
         ]);
 
-        // Cek jika ada file CV baru yang di-upload
         if ($request->hasFile('cv_document')) {
-            // Hapus file lama jika ada
             if ($applicant->cv_document) {
-                Storage::delete('public/' . $applicant->cv_document);
+                Storage::disk('public')->delete($applicant->cv_document);
             }
-            // Simpan file baru dan dapatkan path-nya
-            $path = $request->file('cv_document')->store('cv_documents', 'public');
-            $validatedData['cv_document'] = $path;
+            $data['cv_document'] = $request->file('cv_document')->store('cv_documents', 'public');
         }
 
-        // Update data pelamar
-        $applicant->update($validatedData);
+        $applicant->update($data);
 
-        // Redirect kembali ke halaman index dengan pesan sukses
-        // Pastikan route 'applicant.index' ada, jika tidak sesuaikan (misal: 'admin.applicant.index')
-        return redirect()->route('applicant.index')->with('success', 'Data pelamar berhasil diperbarui.');
+        // balik ke halaman modal berasal (tetap di per-tahap)
+        return back()->with('success', 'Data pelamar berhasil diperbarui.');
     }
 
-    /**
-     * BARU: Method untuk menghapus data pelamar.
-     */
     public function destroy(Applicant $applicant)
     {
         $applicant->delete();
-        return redirect()->route('applicant.index')->with('success', 'Data pelamar berhasil dihapus.');
+        return redirect()->route('admin.applicant.index')->with('success', 'Data pelamar berhasil dihapus.');
     }
+
     public function destroySeleksi(Applicant $applicant)
     {
         $applicant->delete();
-        return redirect()->route('applicant.seleksi.index')->with('success', 'Data pelamar berhasil dihapus.');
+        return redirect()->route('admin.applicant.seleksi.index')->with('success', 'Data pelamar berhasil dihapus.');
     }
 
+    /**
+     * REKAP seleksi per tahap + dropdown Batch (filter berdasarkan batch).
+     */
     public function seleksiIndex(Request $request)
     {
-        $applicants = $this->getFilteredApplicants($request)->paginate(10);
-        $selectionStages = [
-            'Seleksi Administrasi',
-            'Lolos Administrasi', 
-            'Seleksi Tes Tulis', 
-            'Lolos Seleksi Tes Tulis',
-            'Seleksi Interview'
+        $batches = Batch::orderBy('id')->get();
+        $currentBatchId = $request->query('batch') ?: ($batches->first()->id ?? null);
+
+        $totalApplicants = null;
+        $rekap = [];
+
+        if (!$currentBatchId) {
+            return view('admin.applicant.seleksi.index', compact('batches','currentBatchId','totalApplicants','rekap'));
+        }
+
+        // ✅ Pakai applicants.batch_id (bukan positions.batch_id)
+        $applicantIds = Applicant::where('batch_id', $currentBatchId)->pluck('id');
+        $totalApplicants = $applicantIds->count();
+
+        $stages = [
+            'Seleksi Administrasi' => 'admin.applicant.seleksi.administrasi',
+            'Tes Tulis'            => 'admin.applicant.seleksi.tes_tulis',
+            'Technical Test'       => 'admin.applicant.seleksi.technical_test',
+            'Interview'            => 'admin.applicant.seleksi.interview',
+            'Offering'             => 'admin.applicant.seleksi.offering',
         ];
-        return view('admin.applicant.seleksi.index', compact('applicants', 'selectionStages'));
+
+        foreach ($stages as $label => $routeName) {
+            $stageKey = \Illuminate\Support\Str::slug($label);
+
+            $latestIds = SelectionLog::where('stage_key', $stageKey)
+                ->whereIn('applicant_id', $applicantIds)
+                ->select(DB::raw('MAX(id) AS id'))
+                ->groupBy('applicant_id')
+                ->pluck('id');
+
+            if ($latestIds->isEmpty()) {
+                $rekap[] = ['label' => $label, 'lolos' => 0, 'gagal' => 0, 'route_name' => $routeName];
+                continue;
+            }
+
+            $counts = SelectionLog::whereIn('id', $latestIds)
+                ->selectRaw("
+                    SUM(CASE WHEN result='lolos' THEN 1 ELSE 0 END) AS lolos,
+                    SUM(CASE WHEN result='tidak_lolos' THEN 1 ELSE 0 END) AS gagal
+                ")
+                ->first();
+
+            $rekap[] = [
+                'label'      => $label,
+                'lolos'      => (int) ($counts->lolos ?? 0),
+                'gagal'      => (int) ($counts->gagal ?? 0),
+                'route_name' => $routeName,
+            ];
+        }
+
+        return view('admin.applicant.seleksi.index', compact(
+            'batches','currentBatchId','totalApplicants','rekap'
+        ));
     }
+
+    // ===== Wrapper per tahap (URL tanpa parameter) =====
+    // ApplicantController.php
+
+
     public function editSeleksi($id)
     {
         $applicant = Applicant::with('position')->findOrFail($id);
-
         return view('admin.applicants.edit-seleksi', compact('applicant'));
     }
 
-    public function process(Request $request, $stage)
+    private function nextStageExact(string $stage): string
     {
-        $previousStageStatus = match ($stage) {
-        'Seleksi Tes Tulis' => 'Lolos Seleksi Administrasi',
-        'Technical Test' => 'Lolos Seleksi Tes Tulis',
-        'Interview' => 'Lolos Technical Test',
-        default => 'Seleksi Administrasi',
-        
-    };
+        $map = [
+            'Seleksi Administrasi' => 'Tes Tulis',
+            'Tes Tulis'            => 'Technical Test',
+            'Technical Test'       => 'Interview',
+            'Interview'            => 'Offering',
+            'Offering'             => 'Offering',
+        ];
+        return $map[$stage] ?? $stage;
+    }
 
-    $applicants = Applicant::where('status', $previousStageStatus)->get();
+    private function failEnumFor(string $stage): string
+    {
+        $map = [
+            'Seleksi Administrasi' => 'Tidak Lolos Seleksi Administrasi',
+            'Tes Tulis'            => 'Tidak Lolos Seleksi Tes Tulis',
+            'Technical Test'       => 'Tidak Lolos Technical Test',
+            'Interview'            => 'Tidak Lolos interview',
+            'Offering'             => 'Menolak Offering',
+        ];
+        return $map[$stage] ?? $stage;
+    }
 
-    return view('admin.applicant.seleksi.process', compact('applicants', 'stage'));
+    /**
+     * LOGIKA INTI halaman proses per tahap.
+     */
+    
+    public function process(Request $request, string $stage)
+    {
+        $batchId    = $request->integer('batch');
+        $positions  = Position::orderBy('name')->get();
+        $allJurusan = Applicant::whereNotNull('jurusan')->distinct()->pluck('jurusan');
+
+        $nextStage  = $this->nextStageExact($stage);
+        $failEnum   = $this->failEnumFor($stage);
+
+        $q = Applicant::with('position');
+
+        // ==== FILTER BATCH (konsisten dgn seleksiIndex) ====
+        if ($batchId) {
+            // Jika batch_id ada di tabel positions:
+            $q->whereHas('position', function ($w) use ($batchId) {
+                $w->where('batch_id', $batchId);
+            });
+
+            // Jika sebaliknya batch_id ada di applicants, pakai ini saja:
+            // $q->where('batch_id', $batchId);
+        }
+
+        // ==== FILTER STATUS ====
+        if ($request->filled('status')) {
+            $st = $request->status;
+            if ($st === '__NEXT__') {
+                $q->where(function ($w) use ($stage, $nextStage) {
+                    $w->where('status', $nextStage)
+                    ->orWhere('status', 'Lolos '.$stage);
+                });
+            } elseif ($st === '__FAILED__') {
+                $q->where(function ($w) use ($stage, $failEnum) {
+                    $w->where('status', $failEnum)
+                    ->orWhere('status', 'Tidak Lolos '.$stage);
+                });
+            } else {
+                $q->where('status', $st);
+            }
+        } else {
+            $q->where(function ($w) use ($stage, $nextStage, $failEnum) {
+                $w->where('status', $stage)
+                ->orWhere('status', $nextStage)
+                ->orWhere('status', $failEnum)
+                ->orWhere('status', 'Lolos '.$stage)
+                ->orWhere('status', 'Tidak Lolos '.$stage);
+            });
+        }
+
+        // ==== SEARCH & FILTER TAMBAHAN ====
+        if ($s = trim((string) $request->input('search'))) {
+            // Jika pakai Postgres, ILIKE oke; untuk MySQL ubah ke LIKE.
+            $q->where(function ($x) use ($s) {
+                $x->where('name', 'ilike', "%{$s}%")
+                ->orWhere('email', 'ilike', "%{$s}%")
+                ->orWhere('jurusan', 'ilike', "%{$s}%");
+            });
+        }
+        if ($request->filled('position')) $q->where('position_id', $request->position);
+        if ($request->filled('jurusan'))  $q->where('jurusan', $request->jurusan);
+
+        $applicants = $q->orderBy('name')->paginate(20)->appends($request->query());
+
+        // ==== BADGE/TAMPILAN ====
+        $collection = $applicants->getCollection();
+        $collection->transform(function ($a) use ($stage, $nextStage, $failEnum) {
+            $a->_stage_state  = 'other';
+            $a->_stage_status = $a->status;
+            $a->_stage_badge  = 'bg-slate-50 text-slate-600 border border-slate-200';
+
+            if ($stage === 'Offering') {
+                if ($a->status === 'Menerima Offering') {
+                    $a->_stage_state  = 'lolos';
+                    $a->_stage_status = 'Menerima Offering';
+                    $a->_stage_badge  = 'bg-green-50 text-green-700 border border-green-200';
+                    return $a;
+                }
+                if ($a->status === 'Menolak Offering') {
+                    $a->_stage_state  = 'gagal';
+                    $a->_stage_status = 'Menolak Offering';
+                    $a->_stage_badge  = 'bg-red-50 text-red-700 border border-red-200';
+                    return $a;
+                }
+            }
+
+            if ($a->status === $stage) {
+                $a->_stage_state  = 'current';
+                $a->_stage_status = $stage;
+                $a->_stage_badge  = 'bg-gray-100 text-gray-800 border border-gray-200';
+            } elseif ($a->status === $failEnum || $a->status === 'Tidak Lolos '.$stage) {
+                $a->_stage_state  = 'gagal';
+                $a->_stage_status = $a->status;
+                $a->_stage_badge  = 'bg-red-50 text-red-700 border border-red-200';
+            } elseif ($a->status === $nextStage || $a->status === 'Lolos '.$stage) {
+                $a->_stage_state  = 'lolos';
+                $a->_stage_status = 'Lolos '.$stage;
+                $a->_stage_badge  = 'bg-green-50 text-green-700 border border-green-200';
+            }
+            return $a;
+        });
+
+        // ==== STATUS EMAIL ====
+        $ids = $collection->pluck('id')->all();
+        $sentMap = EmailLog::whereIn('applicant_id', $ids)
+            ->where('stage', $stage)
+            ->where('success', true)
+            ->select('applicant_id', DB::raw('MAX(created_at) as last_sent'))
+            ->groupBy('applicant_id')
+            ->pluck('last_sent', 'applicant_id');
+
+        $collection->transform(function ($a) use ($sentMap) {
+            $a->_email_sent    = $sentMap->has($a->id);
+            $a->_email_sent_at = $sentMap->get($a->id);
+            return $a;
+        });
+        $applicants->setCollection($collection);
+
+        return view(
+            $this->viewForStage($stage),
+            compact('applicants','positions','allJurusan','stage','nextStage','failEnum')
+        );
+    }
+
+    private function viewForStage(string $stage): string
+    {
+        return match ($stage) {
+            'Seleksi Administrasi' => 'admin.applicant.seleksi.administrasi.index',
+            'Tes Tulis'            => 'admin.applicant.seleksi.tes_tulis.index',
+            'Technical Test'       => 'admin.applicant.seleksi.technical_test.index',
+            'Interview'            => 'admin.applicant.seleksi.interview.index',
+            'Offering'             => 'admin.applicant.seleksi.offering.index',
+            default                => 'admin.applicant.seleksi.administrasi.index',
+        };
+    }
+
+    public function sendEmail(Request $request)
+    {
+        $request->validate([
+            'recipients'    => 'required|string',
+            'recipient_ids' => 'required|string',
+            'stage'         => 'required|string',
+            'use_template'  => 'nullable|boolean',
+            'subject'       => 'nullable|string|max:255',
+            'message'       => 'nullable|string|max:20000',
+            'attachment'    => 'required|file|mimes:pdf|max:5120',
+        ]);
+
+        $useTemplate = $request->boolean('use_template', true);
+
+        $emails = \Illuminate\Support\Str::of(str_replace(["\r\n", "\n", ";"], ",", $request->recipients))
+            ->explode(',')
+            ->map(fn($e) => trim($e))
+            ->filter()
+            ->unique()
+            ->values();
+
+        $ids = collect(explode(',', $request->recipient_ids))
+            ->map(fn($v) => (int) trim($v))
+            ->filter()
+            ->values();
+
+        $applicantsByEmail = Applicant::with('position')
+            ->whereIn('id', $ids)
+            ->get()
+            ->keyBy('email');
+
+        $file = $request->file('attachment');
+
+        foreach ($emails as $to) {
+            $match         = $applicantsByEmail->get($to);
+            $applicantId   = $match?->id;
+            $fullName      = $match?->name ?? $to;
+            $positionName  = $match?->position?->name ?? '-';
+
+            if ($useTemplate) {
+                ['subject' => $subject, 'message' => $body]
+                    = $this->defaultEmailForStage($request->stage, $fullName, $positionName);
+            } else {
+                $subject = $request->input('subject', 'Informasi Seleksi');
+                $body    = $request->input('message', '');
+            }
+
+            try {
+                \Illuminate\Support\Facades\Mail::raw($body, function ($mail) use ($to, $subject, $file) {
+                    $mail->to($to)
+                        ->subject($subject)
+                        ->from(config('mail.from.address'), config('mail.from.name'))
+                        ->attach($file->getRealPath(), [
+                            'as'   => $file->getClientOriginalName(),
+                            'mime' => 'application/pdf',
+                        ]);
+                });
+
+                EmailLog::create([
+                    'applicant_id' => $applicantId,
+                    'email'        => $to,
+                    'stage'        => $request->stage,
+                    'subject'      => $subject,
+                    'success'      => true,
+                    'error'        => null,
+                ]);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error('Gagal kirim email', ['to' => $to, 'error' => $e->getMessage()]);
+
+                EmailLog::create([
+                    'applicant_id' => $applicantId,
+                    'email'        => $to,
+                    'stage'        => $request->stage,
+                    'subject'      => $subject,
+                    'success'      => false,
+                    'error'        => substr($e->getMessage(), 0, 1000),
+                ]);
+            }
+        }
+
+        return back()->with('success', 'Proses kirim email selesai.');
+    }
+
+    private function defaultEmailForStage(string $stage, string $fullName, ?string $positionName = null): array
+    {
+        $positionName = $positionName ?: '-';
+
+        $subject = "INFORMASI HASIL SELEKSI {$stage} TAD/OUTSOURCING - PLN ICON PLUS";
+        $body = "Halo {$fullName}
+
+Terima kasih atas partisipasi Saudara/i dalam mengikuti proses seleksi TAD/OUTSOURCING PLN ICON PLUS pada posisi {$positionName}.
+
+Selamat Anda lolos pada tahap {$stage}. Selanjutnya, silakan cek jadwal Anda untuk tahap berikutnya pada lampiran email ini.
+
+Demikian kami sampaikan.
+Terima kasih atas partisipasinya dan semoga sukses.";
+
+        return ['subject' => $subject, 'message' => $body];
     }
 
     public function updateStatus(Request $request)
     {
         $request->validate([
-            'stage' => 'required|string',
+            'stage'               => 'required|string',
             'selected_applicants' => 'required|array',
-            'status' => 'required|array',
+            'status'              => 'required|array',
         ]);
 
-        foreach ($request->selected_applicants as $applicantId) {
-            $applicant = Applicant::findOrFail($applicantId);
-            $selectedStatus = $request->status[$applicantId] ?? null;
+        $stage    = (string) $request->stage;
+        $stageKey = Str::slug($stage);
 
-            if ($selectedStatus === 'lolos') {
-                $applicant->status = 'Lolos ' . $request->stage;
+        DB::transaction(function () use ($request, $stage, $stageKey) {
+            foreach ($request->selected_applicants as $applicantId) {
+                $applicant = Applicant::with('position')->findOrFail($applicantId);
+                $action    = $request->status[$applicantId] ?? null;
 
-                // Jika ada tahap berikutnya, pindahkan ke sana
-                if ($request->stage === 'Seleksi Administrasi') {
-                    $applicant->status = 'Lolos Seleksi Administrasi';
-                } elseif ($request->stage === 'Seleksi Tes Tulis') {
-                    $applicant->status = 'Lolos Seleksi Tes Tulis';
-                } elseif ($request->stage === 'Technical Test') {
-                    $applicant->status = 'Lolos Technical Test';
-                } elseif ($request->stage === 'Interview') {
-                    $applicant->status = 'Lolos Interview';
+                if ($action === 'lolos') {
+                    if ($stage === 'Offering') {
+                        $applicant->status = 'Menerima Offering';
+                    } else {
+                        $applicant->status = $this->nextStageExact($stage);
+                    }
+                    $applicant->save();
+
+                    SelectionLog::create([
+                        'applicant_id' => $applicant->id,
+                        'stage'        => $stage,
+                        'stage_key'    => $stageKey,
+                        'result'       => 'lolos',
+                        'position_id'  => $applicant->position_id,
+                        'jurusan'      => $applicant->jurusan,
+                        'acted_by'     => auth()->id(),
+                    ]);
+                } elseif ($action === 'tidak_lolos') {
+                    $applicant->status = $this->failEnumFor($stage);
+                    $applicant->save();
+
+                    SelectionLog::create([
+                        'applicant_id' => $applicant->id,
+                        'stage'        => $stage,
+                        'stage_key'    => $stageKey,
+                        'result'       => 'tidak_lolos',
+                        'position_id'  => $applicant->position_id,
+                        'jurusan'      => $applicant->jurusan,
+                        'acted_by'     => auth()->id(),
+                    ]);
                 }
-
-            } elseif ($selectedStatus === 'tidak_lolos') {
-                $applicant->status = 'Tidak Lolos ' . $request->stage;
             }
+        });
 
-            $applicant->save();
-        }
-
-        return back()->with('success', 'Status peserta berhasil diperbarui.');
+        return back()->with('success', 'Status peserta & log berhasil diperbarui.');
     }
+    
 
     public function showStageApplicants($stage)
     {
-        $query = Applicant::with('user', 'position')
-            ->where('status', 'LIKE', "%$stage%");
+        $nextStage = $this->nextStageExact($stage);
+        $failEnum  = $this->failEnumFor($stage);
 
-        if (request('jurusan')) {
-            $query->where('jurusan', request('jurusan'));
+        $query = Applicant::with('user', 'position');
+
+        if (request()->filled('status')) {
+            $st = request('status');
+            if ($st === $stage) {
+                $query->where('status', $stage);
+            } elseif ($st === '__NEXT__') {
+                $query->where('status', $nextStage);
+            } elseif ($st === '__FAILED__') {
+                $query->where('status', $failEnum);
+            } else {
+                $query->where('status', $st);
+            }
+        } else {
+            $query->where(function ($w) use ($stage, $nextStage, $failEnum) {
+                $w->where('status', $stage)
+                  ->orWhere('status', $nextStage)
+                  ->orWhere('status', $failEnum);
+            });
         }
 
-        if (request('status')) {
-            $query->where('status', request('status'));
-        }
+        if (request('jurusan')) $query->where('jurusan', request('jurusan'));
 
-        $applicants = $query->get();
+        $applicants   = $query->orderBy('name')->paginate(20)->withQueryString();
+        $allJurusan   = Applicant::select('jurusan')->distinct()->pluck('jurusan');
+        $filteredStatuses = ["__NEXT__", "__FAILED__", $stage];
 
-        // ambil semua jurusan unik
-        $allJurusan = Applicant::select('jurusan')->distinct()->pluck('jurusan');
-
-        // ambil status yang hanya relevan dengan tahap ini
-        $filteredStatuses = [
-            "Lolos $stage",
-            "Tidak Lolos $stage"
-        ];
-
-        return view('admin.applicant.seleksi.process', compact('applicants', 'stage', 'allJurusan', 'filteredStatuses'));
+        return view('admin.applicant.seleksi.process', compact(
+            'applicants', 'stage', 'allJurusan', 'filteredStatuses', 'nextStage', 'failEnum'
+        ));
     }
-
 }
-
-
-    // public function index(Request $request)
-    // {
-    //     // Ambil kata kunci pencarian dari request
-    //     $search = $request->input('search');
-
-    //     // Query dasar dengan relasi dan urutan
-    //     $query = Applicant::with('position')->orderBy('name', 'asc');
-
-    //     // Terapkan filter pencarian HANYA JIKA ada input 'search'
-    //     $query->when($search, function ($q, $search) {
-    //         return $q->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($search) . '%'])
-    //                   ->orWhereRaw('LOWER(email) LIKE ?', ['%' . strtolower($search) . '%'])
-    //                   ->orWhereRaw('LOWER(pendidikan) LIKE ?', ['%' . strtolower($search) . '%'])
-    //                   ->orWhereRaw('LOWER(universitas) LIKE ?', ['%' . strtolower($search) . '%'])
-    //                   ->orWhereRaw('LOWER(jurusan) LIKE ?', ['%' . strtolower($search) . '%'])
-    //                   ->orWhereRaw("DATE_PART('year', AGE(CURRENT_DATE, tgl_lahir)) = ?", [(int) $search])
-    //                   ->orWhereHas('position', function ($subQ) use ($search) {
-    //                      $subQ->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($search) . '%']);
-    //                  });
-    //     });
-
-    //     // Lakukan paginasi pada hasil query
-    //     $applicants = $query->paginate(15);
-
-    //     // Kirim data ke view
-    //     return view('admin.applicant.index', compact('applicants'));
-    // }
-
-    // $groupedApplicants = $applicants->groupBy('status');
-    
-    // public function index(Request $request)
-    // {
-    //     // =======================
-    //     // FILTER: All Pelamar
-    //     // =======================
-    //     $searchAll = $request->input('search_all');
-    //     $queryAll = Applicant::with('position');
-
-    //     if (!empty($searchAll)) {
-    //         $queryAll->where(function ($q) use ($searchAll) {
-    //             $q->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($searchAll) . '%'])
-    //             ->orWhereRaw('LOWER(email) LIKE ?', ['%' . strtolower($searchAll) . '%'])
-    //             ->orWhereRaw('LOWER(pendidikan) LIKE ?', ['%' . strtolower($searchAll) . '%'])
-    //             ->orWhereRaw('LOWER(universitas) LIKE ?', ['%' . strtolower($searchAll) . '%'])
-    //             ->orWhereRaw('LOWER(jurusan) LIKE ?', ['%' . strtolower($searchAll) . '%']);
-    //         })->orWhereHas('position', function ($q) use ($searchAll) {
-    //             $q->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($searchAll) . '%']);
-    //         });
-    //     }
-
-    //     $applicantAll = $queryAll->orderBy('name')->paginate(10)->withQueryString();
-
-    //     // =======================
-    //     // FILTER: Screening
-    //     // =======================
-    //     $searchScreening = $request->input('search_screening');
-    //     $screeningQuery = Applicant::with('position')
-    //         ->where('status', 'Seleksi Administrasi');
-
-    //     if (!empty($searchScreening)) {
-    //         $screeningQuery->where(function ($q) use ($searchScreening) {
-    //             $q->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($searchScreening) . '%'])
-    //             ->orWhereRaw('LOWER(universitas) LIKE ?', ['%' . strtolower($searchScreening) . '%'])
-    //             ->orWhereRaw('LOWER(jurusan) LIKE ?', ['%' . strtolower($searchScreening) . '%'])
-    //             ->orWhereRaw('LOWER(pendidikan) LIKE ?', ['%' . strtolower($searchScreening) . '%']);
-    //         });
-    //     }
-
-    //     $applicants = $screeningQuery->get()
-    //         ->sortBy('name')
-    //         ->groupBy(fn ($item) => $item->position->name ?? 'Tanpa Posisi');
-
-    //     return view('admin.applicant.index', compact('applicants', 'applicantAll'));
-    // }
-
-
-
-
-    // public function update(Request $request, $id)
-    // {
-    //     $validated = $request->validate([
-    //         'name'        => 'required|string|max:255',
-    //         'email'       => 'required|email|max:255',
-    //         'nik'         => 'required|string|max:16',
-    //         'no_telp'     => 'required|string|max:14',
-    //         'tpt_lahir'   => 'required|string|max:255',
-    //         'tgl_lahir'   => 'required|date',
-    //         'alamat'      => 'required|string|max:255',
-    //         'pendidikan'  => 'required|string|max:255',
-    //         'universitas' => 'required|string|max:255',
-    //         'jurusan'     => 'required|string|max:255',
-    //         'cv_document' => 'nullable|file|mimes:pdf,doc,docx|max:2048',
-    //     ]);
-
-    //     $applicant = Applicant::findOrFail($id);
-
-    //     // Update file jika ada file baru diupload
-    //     if ($request->hasFile('cv_document')) {
-    //         // Hapus file lama jika ada
-    //         if ($applicant->cv_document && Storage::exists($applicant->cv_document)) {
-    //             Storage::delete($applicant->cv_document);
-    //         }
-        
-    //         // Simpan file baru
-    //         $path = $request->file('cv_document')->store('cv-applicant', 'public');
-    //         $validated['cv_document'] = $path;
-    //     }
-
-    //     $applicant->update($validated);
-
-    //     return redirect()->route('applicant.index')->with('success', 'Data pelamar berhasil diperbarui.');
-    // }
-
-    // public function destroy($id)
-    // {
-    //     $applicants = Applicant::findOrFail($id);
-    //     $applicants->delete();
-
-    //     return redirect()->route('applicant.index')->with('success', 'Applicant has been deleted!');
-    // }
-
-    // public function search(Request $request)
-    // {
-    //     $search = $request->get('search');
-
-    //     $applicants = Applicant::where('name', 'like', "%$search%")
-    //         ->orWhere('universitas', 'like', "%$search%")
-    //         ->orWhere('jurusan', 'like', "%$search%")
-    //         ->orWhere('pendidikan', 'like', "%$search%") // 👈 Tambahkan ini
-    //         ->orderBy('name')
-    //         ->get();
-
-    //     return response()->json($applicants);
-    // }
-
-    // public function show($id)
-    // {
-    //     $applicant = Applicant::with('position')->findOrFail($id);
-    //     return view('admin.applicant.show', compact('applicant'));
-    // }
-
-    // public function updateStatus(Request $request)
-    // {
-    //     $request->validate([
-    //         'selected_applicants' => 'required|array',
-    //         'status' => 'required|string|in:Seleksi Tes Tulis,Tidak Lolos Seleksi Administrasi',
-    //     ]);
-
-    //     Applicant::whereIn('id', $request->selected_applicants)
-    //             ->update(['status' => $request->status]);
-
-    //     return back()->with('success', 'Status pelamar berhasil diperbarui.');
-    // }

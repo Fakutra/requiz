@@ -11,10 +11,18 @@ class Test extends Model
     use HasFactory, Sluggable;
 
     protected $fillable = [
+        'position_id',
         'name',
         'slug',
-        'position_id',
         'test_date',
+        'test_closed',
+        'test_end',
+    ];
+
+    protected $casts = [
+        'test_date'   => 'datetime',
+        'test_closed' => 'datetime',
+        'test_end'    => 'datetime',
     ];
 
     public function position()

@@ -17,6 +17,12 @@ class TestResult extends Model
         'score',
     ];
 
+    protected $casts = [
+        'started_at'  => 'datetime',
+        'finished_at' => 'datetime',
+        'score'       => 'decimal:2', // opsional
+    ];
+
     public function applicant()
     {
         return $this->belongsTo(Applicant::class);

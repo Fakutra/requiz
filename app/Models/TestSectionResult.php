@@ -19,7 +19,15 @@ class TestSectionResult extends Model
         'test_section_id', // Tambahkan baris ini
         'started_at',
         'finished_at',
-        'score'
+        'score',
+        'shuffle_state', // ⬅️ tambahkan
+    ];
+
+    protected $casts = [
+        'started_at'  => 'datetime',
+        'finished_at' => 'datetime',
+        'score'       => 'decimal:2',
+        'shuffle_state' => 'array',     // ⬅️ jadikan array otomatis
     ];
 
     public function testResult()

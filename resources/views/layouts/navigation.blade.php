@@ -26,6 +26,122 @@
                         </x-nav-link>
                     </div>
                 @endif
+                @if (Auth::user()->role === 'admin')
+                    <!-- Logo -->
+                    <div class="shrink-0 flex items-center">
+                        <a href="{{ route('admin.dashboard') }}">
+                            <x-application-logo class="block h-9 w-auto fill-current text-gray-800" />
+                        </a>
+                    </div>
+
+                    @php
+                        $activeApplicant =
+                            request()->routeIs('applicant.*') || request()->routeIs('admin.applicant.seleksi.*');
+                        $activePenilaian =
+                            request()->routeIs('quiz_results.*') || request()->routeIs('essay_grading.*');
+                    @endphp
+
+                    <!-- Navigation -->
+                    <div class="hidden sm:flex sm:items-center sm:ms-10 space-x-8">
+                        <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
+                            {{ __('Dashboard') }}
+                        </x-nav-link>
+
+                        <x-nav-link :href="route('batch.index')" :active="request()->routeIs('batch.index')">
+                            {{ __('Batch') }}
+                        </x-nav-link>
+
+                        <!-- Applicant Dropdown (Pelamar & Seleksi) -->
+                        <div x-data="{ open: false }" class="relative">
+                            <button @click="open = !open" @keydown.escape.window="open = false"
+                                class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium leading-5 transition
+                    {{ $activeApplicant ? 'border-indigo-400 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}">
+                                <span>{{ __('Applicant') }}</span>
+                                <svg class="ms-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none"
+                                    viewBox="0 0 20 20" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M7 7l3 3 3-3" />
+                                </svg>
+                            </button>
+
+                            <div x-show="open" @click.outside="open = false"
+                                x-transition:enter="transition ease-out duration-200"
+                                x-transition:enter-start="opacity-0 scale-95"
+                                x-transition:enter-end="opacity-100 scale-100"
+                                x-transition:leave="transition ease-in duration-75"
+                                x-transition:leave-start="opacity-100 scale-100"
+                                x-transition:leave-end="opacity-0 scale-95"
+                                class="absolute z-50 mt-2 w-48 rounded-md shadow-lg origin-top-left left-0"
+                                style="display: none;">
+                                <div class="rounded-md ring-1 ring-black ring-opacity-5 py-1 bg-white">
+                                    <a href="{{ route('admin.applicant.index') }}"
+                                        class="block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 transition">
+                                        {{ __('Pelamar') }}
+                                    </a>
+                                    <a href="{{ route('admin.applicant.seleksi.index') }}"
+                                        class="block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 transition">
+                                        {{ __('Seleksi') }}
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <x-nav-link :href="route('test.index')" :active="request()->routeIs('test.index')">
+                            {{ __('Quiz') }}
+                        </x-nav-link>
+
+                        <x-nav-link :href="route('question.index')" :active="request()->routeIs('question.index')">
+                            {{ __('Questions') }}
+                        </x-nav-link>
+
+                        <x-nav-link :href="route('bundle.index')" :active="request()->routeIs('bundle.index')">
+                            {{ __('Bundles') }}
+                        </x-nav-link>
+
+                        <x-nav-link :href="route('tech-schedule.index')" :active="request()->routeIs('tech-schedule.index')">
+                            {{ __('Technical Test') }}
+                        </x-nav-link>
+
+                        <x-nav-link :href="route('interview-schedule.index')" :active="request()->routeIs('interview-schedule.index')">
+                            {{ __('Interview') }}
+                        </x-nav-link>
+
+                        <!-- Penilaian Dropdown (Quiz Result & Penilaian Essay) -->
+                        <div x-data="{ open: false }" class="relative">
+                            <button @click="open = !open" @keydown.escape.window="open = false"
+                                class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium leading-5 transition
+                    {{ $activePenilaian ? 'border-indigo-400 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}">
+                                <span>{{ __('Tes Tulis') }}</span>
+                                <svg class="ms-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none"
+                                    viewBox="0 0 20 20" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M7 7l3 3 3-3" />
+                                </svg>
+                            </button>
+
+                            <div x-show="open" @click.outside="open = false"
+                                x-transition:enter="transition ease-out duration-200"
+                                x-transition:enter-start="opacity-0 scale-95"
+                                x-transition:enter-end="opacity-100 scale-100"
+                                x-transition:leave="transition ease-in duration-75"
+                                x-transition:leave-start="opacity-100 scale-100"
+                                x-transition:leave-end="opacity-0 scale-95"
+                                class="absolute z-50 mt-2 w-56 rounded-md shadow-lg origin-top-left left-0"
+                                style="display: none;">
+                                <div class="rounded-md ring-1 ring-black ring-opacity-5 py-1 bg-white">
+                                    <a href="{{ route('quiz_results.index') }}"
+                                        class="block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 transition">
+                                        {{ __('Quiz Result') }}
+                                    </a>
+                                    <a href="{{ route('essay_grading.index') }}"
+                                        class="block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 transition">
+                                        {{ __('Penilaian Essay') }}
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endif
             </div>
 
             <!-- Settings Dropdown -->

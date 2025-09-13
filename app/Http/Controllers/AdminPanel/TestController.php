@@ -14,22 +14,15 @@ class TestController extends Controller
 {
     public function index()
     {
-        // Ambil semua data posisi
         $positions = Position::all();
-
-        // Gunakan withCount untuk efisiensi
         $tests = Test::withCount('sections')->orderBy('id', 'asc')->get();
-        
-        // Kirim kedua variabel ('tests' dan 'positions') ke view
         return view('admin.test.index', compact('tests', 'positions'));
     }
 
     public function show(Test $test)
     {
-        // Ambil semua question bundle untuk dropdown di modal
         $question_bundles = QuestionBundle::all();
 
-        // Load relasi sections dan urutkan berdasarkan kolom 'order' secara ascending.
         $test->load(['sections' => function ($query) {
             $query->orderBy('order', 'asc');
         }]);
@@ -39,12 +32,12 @@ class TestController extends Controller
 
     public function store(Request $request)
     {
-        
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'test_date' => 'required|date',
-            // 'slug' => 'string',
-            'position_id' => 'required',
+            'name'        => 'required|string|max:255',
+            'position_id' => 'required|exists:positions,id',
+            'test_date'   => 'nullable|date',
+            'test_closed' => 'nullable|date|after_or_equal:test_date',
+            'test_end'    => 'nullable|date|after_or_equal:test_closed',
         ]);
 
         Test::create($validated);
@@ -54,35 +47,28 @@ class TestController extends Controller
 
     public function update(Request $request, Test $test)
     {
-        // Validasi input dari form
         $rules = [
-            'name' => 'required|string|max:255',
-            'test_date' => 'required|date',
-            'position_id' => 'required|exists:positions,id', // Pastikan position_id valid
+            'name'        => 'required|string|max:255',
+            'position_id' => 'required|exists:positions,id',
+            'test_date'   => 'nullable|date',
+            'test_closed' => 'nullable|date|after_or_equal:test_date',
+            'test_end'    => 'nullable|date|after_or_equal:test_closed',
         ];
 
         $validatedData = $request->validate($rules);
 
-        // Lakukan update data
-        // Karena 'onUpdate' => true di model, slug akan otomatis ter-update jika 'name' berubah
         $test->update($validatedData);
 
-        // Redirect kembali ke halaman index dengan pesan sukses
         return redirect()->route('test.index')->with('success', 'Quiz has been updated!');
     }
 
     public function destroy(Test $test)
     {
         try {
-            // Hapus data test dari database.
             $test->delete();
-
-            // Redirect kembali ke halaman index dengan pesan sukses.
             return redirect()->route('test.index')->with('success', 'Quiz berhasil dihapus!');
-
         } catch (\Exception $e) {
-            // Jika terjadi error, redirect kembali dengan pesan error.
-            return redirect()->route('test.index')->with('error', 'Gagal menghapus quiz. Error: ' . $e->getMessage());
+            return redirect()->route('test.index')->with('error', 'Gagal menghapus quiz. Error: '.$e->getMessage());
         }
     }
 
@@ -91,5 +77,4 @@ class TestController extends Controller
         $slug = SlugService::createSlug(Test::class, 'slug', $request->name);
         return response()->json(['slug' => $slug]);
     }
-    
 }

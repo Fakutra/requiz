@@ -36,11 +36,11 @@ return new class extends Migration
                 'Interview',
                 'Offering',
                 'Tidak Lolos Seleksi Administrasi',
-                'Tidak Lolos Tes Tulis',
+                'Tidak Lolos Seleksi Tes Tulis',
                 'Tidak Lolos Technical Test',
-                'Tidak Lolos Interview',
-                'Menolak Offering',
+                'Tidak Lolos interview',
                 'Menerima Offering',
+                'Menolak Offering',
             ])->default('Seleksi Administrasi');
             $table->timestamps();
         });

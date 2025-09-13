@@ -62,5 +62,11 @@ class Applicant extends Model
         if (str_contains($status, 'Interview')) return 'Interview';
         return 'Tahap Tidak Dikenal';
     }
+
+    public function emailLogs()
+    {
+        return $this->hasMany(\App\Models\EmailLog::class);
+    }
+    
 }
 

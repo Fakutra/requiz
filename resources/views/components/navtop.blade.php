@@ -157,6 +157,7 @@
         @endauth
 
         @auth
+<<<<<<< HEAD
         <form method="POST" action="{{ route('logout') }}">
             @csrf
             <x-responsive-nav-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();">
@@ -168,6 +169,20 @@
                 </div>
             </x-responsive-nav-link>
         </form>
+=======
+            @if (Auth::user()->role === 'admin')
+                <x-responsive-nav-link :href="route('admin.dashboard')">Dashboard</x-responsive-nav-link>
+                {{-- <x-responsive-nav-link :href="route('position.index')">Positions</x-responsive-nav-link> --}}
+                <x-responsive-nav-link :href="route('admin.applicant.index')">Applicant</x-responsive-nav-link>
+            @endif
+
+            <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <x-responsive-nav-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();">
+                    Log Out
+                </x-responsive-nav-link>
+            </form>
+>>>>>>> origin/main
         @else
         <x-responsive-nav-link :href="route('login')" :active="request()->routeIs('login')">Login</x-responsive-nav-link>
         <x-responsive-nav-link :href="route('register')" :active="request()->routeIs('register')">Register</x-responsive-nav-link>
