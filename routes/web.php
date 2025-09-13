@@ -14,34 +14,23 @@ use App\Http\Controllers\AdminPanel\ApplicantController;
 use App\Http\Controllers\AdminPanel\QuestionBundleController;
 use App\Http\Controllers\AdminPanel\QuestionController;
 use App\Http\Controllers\AdminPanel\QuizResultController;
+use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Auth;
 
+Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
-Route::get('/', function () {
-    return view('welcome');
-})->name('welcome');
+Route::get('/joblist', [LowonganController::class, 'index'])->name('joblist');
 
+Route::get('/joblist/{position:slug}', [LowonganController::class, 'show'])->name('jobdetail');
 
-Route::get('/joblist', function () {
-    return view('joblist');
-})->name('joblist');
-
-Route::get('/jobdetail', function() {
-    return view('jobdetail');
-})->name('jobdetail');
-
-Route::get('lowongan', [LowonganController::class, 'index'])->name('lowongan.index');
-
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified', 'role:user'])->name('dashboard');
+//Route::get('lowongan', [LowonganController::class, 'index'])->name('lowongan.index');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     
-    Route::post('/{position:slug}/apply', [LowonganController::class, 'store'])->name('apply.store');
+    Route::post('/joblist/{position:slug}/apply', [LowonganController::class, 'store'])->name('apply.store');
     Route::get('history', [HistoryController::class, 'index'])->name('history.index');
 
     Route::get('/quiz/{slug}', [QuizController::class, 'start'])->name('quiz.start');            // mulai / lanjut ke section berjalan

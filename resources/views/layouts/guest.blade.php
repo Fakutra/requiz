@@ -5,6 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>{{ config('app.name', 'ReQuiz - All in One Recruitment Platform') }}</title>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -21,6 +22,7 @@
     {{-- Datatables --}}
     {{-- <link rel="stylesheet" href="resources/css/dataTables.css" /> --}}
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>[x-cloak] { display: none !important; }</style>
 
