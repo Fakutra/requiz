@@ -15,15 +15,17 @@
     {{-- Vite --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-    {{-- Trix (jika dipakai) --}}
+    {{-- Trix --}}
     <link rel="stylesheet" href="https://unpkg.com/trix@2.0.8/dist/trix.css">
     <script src="https://unpkg.com/trix@2.0.8/dist/trix.umd.min.js" defer></script>
 
-    {{-- AlpineJS (cukup SEKALI) --}}
+    {{-- AlpineJS --}}
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
-    {{-- ApexCharts (opsional) --}}
+    {{-- ApexCharts --}}
     <script defer src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
         [x-cloak] {
@@ -49,8 +51,8 @@
             <div class="flex">
                 {{-- Sidebar --}}
                 @php
-                    $name = Auth::user()->name ?? 'Admin';
-                    $initials = collect(explode(' ', $name))->map(fn($w) => strtoupper(substr($w, 0, 1)))->join('');
+                $name = Auth::user()->name ?? 'Admin';
+                $initials = collect(explode(' ', $name))->map(fn($w) => strtoupper(substr($w, 0, 1)))->join('');
                 @endphp
 
                 <aside
@@ -340,17 +342,17 @@
         </div>
 
         @if (session('success'))
-            <script>
-                document.addEventListener("DOMContentLoaded", function() {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil',
-                        text: @json(session('success')),
-                        confirmButtonColor: '#3085d6',
-                        confirmButtonText: 'OK'
-                    });
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil',
+                    text: 'sukses',
+                    confirmButtonColor: '#3085d6',
+                    confirmButtonText: 'OK'
                 });
-            </script>
+            });
+        </script>
         @endif
     </footer>
 

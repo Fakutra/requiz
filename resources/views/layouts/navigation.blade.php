@@ -18,7 +18,7 @@
                         <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                             {{ __('Dashboard') }}
                         </x-nav-link>
-                        <x-nav-link :href="route('lowongan.index')" :active="request()->routeIs('lowongan.index')">
+                        <x-nav-link :href="route('joblist')" :active="request()->routeIs('joblist')">
                             {{ __('Lowongan') }}
                         </x-nav-link>
                         <x-nav-link :href="route('history.index')" :active="request()->routeIs('history.index')">

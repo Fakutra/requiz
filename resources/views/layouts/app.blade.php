@@ -106,7 +106,7 @@
     </script>
 
                         <div x-show="open" x-cloak class="mt-2 space-y-1 pl-4 text-sm transition-all duration-300">
-                            <a href="{{ route('applicant.index') }}" class="block text-gray-600 hover:text-blue-600">Pelamar</a>
+                            <a href="{{ route('admin.applicant.index') }}" class="block text-gray-600 hover:text-blue-600">Pelamar</a>
                             <a href="{{ route('admin.applicant.seleksi.index') }}" class="block text-gray-600 hover:text-blue-600">Seleksi</a>
                             <a href="#" class="block text-gray-600 hover:text-blue-600">Jadwal Wawancara</a>
                             <a href="#" class="block text-gray-600 hover:text-blue-600">Hasil Akhir</a>

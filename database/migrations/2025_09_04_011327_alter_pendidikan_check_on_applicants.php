@@ -12,6 +12,8 @@ return new class extends Migration
      */
     public function up(): void
     {
+        DB::table('applicants')->delete();
+        
         // ganti nama constraint kalau beda
         DB::statement('ALTER TABLE applicants DROP CONSTRAINT IF EXISTS applicants_pendidikan_check');
 
@@ -19,7 +21,7 @@ return new class extends Migration
         DB::statement("
             ALTER TABLE applicants
             ADD CONSTRAINT applicants_pendidikan_check
-            CHECK (pendidikan IN ('SMA/Sederajat','D3','D4/S1','S2','S3'))
+            CHECK (pendidikan IN ('SMA/SMK','D3','D4/S1','S2','S3'))
         ");
     }
 
