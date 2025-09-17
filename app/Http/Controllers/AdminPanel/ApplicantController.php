@@ -33,8 +33,9 @@ class ApplicantController extends Controller
 
     public function export(Request $request)
     {
-        $fileName = 'data-pelamar-' . date('Y-m-d') . '.xlsx';
-        return Excel::download(new ApplicantsExport($request), $fileName);
+        $fileName = 'data-pelamar-' . now()->format('Y-m-d') . '.xlsx';
+        $search   = $request->input('search'); // sesuaikan
+        return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\ApplicantsExport($search), $fileName);
     }
 
     private function getFilteredApplicants(Request $request)

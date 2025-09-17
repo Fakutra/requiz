@@ -2,7 +2,7 @@
     <x-slot name="header">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight mb-0">
-                {{ __('Technical Test — Schedules') }}
+                {{ __('Penjadwalan Technical Test') }}
             </h2>
             <a href="#" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalCreateSchedule">
                 Create New Schedule

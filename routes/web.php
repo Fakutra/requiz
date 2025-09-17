@@ -175,4 +175,10 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::post  ('admin/interview-schedule',             [InterviewScheduleController::class, 'store'])->name('interview-schedule.store');
     Route::put   ('admin/interview-schedule/{schedule}',  [InterviewScheduleController::class, 'update'])->name('interview-schedule.update');
     Route::delete('admin/interview-schedule/{schedule}',  [InterviewScheduleController::class, 'destroy'])->name('interview-schedule.destroy');
+
+    // Admin: Penilaian Technical Test
+    Route::get   ('admin/tech-answers',          [TechnicalTestAnswerController::class, 'index'])->name('tech-answers.index');
+    Route::patch ('admin/tech-answers/{answer}', [TechnicalTestAnswerController::class, 'update'])->name('tech-answers.update');
+
+
 });
