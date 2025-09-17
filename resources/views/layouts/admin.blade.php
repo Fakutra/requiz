@@ -201,8 +201,8 @@
                     @click="sidebarOpen = false" x-transition.opacity></div>
 
                 {{-- Page Content --}}
-                <main class="flex-1 p-8 md:p-8 max-w-7xl mx-auto">
-                    {{ $slot }}
+                <main class="flex-1 p-8 md:p-8 max-w-7xl mx-auto overflow-x-auto md:overflow-x-visible">
+                        {{ $slot }}
                 </main>
             </div>
         </div>
