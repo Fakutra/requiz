@@ -38,7 +38,6 @@ class RegisteredUserController extends Controller
                 'required',
                 'string',
                 'max:20',
-                'regex:/^(?:\+?62|62|0)8[1-9][0-9]{6,11}$/',
             ],
             'tpt_lahir'  => ['required', 'string', 'max:100'],
             'tgl_lahir'  => ['required', 'date', 'before:today', 'after:1900-01-01'],
@@ -52,7 +51,7 @@ class RegisteredUserController extends Controller
         $user = User::create([
             'name'          => $validated['name'],
             'email'         => $validated['email'],
-            'phone_number'  => $validated['no_telp'],
+            'phone_number'  => '62'.$validated['no_telp'],
             'birthplace'    => $validated['tpt_lahir'],
             'birthdate'     => $validated['tgl_lahir'],   // akan di-cast ke date kalau diset di model
             'address'       => $validated['alamat_ktp'],

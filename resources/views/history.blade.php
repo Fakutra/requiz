@@ -72,7 +72,7 @@
                         'Tidak Lolos Seleksi Administrasi' => ['index' => 0, 'result' => 'failed'],
                         'Tes Tulis' => ['index' => 1, 'result' => 'pending'],
                         'Tidak Lolos Tes Tulis' => ['index' => 1, 'result' => 'failed'],
-                        'Technical Test' => ['index' => 2, 'result' => 'pending'],
+                        'Seleksi Tes Praktek' => ['index' => 2, 'result' => 'pending'],
                         'Tidak Lolos Technical Test' => ['index' => 2, 'result' => 'failed'],
                         'Interview' => ['index' => 3, 'result' => 'pending'],
                         'Tidak Lolos Interview' => ['index' => 3, 'result' => 'failed'],
@@ -153,12 +153,11 @@
 
             <div class="mt-6 pt-4 border-t border-zinc-100 text-center space-y-3">
                 <p class="text-sm text-zinc-600">
-                    Buka:
+                    Tes akan dimulai dari
                     <span class="font-semibold text-sky-700">{{ optional($open)?->translatedFormat('l, d F Y, H:i') ?? '—' }}</span>
-                    —
-                    Tutup Tombol:
+                    sampai
                     <span class="font-semibold text-sky-700">{{ optional($close)?->translatedFormat('l, d F Y, H:i') ?? '—' }}</span><br>
-                    Hard End:
+                    Batas akhir pengerjaan tes dapat dilakukan sampai:
                     <span class="font-semibold text-rose-600">{{ optional($end)?->translatedFormat('l, d F Y, H:i') ?? '—' }}</span>
                 </p>
 
@@ -174,8 +173,7 @@
                 </button>
 
                 <p class="text-xs text-zinc-500">
-                    Tombol aktif hanya pada rentang jadwal buka–tutup. Jika sudah mulai, bisa lanjut hingga <em>Hard End</em>.
-                </p>
+                    Tombol akan tersedia selama periode dibuka. Setelah pengerjaan dimulai, maka pengerjaan tetap bisa dilanjutkan sampai batas akhir periode.</p>
             </div>
             @endif
 

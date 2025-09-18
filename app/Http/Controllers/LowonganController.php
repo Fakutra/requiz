@@ -76,7 +76,7 @@ class LowonganController extends Controller
             'thn_lulus'     => 'required|string|digits:4',
             'skills'        => 'array',
             'cv_document'   => 'required|file|mimes:pdf|max:3072',
-            'doc_tambahan'  => 'nullable|file|mimes:pdf|max:1024',
+            'doc_tambahan'  => 'nullable|file|mimes:pdf|max:5120',
             'agreed'        => 'accepted',
         ],  [
             'agreed.accepted' => 'Harap centang kotak persetujuan syarat & ketentuan',

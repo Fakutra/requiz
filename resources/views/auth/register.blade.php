@@ -31,7 +31,12 @@
                 <!-- Phone Number -->
                 <div class="mt-4">
                     <x-input-label for="no_telp" :value="__('Nomor Telepon')" />
-                    <x-text-input id="no_telp" class="block mt-1 w-full" type="tel" name="no_telp" placeholder="62xxxxxxxxxx" :value="old('no_telp')" pattern="^(?:\+?62|62|0)8[1-9][0-9]{6,11}$" required autocomplete="tel" />
+                    <div class="mt-1 flex rounded-lg shadow-sm">
+                        <span class="inline-flex items-center px-3 rounded-l-lg border border-r-0 bg-gray-50 text-gray-500">+62</span>
+                        <input type="tel" name="no_telp"
+                            class="flex-1 rounded-r-lg border border-gray-300 focus:ring-2 focus:ring-cyan-500"
+                            placeholder="81234567890" inputmode="numeric" autocomplete="tel" id="no_telp" :value="old('no_telp')" required>
+                    </div>
                     <x-input-error :messages="$errors->get('no_telp')" class="mt-2" />
                 </div>
 

@@ -21,6 +21,14 @@ use App\Http\Controllers\AdminPanel\TechnicalTestScheduleController;
 use App\Http\Controllers\AdminPanel\InterviewScheduleController;
 use App\Http\Controllers\DashboardController;
 
+Route::get('/_probe', function () {
+    return [
+        'sapi'   => php_sapi_name(),
+        'ini'    => php_ini_loaded_file(),
+        'pdo'    => class_exists('PDO') ? \PDO::getAvailableDrivers() : 'no PDO',
+    ];
+});
+
 Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
 Route::get('/joblist', [LowonganController::class, 'index'])->name('joblist');

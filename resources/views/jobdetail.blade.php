@@ -148,11 +148,22 @@
                         </div>
                     </template>
 
-                    <div class="flex items-center gap-2 mb-4">
+                    <div class="flex items-center gap-2 mb-2">
                         <h3 class="text-base font-semibold text-gray-800 whitespace-nowrap">
                             Data Pribadi
                         </h3>
                         <div class="flex-1 border-t border-gray-300"></div>
+                    </div>
+                    {{-- Info badge --}}
+                    <div class="mb-4 w-100">
+                        <span class="flex items-center gap-2 rounded-md bg-blue-50 px-3 py-2 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-200">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
+                            </svg>
+                            <span>
+                                Apabila terdapat perbedaan data, silahkan untuk melakukan edit pada menu profil.
+                            </span>
+                        </span>
                     </div>
                     @auth
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -170,7 +181,7 @@
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Nomor Telepon</label>
-                            <input type="tel" name="no_telp" inputmode="numeric" class="mt-1 w-full rounded-lg border-gray-300 focus:border-[#009DA9] focus:ring-[#009DA9] disabled:border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 disabled:shadow-none" placeholder="62xxxxxxxxxx" value="{{ $user->phone_num }}" disabled />
+                            <input type="tel" name="no_telp" inputmode="numeric" class="mt-1 w-full rounded-lg border-gray-300 focus:border-[#009DA9] focus:ring-[#009DA9] disabled:border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 disabled:shadow-none" placeholder="62xxxxxxxxxx" value="{{ $user->phone_number }}" disabled />
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Tempat Lahir</label>
@@ -262,19 +273,19 @@
                             <label for="universitas" class="block text-sm font-medium text-gray-700">Universitas</label>
                             <input id="universitas" name="universitas" type="text" required
                                 value="{{ old('universitas') }}"
-                                class="mt-1 w-full rounded-lg border-gray-300 focus:border-[#009DA9] focus:ring-[#009DA9]" placeholder="Universitas" />
+                                class="mt-1 w-full rounded-lg border-gray-300 focus:border-[#009DA9] focus:ring-[#009DA9]" placeholder="Nama Universitas" />
                             @error('universitas')
                             <p class="text-sm text-red-600 mt-1" x-text="errors.name?.[0]" x-show="errors.universitas"></p>
                             @enderror
                         </div>
                         <div>
                             <label class="block text-sm font-medium">Jurusan</label>
-                            <input name="jurusan" type="text" class="mt-1 w-full rounded-lg border-gray-300 focus:border-[#009DA9] focus:ring-[#009DA9]" placeholder="Jurusan" />
+                            <input name="jurusan" type="text" class="mt-1 w-full rounded-lg border-gray-300 focus:border-[#009DA9] focus:ring-[#009DA9]" placeholder="S1 Sistem Informasi" />
                             <p class="text-sm text-red-600 mt-1" x-text="errors.jurusan?.[0]" x-show="errors.jurusan"></p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium">Tahun Lulus</label>
-                            <input name="thn_lulus" type="text" maxlength="4" class="mt-1 w-full rounded-lg border-gray-300 focus:border-[#009DA9] focus:ring-[#009DA9]" placeholder="Tahun Lulus" />
+                            <input name="thn_lulus" type="text" maxlength="4" class="mt-1 w-full rounded-lg border-gray-300 focus:border-[#009DA9] focus:ring-[#009DA9]" placeholder="Tahun Kelulusan" />
                             <p class="text-sm text-red-600 mt-1" x-text="errors.thn_lulus?.[0]" x-show="errors.thn_lulus"></p>
                         </div>
                     </div>
@@ -288,7 +299,7 @@
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label for="cv" class="block text-sm font-medium text-gray-700">CV (PDF • Max 1MB)</label>
+                            <label for="cv" class="block text-sm font-medium text-gray-700">CV (PDF • Max 1 MB)</label>
                             <input id="cv" name="cv_document" type="file" accept=".pdf"
                                 class="mt-1 block w-full text-sm rounded-lg
                                 focus:border-[#009DA9] focus:ring-[#009DA9]
@@ -301,7 +312,7 @@
                             @enderror
                         </div>
                         <div>
-                            <label for="doc_tambahan" class="block text-sm font-medium text-gray-700">Dokumen Tambahan (PDF • Max 1MB)</label>
+                            <label for="doc_tambahan" class="block text-sm font-medium text-gray-700">Dokumen Tambahan (PDF • Max 5 MB)</label>
                             <input id="doc_tambahan" name="doc_tambahan" type="file" accept=".pdf"
                                 class="mt-1 block w-full text-sm rounded-lg
                                 focus:border-[#009DA9] focus:ring-[#009DA9]

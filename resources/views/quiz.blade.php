@@ -1,7 +1,7 @@
-<x-app-layout>
+<x-guest-layout>
     {{-- Panggil CSS proteksi --}}
     @push('styles')
-        <link rel="stylesheet" href="{{ asset('css/quiz-protect.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/quiz-protect.css') }}">
     @endpush
 
     <div class="py-4">
@@ -9,9 +9,9 @@
             <div class="bg-white shadow-sm rounded-2xl p-6 border border-gray-200">
 
                 @if (session('status'))
-                    <div class="mb-4 rounded-lg bg-yellow-50 text-yellow-800 px-4 py-2 text-sm">
-                        {{ session('status') }}
-                    </div>
+                <div class="mb-4 rounded-lg bg-yellow-50 text-yellow-800 px-4 py-2 text-sm">
+                    {{ session('status') }}
+                </div>
                 @endif
 
                 <div class="flex items-center justify-between mb-4">
@@ -25,79 +25,123 @@
                     </div>
                 </div>
 
-                <form id="quiz-form" action="{{ route('quiz.submit', ['slug' => $test->slug]) }}" method="POST"
-                    autocomplete="off">
+                <form id="quiz-form" action="{{ route('quiz.submit', ['slug' => $test->slug]) }}" method="POST" autocomplete="off">
                     @csrf
                     <input type="hidden" name="test_id" value="{{ $test->id }}">
                     <input type="hidden" name="section_id" value="{{ $currentSection->id }}">
 
-                    {{-- ================== AREA SOAL/OPSI: DILINDUNGI COPY ================== --}}
-                    <div class="js-nocopy nocopy">
-                        @forelse ($questions as $idx => $q)
-                            <div class="border rounded-xl p-4 mb-4" data-question-id="{{ $q['id'] }}"
-                                data-question-type="{{ $q['type'] }}" data-option-map='@json($q['option_map'])'>
+                    <div class="grid gap-6 md:grid-cols-12">
+                        {{-- ====== KIRI: SOAL ====== --}}
+                        <div class="md:col-span-8">
+                            <div class="js-nocopy nocopy">
+                                @forelse ($questions as $idx => $q)
+                                <article id="q-{{ $idx+1 }}"
+                                    class="mb-4 rounded-xl border border-gray-200 p-4 scroll-mt-24"
+                                    data-question-id="{{ $q['id'] }}"
+                                    data-question-type="{{ $q['type'] }}"
+                                    data-option-map='@json($q['option_map'])'>
 
-                                <div class="flex items-center justify-between mb-2">
-                                    <div class="font-semibold">No. {{ $idx + 1 }}</div>
-                                    <span
-                                        class="text-xs px-2 py-1 rounded bg-gray-100 text-gray-700">{{ $q['type'] }}</span>
+                                    <div class="mb-2 flex items-center justify-between">
+                                        <p class="text-sm font-semibold text-gray-900">No. {{ $idx + 1 }}</p>
+                                        <span class="inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
+                                            {{ $q['type'] }}
+                                        </span>
+                                    </div>
+
+                                    <div class="mb-3 text-gray-900">{!! nl2br(e($q['question'])) !!}</div>
+
+                                    @if (!empty($q['image_path']))
+                                    <img class="my-3 max-h-72 w-auto rounded-lg select-none" src="{{ asset('storage/' . $q['image_path']) }}"
+                                        alt="Gambar Soal" draggable="false" oncontextmenu="return false">
+                                    @endif
+
+                                    {{-- PG / Poin --}}
+                                    @if (in_array($q['type'], ['PG','Poin']))
+                                    <div class="grid gap-2">
+                                        @foreach (['A','B','C','D','E'] as $L)
+                                        @if (!empty($q['options'][$L] ?? null))
+                                        <label class="group flex cursor-pointer items-start gap-2 rounded-lg border border-transparent p-2 hover:border-gray-200">
+                                            <input type="radio" name="answers[{{ $q['id'] }}]" value="{{ $L }}"
+                                                class="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                {{ in_array($L, (array)($q['checked'] ?? []), true) ? 'checked' : '' }}>
+                                            <span class="font-semibold text-gray-900">{{ $L }}.</span>
+                                            <span class="text-gray-700">{{ $q['options'][$L] }}</span>
+                                        </label>
+                                        @endif
+                                        @endforeach
+                                    </div>
+
+                                    {{-- Multiple --}}
+                                    @elseif ($q['type'] === 'Multiple')
+                                    <div class="grid gap-2">
+                                        @foreach (['A','B','C','D','E'] as $L)
+                                        @if (!empty($q['options'][$L] ?? null))
+                                        <label class="group flex cursor-pointer items-start gap-2 rounded-lg border border-transparent p-2 hover:border-gray-200">
+                                            <input type="checkbox" name="answers[{{ $q['id'] }}][]" value="{{ $L }}"
+                                                class="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                {{ in_array($L, (array)($q['checked'] ?? []), true) ? 'checked' : '' }}>
+                                            <span class="font-semibold text-gray-900">{{ $L }}.</span>
+                                            <span class="text-gray-700">{{ $q['options'][$L] }}</span>
+                                        </label>
+                                        @endif
+                                        @endforeach
+                                    </div>
+
+                                    {{-- Essay --}}
+                                    @elseif ($q['type'] === 'Essay')
+                                    <textarea name="answers[{{ $q['id'] }}]" rows="5" onpaste="return false"
+                                        class="w-full rounded-xl border border-gray-300 p-3 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 no-paste"
+                                        placeholder="Ketik jawaban Anda di sini...">{{ is_string($q['checked'] ?? '') ? $q['checked'] : '' }}</textarea>
+                                    @endif
+                                </article>
+                                @empty
+                                <p class="rounded-xl border border-dashed border-gray-200 p-6 text-center text-sm text-gray-500">
+                                    Belum ada soal pada section ini.
+                                </p>
+                                @endforelse
+                            </div>
+
+                            @php $isLastSection = optional($sections->last())->id === $currentSection->id; @endphp
+                            <div class="mt-6 flex justify-end">
+                                <button type="submit" id="submit-btn"
+                                    class="inline-flex items-center rounded-xl bg-blue-600 px-5 py-2 text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                                    {{ $isLastSection ? 'Selesai Tes' : 'Simpan & Lanjut' }}
+                                </button>
+                            </div>
+                        </div>
+
+                        {{-- ====== KANAN: TIMER + NAV NOMOR ====== --}}
+                        <aside class="md:col-span-4">
+                            <div class="sticky top-4 space-y-4">
+
+                                {{-- Timer --}}
+                                <div class="rounded-lg border border-green-200 bg-green-50 p-3">
+                                    <div class="text-xs text-green-700">Time Remaining</div>
+                                    <div id="countdown" class="text-lg font-bold text-green-800"></div>
+                                    <div id="save-indicator" class="mt-1 text-[11px] text-gray-500"></div>
                                 </div>
 
-                                <div class="mb-3">{!! nl2br(e($q['question'])) !!}</div>
-
-                                @if (!empty($q['image_path']))
-                                    <div class="my-3">
-                                        <img class="max-h-72 rounded" src="{{ asset('storage/' . $q['image_path']) }}"
-                                            alt="Gambar Soal" draggable="false" oncontextmenu="return false">
-                                    </div>
-                                @endif
-
-                                @if (in_array($q['type'], ['PG', 'Poin']))
-                                    <div class="grid gap-2">
-                                        @foreach (['A', 'B', 'C', 'D', 'E'] as $L)
-                                            @if (!empty($q['options'][$L] ?? null))
-                                                <label class="flex items-start gap-2">
-                                                    <input type="radio" name="answers[{{ $q['id'] }}]"
-                                                        value="{{ $L }}"
-                                                        {{ in_array($L, (array) ($q['checked'] ?? []), true) ? 'checked' : '' }}>
-                                                    <span class="font-semibold">{{ $L }}.</span>
-                                                    <span>{{ $q['options'][$L] }}</span>
-                                                </label>
-                                            @endif
+                                {{-- Navigator Nomor --}}
+                                <div x-data="{ current: 1, answered: @js($questions->mapWithKeys(fn($q,$i)=>[$q['id'] => !empty($q['checked'])])->all()) }"
+                                    x-on:answered.window="answered[$event.detail.id] = true">
+                                    <div class="mb-2 text-sm font-medium text-gray-900">Navigasi Soal</div>
+                                    <div class="grid grid-cols-5 gap-2">
+                                        @foreach ($questions as $i => $q)
+                                        <a href="#q-{{ $i+1 }}"
+                                            data-nav-qid="{{ $q['id'] }}"
+                                            @click="current={{ $i+1 }}"
+                                            class="block rounded-md border px-0.5 py-1 text-center text-sm transition"
+                                            :class="current==={{ $i+1 }}
+                   ? 'border-blue-600 bg-blue-600 text-white'
+                   : (answered[{{ $q['id'] }}] ? 'border-blue-300 bg-blue-50 text-blue-700' : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50')">
+                                            {{ $i+1 }}
+                                        </a>
                                         @endforeach
                                     </div>
-                                @elseif ($q['type'] === 'Multiple')
-                                    <div class="grid gap-2">
-                                        @foreach (['A', 'B', 'C', 'D', 'E'] as $L)
-                                            @if (!empty($q['options'][$L] ?? null))
-                                                <label class="flex items-start gap-2">
-                                                    <input type="checkbox" name="answers[{{ $q['id'] }}][]"
-                                                        value="{{ $L }}"
-                                                        {{ in_array($L, (array) ($q['checked'] ?? []), true) ? 'checked' : '' }}>
-                                                    <span class="font-semibold">{{ $L }}.</span>
-                                                    <span>{{ $q['options'][$L] }}</span>
-                                                </label>
-                                            @endif
-                                        @endforeach
-                                    </div>
-                                @elseif ($q['type'] === 'Essay')
-                                    {{-- Textarea ESSAY: blokir paste --}}
-                                    <textarea name="answers[{{ $q['id'] }}]" class="w-full border rounded-xl p-3 no-paste" rows="5"
-                                        placeholder="Ketik jawaban Anda di sini..." onpaste="return false">{{ is_string($q['checked'] ?? '') ? $q['checked'] : '' }}</textarea>
-                                @endif
+                                </div>
+
                             </div>
-                        @empty
-                            <div class="text-center text-gray-500">Belum ada soal pada section ini.</div>
-                        @endforelse
-                    </div>
-                    {{-- ================== /AREA SOAL/OPSI ================== --}}
-
-                    @php $isLastSection = optional($sections->last())->id === $currentSection->id; @endphp
-                    <div class="mt-6 flex justify-end">
-                        <button type="submit" id="submit-btn"
-                            class="px-5 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700">
-                            {{ $isLastSection ? 'Selesai Tes' : 'Simpan & Lanjut' }}
-                        </button>
+                        </aside>
                     </div>
                 </form>
             </div>
@@ -200,7 +244,7 @@
                 body.answers[qid] = payloadValue;
 
                 try {
-                    const res = await fetch(@json(route('quiz.autosave', ['slug' => $test->slug])), {
+                    const res = await fetch(@json(route('quiz.autosave', ['slug' => $test -> slug])), {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -210,6 +254,7 @@
                         body: JSON.stringify(body)
                     });
                     if (res.ok) showSaved();
+                    window.dispatchEvent(new CustomEvent('answered', { detail: { id: parseInt(qid, 10) } }));
                 } catch (e) {
                     console.warn('autosave gagal', e);
                 }
@@ -238,7 +283,7 @@
                 if (submitted) return;
                 const now = Date.now();
                 const timeLeft = end - now;
-                const isLast = @json(optional($sections->last())->id === $currentSection->id);
+                const isLast = @json(optional($sections -> last()) -> id === $currentSection -> id);
                 if (timeLeft > 1000 && !isLast) {
                     e.preventDefault();
                     openNextModal();
@@ -320,4 +365,4 @@
             });
         })();
     </script>
-</x-app-layout>
+</x-guest-layout>
