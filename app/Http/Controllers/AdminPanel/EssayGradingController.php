@@ -7,6 +7,7 @@ use App\Models\Answer;
 use App\Models\Batch;
 use App\Models\Position;
 use App\Models\TestResult;
+use App\Models\TestSectionResult;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -85,7 +86,7 @@ class EssayGradingController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        // Ringkasan global (seperti halaman technical-test)
+        // Ringkasan global
         $counts = [
             'total'    => Answer::whereHas('question', fn($qq) => $qq->where('type', 'Essay'))->count(),
             'scored'   => Answer::whereHas('question', fn($qq) => $qq->where('type', 'Essay'))->whereNotNull('score')->count(),
@@ -96,7 +97,7 @@ class EssayGradingController extends Controller
     }
 
     /**
-     * Simpan skor Essay untuk satu TestResult (tidak berubah).
+     * Simpan skor Essay untuk satu TestResult.
      */
     public function updateResult(Request $request, TestResult $testResult)
     {
@@ -105,24 +106,31 @@ class EssayGradingController extends Controller
             'scores.*' => 'nullable|integer|min:0|max:100',
         ]);
 
+        // Ambil semua SectionResult milik TestResult ini
         $testResult->load(['sectionResults']);
         $sectionResultIds = $testResult->sectionResults->pluck('id')->all();
 
+        // Ambil jawaban Essay yang sah milik TestResult ini
         $essayAnswers = Answer::whereIn('test_section_result_id', $sectionResultIds)
             ->whereHas('question', fn($q) => $q->where('type', 'Essay'))
             ->get(['id','test_section_result_id','score']);
 
+        // Map answerId -> sectionResultId untuk validasi
         $answerMap = $essayAnswers->pluck('test_section_result_id', 'id');
 
         DB::transaction(function () use ($request, $essayAnswers, $answerMap, $testResult) {
             $updatedSectionResultIds = [];
 
             foreach ($request->input('scores', []) as $answerId => $score) {
+                // skip kosong
                 if ($score === '' || $score === null) continue;
+
                 $answerId = (int) $answerId;
                 if (! $answerMap->has($answerId)) continue;
 
                 $score = (int) $score;
+
+                // update nilai answer
                 $answer = $essayAnswers->firstWhere('id', $answerId);
                 if (! $answer) continue;
 
@@ -132,15 +140,21 @@ class EssayGradingController extends Controller
                 $updatedSectionResultIds[$answer->test_section_result_id] = true;
             }
 
+            // Recalc skor per SectionResult yang terdampak
             $updatedSectionResultIds = array_keys($updatedSectionResultIds);
             if (!empty($updatedSectionResultIds)) {
                 foreach ($updatedSectionResultIds as $srId) {
-                    $sum = Answer::where('test_section_result_id', $srId)->sum('score');
-                    \App\Models\TestSectionResult::where('id', $srId)->update(['score' => $sum]);
+                    $sum = Answer::where('test_section_result_id', $srId)
+                                 ->whereNotNull('score') // hindari NULL
+                                 ->sum('score');
+                    TestSectionResult::where('id', $srId)->update(['score' => $sum]);
                 }
             }
 
-            $newTotal = \App\Models\TestSectionResult::where('test_result_id', $testResult->id)->sum('score');
+            // Recalc total skor TestResult (dari semua SectionResult)
+            $newTotal = TestSectionResult::where('test_result_id', $testResult->id)
+                                         ->whereNotNull('score')
+                                         ->sum('score');
             $testResult->score = $newTotal;
             $testResult->save();
         });

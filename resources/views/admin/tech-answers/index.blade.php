@@ -1,29 +1,15 @@
 {{-- resources/views/admin/tech-answers/index.blade.php --}}
 <x-app-admin>
+  {{-- HAPUS alert ini:
   @if (session('success'))
     <div class="mb-4 rounded bg-green-50 text-green-800 px-4 py-2 text-sm">
       {{ session('success') }}
     </div>
   @endif
+  --}}
 
-  <div x-data="scoreModal()" x-cloak>
+  <div x-data="scoreModal()" x-init="init()" x-cloak>
     <h1 class="text-2xl font-bold text-blue-950 mb-6">Penilaian Technical Test</h1>
-
-    {{-- Ringkasan --}}
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
-      <div class="bg-white border rounded-lg p-4">
-        <div class="text-sm text-gray-500">Total Jawaban</div>
-        <div class="text-2xl font-semibold">{{ $counts['total'] }}</div>
-      </div>
-      <div class="bg-white border rounded-lg p-4">
-        <div class="text-sm text-gray-500">Sudah Dinilai</div>
-        <div class="text-2xl font-semibold text-green-600">{{ $counts['scored'] }}</div>
-      </div>
-      <div class="bg-white border rounded-lg p-4">
-        <div class="text-sm text-gray-500">Belum Dinilai</div>
-        <div class="text-2xl font-semibold text-amber-600">{{ $counts['unscored'] }}</div>
-      </div>
-    </div>
 
     {{-- Filter: Batch + Position + Search --}}
     <form method="GET" class="bg-white border rounded-lg p-4 mb-5">
@@ -84,8 +70,8 @@
               @php
                 $app = $a->applicant;
                 $pos = $app?->position;
-                $sch = $a->schedule; // opsional ditampilkan di modal
-                $pdfUrl = $a->answer_url; // <— accessor, URL relatif: /storage/...
+                $sch = $a->schedule;
+                $pdfUrl = $a->answer_url;
               @endphp
               <tr class="border-t">
                 <td class="px-4 py-2">
@@ -129,7 +115,7 @@
                             posisi: @js($pos->name ?? '—'),
                             schedule: @js(($sch->title ?? ($sch?->id ? 'Schedule #'.$sch->id : null))),
                             scheduleDate: @js(!empty($sch?->schedule_date) ? \Illuminate\Support\Carbon::parse($sch->schedule_date)->format('d M Y H:i') : null),
-                            pdfUrl: @js($pdfUrl),         // <— pakai accessor
+                            pdfUrl: @js($pdfUrl),
                             screenUrl: @js($a->screen_record_url),
                             score: @js(!is_null($a->score) ? (string)$a->score : ''),
                             keterangan: @js($a->keterangan ?? '')
@@ -243,6 +229,38 @@
       </div>
     </div>
 
+    {{-- === MODAL SUKSES (BARU) – seragam dengan Essay === --}}
+    <div x-show="successOpen" x-transition.opacity class="fixed inset-0 z-[60] bg-black/40"></div>
+
+    <div x-show="successOpen" x-trap.inert.noscroll="successOpen"
+         x-transition
+         class="fixed inset-0 z-[70] flex items-center justify-center p-4">
+      <div @click.outside="successOpen=false"
+           role="dialog" aria-modal="true"
+           class="w-full max-w-md bg-white rounded-2xl shadow-lg border overflow-hidden">
+        <div class="flex items-center justify-between px-5 py-3 border-b">
+          <div class="flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.707a1 1 0 00-1.414-1.414L9 10.172 7.707 8.879a1 1 0 10-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+            </svg>
+            <h3 class="text-lg font-semibold">Berhasil</h3>
+          </div>
+          <button class="p-2 rounded hover:bg-gray-100" @click="successOpen=false" aria-label="Tutup">&times;</button>
+        </div>
+
+        <div class="p-5">
+          <p class="text-sm text-gray-700" x-text="successMessage || 'Nilai technical test berhasil disimpan.'"></p>
+        </div>
+
+        <div class="px-5 pb-4">
+          <button @click="successOpen=false"
+                  class="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+            Oke
+          </button>
+        </div>
+      </div>
+    </div>
+
   </div> {{-- x-data --}}
 </x-app-admin>
 
@@ -250,6 +268,7 @@
 <script>
   function scoreModal() {
     return {
+      // Data modal penilaian
       open: false,
       action: '',
       name: '',
@@ -261,6 +280,17 @@
       screenUrl: '',
       score: '',
       keterangan: '',
+
+      // Modal sukses (flash)
+      successOpen: false,
+      successMessage: '',
+
+      init() {
+        // Controller tech test umumnya pakai session('success')
+        this.successMessage = @js(session('success'));
+        if (this.successMessage) this.successOpen = true;
+      },
+
       openWith(data) {
         Object.assign(this, data);
         this.open = true;

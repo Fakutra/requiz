@@ -1,29 +1,9 @@
 {{-- resources/views/admin/essay-grading/index.blade.php --}}
 <x-app-admin>
-  <div x-data="essayModal()" x-cloak>
+  <div x-data="essayModal()" x-init="init()" x-cloak>
     <h1 class="text-2xl font-bold text-blue-950 mb-6">Penilaian Essay</h1>
 
-    @if (session('status'))
-      <div class="mb-4 rounded bg-green-50 text-green-800 px-4 py-2 text-sm">
-        {{ session('status') }}
-      </div>
-    @endif
-
-    {{-- Ringkasan --}}
-    {{-- <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
-      <div class="bg-white border rounded-lg p-4">
-        <div class="text-sm text-gray-500">Total Essay</div>
-        <div class="text-2xl font-semibold">{{ $counts['total'] }}</div>
-      </div>
-      <div class="bg-white border rounded-lg p-4">
-        <div class="text-sm text-gray-500">Sudah Dinilai</div>
-        <div class="text-2xl font-semibold text-green-600">{{ $counts['scored'] }}</div>
-      </div>
-      <div class="bg-white border rounded-lg p-4">
-        <div class="text-sm text-gray-500">Belum Dinilai</div>
-        <div class="text-2xl font-semibold text-amber-600">{{ $counts['unscored'] }}</div>
-      </div>
-    </div> --}}
+    {{-- (Alert sukses lama dihapus – sekarang pakai modal sukses di bawah) --}}
 
     {{-- Filter: Batch + Position + Search + Pending only --}}
     <form method="GET" class="bg-white border rounded-lg p-4 mb-5">
@@ -164,7 +144,7 @@
       </div>
     </div>
 
-    {{-- === MODAL === --}}
+    {{-- === MODAL NILAI ESSAY === --}}
     <div x-show="open" x-transition.opacity class="fixed inset-0 z-40 bg-black/40"></div>
 
     <div x-show="open" x-trap.inert.noscroll="open"
@@ -178,7 +158,11 @@
           <button class="p-2 rounded hover:bg-gray-100" @click="open=false" aria-label="Tutup">&times;</button>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-0">
+        {{-- FORM membungkus seluruh grid --}}
+        <form :action="action" method="POST" class="grid grid-cols-1 lg:grid-cols-3 gap-0">
+          @csrf
+          @method('PATCH')
+
           {{-- Kiri: daftar essay --}}
           <div class="lg:col-span-2 border-r max-h-[75vh] overflow-y-auto p-5 space-y-4">
             <template x-if="essays.length === 0">
@@ -187,11 +171,6 @@
 
             <template x-for="(it, idx) in essays" :key="it.id">
               <div class="border rounded-xl p-4">
-                <div class="flex items-center justify-between mb-2">
-                  <span class="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-700" x-text="it.section"></span>
-                  <span class="text-xs text-gray-500">ID: <span x-text="it.id"></span></span>
-                </div>
-
                 <div class="mb-2">
                   <div class="text-xs text-gray-500 mb-1">Soal</div>
                   <div class="whitespace-pre-line font-medium" x-text="it.question"></div>
@@ -210,7 +189,6 @@
                            class="w-28 border rounded px-3 py-2"
                            :name="'scores['+it.id+']'"
                            x-model="scores[it.id]">
-                    
                   </div>
                 </div>
               </div>
@@ -226,18 +204,47 @@
               <div class="text-xs text-gray-500 mt-2">Total soal: <span x-text="essays.length"></span></div>
             </div>
 
-            <form :action="action" method="POST" class="space-y-3">
-              @csrf
-              @method('PATCH')
-              {{-- Input nilai dibuat dinamis per-essay di panel kiri --}}
-              <div class="pt-1 flex items-center gap-2">
-                <button class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Simpan Nilai</button>
-                <button type="button" class="px-4 py-2 border rounded hover:bg-gray-50" @click="open=false">Batal</button>
-              </div>
-            </form>
+            <div class="pt-1 flex items-center gap-2">
+              <button class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700" type="submit">
+                Simpan Nilai
+              </button>
+              <button type="button" class="px-4 py-2 border rounded hover:bg-gray-50" @click="open=false">Batal</button>
+            </div>
           </div>
+        </form>
+
+      </div>
+    </div>
+
+    {{-- === MODAL SUKSES (DISESUAIKAN DENGAN TECH TEST) === --}}
+    <div x-show="successOpen" x-transition.opacity class="fixed inset-0 z-[60] bg-black/40"></div>
+
+    <div x-show="successOpen" x-trap.inert.noscroll="successOpen"
+         x-transition
+         class="fixed inset-0 z-[70] flex items-center justify-center p-4">
+      <div @click.outside="successOpen=false"
+           role="dialog" aria-modal="true"
+           class="w-full max-w-md bg-white rounded-2xl shadow-lg border overflow-hidden">
+        <div class="flex items-center justify-between px-5 py-3 border-b">
+          <div class="flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.707a1 1 0 00-1.414-1.414L9 10.172 7.707 8.879a1 1 0 10-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+            </svg>
+            <h3 class="text-lg font-semibold">Berhasil</h3>
+          </div>
+          <button class="p-2 rounded hover:bg-gray-100" @click="successOpen=false" aria-label="Tutup">&times;</button>
         </div>
 
+        <div class="p-5">
+          <p class="text-sm text-gray-700" x-text="successMessage || 'Nilai essay berhasil disimpan.'"></p>
+        </div>
+
+        <div class="px-5 pb-4">
+          <button @click="successOpen=false"
+                  class="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+            Oke
+          </button>
+        </div>
       </div>
     </div>
 
@@ -248,13 +255,25 @@
 <script>
   function essayModal() {
     return {
+      // Modal nilai
       open: false,
       action: '',
       name: '',
       email: '',
       test: '',
       essays: [],
-      scores: {}, // answerId -> score
+      scores: {},
+
+      // Modal sukses (seragam dgn Tech Test)
+      successOpen: false,
+      successMessage: '',
+
+      init() {
+        // Ambil flash dari server (jika ada), lalu buka modal sukses
+        this.successMessage = @js(session('status')); // controller essay memakai 'status'
+        if (this.successMessage) this.successOpen = true;
+      },
+
       openWith(payload) {
         this.action = payload.action;
         this.name   = payload.name || '';
