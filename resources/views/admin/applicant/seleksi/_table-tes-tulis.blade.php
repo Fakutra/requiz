@@ -1,15 +1,13 @@
-{{-- resources/views/admin/applicant/seleksi/_table-default.blade.php --}}
+{{-- resources/views/admin/applicant/seleksi/_table-tes-tulis.blade.php --}}
 @php
   use Illuminate\Support\Facades\Storage;
 @endphp
 
 <div x-data="stageSeleksi()" x-init="init()" x-cloak>
   <div class="bg-white shadow-zinc-400/50 rounded-lg p-6">
-
-    {{-- ================== Filter (GET) + Aksi ================== --}}
+    {{-- Filter + Aksi --}}
     <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-4">
       <form method="GET" action="{{ url()->current() }}" class="flex flex-wrap items-end gap-2">
-        {{-- Penting: bawa batch --}}
         <input type="hidden" name="batch" value="{{ request('batch') }}">
 
         <div>
@@ -22,10 +20,8 @@
           <label class="block text-xs text-gray-500 mb-1">Jurusan</label>
           <select name="jurusan" class="border rounded px-3 py-2 w-56">
             <option value="">Semua Jurusan</option>
-            @foreach ($allJurusan as $jurusan)
-              <option value="{{ $jurusan }}" {{ request('jurusan') == $jurusan ? 'selected' : '' }}>
-                {{ $jurusan }}
-              </option>
+            @foreach ($allJurusan as $jur)
+              <option value="{{ $jur }}" {{ request('jurusan') == $jur ? 'selected' : '' }}>{{ $jur }}</option>
             @endforeach
           </select>
         </div>
@@ -38,7 +34,7 @@
               {{ $stage }} (sedang tahap ini)
             </option>
             <option value="__NEXT__" {{ request('status') == '__NEXT__' ? 'selected' : '' }}>
-              Lolos {{ $stage }}{{ isset($nextStage) ? ' → '.$nextStage : '' }}
+              Lolos {{ $stage }} → {{ $nextStage ?? '—' }}
             </option>
             <option value="__FAILED__" {{ request('status') == '__FAILED__' ? 'selected' : '' }}>
               Tidak Lolos {{ $stage }}{{ isset($failEnum) ? ' ('.$failEnum.')' : '' }}
@@ -58,13 +54,12 @@
                 @click="submitStatus('lolos')">Lolos</button>
         <button type="button" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
                 @click="submitStatus('tidak_lolos')">Gagal</button>
-        <button type="button"
-                class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded"
+        <button type="button" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded"
                 @click="openEmailModal()">Email</button>
       </div>
     </div>
 
-    {{-- ================== Form UPDATE STATUS ================== --}}
+    {{-- Form UPDATE STATUS --}}
     <form id="statusForm" method="POST" action="{{ route('admin.applicant.seleksi.update-status') }}">
       @csrf
       <input type="hidden" name="stage" value="{{ $stage }}">
@@ -74,17 +69,14 @@
         <table class="w-full text-sm text-left border-collapse">
           <thead class="bg-gray-100">
           <tr>
-            <th class="p-3 border-b w-10">
-              <input type="checkbox" id="selectAll">
-            </th>
-            <th class="p-3 border-b">Nama</th>
+            <th class="p-3 border-b w-10"><input type="checkbox" id="selectAll"></th>
+            <th class="p-3 border-b">Nama Peserta</th>
             <th class="p-3 border-b">Email</th>
             <th class="p-3 border-b">Jurusan</th>
-            <th class="p-3 border-b">Posisi</th>
-            <th class="p-3 border-b">Umur</th>
+            <th class="p-3 border-b">Posisi Yang Dilamar</th>
+            <th class="p-3 border-b text-center">Score Quiz</th>
             <th class="p-3 border-b">Status Seleksi</th>
-            <th class="p-3 border-b">Status Email</th>
-            <th class="p-3 border-b">Aksi</th>
+            <th class="p-3 border-b text-center">Action</th>
           </tr>
           </thead>
           <tbody>
@@ -95,15 +87,11 @@
               $text  = $stage;
 
               if ($applicant->status === $stage) {
-                  $state = 'current'; $text  = $stage;
+                  $state = 'current';
               } elseif (($failEnum ?? null) && $applicant->status === $failEnum) {
                   $state = 'gagal';   $text  = $failEnum;  $badge = 'bg-red-50 text-red-700 border border-red-200';
-              } elseif ((($nextStage ?? null) && $applicant->status === $nextStage)
-                        || ($stage === 'Offering' && $applicant->status === 'Menerima Offering')) {
-                  $state = 'lolos';   $text  = ($stage === 'Offering') ? 'Menerima Offering' : ('Lolos '.$stage);
-                  $badge = 'bg-green-50 text-green-700 border border-green-200';
-              } elseif ($stage === 'Offering' && $applicant->status === 'Menolak Offering') {
-                  $state = 'gagal';   $text  = 'Menolak Offering';    $badge = 'bg-red-50 text-red-700 border border-red-200';
+              } elseif ((($nextStage ?? null) && $applicant->status === $nextStage)) {
+                  $state = 'lolos';   $text  = 'Lolos '.$stage; $badge = 'bg-green-50 text-green-700 border border-green-200';
               }
 
               $state = $applicant->_stage_state  ?? $state;
@@ -111,6 +99,7 @@
               $badge = $applicant->_stage_badge  ?? $badge;
 
               $cvUrl = $applicant->cv_document ? Storage::url($applicant->cv_document) : null;
+              $score = $applicant->_quiz_score ?? $applicant->quiz_score ?? null;
             @endphp
 
             <tr class="hover:bg-gray-50">
@@ -120,37 +109,25 @@
                        name="selected_applicants[]"
                        value="{{ $applicant->id }}"
                        data-email="{{ $applicant->email }}"
-                       data-stage-state="{{ $state }}">
+                       data-stage-state="{{ $state }}"
+                       data-name="{{ $applicant->name }}"
+                       data-position="{{ $applicant->position->name ?? '-' }}">
               </td>
-              <td class="p-3 border-b align-top">{{ $applicant->name }}</td>
+              <td class="p-3 border-b align-top"><div class="font-medium">{{ $applicant->name }}</div></td>
               <td class="p-3 border-b align-top">{{ $applicant->email }}</td>
               <td class="p-3 border-b align-top">{{ $applicant->jurusan }}</td>
               <td class="p-3 border-b align-top">{{ $applicant->position->name ?? '-' }}</td>
-              <td class="p-3 border-b align-top">{{ $applicant->age }} tahun</td>
+              <td class="p-3 border-b align-top text-center">
+                {{ isset($score) ? (is_numeric($score) ? number_format($score,0) : $score) : '-' }}
+              </td>
               <td class="p-3 border-b align-top">
                 <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium {{ $badge }}">
                   {{ $text }}
                 </span>
               </td>
-              <td class="p-3 border-b align-top">
-                @if(!empty($applicant->_email_sent))
-                  <span class="inline-flex items-center gap-1 text-green-600" title="Terkirim">✓</span>
-                @else
-                  <span class="text-gray-400">-</span>
-                @endif
-              </td>
-
-              {{-- ===== Aksi ===== --}}
-              <td class="p-3 border-b align-top">
-                <div class="flex items-center gap-3 text-sm">
-                  {{-- Lihat CV --}}
-                  <a href="#"
-                     @click.prevent="openCvModal(@js($cvUrl), @js('CV - '.$applicant->name))"
-                     class="text-blue-600 hover:underline">Lihat</a>
-
-                  {{-- Edit data --}}
-                  <a href="#"
-                     @click.prevent="openEditModal(@js([
+              <td class="p-3 border-b align-top text-center">
+                <a href="#"
+                   @click.prevent="openEditModal(@js([
                        'id'          => $applicant->id,
                        'name'        => $applicant->name,
                        'email'       => $applicant->email,
@@ -165,14 +142,18 @@
                        'thn_lulus'   => $applicant->thn_lulus,
                        'position_id' => $applicant->position_id,
                        'status'      => $applicant->status,
-                     ]))"
-                     class="text-amber-600 hover:underline">Edit</a>
-                </div>
+                   ]))"
+                   class="inline-flex p-2 rounded hover:bg-orange-50" title="Edit">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-orange-500" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-9.9 9.9a1 1 0 01-.464.263l-3.243.81a.5.5 0 01-.606-.606l.81-3.243a1 1 0 01.263-.464l9.9-9.9z"/>
+                    <path d="M12.172 5l2.828 2.828"/>
+                  </svg>
+                </a>
               </td>
             </tr>
           @empty
             <tr>
-              <td colspan="9" class="p-6 text-center text-gray-500">Tidak ada data untuk kriteria ini.</td>
+              <td colspan="8" class="p-6 text-center text-gray-500">Tidak ada data untuk kriteria ini.</td>
             </tr>
           @endforelse
           </tbody>
@@ -185,40 +166,16 @@
     </form>
   </div>
 
-  {{-- ================== MODAL: Lihat CV ================== --}}
-  <div x-show="cvModalOpen" x-transition.opacity
-       class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-    <div class="bg-white w-full max-w-4xl max-h-[85vh] rounded-lg shadow-lg overflow-hidden"
-         @click.away="closeCvModal()">
-      <div class="flex items-center justify-between px-4 py-3 border-b">
-        <h3 class="font-semibold" x-text="cvName || 'CV'"></h3>
-        <button class="text-gray-500 hover:text-gray-700" @click="closeCvModal()">✕</button>
-      </div>
-      <div class="p-4">
-        <template x-if="cvUrl">
-          <iframe :src="cvUrl" class="w-full h-[70vh]" frameborder="0"></iframe>
-        </template>
-        <template x-if="!cvUrl">
-          <div class="text-center text-gray-500 py-10">CV tidak tersedia.</div>
-        </template>
-      </div>
-    </div>
-  </div>
-
-  {{-- ================== MODAL: Edit Applicant ================== --}}
+  {{-- MODAL: Edit Applicant (sama seperti di default) --}}
   <div x-show="editModalOpen" x-transition.opacity
        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-    <div class="bg-white w-full max-w-2xl rounded-lg shadow-lg"
-         @click.away="closeEditModal()">
+    <div class="bg-white w-full max-w-2xl rounded-lg shadow-lg" @click.away="closeEditModal()">
       <div class="flex items-center justify-between px-4 py-3 border-b">
         <h3 class="font-semibold">Edit Data Pelamar</h3>
         <button class="text-gray-500 hover:text-gray-700" @click="closeEditModal()">✕</button>
       </div>
-
       <form :action="updateUrl()" method="POST" enctype="multipart/form-data" class="p-4">
-        @csrf
-        @method('PUT')
-
+        @csrf @method('PUT')
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
             <label class="text-xs text-gray-600">Nama</label>
@@ -308,16 +265,14 @@
     </div>
   </div>
 
-  {{-- ================== MODAL: Kirim Email (BARU) ================== --}}
+  {{-- MODAL: Kirim Email --}}
   <div x-show="emailModalOpen" x-transition.opacity
        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-    <div class="bg-white w-full max-w-2xl rounded-lg shadow-lg"
-         @click.away="closeEmailModal()">
+    <div class="bg-white w-full max-w-2xl rounded-lg shadow-lg" @click.away="closeEmailModal()">
       <div class="flex items-center justify-between px-4 py-3 border-b">
         <h3 class="font-semibold">Kirim Email Hasil {{ $stage }}</h3>
         <button class="text-gray-500 hover:text-gray-700" @click="closeEmailModal()">✕</button>
       </div>
-
       <form method="POST" action="{{ route('admin.applicant.seleksi.sendEmail') }}"
             enctype="multipart/form-data" class="p-4" @submit="validateAndSubmit">
         @csrf
@@ -330,26 +285,28 @@
             <label class="text-xs text-gray-600">Penerima</label>
             <textarea class="w-full border rounded px-3 py-2 text-sm" rows="3"
                       x-text="selectedEmails.join(', ')" readonly></textarea>
-            <p class="text-xs text-gray-500 mt-1">Gunakan centang baris untuk memilih. Jika tidak ada yang dicentang, sistem otomatis memilih peserta dengan status <b>Lolos {{ $stage }}</b> di halaman ini.</p>
+            <p class="text-xs text-gray-500 mt-1">Gunakan centang baris; jika tidak ada yang dicentang, sistem ambil yang statusnya <b>Lolos {{ $stage }}</b>.</p>
           </div>
 
           <div class="flex items-center gap-2">
             <input id="use_template" type="checkbox" class="h-4 w-4"
-                   x-model="useTemplate" @change="lockInputs(useTemplate)">
+                   x-model="useTemplate" @change="toggleTemplate()">
             <label for="use_template" class="text-sm text-gray-700">Gunakan template default</label>
           </div>
 
           <div>
             <label class="text-xs text-gray-600">Subjek</label>
             <input type="text" name="subject" class="w-full border rounded px-3 py-2"
-                   x-ref="subject" placeholder="Subjek email (isi bila tidak pakai template)">
+                   x-ref="subject" placeholder="Subjek email">
           </div>
 
           <div>
             <label class="text-xs text-gray-600">Pesan</label>
             <textarea name="message" rows="6" class="w-full border rounded px-3 py-2"
-                      x-ref="message" placeholder="Isi email (isi bila tidak pakai template)"></textarea>
-            <p class="text-xs text-gray-500 mt-1">Jika “Gunakan template default” dicentang, subjek & pesan otomatis diisi di server.</p>
+                      x-ref="message" placeholder="Isi email"></textarea>
+            <p class="text-xs text-gray-500 mt-1">
+              Preview untuk penerima pertama. Saat dikirim, nama & posisi akan dipersonalisasi untuk masing-masing penerima.
+            </p>
           </div>
 
           <div>
@@ -367,3 +324,141 @@
     </div>
   </div>
 </div>
+
+<script>
+function stageSeleksi() {
+  return {
+    // stage untuk template
+    stage: @json($stage),
+
+    // Email
+    emailModalOpen: false,
+    selectedEmails: [],
+    selectedMeta: [], // {id,email,name,position}
+    useTemplate: true,
+
+    // Edit
+    editModalOpen: false,
+    form: {
+      id: null,
+      name: '', email: '',
+      nik: '', no_telp: '',
+      tpt_lahir: '', tgl_lahir: '',
+      alamat: '',
+      pendidikan: 'S1',
+      universitas: '', jurusan: '',
+      thn_lulus: '',
+      position_id: '',
+      status: 'Seleksi Administrasi',
+    },
+
+    updateBase: @json(url('admin/applicant/__ID__')),
+
+    init() {
+      const selectAll = this.$root.querySelector('#selectAll');
+      if (selectAll) {
+        selectAll.addEventListener('change', (e) => {
+          this.$root.querySelectorAll('.applicant-checkbox').forEach(cb => cb.checked = e.target.checked);
+        });
+      }
+    },
+
+    lockInputs(lock) {
+      const subj = this.$refs?.subject, msg = this.$refs?.message;
+      [subj, msg].forEach(el => {
+        if (!el) return;
+        el.disabled = lock; el.readOnly = lock; el.required = !lock;
+      });
+    },
+
+    buildTemplate(fullName, positionName) {
+      const name = fullName && fullName.trim() ? fullName : 'Peserta';
+      const pos  = positionName && positionName.trim() ? positionName : '-';
+      const subject = `INFORMASI HASIL SELEKSI ${this.stage} TAD/OUTSOURCING - PLN ICON PLUS`;
+      const body =
+`Halo ${name}
+
+Terima kasih atas partisipasi Saudara/i dalam mengikuti proses seleksi TAD/OUTSOURCING PLN ICON PLUS pada posisi ${pos}.
+
+Selamat Anda lolos pada tahap ${this.stage}. Selanjutnya, silakan cek jadwal Anda untuk tahap berikutnya pada lampiran email ini.
+
+Demikian kami sampaikan.
+Terima kasih atas partisipasinya dan semoga sukses.`;
+      return { subject, body };
+    },
+
+    gatherEmails() {
+      const checked = Array.from(this.$root.querySelectorAll('.applicant-checkbox:checked'));
+      let nodes = checked;
+      if (nodes.length === 0) {
+        nodes = Array.from(this.$root.querySelectorAll('.applicant-checkbox'))
+          .filter(cb => (cb.dataset.stageState || '').toLowerCase() === 'lolos');
+      }
+      const recipients = [], ids = [], meta = [];
+      nodes.forEach(cb => {
+        const email = cb.dataset.email;
+        if (email) {
+          recipients.push(email);
+          ids.push(cb.value);
+          meta.push({
+            id: cb.value,
+            email,
+            name: cb.dataset.name || '',
+            position: cb.dataset.position || '-',
+          });
+        }
+      });
+      return { recipients, ids, meta };
+    },
+
+    openEmailModal() {
+      const { recipients, ids, meta } = this.gatherEmails();
+      if (recipients.length === 0) { alert('Pilih baris atau pastikan ada yang statusnya Lolos.'); return; }
+
+      this.selectedEmails = recipients;
+      this.selectedMeta   = meta;
+
+      if (this.$refs.recipients)   this.$refs.recipients.value   = recipients.join(',');
+      if (this.$refs.recipientIds) this.$refs.recipientIds.value = ids.join(',');
+
+      if (this.useTemplate) { this.applyTemplatePreview(); this.lockInputs(true); }
+      else { this.lockInputs(false); }
+
+      this.emailModalOpen = true;
+    },
+
+    toggleTemplate() {
+      if (this.useTemplate) { this.applyTemplatePreview(); this.lockInputs(true); }
+      else { this.lockInputs(false); }
+    },
+
+    applyTemplatePreview() {
+      const first = this.selectedMeta?.[0] || {name: 'Peserta', position: '-'};
+      const {subject, body} = this.buildTemplate(first.name, first.position);
+      if (this.$refs.subject) this.$refs.subject.value = subject;
+      if (this.$refs.message) this.$refs.message.value = body;
+    },
+
+    closeEmailModal() { this.emailModalOpen = false; },
+
+    validateAndSubmit(e) {
+      const form = e.target;
+      const file = form.querySelector('input[type="file"][name="attachment"]')?.files?.[0];
+      if (!file) { e.preventDefault(); alert('Wajib unggah lampiran PDF.'); return; }
+      const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+      if (!isPdf) { e.preventDefault(); alert('Lampiran harus PDF.'); return; }
+      if (file.size > 5 * 1024 * 1024) { e.preventDefault(); alert('Ukuran PDF maksimal 5 MB.'); return; }
+
+      if (!this.useTemplate) {
+        const subject = (this.$refs?.subject?.value || '').trim();
+        const message = (this.$refs?.message?.value || '').trim();
+        if (!subject || !message) { e.preventDefault(); alert('Isi subjek & pesan.'); }
+      }
+    },
+
+    openEditModal(data) { this.form = Object.assign({}, this.form, data||{}); this.editModalOpen = true; },
+    closeEditModal() { this.editModalOpen = false; },
+    updateUrl() { return this.updateBase.replace('__ID__', this.form.id ?? ''); },
+  };
+}
+</script>
