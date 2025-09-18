@@ -36,7 +36,7 @@ return new class extends Migration
                 'Interview',
                 'Offering',
                 'Tidak Lolos Seleksi Administrasi',
-                'Tidak Lolos Seleksi Tes Tulis',
+                'Tidak Lolos Tes Tulis',
                 'Tidak Lolos Technical Test',
                 'Tidak Lolos interview',
                 'Menerima Offering',

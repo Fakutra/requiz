@@ -34,4 +34,9 @@ class TechnicalTestAnswer extends Model
     { 
         return $this->belongsTo(Applicant::class); 
     }
+
+    public function getAnswerUrlAttribute()
+    {
+        return $this->answer_path ? asset('storage/'.$this->answer_path) : null;
+    }
 }
