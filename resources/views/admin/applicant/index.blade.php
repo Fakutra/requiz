@@ -145,7 +145,7 @@
                     </tr>
 
                     <div x-show="showEdit" x-cloak class="fixed inset-0 flex items-center justify-center z-50 bg-black/40 backdrop-blur-md">
-                        <div @click.away="showEdit = false"
+                        <div @click.away="showEdit = false" @click.stop
                             class="bg-white w-full max-w-3xl p-6 rounded-lg shadow-lg overflow-y-auto max-h-[90vh]">
                             <h2 class="text-lg font-semibold mb-4">Edit Pelamar</h2>
 
