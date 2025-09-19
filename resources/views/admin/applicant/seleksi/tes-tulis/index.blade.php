@@ -1,7 +1,24 @@
+{{-- resources/views/admin/applicant/seleksi/tes_tulis/index.blade.php --}}
 <x-app-admin>
   <x-slot name="header">
     <h2 class="font-semibold text-xl text-gray-800 leading-tight">Seleksi Tes Tulis</h2>
   </x-slot>
+
+  {{-- Flash --}}
+  @if (session('status'))
+    <div class="mb-4 rounded border border-green-200 bg-green-50 px-4 py-3 text-green-700">
+      {{ session('status') }}
+    </div>
+  @endif
+  @if ($errors->any())
+    <div class="mb-4 rounded border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+      <ul class="list-disc ms-5">
+        @foreach ($errors->all() as $e)
+          <li>{{ $e }}</li>
+        @endforeach
+      </ul>
+    </div>
+  @endif
 
   <div x-data="stageSeleksi()" x-init="init()" x-cloak>
     <div class="bg-white shadow-zinc-400/50 rounded-lg p-6">
@@ -50,19 +67,22 @@
         </form>
 
         <div class="flex items-center gap-2">
-          <button type="button" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+          <button type="button" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
                   @click="submitStatus('lolos')">Lolos</button>
-          <button type="button" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
-                  @click="submitStatus('tidak_lolos')">Gagal</button>
-          <button type="button" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded"
+          <button type="button" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+                  @click="submitStatus('gagal')">Gagal</button>
+          <button type="button" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded"
                   @click="openEmailModal()">Email</button>
         </div>
       </div>
 
       {{-- ================== Form UPDATE STATUS ================== --}}
-      <form id="statusForm" method="POST" action="{{ route('admin.applicant.seleksi.update-status') }}">
+      <form id="statusForm" method="POST" action="{{ route('admin.applicant.seleksi.updateStatus') }}">
         @csrf
         <input type="hidden" name="stage" value="{{ $stage }}">
+        {{-- ⬇️ hidden action permanen (diisi Alpine saat klik tombol) --}}
+        <input type="hidden" name="action" x-ref="actionInput">
+        {{-- tempat sisip ids[] --}}
         <div id="statusInputs"></div>
 
         <div class="overflow-x-auto">
@@ -105,7 +125,6 @@
                 <td class="p-3 border-b align-top">
                   <input type="checkbox"
                          class="applicant-checkbox"
-                         name="selected_applicants[]"
                          value="{{ $applicant->id }}"
                          data-email="{{ $applicant->email }}"
                          data-stage-state="{{ $state }}"
@@ -164,80 +183,122 @@
         </div>
       </form>
     </div>
+
+    {{-- ================== MODAL EMAIL (opsional, tetap disertakan) ================== --}}
+    <div x-show="emailModalOpen" class="fixed inset-0 z-40 flex items-center justify-center">
+      <div class="absolute inset-0 bg-black/40" @click.outside="emailModalOpen=false"></div>
+      <div class="relative z-50 w-full max-w-2xl rounded-xl bg-white p-5 shadow">
+        <h3 class="text-lg font-semibold mb-3">Kirim Email Hasil {{ $stage }}</h3>
+
+        <form method="POST" action="{{ route('admin.applicant.seleksi.sendEmail') }}"
+              enctype="multipart/form-data" class="grid gap-3"
+              @submit="validateAndSubmit">
+          @csrf
+          <input type="hidden" name="stage" value="{{ $stage }}">
+          <input type="hidden" x-ref="recipients" name="recipients">
+          <input type="hidden" x-ref="recipientIds" name="recipient_ids">
+
+          <div>
+            <label class="text-xs text-gray-500 mb-1 block">Gunakan Template</label>
+            <label class="inline-flex items-center gap-2">
+              <input type="checkbox" x-model="useTemplate" name="use_template" @change="toggleTemplate()">
+              <span class="text-sm">Ya, gunakan template default</span>
+            </label>
+          </div>
+
+          <div>
+            <label class="text-xs text-gray-500 mb-1 block">Subjek</label>
+            <input type="text" class="w-full border rounded px-3 py-2" x-ref="subject" name="subject" placeholder="Subject...">
+          </div>
+
+          <div>
+            <label class="text-xs text-gray-500 mb-1 block">Pesan</label>
+            <textarea class="w-full border rounded px-3 py-2 min-h-[140px]" x-ref="message" name="message" placeholder="Isi pesan..."></textarea>
+            <p class="text-xs text-gray-500 mt-1">Jika centang template, subjek & pesan akan diisi otomatis di server.</p>
+          </div>
+
+          <div>
+            <label class="text-xs text-gray-500 mb-1 block">Lampiran PDF (wajib, maks 5 MB)</label>
+            <input type="file" name="attachment" accept="application/pdf" class="w-full" required>
+          </div>
+
+          <div class="mt-2 flex items-center justify-end gap-2">
+            <button type="button" class="px-3 py-2 rounded border" @click="emailModalOpen=false">Batal</button>
+            <button type="submit" class="px-4 py-2 rounded bg-orange-600 text-white hover:bg-orange-700">
+              Kirim Email
+            </button>
+          </div>
+        </form>
+
+        <div class="mt-4">
+          <div class="text-xs text-gray-500 mb-1">Penerima</div>
+          <div class="max-h-28 overflow-auto border rounded p-2 text-sm">
+            <template x-for="m in selectedMeta" :key="m.id">
+              <div x-text="`${m.name} <${m.email}> — ${m.position}`"></div>
+            </template>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   @push('scripts')
     <script>
-      // Define once untuk mencegah double-define
-      if (typeof window.stageSeleksi !== 'function') {
-        function stageSeleksi() {
-          return {
-            stage: @json($stage),
+      function stageSeleksi() {
+        return {
+          stage: @json($stage),
 
-            // Email
-            emailModalOpen: false,
-            selectedEmails: [],
-            selectedMeta: [],
-            useTemplate: true,
+          // Email
+          emailModalOpen: false,
+          selectedEmails: [],
+          selectedMeta: [],
+          useTemplate: true,
 
-            // Edit
-            editModalOpen: false,
-            form: {
-              id: null,
-              name: '', email: '',
-              nik: '', no_telp: '',
-              tpt_lahir: '', tgl_lahir: '',
-              alamat: '',
-              pendidikan: 'S1',
-              universitas: '', jurusan: '',
-              thn_lulus: '',
-              position_id: '',
-              status: 'Seleksi Administrasi',
-            },
-
-            updateBase: @json(url('admin/applicant/__ID__')),
-
-            init() {
-              const selectAll = this.$root.querySelector('#selectAll');
-              if (selectAll) {
-                selectAll.addEventListener('change', (e) => {
-                  this.$root.querySelectorAll('.applicant-checkbox').forEach(cb => cb.checked = e.target.checked);
-                });
-              }
-            },
-
-            // ===== Status bulk submit helper =====
-            submitStatus(type) {
-              const form = this.$root.querySelector('#statusForm');
-              const wrap = form.querySelector('#statusInputs');
-              wrap.innerHTML = '';
-              const checked = Array.from(this.$root.querySelectorAll('.applicant-checkbox:checked'));
-              if (checked.length === 0) { alert('Pilih minimal satu peserta.'); return; }
-              checked.forEach(cb => {
-                const i = document.createElement('input');
-                i.type = 'hidden'; i.name = 'ids[]'; i.value = cb.value;
-                wrap.appendChild(i);
+          init() {
+            const selectAll = this.$root.querySelector('#selectAll');
+            if (selectAll) {
+              selectAll.addEventListener('change', (e) => {
+                this.$root.querySelectorAll('.applicant-checkbox').forEach(cb => cb.checked = e.target.checked);
               });
-              const action = document.createElement('input');
-              action.type = 'hidden'; action.name = 'action'; action.value = type;
-              wrap.appendChild(action);
-              form.submit();
-            },
+            }
+          },
 
-            // ===== Email (modal & helper) =====
-            lockInputs(lock) {
-              const subj = this.$refs?.subject, msg = this.$refs?.message;
-              [subj, msg].forEach(el => { if (!el) return; el.disabled = lock; el.readOnly = lock; el.required = !lock; });
-            },
-            toggleTemplate() {
-              if (this.useTemplate) { this.applyTemplatePreview(); this.lockInputs(true); }
-              else { this.lockInputs(false); }
-            },
-            buildTemplate(fullName, positionName) {
-              const name = fullName && fullName.trim() ? fullName : 'Peserta';
-              const pos  = positionName && positionName.trim() ? positionName : '-';
-              const subject = `INFORMASI HASIL SELEKSI ${this.stage} TAD/OUTSOURCING - PLN ICON PLUS`;
-              const body =
+          // ====== STATUS ======
+          submitStatus(type) {
+            const form = this.$root.querySelector('#statusForm');
+            const wrap = form.querySelector('#statusInputs');
+            wrap.innerHTML = '';
+
+            const checked = Array.from(this.$root.querySelectorAll('.applicant-checkbox:checked'));
+            if (checked.length === 0) { alert('Pilih minimal satu peserta.'); return; }
+
+            // sisipkan ids[]
+            checked.forEach(cb => {
+              const i = document.createElement('input');
+              i.type = 'hidden'; i.name = 'ids[]'; i.value = cb.value;
+              wrap.appendChild(i);
+            });
+
+            // isi hidden action permanen -> in:lolos,gagal,reset
+            if (this.$refs.actionInput) this.$refs.actionInput.value = type;
+
+            form.submit();
+          },
+
+          // ====== EMAIL ======
+          lockInputs(lock) {
+            const subj = this.$refs?.subject, msg = this.$refs?.message;
+            [subj, msg].forEach(el => { if (!el) return; el.disabled = lock; el.readOnly = lock; el.required = !lock; });
+          },
+          toggleTemplate() {
+            if (this.useTemplate) { this.applyTemplatePreview(); this.lockInputs(true); }
+            else { this.lockInputs(false); }
+          },
+          buildTemplate(fullName, positionName) {
+            const name = fullName && fullName.trim() ? fullName : 'Peserta';
+            const pos  = positionName && positionName.trim() ? positionName : '-';
+            const subject = `INFORMASI HASIL SELEKSI ${this.stage} TAD/OUTSOURCING - PLN ICON PLUS`;
+            const body =
 `Halo ${name}
 
 Terima kasih atas partisipasi Saudara/i dalam mengikuti proses seleksi TAD/OUTSOURCING PLN ICON PLUS pada posisi ${pos}.
@@ -246,69 +307,62 @@ Selamat Anda lolos pada tahap ${this.stage}. Selanjutnya, silakan cek jadwal And
 
 Demikian kami sampaikan.
 Terima kasih atas partisipasinya dan semoga sukses.`;
-              return { subject, body };
-            },
-            gatherEmails() {
-              const checked = Array.from(this.$root.querySelectorAll('.applicant-checkbox:checked'));
-              let nodes = checked;
-              if (nodes.length === 0) {
-                nodes = Array.from(this.$root.querySelectorAll('.applicant-checkbox'))
-                  .filter(cb => (cb.dataset.stageState || '').toLowerCase() === 'lolos');
+            return { subject, body };
+          },
+          gatherEmails() {
+            const checked = Array.from(this.$root.querySelectorAll('.applicant-checkbox:checked'));
+            let nodes = checked;
+            if (nodes.length === 0) {
+              nodes = Array.from(this.$root.querySelectorAll('.applicant-checkbox'))
+                .filter(cb => (cb.dataset.stageState || '').toLowerCase() === 'lolos');
+            }
+            const recipients = [], ids = [], meta = [];
+            nodes.forEach(cb => {
+              const email = cb.dataset.email;
+              if (email) {
+                recipients.push(email);
+                ids.push(cb.value);
+                meta.push({
+                  id: cb.value,
+                  email,
+                  name: cb.dataset.name || '',
+                  position: cb.dataset.position || '-',
+                });
               }
-              const recipients = [], ids = [], meta = [];
-              nodes.forEach(cb => {
-                const email = cb.dataset.email;
-                if (email) {
-                  recipients.push(email);
-                  ids.push(cb.value);
-                  meta.push({
-                    id: cb.value,
-                    email,
-                    name: cb.dataset.name || '',
-                    position: cb.dataset.position || '-',
-                  });
-                }
-              });
-              return { recipients, ids, meta };
-            },
-            openEmailModal() {
-              const { recipients, ids, meta } = this.gatherEmails();
-              if (recipients.length === 0) { alert('Pilih baris atau pastikan ada yang statusnya Lolos.'); return; }
-              this.selectedEmails = recipients;
-              this.selectedMeta   = meta;
-              if (this.$refs.recipients)   this.$refs.recipients.value   = recipients.join(',');
-              if (this.$refs.recipientIds) this.$refs.recipientIds.value = ids.join(',');
-              if (this.useTemplate) { this.applyTemplatePreview(); this.lockInputs(true); }
-              else { this.lockInputs(false); }
-              this.emailModalOpen = true;
-            },
-            applyTemplatePreview() {
-              const first = this.selectedMeta?.[0] || {name: 'Peserta', position: '-'};
-              const {subject, body} = this.buildTemplate(first.name, first.position);
-              if (this.$refs.subject) this.$refs.subject.value = subject;
-              if (this.$refs.message) this.$refs.message.value = body;
-            },
-            validateAndSubmit(e) {
-              const form = e.target;
-              const file = form.querySelector('input[type="file"][name="attachment"]')?.files?.[0];
-              if (!file) { e.preventDefault(); alert('Wajib unggah lampiran PDF.'); return; }
-              const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-              if (!isPdf) { e.preventDefault(); alert('Lampiran harus PDF.'); return; }
-              if (file.size > 5 * 1024 * 1024) { e.preventDefault(); alert('Ukuran PDF maksimal 5 MB.'); return; }
-              if (!this.useTemplate) {
-                const subject = (this.$refs?.subject?.value || '').trim();
-                const message = (this.$refs?.message?.value || '').trim();
-                if (!subject || !message) { e.preventDefault(); alert('Isi subjek & pesan.'); }
-              }
-            },
-
-            // ===== Edit =====
-            openEditModal(data) { this.form = Object.assign({}, this.form, data||{}); this.editModalOpen = true; },
-            closeEditModal() { this.editModalOpen = false; },
-            updateUrl() { return this.updateBase.replace('__ID__', this.form.id ?? ''); },
-          };
-        }
-        window.stageSeleksi = stageSeleksi;
+            });
+            return { recipients, ids, meta };
+          },
+          openEmailModal() {
+            const { recipients, ids, meta } = this.gatherEmails();
+            if (recipients.length === 0) { alert('Pilih baris atau pastikan ada yang statusnya Lolos.'); return; }
+            this.selectedEmails = recipients;
+            this.selectedMeta   = meta;
+            if (this.$refs.recipients)   this.$refs.recipients.value   = recipients.join(',');
+            if (this.$refs.recipientIds) this.$refs.recipientIds.value = ids.join(',');
+            if (this.useTemplate) { this.applyTemplatePreview(); this.lockInputs(true); }
+            else { this.lockInputs(false); }
+            this.emailModalOpen = true;
+          },
+          applyTemplatePreview() {
+            const first = this.selectedMeta?.[0] || {name: 'Peserta', position: '-'};
+            const {subject, body} = this.buildTemplate(first.name, first.position);
+            if (this.$refs.subject) this.$refs.subject.value = subject;
+            if (this.$refs.message) this.$refs.message.value = body;
+          },
+          validateAndSubmit(e) {
+            const form = e.target;
+            const file = form.querySelector('input[type="file"][name="attachment"]')?.files?.[0];
+            if (!file) { e.preventDefault(); alert('Wajib unggah lampiran PDF.'); return; }
+            const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+            if (!isPdf) { e.preventDefault(); alert('Lampiran harus PDF.'); return; }
+            if (file.size > 5 * 1024 * 1024) { e.preventDefault(); alert('Ukuran PDF maksimal 5 MB.'); return; }
+            if (!this.useTemplate) {
+              const subject = (this.$refs?.subject?.value || '').trim();
+              const message = (this.$refs?.message?.value || '').trim();
+              if (!subject || !message) { e.preventDefault(); alert('Isi subjek & pesan.'); }
+            }
+          },
+        };
       }
     </script>
   @endpush

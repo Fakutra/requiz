@@ -112,11 +112,14 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::get('/offering',       [OfferingController::class,      'index'])->name('offering');
 
         // Aksi umum (dipakai semua tahap) — nama route dipertahankan
-        Route::post('/update-status', [ActionsController::class, 'updateStatus'])->name('update-status');
-        Route::post('/send-email',    [ActionsController::class, 'sendEmail'])->name('sendEmail');
+        // Route::post('/update-status', [ActionsController::class, 'updateStatus'])->name('update-status');
+        // Route::post('/send-email',    [ActionsController::class, 'sendEmail'])->name('sendEmail');
         // ^^^ sengaja pakai name 'sendEmail' seperti lama supaya JS/Blade kamu tidak perlu diubah
     });
-
+    Route::post('admin/applicant/seleksi/update-status', [ActionsController::class, 'updateStatus'])
+    ->name('admin.applicant.seleksi.updateStatus');
+    Route::post('admin/applicant/seleksi/send-email', [ActionsController::class, 'sendEmail'])
+    ->name('admin.applicant.seleksi.sendEmail');
     // -------- Test & Section ----------
     Route::get   ('admin/test',              [TestController::class, 'index'])->name('test.index');
     Route::get   ('admin/test/{test}',       [TestController::class, 'show'])->name('test.show');

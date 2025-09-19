@@ -6,8 +6,12 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Applicant;
 use App\Models\EmailLog;
+use App\Models\SelectionLog;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class ActionsController extends Controller
 {
@@ -92,5 +96,82 @@ Terima kasih atas partisipasinya dan semoga sukses.";
 
         $msg = "Email terkirim: {$ok}, gagal: {$fail}.";
         return back()->with($fail ? 'error' : 'success', $msg);
+    }
+    public function updateStatus(Request $request)
+    {
+        $data = $request->validate([
+            // action: 'lolos', 'gagal', 'reset' (silakan sesuaikan dengan UI Anda)
+            'action'       => 'required|string|in:lolos,gagal,reset',
+            'stage'        => 'required|string', // ex: "Seleksi Administrasi", "Tes Tulis", "Technical Test", "Interview"
+            // boleh kirim array ids[] atau CSV "1,2,3"
+            'ids'          => 'nullable|array',
+            'ids.*'        => 'integer',
+            'applicant_ids'=> 'nullable|string',
+            'note'         => 'nullable|string|max:2000',
+        ]);
+
+        // Gabungkan sumber id (array/CSV)
+        $ids = collect($data['ids'] ?? [])
+            ->when(!empty($data['applicant_ids']), function ($c) use ($data) {
+                return $c->merge(
+                    Str::of($data['applicant_ids'])->explode(',')
+                        ->map(fn ($v) => (int) trim($v))
+                        ->filter()
+                );
+            })
+            ->unique()
+            ->values();
+
+        if ($ids->isEmpty()) {
+            return back()->with('status', 'Tidak ada kandidat yang dipilih.');
+        }
+
+        // Tentukan kolom status per tahap bila tersedia; fallback ke 'status'
+        $stage = $data['stage'];
+        $statusColumnMap = [
+            'Seleksi Administrasi' => 'status_administrasi',
+            'Tes Tulis'            => 'status_tes_tulis',
+            'Technical Test'       => 'status_technical_test',
+            'Interview'            => 'status_interview',
+        ];
+        $targetCol = $statusColumnMap[$stage] ?? 'status';
+        if (!Schema::hasColumn('applicants', $targetCol)) {
+            // fallback aman
+            $targetCol = Schema::hasColumn('applicants', 'status') ? 'status' : null;
+        }
+
+        // Nilai yang akan disimpan
+        $value = match ($data['action']) {
+            'lolos' => 'Lolos',
+            'gagal' => 'Tidak Lolos',
+            'reset' => null,
+        };
+
+        DB::transaction(function () use ($ids, $stage, $targetCol, $value, $data) {
+            // Update kolom status jika ada kolom target
+            if ($targetCol) {
+                Applicant::whereIn('id', $ids)->update([$targetCol => $value]);
+            }
+
+            // Catat log per kandidat (jika ada tabel selection_logs)
+            if (class_exists(SelectionLog::class)) {
+                $now = now();
+                $logs = $ids->map(fn ($id) => [
+                    'applicant_id' => $id,
+                    'stage'        => $stage,
+                    'action'       => $data['action'], // 'lolos' / 'gagal' / 'reset'
+                    'note'         => $data['note'] ?? null,
+                    'admin_id'     => auth()->id(),
+                    'created_at'   => $now,
+                    'updated_at'   => $now,
+                ])->all();
+
+                if (!empty($logs)) {
+                    SelectionLog::insert($logs);
+                }
+            }
+        });
+
+        return back()->with('status', "Status {$stage} untuk ".count($ids)." kandidat berhasil diupdate ({$data['action']}).");
     }
 }

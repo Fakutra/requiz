@@ -1,3 +1,4 @@
+{{-- resources/views/admin/applicant/seleksi/administrasi/index.blade.php --}}
 <x-app-admin>
   <x-slot name="header">
     <h2 class="font-semibold text-xl text-gray-800 leading-tight">Seleksi Administrasi</h2>
@@ -8,7 +9,6 @@
       {{-- ================== Filter (GET) + Aksi ================== --}}
       <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-4">
         <form method="GET" action="{{ url()->current() }}" class="flex flex-wrap items-end gap-2">
-          {{-- Penting: bawa batch --}}
           <input type="hidden" name="batch" value="{{ request('batch') }}">
 
           <div>
@@ -56,7 +56,7 @@
           <button type="button" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
                   @click="submitStatus('lolos')">Lolos</button>
           <button type="button" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
-                  @click="submitStatus('tidak_lolos')">Gagal</button>
+                  @click="submitStatus('gagal')">Gagal</button>
           <button type="button"
                   class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded"
                   @click="openEmailModal()">Email</button>
@@ -64,7 +64,7 @@
       </div>
 
       {{-- ================== Form UPDATE STATUS ================== --}}
-      <form id="statusForm" method="POST" action="{{ route('admin.applicant.seleksi.update-status') }}">
+      <form id="statusForm" method="POST" action="{{ route('admin.applicant.seleksi.updateStatus') }}" data-stage="{{ $stage }}">
         @csrf
         <input type="hidden" name="stage" value="{{ $stage }}">
         <div id="statusInputs"></div>
@@ -142,7 +142,7 @@
                 {{-- ===== Aksi ===== --}}
                 <td class="p-3 border-b align-top">
                   <div class="flex items-center gap-3 text-sm">
-                    {{-- Lihat CV (cvUrl dihitung inline agar tidak pakai $applicant di luar loop) --}}
+                    {{-- Lihat CV --}}
                     <a href="#"
                        @click.prevent="openCvModal(
                          @js($applicant->cv_document ? \Illuminate\Support\Facades\Storage::url($applicant->cv_document) : null),
@@ -191,7 +191,7 @@
     <div x-show="cvModalOpen" x-transition.opacity
          class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div class="bg-white w-full max-w-4xl max-h-[85vh] rounded-lg shadow-lg overflow-hidden"
-           @click.away="closeCvModal()">
+           @click.outside="closeCvModal()">
         <div class="flex items-center justify-between px-4 py-3 border-b">
           <h3 class="font-semibold" x-text="cvName || 'CV'"></h3>
           <button class="text-gray-500 hover:text-gray-700" @click="closeCvModal()">✕</button>
@@ -207,114 +207,11 @@
       </div>
     </div>
 
-    {{-- ================== MODAL: Edit Applicant ================== --}}
-    <div x-show="editModalOpen" x-transition.opacity
-         class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div class="bg-white w-full max-w-2xl rounded-lg shadow-lg"
-           @click.away="closeEditModal()">
-        <div class="flex items-center justify-between px-4 py-3 border-b">
-          <h3 class="font-semibold">Edit Data Pelamar</h3>
-          <button class="text-gray-500 hover:text-gray-700" @click="closeEditModal()">✕</button>
-        </div>
-
-        <form :action="updateUrl()" method="POST" enctype="multipart/form-data" class="p-4">
-          @csrf
-          @method('PUT')
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-              <label class="text-xs text-gray-600">Nama</label>
-              <input type="text" name="name" class="w-full border rounded px-3 py-2" x-model="form.name" required>
-            </div>
-            <div>
-              <label class="text-xs text-gray-600">Email</label>
-              <input type="email" name="email" class="w-full border rounded px-3 py-2" x-model="form.email" required>
-            </div>
-            <div>
-              <label class="text-xs text-gray-600">NIK</label>
-              <input type="text" name="nik" class="w-full border rounded px-3 py-2" x-model="form.nik" required>
-            </div>
-            <div>
-              <label class="text-xs text-gray-600">No. Telp</label>
-              <input type="text" name="no_telp" class="w-full border rounded px-3 py-2" x-model="form.no_telp" required>
-            </div>
-            <div>
-              <label class="text-xs text-gray-600">Tempat Lahir</label>
-              <input type="text" name="tpt_lahir" class="w-full border rounded px-3 py-2" x-model="form.tpt_lahir" required>
-            </div>
-            <div>
-              <label class="text-xs text-gray-600">Tanggal Lahir</label>
-              <input type="date" name="tgl_lahir" class="w-full border rounded px-3 py-2" x-model="form.tgl_lahir" required>
-            </div>
-            <div class="md:col-span-2">
-              <label class="text-xs text-gray-600">Alamat</label>
-              <input type="text" name="alamat" class="w-full border rounded px-3 py-2" x-model="form.alamat" required>
-            </div>
-            <div>
-              <label class="text-xs text-gray-600">Pendidikan</label>
-              <select name="pendidikan" class="w-full border rounded px-3 py-2" x-model="form.pendidikan" required>
-                <option value="SMA/Sederajat">SMA/Sederajat</option>
-                <option value="Diploma">Diploma</option>
-                <option value="S1">S1</option>
-                <option value="S2">S2</option>
-                <option value="S3">S3</option>
-              </select>
-            </div>
-            <div>
-              <label class="text-xs text-gray-600">Universitas</label>
-              <input type="text" name="universitas" class="w-full border rounded px-3 py-2" x-model="form.universitas" required>
-            </div>
-            <div>
-              <label class="text-xs text-gray-600">Jurusan</label>
-              <input type="text" name="jurusan" class="w-full border rounded px-3 py-2" x-model="form.jurusan" required>
-            </div>
-            <div>
-              <label class="text-xs text-gray-600">Tahun Lulus</label>
-              <input type="text" name="thn_lulus" class="w-full border rounded px-3 py-2" x-model="form.thn_lulus" required>
-            </div>
-            <div>
-              <label class="text-xs text-gray-600">Posisi</label>
-              <select name="position_id" class="w-full border rounded px-3 py-2" x-model="form.position_id" required>
-                @foreach($positions as $pos)
-                  <option value="{{ $pos->id }}">{{ $pos->name }}</option>
-                @endforeach
-              </select>
-            </div>
-            <div>
-              <label class="text-xs text-gray-600">Status</label>
-              <select name="status" class="w-full border rounded px-3 py-2" x-model="form.status" required>
-                <option>Seleksi Administrasi</option>
-                <option>Tes Tulis</option>
-                <option>Technical Test</option>
-                <option>Interview</option>
-                <option>Offering</option>
-                <option>Tidak Lolos Seleksi Administrasi</option>
-                <option>Tidak Lolos Seleksi Tes Tulis</option>
-                <option>Tidak Lolos Technical Test</option>
-                <option>Tidak Lolos interview</option>
-                <option>Menerima Offering</option>
-                <option>Menolak Offering</option>
-              </select>
-            </div>
-            <div class="md:col-span-2">
-              <label class="text-xs text-gray-600">Ganti CV (PDF, max 3MB)</label>
-              <input type="file" name="cv_document" accept="application/pdf,.pdf" class="w-full border rounded px-3 py-2">
-            </div>
-          </div>
-
-          <div class="mt-4 flex justify-end gap-2">
-            <button type="button" class="px-4 py-2 rounded border" @click="closeEditModal()">Batal</button>
-            <button type="submit" class="px-4 py-2 rounded bg-blue-600 text-white">Simpan</button>
-          </div>
-        </form>
-      </div>
-    </div>
-
     {{-- ================== MODAL: Kirim Email ================== --}}
     <div x-show="emailModalOpen" x-transition.opacity
          class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div class="bg-white w-full max-w-2xl rounded-lg shadow-lg"
-           @click.away="closeEmailModal()">
+           @click.outside="closeEmailModal()">
         <div class="flex items-center justify-between px-4 py-3 border-b">
           <h3 class="font-semibold">Kirim Email Hasil {{ $stage }}</h3>
           <button class="text-gray-500 hover:text-gray-700" @click="closeEmailModal()">✕</button>
@@ -324,19 +221,23 @@
               enctype="multipart/form-data" class="p-4" @submit="validateAndSubmit">
           @csrf
           <input type="hidden" name="stage" value="{{ $stage }}">
-          <input type="hidden" x-ref="recipientIds" name="recipient_ids">
-          <input type="hidden" x-ref="recipients"   name="recipients">
+          <input type="hidden" x-ref="recipientIds" id="recipient_ids" name="recipient_ids">
+          <input type="hidden" x-ref="recipients"   id="recipients"   name="recipients">
 
           <div class="space-y-4">
             <div>
               <label class="text-xs text-gray-600">Penerima</label>
               <textarea class="w-full border rounded px-3 py-2 text-sm" rows="3"
                         x-text="selectedEmails.join(', ')" readonly></textarea>
-              <p class="text-xs text-gray-500 mt-1">Gunakan centang baris untuk memilih. Jika tidak ada yang dicentang, sistem otomatis memilih peserta dengan status <b>Lolos {{ $stage }}</b> di halaman ini.</p>
+              <p class="text-xs text-gray-500 mt-1">
+                Gunakan centang baris untuk memilih. Jika tidak ada yang dicentang, sistem otomatis memilih peserta dengan status
+                <b>Lolos {{ $stage }}</b> di halaman ini.
+              </p>
             </div>
 
             <div class="flex items-center gap-2">
               <input id="use_template" type="checkbox" class="h-4 w-4"
+                     name="use_template" value="1"
                      x-model="useTemplate" @change="lockInputs(useTemplate)">
               <label for="use_template" class="text-sm text-gray-700">Gunakan template default</label>
             </div>
@@ -372,81 +273,79 @@
 
   @push('scripts')
     <script>
-      // Define once untuk mencegah double-define saat pindah halaman
-      if (typeof window.stageSeleksi !== 'function') {
-        function stageSeleksi() {
-          return {
-            // stage untuk template
-            stage: @json($stage),
+      // HANYA di halaman ini (tidak ada definisi ganda di layout)
+      function stageSeleksi() {
+        return {
+          stage: @json($stage),
 
-            // Email
-            emailModalOpen: false,
-            selectedEmails: [],
-            selectedMeta: [],
-            useTemplate: true,
+          // Email
+          emailModalOpen: false,
+          selectedEmails: [],
+          selectedMeta: [],
+          useTemplate: true,
 
-            // CV Modal
-            cvModalOpen: false,
-            cvUrl: null,
-            cvName: null,
+          // CV Modal
+          cvModalOpen: false,
+          cvUrl: null,
+          cvName: null,
 
-            // Edit
-            editModalOpen: false,
-            form: {
-              id: null,
-              name: '', email: '',
-              nik: '', no_telp: '',
-              tpt_lahir: '', tgl_lahir: '',
-              alamat: '',
-              pendidikan: 'S1',
-              universitas: '', jurusan: '',
-              thn_lulus: '',
-              position_id: '',
-              status: 'Seleksi Administrasi',
-            },
+          // Edit
+          editModalOpen: false,
+          form: {
+            id: null,
+            name: '', email: '',
+            nik: '', no_telp: '',
+            tpt_lahir: '', tgl_lahir: '',
+            alamat: '',
+            pendidikan: 'S1',
+            universitas: '', jurusan: '',
+            thn_lulus: '',
+            position_id: '',
+            status: 'Seleksi Administrasi',
+          },
 
-            updateBase: @json(url('admin/applicant/__ID__')),
+          updateBase: @json(url('admin/applicant/__ID__')),
 
-            init() {
-              const selectAll = this.$root.querySelector('#selectAll');
-              if (selectAll) {
-                selectAll.addEventListener('change', (e) => {
-                  this.$root.querySelectorAll('.applicant-checkbox').forEach(cb => cb.checked = e.target.checked);
-                });
-              }
-            },
-
-            // ===== Status bulk submit helper =====
-            submitStatus(type) {
-              const form = this.$root.querySelector('#statusForm');
-              const wrap = form.querySelector('#statusInputs');
-              wrap.innerHTML = '';
-              const checked = Array.from(this.$root.querySelectorAll('.applicant-checkbox:checked'));
-              if (checked.length === 0) { alert('Pilih minimal satu peserta.'); return; }
-              checked.forEach(cb => {
-                const i = document.createElement('input');
-                i.type = 'hidden'; i.name = 'ids[]'; i.value = cb.value;
-                wrap.appendChild(i);
+          init() {
+            const selectAll = this.$root.querySelector('#selectAll');
+            if (selectAll) {
+              selectAll.addEventListener('change', (e) => {
+                this.$root.querySelectorAll('.applicant-checkbox').forEach(cb => cb.checked = e.target.checked);
               });
-              const action = document.createElement('input');
-              action.type = 'hidden'; action.name = 'action'; action.value = type;
-              wrap.appendChild(action);
-              form.submit();
-            },
+            }
+          },
 
-            // ===== Email =====
-            lockInputs(lock) {
-              const subj = this.$refs?.subject, msg = this.$refs?.message;
-              [subj, msg].forEach(el => {
-                if (!el) return;
-                el.disabled = lock; el.readOnly = lock; el.required = !lock;
-              });
-            },
-            buildTemplate(fullName, positionName) {
-              const name = fullName && fullName.trim() ? fullName : 'Peserta';
-              const pos  = positionName && positionName.trim() ? positionName : '-';
-              const subject = `INFORMASI HASIL SELEKSI ${this.stage} TAD/OUTSOURCING - PLN ICON PLUS`;
-              const body =
+          // ===== Status bulk submit helper =====
+          submitStatus(type) {
+            const form = this.$root.querySelector('#statusForm');
+            const wrap = form.querySelector('#statusInputs');
+            wrap.innerHTML = '';
+            const checked = Array.from(this.$root.querySelectorAll('.applicant-checkbox:checked'));
+            if (checked.length === 0) { alert('Pilih minimal satu peserta.'); return; }
+            checked.forEach(cb => {
+              const i = document.createElement('input');
+              i.type = 'hidden'; i.name = 'ids[]'; i.value = cb.value;
+              wrap.appendChild(i);
+            });
+            const action = document.createElement('input');
+            action.type = 'hidden'; action.name = 'action'; action.value = type;
+            wrap.appendChild(action);
+            form.submit();
+          },
+
+          // ===== Email =====
+          lockInputs(lock) {
+            const subj = this.$refs?.subject, msg = this.$refs?.message;
+            [subj, msg].forEach(el => {
+              if (!el) return;
+              el.disabled = lock; el.readOnly = lock; el.required = !lock;
+            });
+          },
+          buildTemplate(fullName, positionName) {
+            const name = fullName && fullName.trim() ? fullName : 'Peserta';
+            const pos  = positionName && positionName.trim() ? positionName : '-';
+            const subject = `INFORMASI HASIL SELEKSI ${this.stage} TAD/OUTSOURCING - PLN ICON PLUS`;
+            const body =
 `Halo ${name}
 
 Terima kasih atas partisipasi Saudara/i dalam mengikuti proses seleksi TAD/OUTSOURCING PLN ICON PLUS pada posisi ${pos}.
@@ -455,73 +354,74 @@ Selamat Anda lolos pada tahap ${this.stage}. Selanjutnya, silakan cek jadwal And
 
 Demikian kami sampaikan.
 Terima kasih atas partisipasinya dan semoga sukses.`;
-              return { subject, body };
-            },
-            gatherEmails() {
-              const checked = Array.from(this.$root.querySelectorAll('.applicant-checkbox:checked'));
-              let nodes = checked;
-              if (nodes.length === 0) {
-                nodes = Array.from(this.$root.querySelectorAll('.applicant-checkbox'))
-                  .filter(cb => (cb.dataset.stageState || '').toLowerCase() === 'lolos');
+            return { subject, body };
+          },
+          gatherEmails() {
+            const checked = Array.from(this.$root.querySelectorAll('.applicant-checkbox:checked'));
+            let nodes = checked;
+            if (nodes.length === 0) {
+              nodes = Array.from(this.$root.querySelectorAll('.applicant-checkbox'))
+                .filter(cb => (cb.dataset.stageState || '').toLowerCase() === 'lolos');
+            }
+            const recipients = [], ids = [], meta = [];
+            nodes.forEach(cb => {
+              const email = cb.dataset.email;
+              if (email) {
+                recipients.push(email);
+                ids.push(cb.value);
+                meta.push({
+                  id: cb.value,
+                  email,
+                  name: cb.dataset.name || '',
+                  position: cb.dataset.position || '-',
+                });
               }
-              const recipients = [], ids = [], meta = [];
-              nodes.forEach(cb => {
-                const email = cb.dataset.email;
-                if (email) {
-                  recipients.push(email);
-                  ids.push(cb.value);
-                  meta.push({
-                    id: cb.value,
-                    email,
-                    name: cb.dataset.name || '',
-                    position: cb.dataset.position || '-',
-                  });
-                }
-              });
-              return { recipients, ids, meta };
-            },
-            openEmailModal() {
-              const { recipients, ids, meta } = this.gatherEmails();
-              if (recipients.length === 0) { alert('Pilih baris atau pastikan ada yang statusnya Lolos.'); return; }
-              this.selectedEmails = recipients;
-              this.selectedMeta   = meta;
-              if (this.$refs.recipients)   this.$refs.recipients.value   = recipients.join(',');
-              if (this.$refs.recipientIds) this.$refs.recipientIds.value = ids.join(',');
-              if (this.useTemplate) { this.applyTemplatePreview(); this.lockInputs(true); }
-              else { this.lockInputs(false); }
-              this.emailModalOpen = true;
-            },
-            applyTemplatePreview() {
-              const first = this.selectedMeta?.[0] || {name: 'Peserta', position: '-'};
-              const {subject, body} = this.buildTemplate(first.name, first.position);
-              if (this.$refs.subject) this.$refs.subject.value = subject;
-              if (this.$refs.message) this.$refs.message.value = body;
-            },
-            validateAndSubmit(e) {
-              const form = e.target;
-              const file = form.querySelector('input[type="file"][name="attachment"]')?.files?.[0];
-              if (!file) { e.preventDefault(); alert('Wajib unggah lampiran PDF.'); return; }
-              const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-              if (!isPdf) { e.preventDefault(); alert('Lampiran harus PDF.'); return; }
-              if (file.size > 5 * 1024 * 1024) { e.preventDefault(); alert('Ukuran PDF maksimal 5 MB.'); return; }
-              if (!this.useTemplate) {
-                const subject = (this.$refs?.subject?.value || '').trim();
-                const message = (this.$refs?.message?.value || '').trim();
-                if (!subject || !message) { e.preventDefault(); alert('Isi subjek & pesan.'); }
-              }
-            },
+            });
+            return { recipients, ids, meta };
+          },
+          openEmailModal() {
+            const { recipients, ids, meta } = this.gatherEmails();
+            if (recipients.length === 0) { alert('Pilih baris atau pastikan ada yang statusnya Lolos.'); return; }
+            this.selectedEmails = recipients;
+            this.selectedMeta   = meta;
 
-            // ===== CV Modal =====
-            openCvModal(url, name) { this.cvUrl = url; this.cvName = name; this.cvModalOpen = true; },
-            closeCvModal() { this.cvModalOpen = false; this.cvUrl = null; this.cvName = null; },
+            if (this.$refs.recipients)   this.$refs.recipients.value   = recipients.join(',');
+            if (this.$refs.recipientIds) this.$refs.recipientIds.value = ids.join(',');
 
-            // ===== Edit =====
-            openEditModal(data) { this.form = Object.assign({}, this.form, data||{}); this.editModalOpen = true; },
-            closeEditModal() { this.editModalOpen = false; },
-            updateUrl() { return this.updateBase.replace('__ID__', this.form.id ?? ''); },
-          };
-        }
-        window.stageSeleksi = stageSeleksi;
+            if (this.useTemplate) { this.applyTemplatePreview(); this.lockInputs(true); }
+            else { this.lockInputs(false); }
+
+            this.emailModalOpen = true;
+          },
+          applyTemplatePreview() {
+            const first = this.selectedMeta?.[0] || {name: 'Peserta', position: '-'};
+            const {subject, body} = this.buildTemplate(first.name, first.position);
+            if (this.$refs.subject) this.$refs.subject.value = subject;
+            if (this.$refs.message) this.$refs.message.value = body;
+          },
+          validateAndSubmit(e) {
+            const form = e.target;
+            const file = form.querySelector('input[type="file"][name="attachment"]')?.files?.[0];
+            if (!file) { e.preventDefault(); alert('Wajib unggah lampiran PDF.'); return; }
+            const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+            if (!isPdf) { e.preventDefault(); alert('Lampiran harus PDF.'); return; }
+            if (file.size > 5 * 1024 * 1024) { e.preventDefault(); alert('Ukuran PDF maksimal 5 MB.'); return; }
+            if (!this.useTemplate) {
+              const subject = (this.$refs?.subject?.value || '').trim();
+              const message = (this.$refs?.message?.value || '').trim();
+              if (!subject || !message) { e.preventDefault(); alert('Isi subjek & pesan.'); }
+            }
+          },
+
+          // ===== CV Modal =====
+          openCvModal(url, name) { this.cvUrl = url; this.cvName = name; this.cvModalOpen = true; },
+          closeCvModal() { this.cvModalOpen = false; this.cvUrl = null; this.cvName = null; },
+
+          // ===== Edit =====
+          openEditModal(data) { this.form = Object.assign({}, this.form, data||{}); this.editModalOpen = true; },
+          closeEditModal() { this.editModalOpen = false; },
+          updateUrl() { return this.updateBase.replace('__ID__', this.form.id ?? ''); },
+        };
       }
     </script>
   @endpush
