@@ -95,10 +95,7 @@
               <td class="px-6 py-4 w-[16%] text-right">
                 @if($rn)
                   <a href="{{ route($rn, ['batch' => $currentBatchId]) }}"
-                    class="inline-flex items-center gap-2 rounded bg-blue-700 text-white px-4 py-1.5 hover:bg-blue-800 transition">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
-                      <path d="M6.3 5.3a1 1 0 0 0-1.6.8v7.8a1 1 0 0 0 1.6.8l6.2-3.9a1 1 0 0 0 0-1.6L6.3 5.3Z" />
-                    </svg>
+                    class="inline-flex items-center gap-2 rounded bg-blue-800 text-white px-4 py-1.5 hover:bg-blue-700 transition">          
                     Proses
                   </a>
                 @else

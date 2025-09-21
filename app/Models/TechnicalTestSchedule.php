@@ -35,14 +35,12 @@ class TechnicalTestSchedule extends Model
      |          RELASI
      |===========================*/
 
-    public function position()
-    {
-        return $this->belongsTo(Position::class);
+    public function position() { 
+        return $this->belongsTo(Position::class, 'position_id'); 
     }
 
-    public function answers()
-    {
-        return $this->hasMany(TechnicalTestAnswer::class);
+    public function answers()  { 
+        return $this->hasMany(TechnicalTestAnswer::class, 'technical_test_schedule_id'); 
     }
 
     /**

@@ -33,38 +33,41 @@
         @endif
 
         <!-- Baris Atas: Export, Search, dan Filter -->
-        <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-3 md:gap-0">
-            {{-- Tombol Export --}}
-            <div>
-                <a href="{{ route('admin.applicant.export', request()->query()) }}"
-                    class="inline-flex no-underline items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md transition duration-150">
-                    Export Excel
-                </a>
-            </div>
-
-            {{-- Form Search + Button Filter --}}
-            <div class="flex items-center gap-3">
-                <form action="{{ route('admin.applicant.index') }}" method="GET" class="flex items-center gap-2">
-                    <input type="text" name="search" placeholder="Search..."
-                        value="{{ request('search') }}"
-                        class="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm" />
-                    <button type="submit"
-                        class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition duration-150">
-                        Cari
-                    </button>
-                </form>
-
-                {{-- Tombol Filter pakai modal --}}
-                <!-- Tombol Filter pakai Alpine -->
-                <button @click="showFilter = true"
-                    class="p-2 rounded-md border border-gray-300 bg-white hover:bg-gray-100 text-gray-700 transition">
+        <div class="flex flex-row justify-between items-center mb-4 gap-3 w-full">
+            {{-- Box Search (input + tombol search di dalam satu box) --}}
+            <form action="{{ route('admin.applicant.index') }}" method="GET" 
+                class="flex flex-1 items-center border border-gray-300 rounded-md overflow-hidden shadow-sm">
+                <input type="text" name="search" placeholder="Nama Peserta, Status Seleksi ..."
+                    value="{{ request('search') }}"
+                    class="flex-1 px-3 py-2 text-sm text-gray-700 border-0 focus:outline-none focus:ring-0" />
+                <button type="submit" 
+                        class="px-3 py-2 bg-white text-gray-500 hover:bg-gray-100">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none"
                         viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round"
-                            d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L15 13.414V19a1 1 0 01-1.447.894l-4-2A1 1 0 019 17v-3.586L3.293 6.707A1 1 0 013 6V4z" />
+                            d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z" />
                     </svg>
                 </button>
-            </div>
+            </form>
+
+            {{-- Tombol Filter --}}
+            <button type="button" @click="showFilter = true"
+                class="p-2 border border-gray-300 rounded-md bg-white text-gray-600 hover:bg-gray-100">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none"
+                    viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L15 13.414V19a1 1 0 01-1.447.894l-4-2A1 1 0 019 17v-3.586L3.293 6.707A1 1 0 013 6V4z" />
+                </svg>
+            </button>
+
+            {{-- Tombol Export --}}
+            <a href="{{ route('admin.applicant.export', request()->query()) }}"
+            class="flex inline-flex items-center px-4 py-2 bg-green-500 hover:bg-green-600 text-white text-sm font-medium rounded-md">
+                <span class="mr-2">
+                    <x-export-button/>
+                </span>
+                Export
+            </a>
         </div>
 
         <div class="w-full overflow-x-auto">
@@ -109,10 +112,7 @@
                                     skills: `{{ $applicant->skills ?? '-' }}`
                                 })"
                                     class="text-blue-400">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.0" stroke="currentColor" class="size-5">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                                    </svg>
+                                    <x-view-button/>
                                 </a>
                                 <a @click.prevent="openEdit({
                                     id: {{ $applicant->id }},
@@ -132,16 +132,12 @@
                                     skills: `{{ $applicant->skills ?? '-' }}`
                                 })"
                                     class="text-amber-400">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.0" stroke="currentColor" class="size-5">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
-                                    </svg>
+                                    <x-edit-button/>
                                 </a>
                                 <form action="{{ route('admin.applicant.destroy', $applicant->id) }}" method="POST" onsubmit="return confirm('Yakin hapus?')">
                                     @csrf @method('delete')
                                     <button type="submit" class="text-red-600">
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.0" stroke="currentColor" class="size-5">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                                        </svg>
+                                        <x-delete-button/>
                                     </button>
                                 </form>
                             </div>
@@ -149,7 +145,7 @@
                     </tr>
 
                     <div x-show="showEdit" x-cloak class="fixed inset-0 flex items-center justify-center z-50 bg-black/40 backdrop-blur-md">
-                        <div @click.away="showEdit = false"
+                        <div @click.away="showEdit = false" @click.stop
                             class="bg-white w-full max-w-3xl p-6 rounded-lg shadow-lg overflow-y-auto max-h-[90vh]">
                             <h2 class="text-lg font-semibold mb-4">Edit Pelamar</h2>
 

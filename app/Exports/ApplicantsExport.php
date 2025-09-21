@@ -3,48 +3,43 @@
 namespace App\Exports;
 
 use App\Models\Applicant;
+use Carbon\Carbon;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithStyles;
+use Maatwebsite\Excel\Concerns\WithColumnFormatting;
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class ApplicantsExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoSize, WithStyles
+class ApplicantsExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoSize, WithStyles, WithColumnFormatting
 {
     protected $search;
 
     public function __construct($search)
     {
-        $this->search = $search;
+        $this->search = trim((string) $search);
     }
 
-    /**
-     * @return \Illuminate\Database\Query\Builder
-     */
+    /** @return \Illuminate\Database\Eloquent\Builder */
     public function query()
     {
-        $query = Applicant::query()->with('position')->orderBy('name', 'asc');
-
-        // Terapkan filter pencarian yang sama dengan di halaman web
-        $query->when($this->search, function ($q, $search) {
-            return $q->where('name', 'like', "%{$search}%")
-                ->orWhere('jurusan', 'like', "%{$search}%")
-                ->orWhere('pendidikan', 'like', "%{$search}%")
-                ->orWhereHas('position', function ($subQ) use ($search) {
-                    $subQ->where('name', 'like', "%{$search}%");
+        return Applicant::query()
+            ->with(['position:id,name'])
+            ->orderBy('name')
+            ->when($this->search, function ($q, $s) {
+                $q->where(function ($x) use ($s) {
+                    $x->where('name', 'like', "%{$s}%")
+                      ->orWhere('jurusan', 'like', "%{$s}%")
+                      ->orWhere('pendidikan', 'like', "%{$s}%")
+                      ->orWhereHas('position', fn ($p) => $p->where('name', 'like', "%{$s}%"));
                 });
-        });
-
-        return $query;
+            });
     }
 
-    /**
-     * @return array
-     */
     public function headings(): array
     {
-        // Mendefinisikan header untuk kolom Excel
         return [
             'NAMA',
             'POSISI_DILAMAR',
@@ -60,45 +55,51 @@ class ApplicantsExport implements FromQuery, WithHeadings, WithMapping, ShouldAu
             'JURUSAN',
             'THN_LULUS',
             'SKILLS',
-            // 'Link CV',
         ];
     }
 
-    /**
-     * @param mixed $applicant
-     * @return array
-     */
     public function map($applicant): array
     {
-        // Memetakan data dari setiap pelamar ke kolom yang sesuai
+        $tgl = $applicant->tgl_lahir
+            ? ( $applicant->tgl_lahir instanceof \DateTimeInterface
+                ? $applicant->tgl_lahir->format('Y-m-d')
+                : Carbon::parse($applicant->tgl_lahir)->format('Y-m-d') )
+            : '';
+
+        $age = $applicant->age ?? ($applicant->tgl_lahir ? Carbon::parse($applicant->tgl_lahir)->age : '');
+
         return [
             $applicant->name,
-            $applicant->position->name,
+            data_get($applicant, 'position.name', '-'),
             $applicant->email,
-            $applicant->nik,
-            $applicant->no_telp,
+            (string) $applicant->nik,        // jaga leading zero
+            (string) $applicant->no_telp,    // jaga leading zero
             $applicant->tpt_lahir,
-            $applicant->tgl_lahir,
-            $applicant->age,
+            $tgl,
+            $age,
             $applicant->alamat,
             $applicant->pendidikan,
             $applicant->universitas,
             $applicant->jurusan,
             $applicant->thn_lulus,
             $applicant->skills,
-            // $applicant->cv_document ? asset('storage/' . $applicant->cv_document) : 'Tidak ada',
         ];
     }
 
-    /**
-     * @param Worksheet $sheet
-     * @return array
-     */
     public function styles(Worksheet $sheet)
     {
-        // Membuat baris header menjadi tebal (bold)
         return [
-            1    => ['font' => ['bold' => true]],
+            1 => ['font' => ['bold' => true]],
+        ];
+    }
+
+    public function columnFormats(): array
+    {
+        // A=Nama, B=Posisi, C=Email, D=NIK, E=No Telp, F=Tpt Lahir, G=Tgl Lahir, H=Umur, I=Alamat, J,K,L,M,N...
+        return [
+            'D' => NumberFormat::FORMAT_TEXT,              // NIK
+            'E' => NumberFormat::FORMAT_TEXT,              // No Telp
+            'G' => NumberFormat::FORMAT_DATE_YYYYMMDD2,    // Tgl Lahir
         ];
     }
 }

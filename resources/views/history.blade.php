@@ -148,8 +148,35 @@
             $beforeEnd = $end ? $now->lt($end) : true;
             $canEnter = $inWindow || ($hasStarted && $beforeEnd);
 
-            $signedUrl = \Illuminate\Support\Facades\URL::signedRoute('quiz.start', ['slug' => $t->slug]);
-            @endphp
+                                @if ($sched)
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                                        <div>
+                                            <div class="text-gray-600">Jadwal</div>
+                                            <div class="font-medium text-gray-900">
+                                                {{ optional($sched->schedule_date)?->translatedFormat('l, d F Y, H:i') }}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div class="text-gray-600">Zoom</div>
+                                            <div class="font-medium">
+                                                <a href="{{ $sched->zoom_link }}" target="_blank" class="text-blue-600 hover:underline">
+                                                    Buka Link Zoom
+                                                </a>
+                                                @if ($sched->zoom_id)
+                                                    <div class="text-gray-500">ID: {{ $sched->zoom_id }}</div>
+                                                @endif
+                                                @if ($sched->zoom_passcode)
+                                                    <div class="text-gray-500">Passcode: {{ $sched->zoom_passcode }}</div>
+                                                @endif
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div class="text-gray-600">Batas Upload</div>
+                                            <div class="font-medium {{ $sched->upload_deadline && $now->gt($sched->upload_deadline) ? 'text-red-600' : 'text-gray-900' }}">
+                                                {{ optional($sched->upload_deadline)?->translatedFormat('l, d F Y, H:i') ?? '—' }}
+                                            </div>
+                                        </div>
+                                    </div>
 
             <div class="mt-6 pt-4 border-t border-zinc-100 text-center space-y-3">
                 <p class="text-sm text-zinc-600">
@@ -161,40 +188,137 @@
                     <span class="font-semibold text-rose-600">{{ optional($end)?->translatedFormat('l, d F Y, H:i') ?? '—' }}</span>
                 </p>
 
-                <button
-                    type="button"
-                    class="start-test-btn inline-flex items-center justify-center px-6 h-10 rounded-full text-sm font-medium
-                   shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed
-                   bg-sky-600 text-white hover:bg-sky-700 active:bg-sky-800"
-                    data-url="{{ $signedUrl }}"
-                    data-title="{{ $applicant->position->name }}"
-                    {{ $canEnter ? '' : 'disabled' }}>
-                    Mulai Tes
-                </button>
+                                    {{-- Ringkasan jawaban terbaru --}}
+                                    @if ($latest)
+                                        <div class="mt-5 text-sm text-gray-700">
+                                            <div class="font-medium">Upload Terbaru:</div>
+                                            <div>
+                                                PDF:
+                                                <a class="text-blue-600 hover:underline"
+                                                   href="{{ \Illuminate\Support\Facades\Storage::url($latest->answer_path) }}"
+                                                   target="_blank">Lihat berkas</a>
+                                            </div>
+                                            <div>
+                                                Rekaman Layar:
+                                                <a class="text-blue-600 hover:underline"
+                                                   href="{{ $latest->screen_record_url }}" target="_blank">Buka tautan</a>
+                                            </div>
+                                            <div class="text-gray-500">
+                                                Dikumpulkan: {{ $latest->submitted_at->translatedFormat('d F Y, H:i') }}
+                                            </div>
+                                        </div>
+                                    @endif
 
                 <p class="text-xs text-zinc-500">
                     Tombol akan tersedia selama periode dibuka. Setelah pengerjaan dimulai, maka pengerjaan tetap bisa dilanjutkan sampai batas akhir periode.</p>
             </div>
             @endif
 
-            {{-- TECHNICAL TEST --}}
-            @if ($applicant->status === 'Technical Test')
-            @php
-            $sched = optional($applicant->position->technicalSchedules ?? collect())->sortByDesc('schedule_date')->first();
-            $latest = $sched ? $sched->answers->where('applicant_id', $applicant->id)->sortByDesc('submitted_at')->first() : null;
-            $now = now();
-            $withinDeadline = !$sched?->upload_deadline || $now->lte($sched->upload_deadline);
-            @endphp
+                                    {{-- Modal Upload --}}
+                                    <div id="uploadModal-{{ $sched->id }}" class="fixed inset-0 z-50 hidden">
+                                        <div class="absolute inset-0 bg-black/50" data-close-upload="{{ $sched->id }}"></div>
+                                        <div class="relative mx-auto my-12 max-w-md bg-white rounded-2xl shadow-xl p-6">
+                                            <h3 class="text-lg font-semibold text-gray-800">Upload Jawaban Technical Test</h3>
+                                            <form class="mt-4" method="POST" action="{{ route('technical.answers.store', $sched) }}" enctype="multipart/form-data">
+                                                @csrf
 
             <div class="mt-6 rounded-xl border border-indigo-200 bg-indigo-50 p-4">
                 <h4 class="text-sm font-semibold text-indigo-800 mb-3">Technical Test</h4>
 
-                @if ($sched)
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                    <div>
-                        <div class="text-zinc-600">Jadwal</div>
-                        <div class="font-medium text-zinc-900">
-                            {{ optional($sched->schedule_date)?->translatedFormat('l, d F Y, H:i') }}
+                                                <div class="space-y-4">
+                                                    <div>
+                                                        <label class="block text-sm font-medium text-gray-700">File Jawaban (PDF)</label>
+                                                        <input type="file" name="answer_pdf" accept="application/pdf" required class="mt-1 block w-full text-sm border rounded-lg p-2">
+                                                        <p class="text-xs text-gray-500 mt-1">Maks 10MB. Format PDF.</p>
+                                                    </div>
+                                                    <div>
+                                                        <label class="block text-sm font-medium text-gray-700">Link Rekaman Layar (Google Drive)</label>
+                                                        <input type="url" name="screen_record_url" required placeholder="https://drive.google.com/..."
+                                                               value="{{ old('screen_record_url', optional($latest)->screen_record_url) }}"
+                                                               class="mt-1 block w-full text-sm border rounded-lg p-2">
+                                                    </div>
+                                                </div>
+                                                <div class="mt-6 flex justify-end gap-2">
+                                                    <button type="button" class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50" data-close-upload="{{ $sched->id }}">Batal</button>
+                                                    <button type="submit" class="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700" {{ $withinDeadline ? '' : 'disabled' }}>Kirim</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                @else
+                                    <div class="text-sm text-gray-600">
+                                        Jadwal Technical Test belum ditentukan untuk posisi ini. Silahkan cek kembali secara berkala.
+                                    </div>
+                                @endif
+                            </div>
+                        @endif
+
+                        {{-- Aksi: Interview (jadwal per posisi - tampilan sama dengan Technical Test) --}}
+                        @if ($applicant->status === 'Interview' && $applicant->position)
+                            @php
+                                $iSch = ($applicant->position->interviewSchedules ?? collect())
+                                    ->sortByDesc('schedule_start')
+                                    ->first();
+
+                                $now = now();
+                                $start = $iSch?->schedule_start;
+                                $end = $iSch?->schedule_end;
+
+                                $earlyMinutes = 10;
+                                $canEarly = $start ? $now->gte($start->copy()->subMinutes($earlyMinutes)) : false;
+                                $inWindow = $start && $end ? $now->between($start, $end, true) : false;
+                                $canJoin = $iSch && $iSch->zoom_link ? $inWindow || $canEarly : false;
+                            @endphp
+
+                            <div class="mt-6 p-4 rounded-xl border border-indigo-200 bg-indigo-50">
+                                <h4 class="text-md font-semibold text-indigo-800 mb-3">Interview</h4>
+
+                                @if ($iSch)
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                                        <div>
+                                            <div class="text-gray-600">Jadwal</div>
+                                            <div class="font-medium text-gray-900">
+                                                {{ $start?->translatedFormat('l, d F Y, H:i') ?? '—' }}
+                                                —
+                                                {{ $end?->translatedFormat('H:i') ?? '—' }}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div class="text-gray-600">Meeting</div>
+                                            <div class="font-medium">
+                                                @if ($iSch->zoom_link)
+                                                    <a href="{{ $iSch->zoom_link }}" target="_blank" class="text-blue-600 hover:underline">
+                                                        Buka Link Zoom
+                                                    </a>
+                                                @else
+                                                    <span class="text-gray-500">Belum ada link</span>
+                                                @endif
+                                                @if ($iSch->zoom_id || $iSch->zoom_passcode)
+                                                    <div class="text-gray-500">ID: {{ $iSch->zoom_id ?? '—' }}</div>
+                                                    <div class="text-gray-500">Passcode: {{ $iSch->zoom_passcode ?? '—' }}</div>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    @if ($iSch->keterangan)
+                                        <div class="mt-4 text-sm text-gray-700">
+                                            <div class="font-semibold text-gray-800">Keterangan:</div>
+                                            <div class="whitespace-pre-line">{{ $iSch->keterangan }}</div>
+                                        </div>
+                                    @endif
+                                @else
+                                    <div class="text-sm text-gray-600">
+                                        Jadwal Interview belum ditentukan untuk posisi ini.
+                                    </div>
+                                @endif
+                            </div>
+                        @endif
+                    </div>
+                @empty
+                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                        <div class="p-6 text-gray-900 text-center">
+                            <p>Anda belum pernah melamar pekerjaan apapun.</p>
                         </div>
                     </div>
                     <div>
@@ -414,13 +538,33 @@
             </div>
         </div>
 
-        {{-- MODAL: Sukses Upload Jawaban (opsional: tampil via session) --}}
-        @if (session('success'))
+    {{-- MODAL: Konfirmasi Mulai Tes Tulis --}}
+    <div id="startTestModal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/50" data-close-start-modal></div>
+        <div class="relative mx-auto my-12 max-w-md bg-white rounded-2xl shadow-xl p-6">
+            <h3 class="text-lg font-semibold text-gray-800" id="startTestTitle">Mulai Tes?</h3>
+            <p class="text-sm text-gray-600 mt-2">
+                Anda hanya dapat mengerjakan tes ini <span class="font-semibold">SATU KALI</span>. Setelah dimulai,
+                waktu akan berjalan.
+            </p>
+            <div class="mt-6 flex justify-end gap-2">
+                <button type="button" class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50" data-close-start-modal>
+                    Batal
+                </button>
+                <button type="button" class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700" id="confirmStartBtn">
+                    Mulai
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {{-- MODAL: Sukses Upload Jawaban (otomatis tampil jika session('success')) --}}
+    @if (session('success'))
         <div id="successUploadModal" class="fixed inset-0 z-50">
             <div class="absolute inset-0 bg-black/50" data-close-success></div>
             <div class="relative mx-auto my-12 max-w-md bg-white rounded-2xl shadow-xl p-6">
                 <div class="flex items-start gap-3">
-                    <svg class="w-6 h-6 flex-shrink-0 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <svg class="w-6 h-6 flex-shrink-0 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
                     <div>
@@ -429,7 +573,9 @@
                     </div>
                 </div>
                 <div class="mt-6 text-right">
-                    <button type="button" class="px-4 h-10 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700" data-close-success>OK</button>
+                    <button type="button" class="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700" data-close-success>
+                        OK
+                    </button>
                 </div>
             </div>
         </div>
@@ -459,12 +605,64 @@
                 // fokus-in tombol konfirmasi
                 startConfirm?.focus();
 
-                // ESC close (auto lepas pas sekali dipakai)
-                const escHandler = (e) => {
-                    if (e.key === 'Escape') closeStart();
-                };
-                document.addEventListener('keydown', escHandler, {
-                    once: true
+            function closeModal() {
+                modal.classList.add('hidden');
+                document.body.classList.remove('overflow-hidden');
+                targetUrl = null;
+            }
+
+            document.querySelectorAll('.start-test-btn').forEach(btn => {
+                if (!btn.hasAttribute('disabled')) {
+                    btn.addEventListener('click', () => openModal(btn.dataset.url, btn.dataset.title));
+                }
+            });
+
+            confirmBtn.addEventListener('click', () => {
+                if (targetUrl) window.location.href = targetUrl;
+            });
+
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal || e.target.hasAttribute('data-close-start-modal')) {
+                    closeModal();
+                }
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (!modal.classList.contains('hidden') && e.key === 'Escape') {
+                    closeModal();
+                }
+            });
+        })();
+
+        // ===== Modal Upload Technical Test (generic handler)
+        (function() {
+            document.querySelectorAll('[data-open-upload]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    if (btn.hasAttribute('disabled')) return;
+                    const id = btn.getAttribute('data-open-upload');
+                    const modal = document.getElementById('uploadModal-' + id);
+                    if (!modal) return;
+
+                    modal.classList.remove('hidden');
+                    document.body.classList.add('overflow-hidden');
+
+                    // close via overlay or button with data-close-upload
+                    modal.addEventListener('click', (e) => {
+                        if (e.target === modal || e.target.matches(`[data-close-upload="${id}"]`)) {
+                            modal.classList.add('hidden');
+                            document.body.classList.remove('overflow-hidden');
+                        }
+                    });
+
+                    // close via ESC
+                    const escHandler = (e) => {
+                        if (!modal.classList.contains('hidden') && e.key === 'Escape') {
+                            modal.classList.add('hidden');
+                            document.body.classList.remove('overflow-hidden');
+                            document.removeEventListener('keydown', escHandler);
+                        }
+                    };
+                    document.addEventListener('keydown', escHandler);
                 });
 
                 // click overlay / tombol close (auto lepas)
@@ -550,6 +748,10 @@
                     openUpload(upBtn.getAttribute('data-open-upload'));
                 }
             });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') close();
+            }, { once: true });
         })();
     </script>
 </x-guest-layout>

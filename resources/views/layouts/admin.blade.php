@@ -199,8 +199,8 @@
                     @click="sidebarOpen = false" x-transition.opacity></div>
 
                 {{-- Page Content --}}
-                <main class="flex-1 p-8 md:p-8 max-w-7xl mx-auto">
-                    {{ $slot }}
+                <main class="flex-1 p-8 md:p-8 max-w-7xl mx-auto overflow-x-auto md:overflow-x-visible">
+                        {{ $slot }}
                 </main>
             </div>
         </div>
@@ -208,125 +208,242 @@
 
     {{-- Helpers untuk halaman seleksi --}}
     <script>
-        function seleksiPage() {
-            return {
-                emailModalOpen: false,
-                selectedEmails: [],
+    document.addEventListener('alpine:init', () => {
+    Alpine.data('stageSeleksi', () => ({
+        /* ================= STATE ================ */
+        // stage baca dari hidden input name="stage" (fallback: null)
+        stage: null,
 
-                init() {
-                    const selectAll = document.getElementById('selectAll');
-                    if (selectAll) {
-                        selectAll.addEventListener('change', (e) => {
-                            document.querySelectorAll('.applicant-checkbox')
-                                .forEach(cb => cb.checked = e.target.checked);
-                        });
-                    }
-                },
+        // Email modal
+        emailModalOpen: false,
+        useTemplate: true,
+        selectedEmails: [],
+        selectedMeta: [], // [{id,email,name,position}]
 
-                // Kirim status massal: 'lolos' atau 'tidak_lolos'
-                submitStatus(status, opts = {}) {
-                    const form = document.getElementById('statusForm');
+        // CV modal
+        cvModalOpen: false,
+        cvUrl: null,
+        cvName: '',
 
-                    // (Opsional) auto select semua baris yang tampak
-                    if (opts.autoSelectAll) {
-                        document.querySelectorAll('.applicant-checkbox').forEach(cb => cb.checked = true);
-                    }
+        // Edit modal
+        editModalOpen: false,
+        updateBase: '', // diisi dari #update_base => "admin/applicant/__ID__"
+        form: {
+        id: null,
+        name: '', email: '',
+        nik: '', no_telp: '',
+        tpt_lahir: '', tgl_lahir: '',
+        alamat: '',
+        pendidikan: 'S1',
+        universitas: '', jurusan: '',
+        thn_lulus: '',
+        position_id: '',
+        status: 'Seleksi Administrasi',
+        },
 
-                    const selected = Array.from(document.querySelectorAll('.applicant-checkbox:checked'));
-                    if (selected.length === 0) return this.swalError('Pilih minimal satu peserta.');
+        /* ================= INIT ================ */
+        init() {
+        // select all
+        const selectAll = document.getElementById('selectAll');
+        if (selectAll) {
+            selectAll.addEventListener('change', (e) => {
+            document.querySelectorAll('.applicant-checkbox').forEach(cb => cb.checked = e.target.checked);
+            });
+        }
+        // base URL edit
+        const ub = document.getElementById('update_base')?.value;
+        if (ub) this.updateBase = ub;
 
-                    const box = document.getElementById('statusInputs');
-                    box.innerHTML = '';
+        // stage untuk template
+        this.stage = document.querySelector('input[name="stage"]')?.value || this.stage;
+        },
 
-                    selected.forEach(cb => {
-                        const hidden = document.createElement('input');
-                        hidden.type = 'hidden';
-                        hidden.name = `status[${cb.value}]`; // id => 'lolos'|'tidak_lolos'
-                        hidden.value = status;
-                        box.appendChild(hidden);
-                    });
+        /* ============ MASS ACTION: LOLOS/GAGAL ============ */
+        submitStatus(action, opts = {}) {
+        const form = document.getElementById('statusForm');
+        if (!form) return this._err('Form status (#statusForm) tidak ditemukan.');
 
-                    form.submit();
-                },
+        if (opts.autoSelectAll) {
+            document.querySelectorAll('.applicant-checkbox').forEach(cb => cb.checked = true);
+        }
 
-                // Tombol Email: otomatis pilih semua yang _stage_state="lolos" di halaman saat ini
-                openEmailModalAuto() {
-                    const lolosCbs = Array.from(document.querySelectorAll('.applicant-checkbox[data-stage-state="lolos"]'));
-                    if (lolosCbs.length === 0) return this.swalError('Belum ada peserta berstatus LOLOS di tahap ini.');
+        const checked = Array.from(document.querySelectorAll('.applicant-checkbox:checked'));
+        if (checked.length === 0) return this._err('Pilih minimal satu peserta.');
 
-                    lolosCbs.forEach(cb => cb.checked = true);
+        const box = document.getElementById('statusInputs');
+        if (!box) return this._err('Container hidden input (#statusInputs) tidak ditemukan.');
+        box.innerHTML = '';
 
-                    const emails = lolosCbs.map(cb => cb.getAttribute('data-email')).filter(Boolean);
-                    this.selectedEmails = [...new Set(emails)];
+        // isi selected_applicants[] + status[id]
+        checked.forEach(cb => {
+            const sel = document.createElement('input');
+            sel.type = 'hidden';
+            sel.name = 'selected_applicants[]';
+            sel.value = cb.value;
+            box.appendChild(sel);
 
-                    const recipientsInput = document.getElementById('recipients');
-                    const idsInput = document.getElementById('recipient_ids');
+            const st = document.createElement('input');
+            st.type = 'hidden';
+            st.name = `status[${cb.value}]`;
+            st.value = (action === 'lolos') ? 'lolos' : 'tidak_lolos';
+            box.appendChild(st);
+        });
 
-                    if (recipientsInput) recipientsInput.value = this.selectedEmails.join(',');
-                    if (idsInput) idsInput.value = lolosCbs.map(cb => cb.value).join(',');
+        // pastikan ada 'stage'
+        if (!form.querySelector('input[name="stage"]')) {
+            const stageFromData = form.dataset?.stage;
+            if (!stageFromData) return this._err("Input 'stage' tidak ditemukan di form.");
+            const stageInput = document.createElement('input');
+            stageInput.type = 'hidden';
+            stageInput.name = 'stage';
+            stageInput.value = stageFromData;
+            box.appendChild(stageInput);
+        }
 
-                    this.emailModalOpen = true;
-                },
+        form.submit();
+        },
 
-                // (Jika mau tetap ada versi manual: pakai checkbox dulu, lalu buka modal)
-                openEmailModalManual() {
-                    const selectedCbs = Array.from(document.querySelectorAll('.applicant-checkbox:checked'));
-                    const emails = selectedCbs.map(cb => cb.getAttribute('data-email')).filter(Boolean);
-                    if (emails.length === 0) return this.swalError('Pilih minimal satu peserta.');
+        /* ================== EMAIL ================== */
+        // tombol "Email" serbaguna:
+        // - jika ada checkbox dicentang → pakai itu
+        // - kalau tidak ada → auto pilih yang data-stage-state="lolos"
+        openEmailModal() {
+        const selected = Array.from(document.querySelectorAll('.applicant-checkbox:checked'));
+        let nodes = selected.length
+            ? selected
+            : Array.from(document.querySelectorAll('.applicant-checkbox[data-stage-state="lolos"]'));
 
-                    this.selectedEmails = [...new Set(emails)];
-                    const recipients = document.getElementById('recipients');
-                    const idsInput = document.getElementById('recipient_ids');
-                    if (recipients) recipients.value = this.selectedEmails.join(',');
-                    if (idsInput) idsInput.value = selectedCbs.map(cb => cb.value).join(',');
+        if (!nodes.length) return this._err('Belum ada peserta dipilih / berstatus LOLOS di halaman ini.');
 
-                    this.emailModalOpen = true;
-                },
+        this.selectedEmails = [...new Set(nodes.map(cb => cb.dataset.email).filter(Boolean))];
+        this.selectedMeta = nodes.map(cb => ({
+            id: cb.value,
+            email: cb.dataset.email || '',
+            name: cb.dataset.name || 'Peserta',
+            position: cb.dataset.position || '-',
+        }));
 
-                closeEmailModal() {
-                    this.emailModalOpen = false;
-                },
+        // isi hidden input di modal
+        document.getElementById('recipients')?.setAttribute('value', this.selectedEmails.join(','));
+        document.getElementById('recipient_ids')?.setAttribute('value', nodes.map(cb => cb.value).join(','));
 
-                // Validasi modal email (PDF wajib, <=5MB, dan jika tidak pakai template maka subjek+pesan wajib)
-                validateAndSubmit(e) {
-                    e.preventDefault();
-                    const form = e.target;
+        // default: pakai template → preview untuk penerima pertama
+        const useTpl = document.getElementById('use_template');
+        if (useTpl) useTpl.checked = true;
+        this.useTemplate = true;
+        this._syncTemplateInputs(true);
 
-                    const file = form.querySelector('input[type="file"][name="attachment"]')?.files?.[0];
-                    if (!file) return this.swalError('Wajib unggah lampiran PDF.');
-                    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-                    if (!isPdf) return this.swalError('Lampiran harus berformat PDF.');
-                    if (file.size > 5 * 1024 * 1024) return this.swalError('Ukuran PDF maksimal 5 MB.');
+        this.emailModalOpen = true;
+        },
 
-                    const useTpl = form.querySelector('#use_template')?.checked ?? true;
-                    const subject = form.querySelector('[name="subject"]')?.value?.trim() ?? '';
-                    const message = form.querySelector('[name="message"]')?.value?.trim() ?? '';
-                    if (!useTpl && (!subject || !message)) {
-                        return this.swalError('Subjek dan pesan wajib diisi bila template dimatikan.');
-                    }
+        // versi eksplisit auto-lolos (opsional, kalau kamu pakai @click="openEmailModalAuto()")
+        openEmailModalAuto() {
+        document.querySelectorAll('.applicant-checkbox[data-stage-state="lolos"]').forEach(cb => cb.checked = true);
+        this.openEmailModal();
+        },
 
-                    form.submit();
-                },
+        // toggle dari checkbox "gunakan template"
+        toggleTemplate() {
+        const on = document.getElementById('use_template')?.checked ?? true;
+        this.useTemplate = !!on;
+        this._syncTemplateInputs(this.useTemplate);
+        },
+        // alias supaya kompatibel kalau markup lama memanggil toggleUseTemplate
+        toggleUseTemplate(ev) { this.toggleTemplate(ev); },
 
-                toggleManualRequired(ev) {
-                    const on = ev.target.checked; // true = pakai template
-                    const subject = document.querySelector('[name="subject"]');
-                    const message = document.querySelector('[name="message"]');
-                    if (subject) subject.required = !on;
-                    if (message) message.required = !on;
-                },
+        // isi subject/message (preview) + readonly saat pakai template
+        _syncTemplateInputs(useTpl) {
+        const subjectEl = document.querySelector('[name="subject"]');
+        const msgEl = document.querySelector('[name="message"]');
+        if (!subjectEl || !msgEl) return;
 
-                swalError(msg) {
-                    if (window.Swal) Swal.fire({
-                        icon: 'error',
-                        title: 'Validasi gagal',
-                        text: msg
-                    });
-                    else alert(msg);
-                }
+        if (useTpl) {
+            const first = this.selectedMeta?.[0] || {};
+            const tplSubject =
+            document.getElementById('tpl_subject')?.value
+            || `INFORMASI HASIL SELEKSI ${this.stage || ''} TAD/OUTSOURCING - PLN ICON PLUS`;
+
+            let tplMsg =
+            document.getElementById('tpl_message')?.value
+            || `Halo {NAMA_PESERTA}
+
+    Terima kasih atas partisipasi Saudara/i dalam mengikuti proses seleksi TAD/OUTSOURCING PLN ICON PLUS pada posisi {POSISI}.
+
+    Selamat Anda lolos pada tahap ${this.stage || ''}. Selanjutnya, silakan cek jadwal Anda untuk tahap berikutnya pada lampiran email ini.
+
+    Demikian kami sampaikan.
+    Terima kasih atas partisipasinya dan semoga sukses.`;
+
+            subjectEl.value = tplSubject;
+            msgEl.value = tplMsg
+            .replaceAll('{NAMA_PESERTA}', first.name || 'Peserta')
+            .replaceAll('{POSISI}', first.position || '-');
+
+            subjectEl.readOnly = true;
+            msgEl.readOnly = true;
+        } else {
+            subjectEl.readOnly = false;
+            msgEl.readOnly = false;
+        }
+        },
+
+        // validasi kirim email
+        validateAndSubmit(e) {
+        const form = e.target;
+        const file = form.querySelector('input[type="file"][name="attachment"]')?.files?.[0];
+
+        if (!file) { e.preventDefault(); return this._err('Wajib unggah lampiran PDF.'); }
+        const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+        if (!isPdf) { e.preventDefault(); return this._err('Lampiran harus PDF.'); }
+        if (file.size > 5 * 1024 * 1024) { e.preventDefault(); return this._err('Ukuran PDF maksimal 5 MB.'); }
+
+        const useTpl = document.getElementById('use_template')?.checked ?? true;
+        if (!useTpl) {
+            const subject = (form.querySelector('[name="subject"]')?.value || '').trim();
+            const message = (form.querySelector('[name="message"]')?.value || '').trim();
+            if (!subject || !message) {
+            e.preventDefault();
+            return this._err('Subjek dan pesan wajib diisi bila template dimatikan.');
             }
         }
+        // submit lanjut
+        },
+
+        /* ================== CV MODAL ================== */
+        openCvModal(url, name) {
+        if (!url) return this._err('CV tidak tersedia.');
+        this.cvUrl = url;
+        this.cvName = name || 'CV';
+        this.cvModalOpen = true;
+        },
+        closeCvModal() {
+        this.cvModalOpen = false;
+        this.cvUrl = null;
+        this.cvName = '';
+        },
+
+        /* ================== EDIT MODAL ================== */
+        openEditModal(data) {
+        this.form = Object.assign({}, this.form, data || {});
+        this.editModalOpen = true;
+        },
+        closeEditModal() { this.editModalOpen = false; },
+        updateUrl() {
+        const base = this.updateBase || '/admin/applicant/__ID__';
+        return base.replace('__ID__', this.form?.id ?? '');
+        },
+
+        /* ================== HELPERS ================== */
+        _err(msg) {
+        if (window.Swal) Swal.fire({ icon: 'error', title: 'Oops', text: msg });
+        else alert(msg);
+        },
+        _alertErr(msg) { this._err(msg); }, // alias kompatibilitas
+    }));
+    });
     </script>
+
+
 
     <footer class="bg-gray-900 text-gray-200 py-10 px-8">
         <div class="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-4">
