@@ -7,30 +7,79 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    {{-- Fonts --}}
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <title>{{ config('app.name', 'ReQuiz') }}</title>
+
+    {{-- Fonts (pilih salah satu, contoh pakai Bunny.net Figtree) --}}
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Gabarito:wght@400..900&display=swap" rel="stylesheet">
 
     {{-- Vite --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-    {{-- Trix (jika dipakai) --}}
+    {{-- Bootstrap & Icons --}}
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-4Q6Gf2aSP4eDXB8Miphtr37CMZZQ5oXLH2yaXMJ2w8e2ZtHTl7GptT4jmndRuHDT" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+
+    {{-- Trix --}}
     <link rel="stylesheet" href="https://unpkg.com/trix@2.0.8/dist/trix.css">
     <script src="https://unpkg.com/trix@2.0.8/dist/trix.umd.min.js" defer></script>
 
-    {{-- AlpineJS (cukup SEKALI) --}}
+    {{-- AlpineJS (cukup sekali) --}}
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
     {{-- ApexCharts (opsional) --}}
     <script defer src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
+    {{-- Styles khusus halaman tertentu --}}
+    @stack('styles')
+
     <style>
         [x-cloak] {
             display: none !important
         }
+
+        /* Style tambahan untuk tab dan chart dummy */
+        input[name="summary-tab"]:checked+label {
+            background-color: #0d6efd;
+            color: white;
+        }
+
+        #tab-chart:checked~.card-body #summary-chart,
+        #tab-text:checked~.card-body #summary-text {
+            display: block;
+        }
+
+        #summary-chart,
+        #summary-text {
+            display: none;
+        }
+
+        .tab-label {
+            cursor: pointer;
+            margin-right: 5px;
+        }
+
+        .dummy-chart {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(to right, #0d6efd 40%, #dee2e6 40%);
+            position: relative;
+        }
+
+        .dummy-chart::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 60%;
+            height: 100%;
+            width: 20%;
+            background: #0d6efd;
+        }
     </style>
 </head>
+
 
 <body class="font-sans antialiased bg-white" x-data="{ sidebarOpen: false }">
     <div class="min-h-screen bg-gray-100">
@@ -183,13 +232,15 @@
 
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
-                        <button class="mt-6 w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
+                        <button class="mt-6 w-full bg-blue-600 text-white py-2 rounded-full hover:bg-blue-700">
                             <div class="flex items-center justify-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                    stroke-width="1.5" stroke="currentColor" class="size-5 me-2">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="M8.25 9V5.25A2.25 2.25 0 0 1 10.5 3h6A2.25 2.25 0 0 1 18.75 5.25v13.5A2.25 2.25 0 0 1 16.5 21h-6A2.25 2.25 0 0 1 8.25 18.75V15M5.25 12H3l3-3m0 0 3 3" />
+                                <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M14.75 8H10.75C9.64543 8 8.75 8.89543 8.75 10V22C8.75 23.1046 9.64543 24 10.75 24H14.75" stroke="white" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <circle opacity="0.2" cx="13.6406" cy="16.4446" r="4" fill="#C2C7D5"/>
+                                    <path d="M11.75 16H22.75" stroke="white" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M18.75 12L22.75 16L18.75 20" stroke="white" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
                                 </svg>
+
                                 Logout
                             </div>
                         </button>
@@ -199,11 +250,20 @@
                 {{-- Overlay mobile --}}
                 <div class="fixed inset-0 bg-black bg-opacity-0 z-20 lg:hidden" x-show="sidebarOpen"
                     @click="sidebarOpen = false" x-transition.opacity></div>
-
-                {{-- Page Content --}}
-                <main class="flex-1 p-8 md:p-8 max-w-7xl mx-auto overflow-x-auto md:overflow-x-visible">
-                        {{ $slot }}
-                </main>
+                <div class="min-h-screen w-full bg-gray-100">
+                    @if (isset($header))
+                        <header class="bg-white shadow">
+                            <div class="max-w-7xl mx-auto py-3 px-4 sm:px-6 lg:px-8">
+                                {{ $header }}
+                            </div>
+                        </header>
+                    @endif
+                        
+                    {{-- Page Content --}}
+                    <main class="flex-1 p-8 md:p-8 max-w-7xl mx-auto overflow-x-auto md:overflow-x-visible">
+                            {{ $slot }}
+                    </main>
+                </div>
             </div>
         </div>
     </div>
