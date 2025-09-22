@@ -20,7 +20,8 @@ abstract class BaseStageController extends Controller
     {
         // default: resources/views/admin/applicant/seleksi/{slug}/index.blade.php
         $slug = Str::slug($this->stage);            // seleksi-administrasi, tes-tulis, ...
-        $slug = str_replace('seleksi-', '', $slug); // administrasi, tes-tulis, ...
+        $slug = str_replace('seleksi-', '', $slug);
+         $slug = str_replace('-', '_', $slug);  // administrasi, tes-tulis, ...
         return "admin.applicant.seleksi.{$slug}.index";
     }
 
