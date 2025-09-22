@@ -1,5 +1,5 @@
 {{-- resources/views/admin/batch/show.blade.php --}}
-<x-app-layout>
+<x-app-admin>
     <x-slot name="header">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div>
@@ -123,4 +123,4 @@
             @endif
         });
     </script>
-</x-app-layout>
+</x-app-admin>
