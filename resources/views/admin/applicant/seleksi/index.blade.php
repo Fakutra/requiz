@@ -72,11 +72,6 @@
                 <span class="text-green-600">Jumlah Peserta Lolos: {{ $row['lolos'] }}</span>
               </td>
 
-              {{-- Aksi (kanan) --}}
-              <td class="px-6 py-4 w-[16%] text-right">
-                @if($rn)
-                  <a href="{{ route($rn, ['batch' => $currentBatchId]) }}"
-                    class="inline-flex items-center gap-2 rounded bg-blue-800 text-white px-4 py-1.5 hover:bg-blue-700 transition">          
               {{-- Jumlah Gagal --}}
               <td class="px-6 py-4 w-[12%]">
                 <span class="text-red-600">Jumlah Peserta Gagal: {{ $row['gagal'] }}</span>
