@@ -56,4 +56,3 @@ class TestSection extends Model
         ];
     }
 }
-

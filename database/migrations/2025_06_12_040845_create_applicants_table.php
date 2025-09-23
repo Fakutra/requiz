@@ -38,7 +38,7 @@ return new class extends Migration
                 'Tidak Lolos Seleksi Administrasi',
                 'Tidak Lolos Tes Tulis',
                 'Tidak Lolos Technical Test',
-                'Tidak Lolos Interview',
+                'Tidak Lolos interview',
                 'Menerima Offering',
                 'Menolak Offering',
             ])->default('Seleksi Administrasi');
