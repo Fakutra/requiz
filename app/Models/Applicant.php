@@ -2,29 +2,127 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 use Carbon\Carbon;
 
 class Applicant extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
-        'name','email','nik','no_telp','tpt_lahir','tgl_lahir','alamat',
-        'pendidikan','universitas','jurusan','thn_lulus','status',
-        'cv_document','position_id','batch_id',
+        'user_id',
+        'batch_id',
+        'position_id',
+        'name',
+        'email',
+        'nik',
+        'no_telp',
+        'tpt_lahir',
+        'tgl_lahir',
+        'alamat',
+        'pendidikan',
+        'universitas',
+        'jurusan',
+        'thn_lulus',
+        'skills',
+        'cv_document',
+        'status',
     ];
 
-    protected $dates = ['tgl_lahir'];
+    // Biar tgl_lahir otomatis jadi Carbon instance
+    protected $casts = [
+        'tgl_lahir' => 'date',
+    ];
+
+    /* ================== Relationships ================== */
 
     public function position()
     {
         return $this->belongsTo(Position::class);
     }
 
-    // dipakai di view -> {{ $applicant->age }}
+    public function batch()
+    {
+        return $this->belongsTo(Batch::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class); // jika pelamar login
+    }
+
+    public function testResults()
+    {
+        return $this->hasMany(TestResult::class);
+    }
+
+    public function emailLogs()
+    {
+        return $this->hasMany(\App\Models\EmailLog::class);
+    }
+
+    /* ================== Accessors ================== */
+
+    // {{ $applicant->age }}
     public function getAgeAttribute(): ?int
     {
-        if (!$this->tgl_lahir) return null;
-        return Carbon::parse($this->tgl_lahir)->age;
+        if (empty($this->tgl_lahir)) return null;
+        try {
+            return ($this->tgl_lahir instanceof Carbon ? $this->tgl_lahir : Carbon::parse($this->tgl_lahir))->age;
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
+
+    // {{ $applicant->current_stage }}
+    public function getCurrentStageAttribute(): string
+    {
+        $status = (string) ($this->status ?? '');
+        $statusLower = mb_strtolower($status);
+
+        if (str_contains($statusLower, 'administrasi')) return 'Seleksi Administrasi';
+        if (str_contains($statusLower, 'tes tulis'))     return 'Seleksi Tes Tulis';
+        if (str_contains($statusLower, 'technical test'))return 'Technical Test';
+        if (str_contains($statusLower, 'interview'))     return 'Interview';
+        if (str_contains($statusLower, 'offering'))      return 'Offering';
+
+        return $status !== '' ? $status : 'Tahap Tidak Dikenal';
+    }
+
+    /* ================== Query Scopes ================== */
+
+    // scopeSearch: aman untuk MySQL & Postgres
+    public function scopeSearch($query, ?string $term)
+    {
+        $term = trim((string) $term);
+        if ($term === '') return $query;
+
+        $needle = '%'.mb_strtolower($term).'%';
+
+        return $query->where(function ($w) use ($needle) {
+            $w->whereRaw('LOWER(name) LIKE ?', [$needle])
+              ->orWhereRaw('LOWER(email) LIKE ?', [$needle])
+              ->orWhereRaw('LOWER(jurusan) LIKE ?', [$needle])
+              ->orWhereHas('position', fn($p) =>
+                  $p->whereRaw('LOWER(name) LIKE ?', [$needle])
+              );
+        });
+    }
+
+    public function scopeOfPosition($query, $positionId)
+    {
+        if (empty($positionId)) return $query;
+        return $query->where('position_id', $positionId);
+    }
+
+    public function scopeOfBatch($query, $batchId)
+    {
+        if (empty($batchId)) return $query;
+        return $query->where('batch_id', $batchId);
+    }
+
+    // app/Models/Applicant.php
+    public function selectionLogs() { return $this->hasMany(SelectionLog::class); }
+
 }
