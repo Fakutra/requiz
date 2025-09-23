@@ -289,7 +289,7 @@
     {{-- Helpers untuk halaman seleksi --}}
     <script>
     document.addEventListener('alpine:init', () => {
-    Alpine.data('stageSeleksi', () => ({
+    Alpine.data('stageSeleksiGlobal', () => ({
         /* ================= STATE ================ */
         // stage baca dari hidden input name="stage" (fallback: null)
         stage: null,
@@ -558,6 +558,7 @@
         integrity="sha384-j1CDi7MgGQ12Z7Qab0qlWQ/Qqz24Gc6BM0thvEMVjHnfYGF0rmFCozFSxQBxwHKO" crossorigin="anonymous">
     </script>
     <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    @stack('scripts')
 </body>
 
 </html>

@@ -20,7 +20,7 @@
     </div>
   @endif
 
-  <div x-data="stageSeleksi()" x-init="init()" x-cloak>
+  <div x-data="stageTesTulis()" x-init="init()" x-cloak>
     <div class="bg-white shadow-zinc-400/50 rounded-lg p-6">
       {{-- ================== Filter + Aksi ================== --}}
       <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-4">
@@ -244,7 +244,7 @@
 
   @push('scripts')
     <script>
-      function stageSeleksi() {
+      function stageTesTulis() {
         return {
           stage: @json($stage),
 
@@ -280,7 +280,14 @@
             });
 
             // isi hidden action permanen -> in:lolos,gagal,reset
-            if (this.$refs.actionInput) this.$refs.actionInput.value = type;
+            let actionInput = this.$refs?.actionInput || form.querySelector('input[name="action"]');
+            if (!actionInput) {
+              actionInput = document.createElement('input');
+              actionInput.type = 'hidden';
+              actionInput.name = 'action';
+              form.appendChild(actionInput);
+            }
+            actionInput.value = type; // 'lolos' / 'gagal' / 'reset'
 
             form.submit();
           },
