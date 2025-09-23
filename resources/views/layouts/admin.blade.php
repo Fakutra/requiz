@@ -108,7 +108,8 @@
                     x-data="{
                         userOpen: {{ request()->is('admin/applicant*') || request()->is('admin') || request()->is('selection') ? 'true' : 'false' }},
                         jobOpen: {{ request()->is('admin/batch') ? 'true' : 'false' }},
-                        quizOpen: {{ request()->is('quiz') ? 'true' : 'false' }}
+                        quizOpen: {{ request()->is('quiz') ? 'true' : 'false' }},
+                        scheduleOpen: {{ request()->is('tech-answers*') || request()->is('interview-schedule*') ? 'true' : 'false' }}
                     }">
                     <div class="flex items-center justify-between mb-8">
                         <div class="flex gap-3">
@@ -210,7 +211,7 @@
                                 </svg>
                             </button>
                             <div x-show="quizOpen" x-transition class="mt-4 ml-10 space-y-4 text-sm text-gray-600">
-                                <a href="#"
+                                <a href="{{ route('test.index') }}"
                                     class="block hover:text-blue-600 no-underline {{ request()->is('admin/quiz') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">Quiz</a>
                                 <a href="{{ route('question.index') }}"
                                     class="block hover:text-blue-600 no-underline {{ request()->is('admin/question') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">Question</a>
@@ -219,15 +220,32 @@
                             </div>
                         </div>
 
-                        <a href="#"
-                            class="flex items-center no-underline {{ request()->is('admin/report') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-3 px-3' : 'text-gray-600' }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke-width="1.5" stroke="currentColor" class="size-6 me-4">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5A3.375 3.375 0 0 0 10.125 2.25H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625A1.125 1.125 0 0 0 4.5 3.375v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
-                            </svg>
-                            Mengelola Report
-                        </a>
+                        {{-- Schedule --}}
+                        <div class="py-1">
+                            <button @click="scheduleOpen = !scheduleOpen"
+                                class="flex items-center w-full text-gray-700 hover:text-blue-600 focus:outline-none">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke-width="1.5" stroke="currentColor" class="size-6 me-4">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M6.75 3v2.25M17.25 3v2.25M3 8.25h18M4.5 21h15a1.5 1.5 0 001.5-1.5V7.5a1.5 1.5 0 00-1.5-1.5h-15A1.5 1.5 0 003 7.5v12a1.5 1.5 0 001.5 1.5z" />
+                                </svg>
+                                Schedule
+                                <svg class="w-4 h-4 ml-auto transform" :class="{ 'rotate-180': scheduleOpen }"
+                                    fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                            <div x-show="scheduleOpen" x-transition class="mt-4 ml-10 space-y-4 text-sm text-gray-600">
+                                <a href="{{ route('tech-answers.index') }}"
+                                    class="block hover:text-blue-600 no-underline {{ request()->is('tech-answers*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                                    Technical Test
+                                </a>
+                                <a href="{{ route('interview-schedule.index') }}"
+                                    class="block hover:text-blue-600 no-underline {{ request()->is('interview-schedule*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                                    Interview
+                                </a>
+                            </div>
+                        </div>
                     </nav>
 
                     <form method="POST" action="{{ route('logout') }}">

@@ -1,5 +1,5 @@
 {{-- resources/views/admin/quiz-results/index.blade.php --}}
-<x-app-layout>
+<x-app-admin>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
             Hasil Quiz
@@ -71,4 +71,4 @@
             </div>
         </div>
     </div>
-</x-app-layout>
+</x-app-admin>
