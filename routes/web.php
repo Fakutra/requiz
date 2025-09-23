@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
 
 // ====== Front / User area ======
 use App\Http\Controllers\QuizController;
@@ -26,6 +27,8 @@ use App\Http\Controllers\AdminPanel\InterviewScheduleController;
 
 // ====== Seleksi (baru, dipisah per tahap) ======
 use App\Http\Controllers\AdminPanel\Selection\RekapController;
+use App\Http\Controllers\AdminPanel\Selection\ProcessController;
+use App\Http\Controllers\AdminPanel\Selection\StageActionController;
 use App\Http\Controllers\AdminPanel\Selection\AdministrasiController;
 use App\Http\Controllers\AdminPanel\Selection\TesTulisController;
 use App\Http\Controllers\AdminPanel\Selection\TechnicalTestController;
@@ -101,20 +104,34 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 
     // -------- SELEKSI (rekap + per tahap + aksi) ----------
     Route::prefix('admin/applicant/seleksi')->name('admin.applicant.seleksi.')->group(function () {
-        // Rekap per-batch (angka lolos/gagal per tahap)
+
+        // REKAP
         Route::get('/', [RekapController::class, 'index'])->name('index');
 
-        // Halaman per tahap
-        Route::get('/administrasi',   [AdministrasiController::class,  'index'])->name('administrasi');
-        Route::get('/tes-tulis',      [TesTulisController::class,      'index'])->name('tes_tulis');
-        Route::get('/technical-test', [TechnicalTestController::class, 'index'])->name('technical_test');
-        Route::get('/interview',      [InterviewController::class,     'index'])->name('interview');
-        Route::get('/offering',       [OfferingController::class,      'index'])->name('offering');
+        // PROSES per tahap — sekarang kirim view path eksplisit supaya kita bisa
+        // letakkan views tiap tahap di folder terpisah
+        Route::get('/administrasi', function (Request $r, ProcessController $c) {
+            return $c->index($r, 'Seleksi Administrasi', 'admin.applicant.seleksi.administrasi.index');
+        })->name('administrasi');
 
-        // Aksi umum (dipakai semua tahap) — nama route dipertahankan
-        // Route::post('/update-status', [ActionsController::class, 'updateStatus'])->name('update-status');
-        // Route::post('/send-email',    [ActionsController::class, 'sendEmail'])->name('sendEmail');
-        // ^^^ sengaja pakai name 'sendEmail' seperti lama supaya JS/Blade kamu tidak perlu diubah
+        Route::get('/tes-tulis', function (Request $r, ProcessController $c) {
+            return $c->index($r, 'Tes Tulis', 'admin.applicant.seleksi.tes-tulis.index');
+        })->name('tes_tulis');
+
+        Route::get('/technical-test', function (Request $r, ProcessController $c) {
+            return $c->index($r, 'Technical Test', 'admin.applicant.seleksi.technical-test.index');
+        })->name('technical_test');
+
+        Route::get('/interview', function (Request $r, ProcessController $c) {
+            return $c->index($r, 'Interview', 'admin.applicant.seleksi.interview.index');
+        })->name('interview');
+
+        Route::get('/offering', function (Request $r, ProcessController $c) {
+            return $c->index($r, 'Offering', 'admin.applicant.seleksi.offering.index');
+        })->name('offering');
+
+        // AKSI: Lolos/Gagal (generik)
+        Route::post('/mark', [StageActionController::class, 'mark'])->name('mark');
     });
     Route::post('admin/applicant/seleksi/update-status', [ActionsController::class, 'updateStatus'])
     ->name('admin.applicant.seleksi.updateStatus');
