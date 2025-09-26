@@ -35,6 +35,7 @@ use App\Http\Controllers\AdminPanel\Selection\TechnicalTestController;
 use App\Http\Controllers\AdminPanel\Selection\InterviewController;
 use App\Http\Controllers\AdminPanel\Selection\OfferingController;
 use App\Http\Controllers\AdminPanel\Selection\ActionsController;
+use App\Http\Controllers\AdminPanel\Selection\AdministrasiEmailController;
 
 // ================= PUBLIC =================
 Route::get('/', fn () => view('welcome'))->name('welcome');
@@ -108,12 +109,15 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         // REKAP
         Route::get('/', [RekapController::class, 'index'])->name('index');
 
-        // PROSES per tahap — sekarang kirim view path eksplisit supaya kita bisa
-        // letakkan views tiap tahap di folder terpisah
-        Route::get('/administrasi', function (Request $r, ProcessController $c) {
-            return $c->index($r, 'Seleksi Administrasi', 'admin.applicant.seleksi.administrasi.index');
-        })->name('administrasi');
+        // ADMINISTRASI (pakai controller khusus)
+        Route::prefix('administrasi')->name('administrasi.')->group(function () {
+            Route::get('/', [AdministrasiController::class, 'index'])->name('index');
+            Route::post('/bulk-mark', [AdministrasiController::class, 'bulkMark'])->name('bulkMark');
+            Route::get('/export', [AdministrasiController::class, 'export'])->name('export');
+            Route::post('/send-email', [AdministrasiEmailController::class, 'send'])->name('sendEmail');
+        });
 
+        // Tahap lain masih pakai ProcessController
         Route::get('/tes-tulis', function (Request $r, ProcessController $c) {
             return $c->index($r, 'Tes Tulis', 'admin.applicant.seleksi.tes-tulis.index');
         })->name('tes_tulis');
@@ -133,6 +137,8 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         // AKSI: Lolos/Gagal (generik)
         Route::post('/mark', [StageActionController::class, 'mark'])->name('mark');
     });
+
+
     Route::post('admin/applicant/seleksi/update-status', [ActionsController::class, 'updateStatus'])
     ->name('admin.applicant.seleksi.updateStatus');
     Route::post('admin/applicant/seleksi/send-email', [ActionsController::class, 'sendEmail'])

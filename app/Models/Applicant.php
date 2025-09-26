@@ -61,6 +61,11 @@ class Applicant extends Model
     {
         return $this->hasMany(\App\Models\EmailLog::class);
     }
+    
+    public function latestEmailLog()
+    {
+        return $this->hasOne(\App\Models\EmailLog::class)->latestOfMany();
+    }
 
     /* ================== Accessors ================== */
 

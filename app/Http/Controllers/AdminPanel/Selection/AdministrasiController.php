@@ -1,7 +1,106 @@
 <?php
+
 namespace App\Http\Controllers\AdminPanel\Selection;
 
-class AdministrasiController extends BaseStageController
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use App\Models\Applicant;
+use App\Models\Batch;
+use App\Models\Position;
+use App\Services\SelectionLogger;
+use Illuminate\Support\Facades\Auth;
+use App\Exports\AdministrasiApplicantsExport;
+use Maatwebsite\Excel\Facades\Excel;
+
+class AdministrasiController extends Controller
 {
     protected string $stage = 'Seleksi Administrasi';
+
+    /**
+     * Halaman daftar peserta tahap Administrasi
+     */
+    public function index(Request $request)
+    {
+        $batchId    = $request->query('batch');
+        $positionId = $request->query('position');
+        $search     = trim((string) $request->query('search'));
+
+        $batches   = Batch::orderBy('id')->get();
+        $positions = $batchId ? Position::where('batch_id', $batchId)->get() : collect();
+
+        $q = Applicant::with(['position', 'batch', 'latestEmailLog'])
+            ->where('batch_id', $batchId)
+            ->whereIn('status', [
+                'Seleksi Administrasi',
+                'Tes Tulis',
+                'Tidak Lolos Seleksi Administrasi',
+            ]);
+
+        if ($positionId) {
+            $q->where('position_id', $positionId);
+        }
+
+        if ($search !== '') {
+            $needle = "%".mb_strtolower($search)."%";
+            $q->where(function ($w) use ($needle) {
+                $w->whereRaw('LOWER(name) LIKE ?', [$needle])
+                  ->orWhereRaw('LOWER(email) LIKE ?', [$needle])
+                  ->orWhereRaw('LOWER(jurusan) LIKE ?', [$needle]);
+            });
+        }
+
+        $applicants = $q->orderBy('name')
+            ->paginate(20)
+            ->appends($request->query());
+
+        return view('admin.applicant.seleksi.administrasi.index', compact(
+            'batches', 'positions', 'batchId', 'positionId', 'applicants'
+        ));
+    }
+
+    /**
+     * Bulk update hasil seleksi (lolos / gagal)
+     */
+    public function bulkMark(Request $r)
+    {
+        $data = $r->validate([
+            'ids'   => 'required|array',
+            'ids.*' => 'exists:applicants,id',
+            'bulk_action' => 'required|in:lolos,tidak_lolos',
+        ]);
+
+        foreach ($data['ids'] as $id) {
+            $a = Applicant::find($id);
+            SelectionLogger::write($a, $this->stage, $data['bulk_action'], Auth::id());
+            $a->forceFill(['status' => $this->newStatus($data['bulk_action'], $a->status)])->save();
+        }
+
+        return back()->with('success', count($data['ids']).' peserta diperbarui.');
+    }
+
+    /**
+     * Tentukan status baru applicant berdasarkan hasil
+     */
+    private function newStatus(string $result, string $current): string
+    {
+        if ($result === 'lolos') {
+            return 'Tes Tulis';
+        }
+        return 'Tidak Lolos Seleksi Administrasi';
+    }
+
+    /**
+     * Export Excel khusus tahap Administrasi
+     */
+    public function export(Request $r)
+    {
+        return Excel::download(
+            new AdministrasiApplicantsExport(
+                $r->query('batch'),
+                $r->query('position'),
+                $r->query('search'),
+            ),
+            'seleksi-administrasi.xlsx'
+        );
+    }
 }

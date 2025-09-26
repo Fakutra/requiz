@@ -1,60 +1,409 @@
-{{-- resources/views/admin/applicant/seleksi/administrasi/index.blade.php --}}
 <x-app-admin>
-  <div class="flex items-center justify-between mb-4">
-    <h2 class="text-lg font-semibold">Seleksi Administrasi</h2>
-    @if($batchId)
-      <a href="{{ route('admin.applicant.seleksi.index', ['batch'=>$batchId]) }}" class="text-sm text-blue-600">← Kembali ke Rekap</a>
-    @endif
+  <div class="bg-white rounded-lg shadow-sm p-4 mb-5">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-lg font-semibold">Seleksi Administrasi</h2>
+    </div>
+
+    {{-- Toolbar --}}
+    <div class="flex justify-between mb-3">
+      <form method="GET" class="flex gap-2 flex-1">
+        <input type="hidden" name="batch" value="{{ $batchId }}">
+        <input type="hidden" name="position" value="{{ $positionId }}">
+        <input type="text" name="search" value="{{ request('search') }}"
+               placeholder="Cari nama/email/jurusan..."
+               class="border rounded px-3 py-2 flex-1 text-sm">
+      </form>
+
+      <div class="flex gap-2">
+        {{-- Filter --}}
+        <button type="button"
+                onclick="document.getElementById('filterModal').classList.remove('hidden')"
+                class="px-3 py-2 border rounded bg-gray-600 text-white flex items-center justify-center"
+                title="Filter">
+          <i class="fas fa-filter"></i>
+        </button>
+
+        {{-- Email --}}
+        <button type="button"
+                onclick="document.getElementById('emailModal').classList.remove('hidden')"
+                class="px-3 py-2 border rounded bg-yellow-500 hover:bg-yellow-600 text-white flex items-center justify-center"
+                title="Kirim Email">
+          <i class="fas fa-envelope"></i>
+        </button>
+
+        {{-- Export --}}
+        <a href="{{ route('admin.applicant.seleksi.administrasi.export', request()->query()) }}"
+           class="px-3 py-2 border rounded bg-green-600 text-white flex items-center justify-center"
+           title="Export">
+          <i class="fas fa-file-export"></i>
+        </a>
+
+        {{-- Lolos --}}
+        <button type="submit" form="bulkActionForm" name="bulk_action" value="lolos"
+                class="px-3 py-2 rounded bg-blue-600 text-white">
+          Lolos
+        </button>
+
+        {{-- Gagal --}}
+        <button type="submit" form="bulkActionForm" name="bulk_action" value="tidak_lolos"
+                class="px-3 py-2 rounded bg-red-600 text-white">
+          Gagal
+        </button>
+      </div>
+    </div>
+
+    {{-- Table --}}
+    <form id="bulkActionForm" method="POST" action="{{ route('admin.applicant.seleksi.administrasi.bulkMark') }}">
+      @csrf
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm border">
+          <thead class="bg-gray-100">
+            <tr>
+              <th class="px-3 py-2"><input type="checkbox" id="checkAll"></th>
+              <th class="px-3 py-2 text-left">Nama Peserta</th>
+              <th class="px-3 py-2 text-left">Email</th>
+              <th class="px-3 py-2 text-left">Jurusan</th>
+              <th class="px-3 py-2 text-left">Posisi</th>
+              <th class="px-3 py-2 text-left">Umur</th>
+              <th class="px-3 py-2 text-left">Status</th>
+              <th class="px-3 py-2 text-left">Email</th>
+              <th class="px-3 py-2 text-left">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            @forelse($applicants as $a)
+              <tr>
+                <td class="px-3 py-2"><input type="checkbox" name="ids[]" value="{{ $a->id }}"></td>
+                <td class="px-3 py-2">{{ $a->name }}</td>
+                <td class="px-3 py-2">{{ $a->email }}</td>
+                <td class="px-3 py-2">{{ $a->jurusan }}</td>
+                <td class="px-3 py-2">{{ $a->position->name ?? '-' }}</td>
+                <td class="px-3 py-2">{{ $a->age ?? '-' }}</td>
+                <td class="px-3 py-2">
+                  @php
+                      $displayStatus = $a->status;
+                      if ($a->status === 'Tes Tulis') {
+                          $displayStatus = 'Lolos Seleksi Administrasi';
+                      }
+
+                      $isLolos = \Illuminate\Support\Str::startsWith($displayStatus, 'Lolos');
+                      $isTidak = \Illuminate\Support\Str::startsWith($displayStatus, 'Tidak Lolos');
+
+                      $badgeClass = $isLolos
+                          ? 'bg-green-100 text-green-700'
+                          : ($isTidak ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700');
+                  @endphp
+
+                  <span class="px-2 py-1 text-xs rounded {{ $badgeClass }}">
+                    {{ $displayStatus }}
+                  </span>
+                </td>
+
+                {{-- Email Status --}}
+                <td class="px-3 py-2 text-center">
+                  @php
+                    $log = $a->latestEmailLog;
+                    if ($log && $log->stage !== 'Seleksi Administrasi') {
+                        $log = null;
+                    }
+                  @endphp
+                  @if($log)
+                    @if($log->success)
+                      <i class="fas fa-check-circle text-green-500" title="Terkirim"></i>
+                    @else
+                      <i class="fas fa-times-circle text-red-500" title="Gagal: {{ $log->error }}"></i>
+                    @endif
+                  @else
+                    <i class="fas fa-minus-circle text-gray-400" title="Belum dikirim"></i>
+                  @endif
+                </td>
+                {{-- ✅ Action --}}
+                <td class="px-3 py-2 text-center">
+                  <i class="fas fa-eye text-blue-600 cursor-pointer hover:text-blue-800"
+                    title="Lihat Detail"
+                    onclick="document.getElementById('detailModal-{{ $a->id }}').classList.remove('hidden')"></i>
+                </td>
+              </tr>
+            @empty
+              <tr>
+                <td colspan="8" class="text-center text-gray-500 py-5">Tidak ada data</td>
+              </tr>
+            @endforelse
+          </tbody>
+        </table>
+      </div>
+    </form>
+
+    <div class="mt-3">{{ $applicants->links() }}</div>
   </div>
 
-  <form method="GET" class="mb-4 flex items-center gap-2">
-    <input type="hidden" name="batch" value="{{ $batchId }}">
-    <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama/email/jurusan"
-           class="border rounded px-3 py-1">
-    <button class="px-3 py-1 border rounded">Filter</button>
-  </form>
+  {{-- ✅ Modal Detail per applicant --}}
+  @foreach($applicants as $a)
+  <div id="detailModal-{{ $a->id }}" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div class="bg-white rounded-xl shadow-lg w-full max-w-4xl p-6 overflow-y-auto max-h-[90vh]">
+      
+      {{-- Header --}}
+      <div class="flex justify-between items-center border-b pb-3 mb-4">
+        <h3 class="text-xl font-semibold text-gray-800">Detail Applicant</h3>
+        <button type="button"
+                onclick="document.getElementById('detailModal-{{ $a->id }}').classList.add('hidden')"
+                class="text-gray-500 hover:text-gray-700 text-2xl leading-none">&times;</button>
+      </div>
 
-  <div class="bg-white border rounded">
-    <table class="min-w-full text-sm">
-      <thead class="bg-gray-50">
-        <tr>
-          <th class="px-4 py-2 text-left">Nama</th>
-          <th class="px-4 py-2 text-left">Email</th>
-          <th class="px-4 py-2 text-left">Jurusan</th>
-          <th class="px-4 py-2 text-left">Status</th>
-          <th class="px-4 py-2 text-right">Aksi</th>
-        </tr>
-      </thead>
-      <tbody class="divide-y">
-        @forelse($applicants as $a)
-          <tr>
-            <td class="px-4 py-2">{{ $a->name }}</td>
-            <td class="px-4 py-2">{{ $a->email }}</td>
-            <td class="px-4 py-2">{{ $a->jurusan }}</td>
-            <td class="px-4 py-2">
-              <span class="px-2 py-0.5 border rounded text-xs">{{ $a->status }}</span>
-            </td>
-            <td class="px-4 py-2 text-right">
-              <form method="POST" action="{{ route('admin.applicant.seleksi.mark') }}" class="inline">
-                @csrf
-                <input type="hidden" name="applicant_id" value="{{ $a->id }}">
-                <input type="hidden" name="stage" value="Seleksi Administrasi">
-                <input type="hidden" name="update_status" value="auto">
-                @if($batchId)
-                  <input type="hidden" name="_redirect" value="{{ request()->fullUrl() }}">
-                @endif
+      {{-- Content --}}
+      <div class="grid grid-cols-2 gap-x-6 gap-y-4 text-sm">
+        <div>
+          <p class="text-gray-500 font-medium">Nama</p>
+          <p class="text-gray-900">{{ $a->name }}</p>
+        </div>
+        <div>
+          <p class="text-gray-500 font-medium">Email</p>
+          <p class="text-gray-900">{{ $a->email }}</p>
+        </div>
 
-                <button name="result" value="lolos" class="px-3 py-1 rounded bg-green-600 text-white">Lolos</button>
-                <button name="result" value="tidak_lolos" class="px-3 py-1 rounded bg-red-600 text-white ml-1">Gagal</button>
-              </form>
-            </td>
-          </tr>
-        @empty
-          <tr><td colspan="5" class="px-4 py-6 text-center text-gray-500">Tidak ada data.</td></tr>
-        @endforelse
-      </tbody>
-    </table>
+        <div>
+          <p class="text-gray-500 font-medium">NIK</p>
+          <p class="text-gray-900">{{ $a->nik }}</p>
+        </div>
+        <div>
+          <p class="text-gray-500 font-medium">No. Telepon</p>
+          <p class="text-gray-900">{{ $a->no_telp }}</p>
+        </div>
+
+        <div>
+          <p class="text-gray-500 font-medium">Tempat Lahir</p>
+          <p class="text-gray-900">{{ $a->tpt_lahir }}</p>
+        </div>
+        <div>
+          <p class="text-gray-500 font-medium">Tanggal Lahir</p>
+          <p class="text-gray-900">{{ \Carbon\Carbon::parse($a->tgl_lahir)->format('d-m-Y') }}</p>
+        </div>
+
+        <div class="col-span-2">
+          <p class="text-gray-500 font-medium">Alamat</p>
+          <p class="text-gray-900">{{ $a->alamat }}</p>
+        </div>
+
+        <div>
+          <p class="text-gray-500 font-medium">Pendidikan</p>
+          <p class="text-gray-900">{{ $a->pendidikan }}</p>
+        </div>
+        <div>
+          <p class="text-gray-500 font-medium">Tahun Lulus</p>
+          <p class="text-gray-900">{{ $a->thn_lulus ?? '-' }}</p>
+        </div>
+
+        <div>
+          <p class="text-gray-500 font-medium">Universitas</p>
+          <p class="text-gray-900">{{ $a->universitas }}</p>
+        </div>
+        <div>
+          <p class="text-gray-500 font-medium">Jurusan</p>
+          <p class="text-gray-900">{{ $a->jurusan }}</p>
+        </div>
+
+        <div class="col-span-2">
+          <p class="text-gray-500 font-medium">Skills</p>
+          <p class="text-gray-900">{{ $a->skills ?? '-' }}</p>
+        </div>
+
+        <div>
+          <p class="text-gray-500 font-medium">Batch</p>
+          <p class="text-gray-900">{{ $a->batch->name ?? $a->batch_id }}</p>
+        </div>
+        <div>
+          <p class="text-gray-500 font-medium">Posisi</p>
+          <p class="text-gray-900">{{ $a->position->name ?? $a->position_id }}</p>
+        </div>
+
+        <div>
+          <p class="text-gray-500 font-medium">Status Seleksi</p>
+          @php
+            $statusColor = str_contains($a->status, 'Tidak') ? 'bg-red-100 text-red-700' 
+                          : (str_contains($a->status, 'Lolos') || $a->status === 'Menerima Offering' ? 'bg-green-100 text-green-700' 
+                          : 'bg-yellow-100 text-yellow-700');
+          @endphp
+          <span class="px-2 py-1 rounded text-xs font-semibold {{ $statusColor }}">
+            {{ $a->status }}
+          </span>
+        </div>
+        <div>
+          <p class="text-gray-500 font-medium">CV</p>
+          @if($a->cv_document)
+            <a href="{{ asset('storage/'.$a->cv_document) }}" target="_blank"
+              class="text-blue-600 hover:underline">
+              Lihat CV
+            </a>
+          @else
+            <span class="text-gray-400">Belum upload</span>
+          @endif
+        </div>
+      </div>
+
+      {{-- Footer --}}
+      <div class="mt-6 text-right">
+        <button type="button"
+                onclick="document.getElementById('detailModal-{{ $a->id }}').classList.add('hidden')"
+                class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+          Tutup
+        </button>
+      </div>
+    </div>
+  </div>
+  @endforeach
+
+
+
+  {{-- Modal Email --}}
+  <div id="emailModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div class="bg-white rounded-lg shadow-lg w-full max-w-2xl p-5">
+      <div class="flex justify-between items-center border-b pb-2 mb-4">
+        <h3 class="text-lg font-semibold">Kirim Email Peserta Seleksi Administrasi</h3>
+        <button type="button" onclick="document.getElementById('emailModal').classList.add('hidden')"
+                class="text-gray-500 hover:text-gray-700">&times;</button>
+      </div>
+
+      {{-- Tabs --}}
+      <div class="border-b mb-4 flex">
+        <button type="button" data-tab="tabLolos"
+                class="tab-btn px-4 py-2 border-b-2 border-blue-600 text-blue-600">Lolos</button>
+        <button type="button" data-tab="tabTidakLolos"
+                class="tab-btn px-4 py-2 border-b-2 border-transparent">Tidak Lolos</button>
+      </div>
+
+      {{-- Tab Lolos --}}
+      <div id="tabLolos" class="tab-content">
+        <form method="POST" action="{{ route('admin.applicant.seleksi.administrasi.sendEmail') }}" enctype="multipart/form-data">
+          @csrf
+          <input type="hidden" name="type" value="lolos">
+          <input type="hidden" name="batch" value="{{ $batchId }}">
+          <input type="hidden" name="position" value="{{ $positionId }}">
+
+          <div class="mb-3 flex items-center gap-2">
+            <input type="checkbox" id="useTemplateLolos" class="rounded">
+            <label for="useTemplateLolos" class="text-sm font-medium">Gunakan template</label>
+          </div>
+
+          <div class="mb-3">
+            <label class="block text-sm font-medium">Subjek</label>
+            <input type="text" name="subject" id="subjectLolos" class="border rounded w-full px-2 py-1" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="block text-sm font-medium">Isi Email</label>
+            <input id="messageLolos" type="hidden" name="message">
+            <trix-editor input="messageLolos" class="trix-content border rounded w-full"></trix-editor>
+          </div>
+
+          <div class="mb-3">
+            <label class="block text-sm font-medium">Lampiran</label>
+            <input type="file" name="attachments[]" multiple>
+          </div>
+
+          <div class="flex justify-end gap-2">
+            <button type="button" onclick="document.getElementById('emailModal').classList.add('hidden')"
+                    class="px-3 py-1 border rounded">Batal</button>
+            <button type="submit" class="px-3 py-1 rounded bg-blue-600 text-white">Kirim</button>
+          </div>
+        </form>
+      </div>
+
+      {{-- Tab Tidak Lolos --}}
+      <div id="tabTidakLolos" class="tab-content hidden">
+        <form method="POST" action="{{ route('admin.applicant.seleksi.administrasi.sendEmail') }}" enctype="multipart/form-data">
+          @csrf
+          <input type="hidden" name="type" value="tidak_lolos">
+          <input type="hidden" name="batch" value="{{ $batchId }}">
+          <input type="hidden" name="position" value="{{ $positionId }}">
+
+          <div class="mb-3 flex items-center gap-2">
+            <input type="checkbox" id="useTemplateTidakLolos" class="rounded">
+            <label for="useTemplateTidakLolos" class="text-sm font-medium">Gunakan template</label>
+          </div>
+
+          <div class="mb-3">
+            <label class="block text-sm font-medium">Subjek</label>
+            <input type="text" name="subject" id="subjectTidakLolos" class="border rounded w-full px-2 py-1" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="block text-sm font-medium">Isi Email</label>
+            <input id="messageTidakLolos" type="hidden" name="message">
+            <trix-editor input="messageTidakLolos" class="trix-content border rounded w-full"></trix-editor>
+          </div>
+
+          <div class="mb-3">
+            <label class="block text-sm font-medium">Lampiran</label>
+            <input type="file" name="attachments[]" multiple>
+          </div>
+
+          <div class="flex justify-end gap-2">
+            <button type="button" onclick="document.getElementById('emailModal').classList.add('hidden')"
+                    class="px-3 py-1 border rounded">Batal</button>
+            <button type="submit" class="px-3 py-1 rounded bg-blue-600 text-white">Kirim</button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 
-  <div class="mt-3">{{ $applicants->links() }}</div>
+  {{-- Scripts --}}
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/trix/2.0.8/trix.umd.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/trix/2.0.8/trix.min.css"/>
+
+  <script>
+    // Template Lolos
+    document.getElementById('useTemplateLolos').addEventListener('change', function() {
+      if (this.checked) {
+        document.getElementById('subjectLolos').value = "INFORMASI HASIL SELEKSI TAD/OUTSOURCING - PLN ICON PLUS";
+        document.querySelector("trix-editor[input=messageLolos]").editor.loadHTML(
+          `Selamat! Anda dinyatakan <strong>LOLOS</strong> pada tahap 'Seleksi Administrasi' TAD/OUTSOURCING PLN ICON PLUS.<br><br>
+          Untuk tahap selanjutnya, mohon untuk mempersiapkan diri mengikuti Tes Tulis.<br>
+          Jadwal dan detail pelaksanaan Tes Tulis akan disampaikan pada laman Proses Seleksi.<br>
+          Silahkan dilakukan pengecekan secara berkala pada laman Proses Seleksi.<br><br>
+          Demikian Kami sampaikan,<br>
+          Terima kasih atas partisipasinya dan semoga sukses.`
+        );
+      } else {
+        document.getElementById('subjectLolos').value = "";
+        document.querySelector("trix-editor[input=messageLolos]").editor.loadHTML("");
+      }
+    });
+
+    // Template Tidak Lolos
+    document.getElementById('useTemplateTidakLolos').addEventListener('change', function() {
+      if (this.checked) {
+        document.getElementById('subjectTidakLolos').value = "INFORMASI HASIL SELEKSI TAD/OUTSOURCING - PLN ICON PLUS";
+        document.querySelector("trix-editor[input=messageTidakLolos]").editor.loadHTML(
+          `Mohon maaf, Anda dinyatakan <strong>TIDAK LOLOS</strong> pada tahap 'Seleksi Administrasi' TAD/OUTSOURCING PLN ICON PLUS.<br><br>
+          Kami berterima kasih atas partisipasi Anda dalam proses seleksi ini.<br>
+          Semoga sukses di kesempatan berikutnya.<br><br>
+          Hormat kami,<br>
+          Recruitment Team`
+        );
+      } else {
+        document.getElementById('subjectTidakLolos').value = "";
+        document.querySelector("trix-editor[input=messageTidakLolos]").editor.loadHTML("");
+      }
+    });
+
+    // Check All
+    document.getElementById('checkAll').addEventListener('change', function(e){
+      document.querySelectorAll('input[name="ids[]"]').forEach(cb => cb.checked = e.target.checked);
+    });
+
+    // Tab switcher
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('border-blue-600','text-blue-600'));
+        this.classList.add('border-blue-600','text-blue-600');
+        const target = this.dataset.tab;
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+        document.getElementById(target).classList.remove('hidden');
+      });
+    });
+  </script>
+
+  {{-- Font Awesome --}}
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </x-app-admin>
