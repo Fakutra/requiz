@@ -150,7 +150,7 @@
                                     <path stroke-linecap="round" stroke-linejoin="round"
                                         d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z M4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
                                 </svg>
-                                Mengelola User
+                                User
                                 <svg class="w-4 h-4 ml-auto transform" :class="{ 'rotate-180': userOpen }"
                                     fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
@@ -165,10 +165,6 @@
                                     class="block hover:text-blue-600 no-underline {{ request()->is('admin/applicant/seleksi') || request()->is('admin/applicant/seleksi/*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
                                     Selection
                                 </a>
-                                <a href="#"
-                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/admin') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
-                                    Admin List
-                                </a>
                             </div>
                         </div>
 
@@ -181,7 +177,7 @@
                                     <path d="M8 16h12V6H8zm0 2q-.825 0-1.412-.587T6 16V4q0-.825.588-1.412T8 2h12q.825 0 1.413.588T22 4v12q0 .825-.587 1.413T20 18zm-4 4q-.825 0-1.412-.587T2 20V6h2v14h14v2zM8 4v12z"/>
                                 </svg>
 
-                                Mengelola Batch
+                                Jobs
                                 <svg class="w-4 h-4 ml-auto transform" :class="{ 'rotate-180': jobOpen }" fill="none"
                                     stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
@@ -204,7 +200,7 @@
                                     <path stroke-linecap="round" stroke-linejoin="round"
                                         d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                                 </svg>
-                                Mengelola Kuis
+                                Quiz
                                 <svg class="w-4 h-4 ml-auto transform" :class="{ 'rotate-180': quizOpen }"
                                     fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
@@ -236,7 +232,7 @@
                                 </svg>
                             </button>
                             <div x-show="scheduleOpen" x-transition class="mt-4 ml-10 space-y-4 text-sm text-gray-600">
-                                <a href="{{ route('tech-answers.index') }}"
+                                <a href="{{ route('tech-schedule.index') }}"
                                     class="block hover:text-blue-600 no-underline {{ request()->is('tech-answers*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
                                     Technical Test
                                 </a>

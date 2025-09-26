@@ -1,7 +1,7 @@
 {{-- resources/views/admin/applicant/seleksi/index.blade.php --}}
 <x-app-admin>
   {{-- Header bar ala figma --}}
-  <div class="bg-white rounded-lg shadow-sm border p-4 mb-5">
+  <div class="bg-white rounded-lg shadow-sm border p-4">
     <div class="grid grid-cols-3 items-center">
       {{-- Kiri: BATCH + dropdown kecil --}}
       <div class="flex items-center gap-2">
@@ -83,12 +83,12 @@
 
               {{-- Jumlah Lolos (tengah kiri) --}}
               <td class="px-6 py-4 w-[28%]">
-                <span class="text-green-600">Jumlah Peserta Lolos: {{ $lolos }}</span>
+                <span class="text-green-600">Peserta Lolos: {{ $lolos }}</span>
               </td>
 
               {{-- Jumlah Gagal (tengah kanan) --}}
               <td class="px-6 py-4 w-[28%]">
-                <span class="text-red-600">Jumlah Peserta Gagal: {{ $gagal }}</span>
+                <span class="text-red-600">Peserta Gagal: {{ $gagal }}</span>
               </td>
 
               {{-- Aksi (kanan) --}}

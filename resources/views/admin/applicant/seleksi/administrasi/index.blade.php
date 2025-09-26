@@ -8,58 +8,60 @@
     <div class="bg-white shadow-zinc-400/50 rounded-lg p-6">
       {{-- ================== Filter (GET) + Aksi ================== --}}
       <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-4">
-        <form method="GET" action="{{ url()->current() }}" class="flex flex-wrap items-end gap-2">
-          <input type="hidden" name="batch" value="{{ request('batch') }}">
+        <div class="overflow-x-auto">
+          <form method="GET" action="{{ url()->current() }}" class="flex flex-wrap items-end gap-2 flex-1 min-w-0">
+            <input type="hidden" name="batch" value="{{ request('batch') }}">
 
-          <div>
-            <label class="block text-xs text-gray-500 mb-1">Cari</label>
-            <input type="text" name="search" value="{{ request('search') }}"
-                   class="border rounded px-3 py-2 w-60" placeholder="Search...">
-          </div>
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">Cari</label>
+              <input type="text" name="search" value="{{ request('search') }}"
+                    class="border rounded px-3 py-2 w-60" placeholder="Search...">
+            </div>
 
-          <div>
-            <label class="block text-xs text-gray-500 mb-1">Jurusan</label>
-            <select name="jurusan" class="border rounded px-3 py-2 w-56">
-              <option value="">Semua Jurusan</option>
-              @foreach ($allJurusan as $jurusan)
-                <option value="{{ $jurusan }}" {{ request('jurusan') == $jurusan ? 'selected' : '' }}>
-                  {{ $jurusan }}
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">Jurusan</label>
+              <select name="jurusan" class="border rounded px-3 py-2 w-56">
+                <option value="">Semua Jurusan</option>
+                @foreach ($allJurusan as $jurusan)
+                  <option value="{{ $jurusan }}" {{ request('jurusan') == $jurusan ? 'selected' : '' }}>
+                    {{ $jurusan }}
+                  </option>
+                @endforeach
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">Status (tahap ini)</label>
+              <select name="status" class="border rounded px-3 py-2 w-56">
+                <option value="">Semua Status</option>
+                <option value="{{ $stage }}" {{ request('status') == $stage ? 'selected' : '' }}>
+                  {{ $stage }} (sedang tahap ini)
                 </option>
-              @endforeach
-            </select>
-          </div>
+                <option value="__NEXT__" {{ request('status') == '__NEXT__' ? 'selected' : '' }}>
+                  Lolos {{ $stage }}{{ isset($nextStage) ? ' → '.$nextStage : '' }}
+                </option>
+                <option value="__FAILED__" {{ request('status') == '__FAILED__' ? 'selected' : '' }}>
+                  Tidak Lolos {{ $stage }}{{ isset($failEnum) ? ' ('.$failEnum.')' : '' }}
+                </option>
+              </select>
+            </div>
 
-          <div>
-            <label class="block text-xs text-gray-500 mb-1">Status (tahap ini)</label>
-            <select name="status" class="border rounded px-3 py-2 w-56">
-              <option value="">Semua Status</option>
-              <option value="{{ $stage }}" {{ request('status') == $stage ? 'selected' : '' }}>
-                {{ $stage }} (sedang tahap ini)
-              </option>
-              <option value="__NEXT__" {{ request('status') == '__NEXT__' ? 'selected' : '' }}>
-                Lolos {{ $stage }}{{ isset($nextStage) ? ' → '.$nextStage : '' }}
-              </option>
-              <option value="__FAILED__" {{ request('status') == '__FAILED__' ? 'selected' : '' }}>
-                Tidak Lolos {{ $stage }}{{ isset($failEnum) ? ' ('.$failEnum.')' : '' }}
-              </option>
-            </select>
-          </div>
+            <div>
+              <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                Filter
+              </button>
+            </div>
+          </form>
 
-          <div>
-            <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-              Filter
-            </button>
-          </div>
-        </form>
-
-        <div class="flex items-center gap-2">
-          <button type="button" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-                  @click="submitStatus('lolos')">Lolos</button>
-          <button type="button" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
-                  @click="submitStatus('gagal')">Gagal</button>
-          <button type="button"
-                  class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded"
-                  @click="openEmailModal()">Email</button>
+          <div class="flex items-center gap-2">
+            <button type="button" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+                    @click="submitStatus('lolos')">Lolos</button>
+            <button type="button" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+                    @click="submitStatus('gagal')">Gagal</button>
+            <button type="button"
+                    class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded"
+                    @click="openEmailModal()">Email</button>
+          </div>          
         </div>
       </div>
 
