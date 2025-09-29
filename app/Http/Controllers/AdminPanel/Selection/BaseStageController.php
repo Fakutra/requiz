@@ -49,41 +49,44 @@ abstract class BaseStageController extends Controller
 
         $q = Applicant::with('position');
 
-        // Filter batch (posisi punya batch_id, sesuaikan bila batch_id di applicants)
+        // ===== Filter batch =====
+        // NOTE: Di tempat lain (RekapController) kamu pakai applicants.batch_id.
+        // Jika itu yang resmi, lebih konsisten pakai where('batch_id', $batchId) di sini juga.
         if ($batchId) {
-            $q->whereHas('position', function ($w) use ($batchId) {
-                $w->where('batch_id', $batchId);
-            });
+            $q->where('batch_id', $batchId);
+            // Jika datamu nyambung via position.batch_id, ganti ke whereHas seperti ini:
+            // $q->whereHas('position', fn($w) => $w->where('batch_id', $batchId));
         }
 
-        // Filter status
+        // ===== Filter status =====
         if ($request->filled('status')) {
             $st = $request->status;
             if ($st === '__NEXT__') {
-                $q->where(fn($w) => $w->where('status', $nextStage)->orWhere('status', 'Lolos '.$this->stage));
+                $q->where('status', $nextStage);
             } elseif ($st === '__FAILED__') {
-                $q->where(fn($w) => $w->where('status', $failEnum)->orWhere('status', 'Tidak Lolos '.$this->stage));
+                $q->where('status', $failEnum);
             } else {
                 $q->where('status', $st);
             }
         } else {
+            // Tampilkan kandidat yang berada di stage saat ini, next stage, atau gagal di stage ini
             $q->where(function ($w) use ($nextStage, $failEnum) {
                 $w->where('status', $this->stage)
                   ->orWhere('status', $nextStage)
-                  ->orWhere('status', $failEnum)
-                  ->orWhere('status', 'Lolos '.$this->stage)
-                  ->orWhere('status', 'Tidak Lolos '.$this->stage);
+                  ->orWhere('status', $failEnum);
             });
         }
 
-        // Search
+        // ===== Search (portable MySQL/Postgres) =====
         if ($s = trim((string) $request->input('search'))) {
+            $s = mb_strtolower($s);
             $q->where(function ($x) use ($s) {
-                $x->where('name', 'ilike', "%{$s}%")
-                  ->orWhere('email', 'ilike', "%{$s}%")
-                  ->orWhere('jurusan', 'ilike', "%{$s}%");
+                $x->whereRaw('LOWER(name) LIKE ?', ["%{$s}%"])
+                  ->orWhereRaw('LOWER(email) LIKE ?', ["%{$s}%"])
+                  ->orWhereRaw('LOWER(jurusan) LIKE ?', ["%{$s}%"]);
             });
         }
+
         if ($request->filled('position')) $q->where('position_id', $request->position);
         if ($request->filled('jurusan'))  $q->where('jurusan',      $request->jurusan);
 
@@ -95,7 +98,7 @@ abstract class BaseStageController extends Controller
         // Hook koleksi (mis. tempel skor)
         $this->augmentAfterPaginate($applicants);
 
-        // Badge tampilan
+        // Badge tampilan (pakai enum yang konsisten)
         $collection = $applicants->getCollection();
         $collection->transform(function ($a) use ($nextStage, $failEnum) {
             $a->_stage_state  = 'other';
@@ -121,13 +124,15 @@ abstract class BaseStageController extends Controller
                 $a->_stage_state  = 'current';
                 $a->_stage_status = $this->stage;
                 $a->_stage_badge  = 'bg-gray-100 text-gray-800 border border-gray-200';
-            } elseif ($a->status === $failEnum || $a->status === 'Tidak Lolos '.$this->stage) {
+            } elseif ($a->status === $failEnum) {
                 $a->_stage_state  = 'gagal';
                 $a->_stage_status = $a->status;
                 $a->_stage_badge  = 'bg-red-50 text-red-700 border border-red-200';
-            } elseif ($a->status === $nextStage || $a->status === 'Lolos '.$this->stage) {
+            } elseif ($a->status === $nextStage || $this->isAcceptedForStage($a->status)) {
+                // Jika kamu ingin menandai "lolos" (meski enum tidak menyimpan "Lolos ..."),
+                // kita anggap "sudah masuk next stage" == lolos stage ini.
                 $a->_stage_state  = 'lolos';
-                $a->_stage_status = 'Lolos '.$this->stage;
+                $a->_stage_status = 'Lolos ' . $this->stage;
                 $a->_stage_badge  = 'bg-green-50 text-green-700 border border-green-200';
             }
             return $a;
@@ -172,15 +177,35 @@ abstract class BaseStageController extends Controller
         };
     }
 
+    /**
+     * Disamakan 100% dengan enum di schema applicants.status
+     */
     protected function failEnumFor(string $stage): string
     {
         return match ($stage) {
             'Seleksi Administrasi' => 'Tidak Lolos Seleksi Administrasi',
-            'Tes Tulis'            => 'Tidak Lolos Seleksi Tes Tulis',
+            'Tes Tulis'            => 'Tidak Lolos Tes Tulis',
             'Technical Test'       => 'Tidak Lolos Technical Test',
-            'Interview'            => 'Tidak Lolos interview',
+            'Interview'            => 'Tidak Lolos Interview',
             'Offering'             => 'Menolak Offering',
             default                => $stage,
         };
+    }
+
+    /**
+     * Penanda "diterima di stage ini" (tidak ada enum 'Lolos <Stage>' di DB-mu,
+     * maka kita anggap status next stage = accepted)
+     */
+    protected function isAcceptedForStage(string $status): bool
+    {
+        $mapNext = [
+            'Seleksi Administrasi' => 'Tes Tulis',
+            'Tes Tulis'            => 'Technical Test',
+            'Technical Test'       => 'Interview',
+            'Interview'            => 'Offering',
+            'Offering'             => 'Menerima Offering', // khusus offering
+        ];
+        $expected = $mapNext[$this->stage] ?? null;
+        return $expected ? ($status === $expected) : false;
     }
 }

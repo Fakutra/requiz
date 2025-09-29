@@ -36,13 +36,13 @@ return [
     'mailers' => [
         'smtp' => [
             'transport'  => 'smtp',
-            'host'       => env('MAIL_HOST', 'smtp-relay.brevo.com'),
-            'port'       => env('MAIL_PORT', 2525),          // 2525
-            'encryption' => env('MAIL_ENCRYPTION', 'tls'),   // tls
+            'host'       => env('MAIL_HOST', 'smtp.gmail.com'),
+            'port'       => env('MAIL_PORT', 465),
+            'encryption' => env('MAIL_ENCRYPTION', 'ssl'),
             'username'   => env('MAIL_USERNAME'),
             'password'   => env('MAIL_PASSWORD'),
-            'auth_mode'  => 'login',                         // <- tambahkan ini
             'timeout'    => 30,
+            // 'auth_mode'  => null, // atau hapus saja baris ini
         ],
 
         'ses' => [
