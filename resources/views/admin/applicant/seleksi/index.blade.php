@@ -19,7 +19,7 @@
       </div>
 
       <div class="text-center">
-        <h2 class="text-sm md:text-base font-semibold text-gray-700">REKAP SELEKSI</h2>
+        <h2 class="text-sm md:text-base font-semibold text-gray-700">UPDATE SELEKSI TAD</h2>
       </div>
 
       <div class="text-right text-sm text-gray-700">
@@ -55,33 +55,33 @@
           @forelse ($rekap as $row)
             <tr class="hover:bg-gray-50">
               {{-- Tahap --}}
-              <td class="px-6 py-4 w-[28%] text-gray-700">{{ $row['label'] }}</td>
+              <td class="px-6 py-4 w-auto text-gray-700">{{ $row['label'] }}</td>
 
               {{-- Jumlah Peserta: expected + processed --}}
-              <td class="px-6 py-4 w-[28%]">
-                <div class="text-slate-700">
+              <td class="px-6 py-4 w-auto">
+                <div class="text-slate-700 text-[#0026E5]">
                   Jumlah Peserta : <strong>{{ $row['participants_expected'] }}</strong>
                 </div>
-                <div class="text-xs text-slate-400 mt-1">
+                <div class="text-xs text-slate-400 mt-1 text-[#0090E5]">
                   Processed: <strong>{{ $row['participants_processed'] }}</strong>
                 </div>
               </td>
 
               {{-- Jumlah Lolos --}}
-              <td class="px-6 py-4 w-[22%]">
-                <span class="text-green-600">Jumlah Peserta Lolos: {{ $row['lolos'] }}</span>
+              <td class="px-6 py-4 w-auto">
+                <span class="text-[#01D93B]">Peserta Lolos: {{ $row['lolos'] }}</span>
               </td>
 
               {{-- Jumlah Gagal --}}
-              <td class="px-6 py-4 w-[12%]">
-                <span class="text-red-600">Jumlah Peserta Gagal: {{ $row['gagal'] }}</span>
+              <td class="px-6 py-4 w-auto">
+                <span class="text-red-600">Peserta Gagal: {{ $row['gagal'] }}</span>
               </td>
 
               {{-- Aksi --}}
-              <td class="px-6 py-4 w-[10%] text-right">
+              <td class="px-6 py-4 w-auto text-right">
                 @if(!empty($row['route_name']))
                   <a href="{{ route($row['route_name'], ['batch' => $currentBatchId]) }}"
-                    class="inline-flex items-center gap-2 rounded bg-blue-700 text-white px-4 py-1.5 hover:bg-blue-800 transition">
+                    class="inline-flex items-center gap-2 rounded bg-[#0008A9] text-white px-4 py-1.5 hover:bg-blue-700 transition">
                     Proses
                   </a>
                 @else

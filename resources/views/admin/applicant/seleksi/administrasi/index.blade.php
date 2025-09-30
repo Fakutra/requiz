@@ -6,12 +6,10 @@
 
     {{-- Toolbar --}}
     <div class="flex justify-between mb-3">
-      <form method="GET" class="flex gap-2 flex-1">
-        <input type="hidden" name="batch" value="{{ $batchId }}">
-        <input type="hidden" name="position" value="{{ $positionId }}">
+      <form method="GET" action="{{ route('admin.applicant.seleksi.administrasi.index') }}" class="flex gap-2 flex-1">
         <input type="text" name="search" value="{{ request('search') }}"
-               placeholder="Cari nama/email/jurusan..."
-               class="border rounded px-3 py-2 flex-1 text-sm">
+              placeholder="Cari nama/email/jurusan..."
+              class="border rounded px-3 py-2 flex-1 text-sm">
       </form>
 
       <div class="flex gap-2">
@@ -253,6 +251,66 @@
   @endforeach
 
 
+  {{-- Modal Filter --}}
+  <div id="filterModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
+      <div class="flex justify-between items-center border-b pb-2 mb-4">
+        <h3 class="text-lg font-semibold">Filter Data</h3>
+        <button type="button"
+                onclick="document.getElementById('filterModal').classList.add('hidden')"
+                class="text-gray-500 hover:text-gray-700 text-2xl leading-none">&times;
+        </button>
+      </div>
+
+      <form method="GET" action="{{  route('admin.applicant.seleksi.administrasi.index')  }}" class="space-y-4">
+        {{-- Batch --}}
+        <div>
+          <label class="block text-sm font-medium">Batch</label>
+          <select name="batch" class="w-full border rounded px-3 py-2 text-sm">
+            <option value="">Semua Batch</option>
+            @foreach($batches as $b)
+              <option value="{{ $b->id }}" @selected(request('batch')==$b->id)>
+                {{ $b->name ?? $b->id }}
+              </option>
+            @endforeach
+          </select>
+        </div>
+
+        {{-- Posisi --}}
+        <div>
+          <label class="block text-sm font-medium">Posisi</label>
+          <select name="position" class="w-full border rounded px-3 py-2 text-sm">
+            <option value="">Semua Posisi</option>
+            @foreach($positions as $p)
+              <option value="{{ $p->id }}" @selected(request('position')==$p->id)>
+                {{ $p->name }}
+              </option>
+            @endforeach
+          </select>
+        </div>
+                    {{-- Jurusan --}}
+        <div>
+          <label class="block text-sm font-medium">Jurusan</label>
+          <select name="jurusan" class="w-full border rounded px-3 py-2 text-sm">
+            <option value="">Semua Jurusan</option>
+            @foreach($allJurusan as $j)
+              <option value="{{ $j }}" @selected(request('jurusan') == $j)>
+                {{ $j }}
+              </option>
+            @endforeach
+          </select>
+        </div>
+
+        <div class="flex justify-end gap-2">
+          <button type="button"
+                  onclick="document.getElementById('filterModal').classList.add('hidden')"
+                  class="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300">Batal</button>
+          <button type="submit"
+                  class="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white">Terapkan</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   {{-- Modal Email --}}
   <div id="emailModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
