@@ -10,37 +10,47 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Throwable;
 
-class AdministrasiEmailController extends Controller
+class TesTulisEmailController extends Controller
 {
-    protected string $stage = 'Seleksi Administrasi';
+    protected string $stage = 'Tes Tulis';
 
     public function send(Request $request)
     {
         $data = $request->validate([
-            'batch'       => 'nullable|exists:batches,id',
-            'position'    => 'nullable|exists:positions,id',
-            'type'        => 'required|in:lolos,tidak_lolos,selected',
-            'ids'         => 'nullable|string', // untuk selected
-            'subject'     => 'required|string',
-            'message'     => 'required|string', // CKEditor / Trix output (HTML)
-            'attachments' => 'nullable|array',
-            'attachments.*' => 'file|max:5120', // maksimal 5 MB
+            'batch'         => 'required|exists:batches,id',
+            'position'      => 'nullable|exists:positions,id',
+            'type'          => 'required|in:lolos,tidak_lolos,selected',
+            'subject'       => 'required|string',
+            'message'       => 'required|string',
+            'attachments'   => 'nullable|array',
+            'attachments.*' => 'file|max:5120',
+            'ids'           => 'nullable|string', // khusus selected
         ]);
 
-        // Tentukan target applicants
+        // 🔹 Tentukan target applicants
         if ($data['type'] === 'selected') {
-            $ids = array_filter(explode(',', $data['ids'] ?? ''));
+            // ✅ Safety check kalau tidak ada ids
+            if (empty($data['ids'])) {
+                return back()->with('error', 'Silakan pilih peserta terlebih dahulu.');
+            }
+
+            $ids = array_filter(explode(',', $data['ids']));
+            if (empty($ids)) {
+                return back()->with('error', 'Silakan pilih peserta terlebih dahulu.');
+            }
+
             $applicants = Applicant::whereIn('id', $ids)->get();
         } else {
             $query = Applicant::where('batch_id', $data['batch']);
+
             if ($data['position']) {
                 $query->where('position_id', $data['position']);
             }
 
             if ($data['type'] === 'lolos') {
-                $query->where('status', 'Tes Tulis'); // dianggap Lolos Administrasi
+                $query->where('status', 'Technical Test');
             } else {
-                $query->where('status', 'Tidak Lolos Seleksi Administrasi');
+                $query->where('status', 'Tidak Lolos Tes Tulis');
             }
 
             $applicants = $query->get();
@@ -48,9 +58,9 @@ class AdministrasiEmailController extends Controller
 
         $successCount = 0;
 
+        // 🔹 Kirim email ke setiap peserta
         foreach ($applicants as $a) {
             try {
-                // Buat mail object
                 $mail = new SelectionResultMail(
                     $data['subject'],
                     $data['message'],
@@ -59,7 +69,6 @@ class AdministrasiEmailController extends Controller
                     $a
                 );
 
-                // Lampirkan file jika ada
                 if ($request->hasFile('attachments')) {
                     foreach ($request->file('attachments') as $file) {
                         $mail->attach($file->getRealPath(), [
@@ -69,10 +78,8 @@ class AdministrasiEmailController extends Controller
                     }
                 }
 
-                // Kirim email
                 Mail::to($a->email)->send($mail);
 
-                // Simpan log sukses
                 EmailLog::create([
                     'applicant_id' => $a->id,
                     'email'        => $a->email,
@@ -84,7 +91,6 @@ class AdministrasiEmailController extends Controller
 
                 $successCount++;
             } catch (Throwable $e) {
-                // Simpan log gagal
                 EmailLog::create([
                     'applicant_id' => $a->id,
                     'email'        => $a->email,

@@ -36,6 +36,7 @@ use App\Http\Controllers\AdminPanel\Selection\InterviewController;
 use App\Http\Controllers\AdminPanel\Selection\OfferingController;
 use App\Http\Controllers\AdminPanel\Selection\ActionsController;
 use App\Http\Controllers\AdminPanel\Selection\AdministrasiEmailController;
+use App\Http\Controllers\AdminPanel\Selection\TesTulisEmailController;
 
 // ================= PUBLIC =================
 Route::get('/', fn () => view('welcome'))->name('welcome');
@@ -115,12 +116,19 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
             Route::post('/bulk-mark', [AdministrasiController::class, 'bulkMark'])->name('bulkMark');
             Route::get('/export', [AdministrasiController::class, 'export'])->name('export');
             Route::post('/send-email', [AdministrasiEmailController::class, 'send'])->name('sendEmail');
+            Route::post('/set-selected-ids', [AdministrasiController::class, 'setSelectedIds'])->name('setSelectedIds');
         });
 
-        // Tahap lain masih pakai ProcessController
-        Route::get('/tes-tulis', function (Request $r, ProcessController $c) {
-            return $c->index($r, 'Tes Tulis', 'admin.applicant.seleksi.tes-tulis.index');
-        })->name('tes_tulis');
+        // TES TULIS (pakai controller khusus)
+        Route::prefix('tes-tulis')->name('tes_tulis.')->group(function () {
+            Route::get('/', [TesTulisController::class, 'index'])->name('index');
+            Route::post('/bulk-mark', [TesTulisController::class, 'bulkMark'])->name('bulkMark');
+            Route::get('/export', [TesTulisController::class, 'export'])->name('export');
+            Route::post('/send-email', [TesTulisEmailController::class, 'send'])->name('sendEmail');
+            Route::post('/set-selected-ids', [TesTulisController::class, 'setSelectedIds'])->name('setSelectedIds');
+            Route::post('/score-essay', [TesTulisController::class, 'scoreEssay'])->name('scoreEssay');
+
+        });
 
         Route::get('/technical-test', function (Request $r, ProcessController $c) {
             return $c->index($r, 'Technical Test', 'admin.applicant.seleksi.technical-test.index');

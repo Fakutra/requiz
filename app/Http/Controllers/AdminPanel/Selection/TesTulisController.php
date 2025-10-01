@@ -2,68 +2,157 @@
 
 namespace App\Http\Controllers\AdminPanel\Selection;
 
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use App\Models\Applicant;
+use App\Models\Batch;
+use App\Models\Position;
+use App\Services\SelectionLogger;
+use Illuminate\Support\Facades\Auth;
+use App\Exports\TesTulisApplicantsExport;
+use Maatwebsite\Excel\Facades\Excel;
 
-class TesTulisController extends BaseStageController
+class TesTulisController extends Controller
 {
     protected string $stage = 'Tes Tulis';
 
-    
-
-    protected function augmentAfterPaginate($applicants): void
+    /**
+     * Halaman daftar peserta Tes Tulis
+     */
+    public function index(Request $request)
     {
-        $ids = $applicants->pluck('id');
-        if ($ids->isEmpty()) return;
+        $batchId    = $request->query('batch');
+        $positionId = $request->query('position');
+        $search     = trim((string) $request->query('search'));
+        $status     = $request->query('status');
 
-        $timeCol   = $this->detectTimeColumn();
-        $scoreExpr = $this->scoreExpression('t1');
+        $batches   = Batch::orderBy('id')->get();
+        $positions = $batchId ? Position::where('batch_id', $batchId)->get() : collect();
 
-        $latest = DB::table('test_results as t2')
-            ->select('applicant_id', DB::raw("MAX($timeCol) AS max_time"))
-            ->whereNotNull($timeCol)
-            ->groupBy('applicant_id');
+        $q = Applicant::with([
+                'position',
+                'batch',
+                'latestEmailLog',
+                // ✅ pakai latestTestResult + sectionResults + testSection + answers + question
+                'latestTestResult.sectionResults.testSection',
+                'latestTestResult.sectionResults.answers.question',
+            ])
+            ->where('batch_id', $batchId)
+            ->whereIn('status', [
+                'Tes Tulis',
+                'Technical Test',
+                'Tidak Lolos Tes Tulis',
+            ]);
 
-        $rows = DB::table('test_results as t1')
-            ->joinSub($latest, 'mx', function ($j) use ($timeCol) {
-                $j->on('t1.applicant_id', '=', 'mx.applicant_id')
-                  ->on(DB::raw("t1.$timeCol"), '=', DB::raw('mx.max_time'));
-            })
-            ->whereIn('t1.applicant_id', $ids)
-            ->select('t1.applicant_id', DB::raw("$scoreExpr AS total_score"))
-            ->get()
-            ->keyBy('applicant_id');
-
-        $col = $applicants->getCollection();
-        $col->transform(function ($a) use ($rows) {
-            $a->_quiz_score = optional($rows->get($a->id))->total_score;
-            return $a;
-        });
-        $applicants->setCollection($col);
-    }
-
-    private function detectTimeColumn(): string
-    {
-        foreach (['finished_at','completed_at','submitted_at','end_time','ended_at','updated_at','created_at'] as $c) {
-            if (Schema::hasColumn('test_results', $c)) return $c;
+        if ($positionId) {
+            $q->where('position_id', $positionId);
         }
-        return 'created_at';
-    }
 
-    private function scoreExpression(string $prefix = 't1'): string
-    {
-        foreach (['total_score','final_score','overall_score','score_total','score','nilai_total','nilai','total_nilai'] as $col) {
-            if (Schema::hasColumn('test_results', $col)) return "$prefix.$col";
+        if ($status) {
+            $q->where('status', $status);
         }
-        $pg    = $this->firstExistingColumnExpr($prefix, ['score_pg','pg_score','nilai_pg'], '0');
-        $essay = $this->firstExistingColumnExpr($prefix, ['score_essay','essay_score','nilai_essay'], '0');
-        if ($pg !== '0' || $essay !== '0') return "COALESCE($pg,0)+COALESCE($essay,0)";
-        return 'NULL';
+
+        if ($search !== '') {
+            $needle = "%".mb_strtolower($search)."%";
+            $q->where(function ($w) use ($needle) {
+                $w->whereRaw('LOWER(name) LIKE ?', [$needle])
+                ->orWhereRaw('LOWER(email) LIKE ?', [$needle])
+                ->orWhereRaw('LOWER(jurusan) LIKE ?', [$needle]);
+            });
+        }
+
+        $applicants = $q->orderBy('name')
+            ->paginate(20)
+            ->appends($request->query());
+
+        return view('admin.applicant.seleksi.tes-tulis.index', compact(
+            'batches', 'positions', 'batchId', 'positionId', 'applicants'
+        ));
     }
 
-    private function firstExistingColumnExpr(string $prefix, array $cols, string $default = 'NULL'): string
+
+    public function scoreEssay(Request $request)
     {
-        foreach ($cols as $c) if (Schema::hasColumn('test_results', $c)) return "$prefix.$c";
-        return $default;
+        $data = $request->validate([
+            'section_result_ids'   => 'required|array',
+            'section_result_ids.*' => 'exists:test_section_results,id',
+            'answer_scores'        => 'required|array',
+        ]);
+
+        foreach ($data['section_result_ids'] as $sectionResultId) {
+            $sectionResult = \App\Models\TestSectionResult::findOrFail($sectionResultId);
+
+            $totalScore = 0;
+            $count = 0;
+
+            foreach ($data['answer_scores'][$sectionResultId] ?? [] as $answerId => $score) {
+                $answer = \App\Models\Answer::where('test_section_result_id', $sectionResult->id)
+                                            ->find($answerId);
+                if ($answer) {
+                    $answer->score = $score;
+                    $answer->save();
+                    $totalScore += (int) $score;
+                    $count++;
+                }
+            }
+
+            // Simpan nilai total section
+            $sectionResult->score = $count > 0 ? $totalScore : null;
+            $sectionResult->save();
+
+            // Update total nilai tes
+            $testResult = $sectionResult->testResult;
+            if ($testResult) {
+                $testResult->score = $testResult->sectionResults()->sum('score');
+                $testResult->save();
+            }
+        }
+
+        return back()->with('success', 'Nilai essay berhasil disimpan.');
+    }
+
+    /**
+     * Bulk update hasil tes (lolos / gagal)
+     */
+    public function bulkMark(Request $r)
+    {
+        $data = $r->validate([
+            'ids'   => 'required|array',
+            'ids.*' => 'exists:applicants,id',
+            'bulk_action' => 'required|in:lolos,tidak_lolos',
+        ]);
+
+        foreach ($data['ids'] as $id) {
+            $a = Applicant::find($id);
+            SelectionLogger::write($a, $this->stage, $data['bulk_action'], Auth::id());
+            $a->forceFill([
+                'status' => $this->newStatus($data['bulk_action'], $a->status)
+            ])->save();
+        }
+
+        return back()->with('success', count($data['ids']).' peserta diperbarui.');
+    }
+
+    private function newStatus(string $result, string $current): string
+    {
+        if ($result === 'lolos') {
+            return 'Technical Test';
+        }
+        return 'Tidak Lolos Tes Tulis';
+    }
+
+    /**
+     * Export Excel peserta Tes Tulis
+     */
+    public function export(Request $r)
+    {
+        return Excel::download(
+            new TesTulisApplicantsExport(
+                $r->query('batch'),
+                $r->query('position'),
+                $r->query('search'),
+            ),
+            'seleksi-tes-tulis.xlsx'
+        );
     }
 }

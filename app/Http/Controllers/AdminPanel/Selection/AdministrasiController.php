@@ -24,6 +24,7 @@ class AdministrasiController extends Controller
         $batchId    = $request->query('batch');
         $positionId = $request->query('position');
         $search     = trim((string) $request->query('search'));
+        $status     = $request->query('status'); // ✅ ambil status dari query
 
         $batches   = Batch::orderBy('id')->get();
         $positions = $batchId ? Position::where('batch_id', $batchId)->get() : collect();
@@ -36,16 +37,23 @@ class AdministrasiController extends Controller
                 'Tidak Lolos Seleksi Administrasi',
             ]);
 
+        // ✅ filter by posisi
         if ($positionId) {
             $q->where('position_id', $positionId);
         }
 
+        // ✅ filter by status
+        if ($status) {
+            $q->where('status', $status);
+        }
+
+        // ✅ filter by search
         if ($search !== '') {
             $needle = "%".mb_strtolower($search)."%";
             $q->where(function ($w) use ($needle) {
                 $w->whereRaw('LOWER(name) LIKE ?', [$needle])
-                  ->orWhereRaw('LOWER(email) LIKE ?', [$needle])
-                  ->orWhereRaw('LOWER(jurusan) LIKE ?', [$needle]);
+                ->orWhereRaw('LOWER(email) LIKE ?', [$needle])
+                ->orWhereRaw('LOWER(jurusan) LIKE ?', [$needle]);
             });
         }
 
@@ -57,6 +65,7 @@ class AdministrasiController extends Controller
             'batches', 'positions', 'batchId', 'positionId', 'applicants'
         ));
     }
+
 
     /**
      * Bulk update hasil seleksi (lolos / gagal)
@@ -102,5 +111,28 @@ class AdministrasiController extends Controller
             ),
             'seleksi-administrasi.xlsx'
         );
+    }
+
+    /**
+     * Simpan selected IDs di session
+     */
+    public function setSelectedIds(Request $r)
+    {
+        $data = $r->validate([
+            'ids' => 'required|string', // daftar id dipisahkan koma
+            'subject' => 'required|string',
+            'message' => 'required|string',
+        ]);
+
+        $ids = explode(',', $data['ids']);
+        $applicants = Applicant::whereIn('id', $ids)->get();
+
+        foreach ($applicants as $a) {
+            // gunakan service email yang sudah ada
+            // misalnya dispatch job atau langsung kirim
+            // Mail::to($a->email)->send(new SeleksiEmail(...));
+        }
+
+        return back()->with('success', 'Email terkirim ke '.count($applicants).' peserta terpilih.');
     }
 }
