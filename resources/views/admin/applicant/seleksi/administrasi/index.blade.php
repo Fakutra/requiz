@@ -6,12 +6,10 @@
 
     {{-- Toolbar --}}
     <div class="flex justify-between mb-3">
-      <form method="GET" class="flex gap-2 flex-1">
-        <input type="hidden" name="batch" value="{{ $batchId }}">
-        <input type="hidden" name="position" value="{{ $positionId }}">
+      <form method="GET" action="{{ route('admin.applicant.seleksi.administrasi.index') }}" class="flex gap-2 flex-1">
         <input type="text" name="search" value="{{ request('search') }}"
-               placeholder="Cari nama/email/jurusan..."
-               class="border rounded px-3 py-2 flex-1 text-sm">
+              placeholder="Cari nama/email/jurusan..."
+              class="border rounded px-3 py-2 flex-1 text-sm">
       </form>
 
       {{-- Tombol Aksi --}}
