@@ -20,6 +20,13 @@ class UserSeeder extends Seeder
             'password' => bcrypt('password'),
         ]);
 
+        User::factory()->create([
+            'name' => 'Admin2',
+            'email' => 'admin2@iconpln.co.id',
+            'role' => 'admin',
+            'password' => bcrypt('password'),
+        ]);
+
         // 5 User dummy
         $users = [
             ['name' => 'Wahyu',  'email' => 'why@gmail.com'],

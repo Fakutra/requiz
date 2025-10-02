@@ -35,7 +35,7 @@ class RekapController extends Controller
             ['label'=>'Seleksi Administrasi','keys'=>['seleksi-administrasi','administrasi'],'route'=>'admin.applicant.seleksi.administrasi.index'],
             ['label'=>'Tes Tulis','keys'=>['tes-tulis','test-tulis','tulis'],'route'=>'admin.applicant.seleksi.tes_tulis.index'],
             ['label'=>'Technical Test','keys'=>['technical-test','technical'],'route'=>'admin.applicant.seleksi.technical_test'],
-            ['label'=>'Interview','keys'=>['interview','wawancara'],'route'=>'admin.applicant.seleksi.interview'],
+            ['label'=>'Interview','keys'=>['interview','wawancara'],'route'=>'admin.applicant.seleksi.interview.index'],
             ['label'=>'Offering','keys'=>['offering','offer'],'route'=>'admin.applicant.seleksi.offering'],
         ];
 

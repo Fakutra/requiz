@@ -136,4 +136,14 @@ class Applicant extends Model
     // app/Models/Applicant.php
     public function selectionLogs() { return $this->hasMany(SelectionLog::class); }
 
+    public function technicalTestAnswers()
+    {
+        return $this->hasMany(TechnicalTestAnswer::class);
+    }
+
+    public function myInterviewResult()
+    {
+        return $this->hasOne(InterviewResult::class)->where('user_id', auth()->id());
+    }
+
 }
