@@ -7,123 +7,147 @@ use Illuminate\Http\Request;
 use App\Models\Batch;
 use App\Models\Applicant;
 use App\Models\SelectionLog;
-use Illuminate\Support\Facades\DB;
 
 class RekapController extends Controller
 {
-    /**
-     * Tampilkan rekap seleksi per batch (gabungan: expected + processed).
-     */
     public function index(Request $request)
     {
         $batches = Batch::orderBy('id')->get();
         $currentBatchId = $request->query('batch') ?: ($batches->first()->id ?? null);
 
-        $totalApplicants = null;
-        $rekap = [];
-
         if (!$currentBatchId) {
-            return view('admin.applicant.seleksi.index', compact('batches','currentBatchId','totalApplicants','rekap'));
+            return view('admin.applicant.seleksi.index', compact('batches','currentBatchId'));
         }
 
-        // Ambil seluruh applicant ID di batch ini (dipakai untuk query processed)
-        $applicantIds = Applicant::where('batch_id', $currentBatchId)->pluck('id');
-        $totalApplicants = $applicantIds->count();
+        // Total pelamar = SEMUA applicant di batch (tetap)
+        $totalApplicants = Applicant::where('batch_id', $currentBatchId)->count();
 
-        // Tahap + variasi stage_key + route tujuan
-        $stages = [
-            ['label'=>'Seleksi Administrasi','keys'=>['seleksi-administrasi','administrasi'],'route'=>'admin.applicant.seleksi.administrasi.index'],
-            ['label'=>'Tes Tulis','keys'=>['tes-tulis','test-tulis','tulis'],'route'=>'admin.applicant.seleksi.tes_tulis.index'],
-            ['label'=>'Technical Test','keys'=>['technical-test','technical'],'route'=>'admin.applicant.seleksi.technical_test'],
-            ['label'=>'Interview','keys'=>['interview','wawancara'],'route'=>'admin.applicant.seleksi.interview'],
-            ['label'=>'Offering','keys'=>['offering','offer'],'route'=>'admin.applicant.seleksi.offering'],
+        // =======================
+        // Seleksi Administrasi
+        // =======================
+        $admin_expected_statuses = [
+            // semua yang pernah/masuk admin = total pelamar
+            // expected = $totalApplicants (langsung)
+        ];
+        $admin_lolos_statuses = [
+            // sudah lolos admin artinya sudah ke tahap berikutnya
+            'Tes Tulis','Technical Test','Interview','Offering','Menerima Offering',
+            // atau gagal di tahap setelahnya
+            'Tidak Lolos Tes Tulis','Tidak Lolos Technical Test','Tidak Lolos Interview','Menolak Offering',
+        ];
+        $admin_gagal_statuses = ['Tidak Lolos Seleksi Administrasi'];
+
+        $administrasi = [
+            'expected'  => $totalApplicants,
+            'processed' => $this->processedCount($currentBatchId, ['seleksi-administrasi','administrasi']),
+            'lolos'     => $this->countByStatuses($currentBatchId, $admin_lolos_statuses),
+            'gagal'     => $this->countByStatuses($currentBatchId, $admin_gagal_statuses),
         ];
 
+        // =======================
+        // Tes Tulis
+        // =======================
+        $tulis_expected_statuses = [
+            'Tes Tulis','Technical Test','Interview','Offering','Menerima Offering',
+            'Tidak Lolos Tes Tulis','Tidak Lolos Technical Test','Tidak Lolos Interview','Menolak Offering',
+        ];
+        $tulis_lolos_statuses = [
+            // sudah lolos tes tulis => minimal masuk Technical Test atau lebih
+            'Technical Test','Interview','Offering','Menerima Offering',
+            // atau gagal di tahap setelahnya
+            'Tidak Lolos Technical Test','Tidak Lolos Interview','Menolak Offering',
+        ];
+        $tulis_gagal_statuses = ['Tidak Lolos Tes Tulis'];
 
-        foreach ($stages as $s) {
-            $stageLabel = $s['label'];
-            $keys = $s['keys'];
+        $tesTulis = [
+            'expected'  => $this->countByStatuses($currentBatchId, $tulis_expected_statuses),
+            'processed' => $this->processedCount($currentBatchId, ['tes-tulis','test-tulis','tulis']),
+            'lolos'     => $this->countByStatuses($currentBatchId, $tulis_lolos_statuses),
+            'gagal'     => $this->countByStatuses($currentBatchId, $tulis_gagal_statuses),
+        ];
 
-            // --- PROCESSED: hitung dari selection_logs (unique applicant_id yang punya log untuk stage ini) ---
-            $processed = 0;
-            if ($applicantIds->isNotEmpty()) {
-                $processed = SelectionLog::whereIn('stage_key', $keys)
-                    ->whereIn('applicant_id', $applicantIds)
-                    ->distinct()
-                    ->count('applicant_id');
-            }
+        // =======================
+        // Technical Test
+        // =======================
+        $tech_expected_statuses = [
+            'Technical Test','Interview','Offering','Menerima Offering',
+            'Tidak Lolos Technical Test','Tidak Lolos Interview','Menolak Offering',
+        ];
+        $tech_lolos_statuses = [
+            'Interview','Offering','Menerima Offering',
+            // atau gagal di tahap setelahnya
+            'Tidak Lolos Interview','Menolak Offering',
+        ];
+        $tech_gagal_statuses = ['Tidak Lolos Technical Test'];
 
-            // --- LOLos / Gagal : hitung berdasarkan log TERBARU per applicant (joinSub pattern) ---
-            if ($applicantIds->isNotEmpty()) {
-                $latest = SelectionLog::whereIn('stage_key', $keys)
-                    ->whereIn('applicant_id', $applicantIds)
-                    ->select('applicant_id', DB::raw('MAX(created_at) AS max_ts'))
-                    ->groupBy('applicant_id');
+        $technical = [
+            'expected'  => $this->countByStatuses($currentBatchId, $tech_expected_statuses),
+            'processed' => $this->processedCount($currentBatchId, ['technical-test','technical']),
+            'lolos'     => $this->countByStatuses($currentBatchId, $tech_lolos_statuses),
+            'gagal'     => $this->countByStatuses($currentBatchId, $tech_gagal_statuses),
+        ];
 
-                $counts = SelectionLog::joinSub($latest, 'mx', function ($j) {
-                        $j->on('selection_logs.applicant_id','=','mx.applicant_id')
-                          ->on('selection_logs.created_at','=','mx.max_ts');
-                    })
-                    ->selectRaw("
-                        SUM(CASE WHEN selection_logs.result='lolos' THEN 1 ELSE 0 END) AS lolos,
-                        SUM(CASE WHEN selection_logs.result='tidak_lolos' THEN 1 ELSE 0 END) AS gagal
-                    ")
-                    ->first();
-                $lolos = (int) ($counts->lolos ?? 0);
-                $gagal = (int) ($counts->gagal ?? 0);
-            } else {
-                $lolos = 0;
-                $gagal = 0;
-            }
+        // =======================
+        // Interview
+        // =======================
+        $iv_expected_statuses = [
+            'Interview','Offering','Menerima Offering','Tidak Lolos Interview','Menolak Offering',
+        ];
+        $iv_lolos_statuses = [
+            'Offering','Menerima Offering','Menolak Offering',
+        ];
+        $iv_gagal_statuses = ['Tidak Lolos Interview'];
 
-            // --- EXPECTED: hitung dari applicants.status (berapa yang perlu diproses sekarang) ---
-            $nextLabel = $this->nextStatusForLabel($stageLabel);
-            $failLabel = $this->failStatusForLabel($stageLabel);
+        $interview = [
+            'expected'  => $this->countByStatuses($currentBatchId, $iv_expected_statuses),
+            'processed' => $this->processedCount($currentBatchId, ['interview','wawancara']),
+            'lolos'     => $this->countByStatuses($currentBatchId, $iv_lolos_statuses),
+            'gagal'     => $this->countByStatuses($currentBatchId, $iv_gagal_statuses),
+        ];
 
-            $expected = Applicant::where('batch_id', $currentBatchId)
-                ->where(function($q) use ($stageLabel, $nextLabel, $failLabel) {
-                    $q->where('status', $stageLabel)
-                      ->orWhere('status', $nextLabel)
-                      ->orWhere('status', $failLabel);
-                })->count();
+        // =======================
+        // Offering
+        // =======================
+        $off_expected_statuses = ['Offering','Menerima Offering','Menolak Offering'];
+        $off_lolos_statuses    = ['Menerima Offering'];
+        $off_gagal_statuses    = ['Menolak Offering'];
 
-            $rekap[] = [
-                'label'                 => $stageLabel,
-                'participants_expected' => (int) $expected,
-                'participants_processed'=> (int) $processed,
-                'lolos'                 => $lolos,
-                'gagal'                 => $gagal,
-                'route_name'            => $s['route'],
-            ];
-        }
+        $offering = [
+            'expected'  => $this->countByStatuses($currentBatchId, $off_expected_statuses),
+            'processed' => $this->processedCount($currentBatchId, ['offering','offer']),
+            'lolos'     => $this->countByStatuses($currentBatchId, $off_lolos_statuses),
+            'gagal'     => $this->countByStatuses($currentBatchId, $off_gagal_statuses),
+        ];
 
         return view('admin.applicant.seleksi.index', compact(
-            'batches','currentBatchId','totalApplicants','rekap'
+            'batches','currentBatchId','totalApplicants',
+            'administrasi','tesTulis','technical','interview','offering'
         ));
     }
 
-    // ===== helper mapping =====
-    private function nextStatusForLabel(string $label): string
+    /**
+     * Hitung jumlah applicant di batch dengan status termasuk dalam array $statuses.
+     */
+    private function countByStatuses(int|string $batchId, array $statuses): int
     {
-        return match ($label) {
-            'Seleksi Administrasi' => 'Tes Tulis',
-            'Tes Tulis'            => 'Technical Test',
-            'Technical Test'       => 'Interview',
-            'Interview'            => 'Offering',
-            'Offering'             => 'Menerima Offering',
-            default                => $label,
-        };
+        if (empty($statuses)) return 0;
+        return Applicant::where('batch_id', $batchId)
+            ->whereIn('status', $statuses)
+            ->count();
     }
 
-    private function failStatusForLabel(string $label): string
+    /**
+     * Hitung peserta yang sudah "diproses" pada suatu stage dari selection_logs (unik per applicant).
+     */
+    private function processedCount(int|string $batchId, array $stageKeys): int
     {
-        return match ($label) {
-            'Seleksi Administrasi' => 'Tidak Lolos Seleksi Administrasi',
-            'Tes Tulis'            => 'Tidak Lolos Tes Tulis',
-            'Technical Test'       => 'Tidak Lolos Technical Test',
-            'Interview'            => 'Tidak Lolos Interview',
-            'Offering'             => 'Menolak Offering',
-            default                => $label,
-        };
+        if (empty($stageKeys)) return 0;
+
+        return SelectionLog::whereIn('stage_key', $stageKeys)
+            ->whereIn('applicant_id', function ($q) use ($batchId) {
+                $q->select('id')->from('applicants')->where('batch_id', $batchId);
+            })
+            ->distinct()
+            ->count('applicant_id');
     }
 }

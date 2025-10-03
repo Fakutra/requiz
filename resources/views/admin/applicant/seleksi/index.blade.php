@@ -1,25 +1,21 @@
 <x-app-admin>
-  {{-- Header bar ala figma --}}
-  <div class="bg-white rounded-lg shadow-sm border p-4">
+  {{-- Header --}}
+  <div class="bg-white rounded-lg shadow-sm border p-4 mb-5">
     <div class="grid grid-cols-3 items-center">
       <div class="flex items-center gap-2">
         <span class="text-sm font-semibold text-gray-700 tracking-wide">BATCH :</span>
         <select id="batchSelect" class="h-8 text-sm border rounded px-2 w-24">
-          @if(($batches ?? collect())->isEmpty())
-            <option value="">-</option>
-          @else
-            @foreach ($batches as $b)
-              @php $label = is_numeric($b->name ?? null) ? $b->name : ($loop->iteration); @endphp
-              <option value="{{ $b->id }}" {{ (string)$currentBatchId === (string)$b->id ? 'selected' : '' }}>
-                {{ $label }}
-              </option>
-            @endforeach
-          @endif
+          @foreach ($batches as $b)
+            @php $label = is_numeric($b->name ?? null) ? $b->name : ($loop->iteration); @endphp
+            <option value="{{ $b->id }}" {{ (string)$currentBatchId === (string)$b->id ? 'selected' : '' }}>
+              {{ $label }}
+            </option>
+          @endforeach
         </select>
       </div>
 
       <div class="text-center">
-        <h2 class="text-sm md:text-base font-semibold text-gray-700">UPDATE SELEKSI TAD</h2>
+        <h2 class="text-sm md:text-base font-semibold text-gray-700">REKAP SELEKSI</h2>
       </div>
 
       <div class="text-right text-sm text-gray-700">
@@ -29,79 +25,78 @@
     </div>
   </div>
 
-  {{-- Flash + validation --}}
-  @if (session('success'))
-    <div class="mb-4 p-3 rounded bg-green-100 text-green-800">{{ session('success') }}</div>
-  @endif
-  @if (session('error'))
-    <div class="mb-4 p-3 rounded bg-red-100 text-red-800">{{ session('error') }}</div>
-  @endif
-  @if ($errors->any())
-    <div class="mb-4 p-3 rounded bg-red-100 text-red-800">
-      <strong>Gagal:</strong>
-      <ul class="list-disc ml-5">
-        @foreach ($errors->all() as $e)
-          <li>{{ $e }}</li>
-        @endforeach
-      </ul>
-    </div>
-  @endif
-
-  {{-- Tabel rekap dengan kedua metrik --}}
+  {{-- Tabel --}}
   <div class="bg-white rounded-lg shadow-sm border">
     <div class="overflow-x-auto">
       <table class="min-w-full text-sm">
         <tbody class="divide-y">
-          @forelse ($rekap as $row)
-            <tr class="hover:bg-gray-50">
-              {{-- Tahap --}}
-              <td class="px-6 py-4 w-auto text-gray-700">{{ $row['label'] }}</td>
+          
+          {{-- Seleksi Administrasi --}}
+          <tr>
+            <td class="px-6 py-4">Seleksi Administrasi</td>
+            <td class="px-6 py-4">Jumlah Peserta: <strong>{{ $administrasi['expected'] }}</strong></td>
+            <td class="px-6 py-4">Lolos: {{ $administrasi['lolos'] }}</td>
+            <td class="px-6 py-4">Gagal: {{ $administrasi['gagal'] }}</td>
+            <td class="px-6 py-4 text-right">
+              <a href="{{ route('admin.applicant.seleksi.administrasi.index',['batch'=>$currentBatchId]) }}" 
+                 class="bg-blue-600 text-white px-4 py-1 rounded">Proses</a>
+            </td>
+          </tr>
 
-              {{-- Jumlah Peserta: expected + processed --}}
-              <td class="px-6 py-4 w-auto">
-                <div class="text-slate-700 text-[#0026E5]">
-                  Jumlah Peserta : <strong>{{ $row['participants_expected'] }}</strong>
-                </div>
-                <div class="text-xs text-slate-400 mt-1 text-[#0090E5]">
-                  Processed: <strong>{{ $row['participants_processed'] }}</strong>
-                </div>
-              </td>
+          {{-- Tes Tulis --}}
+          <tr>
+            <td class="px-6 py-4">Tes Tulis</td>
+            <td class="px-6 py-4">Jumlah Peserta: <strong>{{ $tesTulis['expected'] }}</strong></td>
+            <td class="px-6 py-4">Lolos: {{ $tesTulis['lolos'] }}</td>
+            <td class="px-6 py-4">Gagal: {{ $tesTulis['gagal'] }}</td>
+            <td class="px-6 py-4 text-right">
+              <a href="{{ route('admin.applicant.seleksi.tes_tulis.index',['batch'=>$currentBatchId]) }}" 
+                 class="bg-blue-600 text-white px-4 py-1 rounded">Proses</a>
+            </td>
+          </tr>
 
-              {{-- Jumlah Lolos --}}
-              <td class="px-6 py-4 w-auto">
-                <span class="text-[#01D93B]">Peserta Lolos: {{ $row['lolos'] }}</span>
-              </td>
+          {{-- Technical Test --}}
+          <tr>
+            <td class="px-6 py-4">Technical Test</td>
+            <td class="px-6 py-4">Jumlah Peserta: <strong>{{ $technical['expected'] }}</strong></td>
+            <td class="px-6 py-4">Lolos: {{ $technical['lolos'] }}</td>
+            <td class="px-6 py-4">Gagal: {{ $technical['gagal'] }}</td>
+            <td class="px-6 py-4 text-right">
+              <a href="{{ route('admin.applicant.seleksi.technical_test',['batch'=>$currentBatchId]) }}" 
+                 class="bg-blue-600 text-white px-4 py-1 rounded">Proses</a>
+            </td>
+          </tr>
 
-              {{-- Jumlah Gagal --}}
-              <td class="px-6 py-4 w-auto">
-                <span class="text-red-600">Peserta Gagal: {{ $row['gagal'] }}</span>
-              </td>
+          {{-- Interview --}}
+          <tr>
+            <td class="px-6 py-4">Interview</td>
+            <td class="px-6 py-4">Jumlah Peserta: <strong>{{ $interview['expected'] }}</strong></td>
+            <td class="px-6 py-4">Lolos: {{ $interview['lolos'] }}</td>
+            <td class="px-6 py-4">Gagal: {{ $interview['gagal'] }}</td>
+            <td class="px-6 py-4 text-right">
+              <a href="{{ route('admin.applicant.seleksi.interview',['batch'=>$currentBatchId]) }}" 
+                 class="bg-blue-600 text-white px-4 py-1 rounded">Proses</a>
+            </td>
+          </tr>
 
-              {{-- Aksi --}}
-              <td class="px-6 py-4 w-auto text-right">
-                @if(!empty($row['route_name']))
-                  <a href="{{ route($row['route_name'], ['batch' => $currentBatchId]) }}"
-                    class="inline-flex items-center gap-2 rounded bg-[#0008A9] text-white px-4 py-1.5 hover:bg-blue-700 transition">
-                    Proses
-                  </a>
-                @else
-                  <span class="text-gray-400">—</span>
-                @endif
-              </td>
-            </tr>
-          @empty
-            <tr>
-              <td colspan="5" class="px-6 py-10 text-center text-gray-500">
-                Belum ada data untuk batch ini.
-              </td>
-            </tr>
-          @endforelse
+          {{-- Offering --}}
+          <tr>
+            <td class="px-6 py-4">Offering</td>
+            <td class="px-6 py-4">Jumlah Peserta: <strong>{{ $offering['expected'] }}</strong></td>
+            <td class="px-6 py-4">Lolos: {{ $offering['lolos'] }}</td>
+            <td class="px-6 py-4">Gagal: {{ $offering['gagal'] }}</td>
+            <td class="px-6 py-4 text-right">
+              <a href="{{ route('admin.applicant.seleksi.offering',['batch'=>$currentBatchId]) }}" 
+                 class="bg-blue-600 text-white px-4 py-1 rounded">Proses</a>
+            </td>
+          </tr>
+
         </tbody>
       </table>
     </div>
   </div>
 
-  {{-- Auto-redirect saat batch berubah --}}
+  {{-- Auto redirect batch --}}
   <script>
     (function () {
       const sel = document.getElementById('batchSelect');

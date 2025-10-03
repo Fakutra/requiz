@@ -8,7 +8,7 @@
                 Quiz</a>
         </div>
 
-        <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+        {{-- <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-md">
                 <div class="modal-content">
                     <div class="modal-body text-center">
@@ -17,7 +17,7 @@
                     </div>
                 </div>
             </div>
-        </div>
+        </div> --}}
     </x-slot>
 
     <div class="py-3">

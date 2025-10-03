@@ -48,7 +48,15 @@ class TesTulisEmailController extends Controller
             }
 
             if ($data['type'] === 'lolos') {
-                $query->where('status', 'Technical Test');
+                $query->whereIn('status', [
+                    'Technical Test',
+                    'Interview',
+                    'Offering',
+                    'Menerima Offering',
+                    'Tidak Lolos Technical Test',
+                    'Tidak Lolos Interview',
+                    'Menolak Offering',
+                ]);
             } else {
                 $query->where('status', 'Tidak Lolos Tes Tulis');
             }

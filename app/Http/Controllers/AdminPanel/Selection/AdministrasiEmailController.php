@@ -17,13 +17,13 @@ class AdministrasiEmailController extends Controller
     public function send(Request $request)
     {
         $data = $request->validate([
-            'batch'       => 'nullable|exists:batches,id',
-            'position'    => 'nullable|exists:positions,id',
-            'type'        => 'required|in:lolos,tidak_lolos,selected',
-            'ids'         => 'nullable|string', // untuk selected
-            'subject'     => 'required|string',
-            'message'     => 'required|string', // CKEditor / Trix output (HTML)
-            'attachments' => 'nullable|array',
+            'batch'         => 'nullable|exists:batches,id',
+            'position'      => 'nullable|exists:positions,id',
+            'type'          => 'required|in:lolos,tidak_lolos,selected',
+            'ids'           => 'nullable|string', // untuk selected
+            'subject'       => 'required|string',
+            'message'       => 'required|string', // CKEditor / Trix output (HTML)
+            'attachments'   => 'nullable|array',
             'attachments.*' => 'file|max:5120', // maksimal 5 MB
         ]);
 
@@ -38,7 +38,20 @@ class AdministrasiEmailController extends Controller
             }
 
             if ($data['type'] === 'lolos') {
-                $query->where('status', 'Tes Tulis'); // dianggap Lolos Administrasi
+                // ✅ Semua status yang dianggap Lolos Seleksi Administrasi
+                $lolosAdminStatuses = [
+                    'Tes Tulis',
+                    'Technical Test',
+                    'Interview',
+                    'Offering',
+                    'Menerima Offering',
+                    // meskipun gagal di tahap setelah admin, tetap dianggap sudah lolos admin
+                    'Tidak Lolos Tes Tulis',
+                    'Tidak Lolos Technical Test',
+                    'Tidak Lolos Interview',
+                    'Menolak Offering',
+                ];
+                $query->whereIn('status', $lolosAdminStatuses);
             } else {
                 $query->where('status', 'Tidak Lolos Seleksi Administrasi');
             }

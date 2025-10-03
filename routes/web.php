@@ -127,7 +127,6 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
             Route::post('/send-email', [TesTulisEmailController::class, 'send'])->name('sendEmail');
             Route::post('/set-selected-ids', [TesTulisController::class, 'setSelectedIds'])->name('setSelectedIds');
             Route::post('/score-essay', [TesTulisController::class, 'scoreEssay'])->name('scoreEssay');
-
         });
 
         Route::get('/technical-test', function (Request $r, ProcessController $c) {

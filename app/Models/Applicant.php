@@ -62,6 +62,16 @@ class Applicant extends Model
         return $this->hasOne(TestResult::class)->latestOfMany();
     }
 
+    // app/Models/Applicant.php
+    public function technicalTestAnswers()
+    {
+        return $this->hasMany(TechnicalTestAnswer::class);
+    }
+
+    public function latestTechnicalTestAnswer()
+    {
+        return $this->hasOne(TechnicalTestAnswer::class)->latestOfMany();
+    }
 
     public function emailLogs()
     {

@@ -20,58 +20,52 @@ class AdministrasiController extends Controller
      * Halaman daftar peserta tahap Administrasi
      */
     public function index(Request $request)
-        {
-            $batchId    = $request->query('batch');
-            $positionId = $request->query('position');
-            $search     = trim((string) $request->query('search'));
-            $jurusan = trim((string) $request->query('jurusan'));
-            $allJurusan = Applicant::select('jurusan')
-                ->distinct()
-                ->orderBy('jurusan')
-                ->pluck('jurusan');
+    {
+        $batchId    = $request->query('batch');
+        $positionId = $request->query('position');
+        $search     = trim((string) $request->query('search'));
+        $jurusan    = trim((string) $request->query('jurusan'));
 
+        $allJurusan = Applicant::select('jurusan')
+            ->distinct()
+            ->orderBy('jurusan')
+            ->pluck('jurusan');
 
-            $batches   = Batch::orderBy('id')->get();
-            $positions = $batchId ? Position::where('batch_id', $batchId)->get() : Position::all();
+        $batches   = Batch::orderBy('id')->get();
+        $positions = $batchId ? Position::where('batch_id', $batchId)->get() : Position::all();
 
-            $q = Applicant::with(['position', 'batch', 'latestEmailLog'])
-                ->whereIn('status', [
-                    'Seleksi Administrasi',
-                    'Tes Tulis',
-                    'Tidak Lolos Seleksi Administrasi',
-                ]);
+        // 🔹 ambil semua peserta di batch, jangan filter status di sini
+        $q = Applicant::with(['position', 'batch', 'latestEmailLog']);
 
-            if ($batchId) {
-                $q->where('batch_id', $batchId);
-            }
-
-            if ($positionId) {
-                $q->where('position_id', $positionId);
-            }
-
-            if ($search !== '') {
-                $needle = "%".mb_strtolower($search)."%";
-                $q->where(function ($w) use ($needle) {
-                    $w->whereRaw('LOWER(name) LIKE ?', [$needle])
-                    ->orWhereRaw('LOWER(email) LIKE ?', [$needle])
-                    ->orWhereRaw('LOWER(jurusan) LIKE ?', [$needle]);
-                });
-            }
-
-            if ($jurusan !== '') {
-                $q->whereRaw('LOWER(jurusan) LIKE ?', ['%'.mb_strtolower($jurusan).'%']);
-            }
-
-            $applicants = $q->orderBy('name')
-                ->paginate(20)
-                ->appends($request->query());
-
-            return view('admin.applicant.seleksi.administrasi.index', compact(
-                'batches', 'positions', 'batchId', 'positionId', 'applicants', 'jurusan', 'allJurusan'
-            ));
+        if ($batchId) {
+            $q->where('batch_id', $batchId);
         }
 
+        if ($positionId) {
+            $q->where('position_id', $positionId);
+        }
 
+        if ($search !== '') {
+            $needle = "%".mb_strtolower($search)."%";
+            $q->where(function ($w) use ($needle) {
+                $w->whereRaw('LOWER(name) LIKE ?', [$needle])
+                ->orWhereRaw('LOWER(email) LIKE ?', [$needle])
+                ->orWhereRaw('LOWER(jurusan) LIKE ?', [$needle]);
+            });
+        }
+
+        if ($jurusan !== '') {
+            $q->whereRaw('LOWER(jurusan) LIKE ?', ['%'.mb_strtolower($jurusan).'%']);
+        }
+
+        $applicants = $q->orderBy('name')
+            ->paginate(20)
+            ->appends($request->query());
+
+        return view('admin.applicant.seleksi.administrasi.index', compact(
+            'batches', 'positions', 'batchId', 'positionId', 'applicants', 'jurusan', 'allJurusan'
+        ));
+    }
 
     /**
      * Bulk update hasil seleksi (lolos / gagal)

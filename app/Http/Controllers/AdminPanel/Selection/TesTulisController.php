@@ -30,19 +30,24 @@ class TesTulisController extends Controller
         $positions = $batchId ? Position::where('batch_id', $batchId)->get() : collect();
 
         $q = Applicant::with([
-                'position',
-                'batch',
-                'latestEmailLog',
-                // ✅ pakai latestTestResult + sectionResults + testSection + answers + question
-                'latestTestResult.sectionResults.testSection',
-                'latestTestResult.sectionResults.answers.question',
-            ])
-            ->where('batch_id', $batchId)
-            ->whereIn('status', [
-                'Tes Tulis',
-                'Technical Test',
-                'Tidak Lolos Tes Tulis',
-            ]);
+            'position',
+            'batch',
+            'latestEmailLog',
+            'latestTestResult.sectionResults.testSection',
+            'latestTestResult.sectionResults.answers.question',
+        ])
+        ->where('batch_id', $batchId)
+        ->whereIn('status', [
+            'Tes Tulis',
+            'Technical Test',
+            'Interview',
+            'Offering',
+            'Menerima Offering',
+            'Tidak Lolos Tes Tulis',
+            'Tidak Lolos Technical Test',
+            'Tidak Lolos Interview',
+            'Menolak Offering',
+        ]);
 
         if ($positionId) {
             $q->where('position_id', $positionId);
@@ -103,8 +108,13 @@ class TesTulisController extends Controller
             // Update total nilai tes
             $testResult = $sectionResult->testResult;
             if ($testResult) {
-                $testResult->score = $testResult->sectionResults()->sum('score');
+                $total = $testResult->sectionResults()
+                    ->whereNotNull('score')
+                    ->sum('score');
+
+                $testResult->score = $total > 0 ? $total : null;
                 $testResult->save();
+
             }
         }
 

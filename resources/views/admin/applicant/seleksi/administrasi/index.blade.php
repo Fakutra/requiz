@@ -82,11 +82,28 @@
                 <td class="px-3 py-2">{{ $a->age ?? '-' }}</td>
                 <td class="px-3 py-2">
                   @php
-                      $displayStatus = $a->status;
-                      if ($a->status === 'Tes Tulis') {
+                      // Mapping status untuk tampilan di Seleksi Administrasi
+                      $lolosAdminStatuses = [
+                          'Tes Tulis',
+                          'Technical Test',
+                          'Interview',
+                          'Offering',
+                          'Menerima Offering',
+                          'Tidak Lolos Tes Tulis',
+                          'Tidak Lolos Technical Test',
+                          'Tidak Lolos Interview',
+                          'Menolak Offering',
+                      ];
+
+                      if (in_array($a->status, $lolosAdminStatuses)) {
                           $displayStatus = 'Lolos Seleksi Administrasi';
+                      } elseif ($a->status === 'Tidak Lolos Seleksi Administrasi') {
+                          $displayStatus = 'Tidak Lolos Seleksi Administrasi';
+                      } else {
+                          $displayStatus = $a->status;
                       }
 
+                      // Tentukan warna badge
                       $isLolos = \Illuminate\Support\Str::startsWith($displayStatus, 'Lolos');
                       $isTidak = \Illuminate\Support\Str::startsWith($displayStatus, 'Tidak Lolos');
 
@@ -96,7 +113,7 @@
                   @endphp
 
                   <span class="px-2 py-1 text-xs rounded {{ $badgeClass }}">
-                    {{ $displayStatus }}
+                      {{ $displayStatus }}
                   </span>
                 </td>
 
