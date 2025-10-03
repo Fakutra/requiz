@@ -43,6 +43,15 @@ class RekapController extends Controller
             'lolos'     => $this->countByStatuses($currentBatchId, $admin_lolos_statuses),
             'gagal'     => $this->countByStatuses($currentBatchId, $admin_gagal_statuses),
         ];
+        
+        // Tahap + variasi stage_key + route tujuan
+        $stages = [
+            ['label'=>'Seleksi Administrasi','keys'=>['seleksi-administrasi','administrasi'],'route'=>'admin.applicant.seleksi.administrasi.index'],
+            ['label'=>'Tes Tulis','keys'=>['tes-tulis','test-tulis','tulis'],'route'=>'admin.applicant.seleksi.tes_tulis.index'],
+            ['label'=>'Technical Test','keys'=>['technical-test','technical'],'route'=>'admin.applicant.seleksi.technical_test'],
+            ['label'=>'Interview','keys'=>['interview','wawancara'],'route'=>'admin.applicant.seleksi.interview.index'],
+            ['label'=>'Offering','keys'=>['offering','offer'],'route'=>'admin.applicant.seleksi.offering'],
+        ];
 
         // =======================
         // Tes Tulis
