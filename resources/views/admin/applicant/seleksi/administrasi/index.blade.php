@@ -5,20 +5,25 @@
     </div>
 
     {{-- Toolbar --}}
-    <div class="flex justify-between mb-3">
-      <form method="GET" action="{{ route('admin.applicant.seleksi.administrasi.index') }}" class="flex gap-2 flex-1">
-        <input type="text" name="search" value="{{ request('search') }}"
-              placeholder="Cari nama/email/jurusan..."
-              class="border rounded px-3 py-2 flex-1 text-sm">
+    <div class="flex w-full mb-2 items-end gap-2">
+      <form method="GET" action="{{ route('admin.applicant.index') }}" class="flex-1 min-w-[220px]">
+        <label class="block text-xs text-gray-500 mb-1">Cari</label>
+        <div class="relative flex items-center">
+          <input type="text" name="search" value="{{ request('search') }}"
+                placeholder="Nama / Email / Jurusan / Posisi..."
+                class="w-full h-10 pl-3 pr-9 border rounded text-sm focus:ring focus:border-blue-500">
+          <span class="absolute right-3 text-gray-500">
+            <x-search-button/>
+          </span>
+        </div>
       </form>
 
       {{-- Tombol Aksi --}}
       <div class="flex gap-2">
         {{-- Filter --}}
         <button type="button"
-                onclick="document.getElementById('filterModal').classList.remove('hidden')"
-                class="px-3 py-2 border rounded bg-gray-600 text-white flex items-center justify-center"
-                title="Filter">
+                @click="showFilter=true"
+                class="h-10 px-3 flex items-center gap-2 border rounded bg-gray-600 text-white text-sm">
           <i class="fas fa-filter"></i>
         </button>
 
@@ -34,7 +39,7 @@
         <a href="{{ route('admin.applicant.seleksi.administrasi.export', request()->query()) }}"
           class="px-3 py-2 border rounded bg-green-600 text-white flex items-center justify-center"
           title="Export">
-          <i class="fas fa-file-export"></i>
+          <x-export-button/>
         </a>
 
         {{-- Lolos --}}
@@ -57,85 +62,103 @@
     <form id="bulkActionForm" method="POST" action="{{ route('admin.applicant.seleksi.administrasi.bulkMark') }}">
       @csrf
       <div class="overflow-x-auto">
-        <table class="min-w-full text-sm border">
+        <table class="table-auto text-sm border w-full">
           <thead class="bg-gray-100">
             <tr>
               <th class="px-3 py-2"><input type="checkbox" id="checkAll"></th>
-              <th class="px-3 py-2 text-left">Nama Peserta</th>
-              <th class="px-3 py-2 text-left">Email</th>
-              <th class="px-3 py-2 text-left">Jurusan</th>
-              <th class="px-3 py-2 text-left">Posisi</th>
-              <th class="px-3 py-2 text-left">Umur</th>
-              <th class="px-3 py-2 text-left">Status</th>
-              <th class="px-3 py-2 text-left">Status Email</th>
-              <th class="px-3 py-2 text-left">Action</th>
+
+              {{-- Nama Peserta --}}
+              <th class="px-3 py-2 text-left whitespace-nowrap">
+                <a href="{{ request()->fullUrlWithQuery([
+                    'sort' => 'name',
+                    'direction' => request('sort') === 'name' && request('direction') === 'asc' ? 'desc' : 'asc'
+                ]) }}" class="flex items-center gap-1">
+                  Nama Peserta
+                  @if(request('sort') === 'name')
+                    {!! request('direction') === 'asc' ? '▲' : '▼' !!}
+                  @endif
+                </a>
+              </th>
+
+              {{-- Email --}}
+              <th class="px-3 py-2 text-left whitespace-nowrap">
+                <a href="{{ request()->fullUrlWithQuery([
+                    'sort' => 'email',
+                    'direction' => request('sort') === 'email' && request('direction') === 'asc' ? 'desc' : 'asc'
+                ]) }}" class="flex items-center gap-1">
+                  Email
+                  @if(request('sort') === 'email')
+                    {!! request('direction') === 'asc' ? '▲' : '▼' !!}
+                  @endif
+                </a>
+              </th>
+
+              {{-- Jurusan --}}
+              <th class="px-3 py-2 text-left whitespace-nowrap">
+                <a href="{{ request()->fullUrlWithQuery([
+                    'sort' => 'jurusan',
+                    'direction' => request('sort') === 'jurusan' && request('direction') === 'asc' ? 'desc' : 'asc'
+                ]) }}" class="flex items-center gap-1">
+                  Jurusan
+                  @if(request('sort') === 'jurusan')
+                    {!! request('direction') === 'asc' ? '▲' : '▼' !!}
+                  @endif
+                </a>
+              </th>
+
+              {{-- Posisi --}}
+              <th class="px-3 py-2 text-left whitespace-nowrap">
+                <a href="{{ request()->fullUrlWithQuery([
+                    'sort' => 'position_id',
+                    'direction' => request('sort') === 'position_id' && request('direction') === 'asc' ? 'desc' : 'asc'
+                ]) }}" class="flex items-center gap-1">
+                  Posisi
+                  @if(request('sort') === 'position_id')
+                    {!! request('direction') === 'asc' ? '▲' : '▼' !!}
+                  @endif
+                </a>
+              </th>
+
+              {{-- Umur --}}
+              <th class="px-3 py-2 text-left whitespace-nowrap">
+                <a href="{{ request()->fullUrlWithQuery([
+                    'sort' => 'age',
+                    'direction' => request('sort') === 'age' && request('direction') === 'asc' ? 'desc' : 'asc'
+                ]) }}" class="flex items-center gap-1">
+                  Umur
+                  @if(request('sort') === 'age')
+                    {!! request('direction') === 'asc' ? '▲' : '▼' !!}
+                  @endif
+                </a>
+              </th>
+
+              <th class="px-3 py-2 text-left whitespace-nowrap">Status</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap">Status Email</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap">Action</th>
             </tr>
           </thead>
+
           <tbody>
             @forelse($applicants as $a)
               <tr>
                 <td class="px-3 py-2"><input type="checkbox" name="ids[]" value="{{ $a->id }}"></td>
-                <td class="px-3 py-2">{{ $a->name }}</td>
-                <td class="px-3 py-2">{{ $a->email }}</td>
-                <td class="px-3 py-2">{{ $a->jurusan }}</td>
-                <td class="px-3 py-2">{{ $a->position->name ?? '-' }}</td>
-                <td class="px-3 py-2">{{ $a->age ?? '-' }}</td>
-                <td class="px-3 py-2">
-                  @php
-                      // Mapping status untuk tampilan di Seleksi Administrasi
-                      $lolosAdminStatuses = [
-                          'Tes Tulis',
-                          'Technical Test',
-                          'Interview',
-                          'Offering',
-                          'Menerima Offering',
-                          'Tidak Lolos Tes Tulis',
-                          'Tidak Lolos Technical Test',
-                          'Tidak Lolos Interview',
-                          'Menolak Offering',
-                      ];
+                <td class="px-3 py-2 whitespace-nowrap">{{ $a->name }}</td>
+                <td class="px-3 py-2 whitespace-nowrap">{{ $a->email }}</td>
+                <td class="px-3 py-2 whitespace-nowrap">{{ $a->jurusan }}</td>
+                <td class="px-3 py-2 whitespace-nowrap">{{ $a->position->name ?? '-' }}</td>
+                <td class="px-3 py-2 whitespace-nowrap">{{ $a->age ?? '-' }}</td>
 
-                      if (in_array($a->status, $lolosAdminStatuses)) {
-                          $displayStatus = 'Lolos Seleksi Administrasi';
-                      } elseif ($a->status === 'Tidak Lolos Seleksi Administrasi') {
-                          $displayStatus = 'Tidak Lolos Seleksi Administrasi';
-                      } else {
-                          $displayStatus = $a->status;
-                      }
-
-                      // Tentukan warna badge
-                      $isLolos = \Illuminate\Support\Str::startsWith($displayStatus, 'Lolos');
-                      $isTidak = \Illuminate\Support\Str::startsWith($displayStatus, 'Tidak Lolos');
-
-                      $badgeClass = $isLolos
-                          ? 'bg-[#69FFA0] text-[#2C6C44]'
-                          : ($isTidak ? 'bg-[#FFDDDD] text-[#FF2525]' : 'bg-yellow-100 text-yellow-700');
-                  @endphp
-
-                  <span class="px-2 py-1 text-xs rounded {{ $badgeClass }}">
-                      {{ $displayStatus }}
-                  </span>
+                {{-- Status --}}
+                <td class="px-3 py-2 whitespace-nowrap">
+                  {{-- status logic kamu --}}
                 </td>
 
                 {{-- Email Status --}}
                 <td class="px-3 py-2 text-center">
-                  @php
-                    $log = $a->latestEmailLog;
-                    if ($log && $log->stage !== 'Seleksi Administrasi') {
-                        $log = null;
-                    }
-                  @endphp
-                  @if($log)
-                    @if($log->success)
-                      <i class="fas fa-check-circle text-green-500" title="Terkirim"></i>
-                    @else
-                      <i class="fas fa-times-circle text-red-500" title="Gagal: {{ $log->error }}"></i>
-                    @endif
-                  @else
-                    <i class="fas fa-minus-circle text-gray-400" title="Belum dikirim"></i>
-                  @endif
+                  {{-- status email --}}
                 </td>
-                {{-- ✅ Action --}}
+
+                {{-- Action --}}
                 <td class="px-3 py-2 text-center">
                   <i class="fas fa-eye text-blue-600 cursor-pointer hover:text-blue-800"
                     title="Lihat Detail"
@@ -144,7 +167,7 @@
               </tr>
             @empty
               <tr>
-                <td colspan="8" class="text-center text-gray-500 py-5">Tidak ada data</td>
+                <td colspan="9" class="text-center text-gray-500 py-5">Tidak ada data</td>
               </tr>
             @endforelse
           </tbody>

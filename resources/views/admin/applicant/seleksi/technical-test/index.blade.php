@@ -62,14 +62,14 @@
           <thead class="bg-gray-100">
             <tr>
               <th class="px-3 py-2"><input type="checkbox" id="checkAll"></th>
-              <th class="px-3 py-2 text-left">Nama Peserta</th>
-              <th class="px-3 py-2 text-left">Email</th>
-              <th class="px-3 py-2 text-left">Jawaban (PDF)</th>
-              <th class="px-3 py-2 text-left">Keterangan</th>
-              <th class="px-3 py-2 text-left">Nilai</th>
-              <th class="px-3 py-2 text-left">Status</th>
-              <th class="px-3 py-2 text-left">Status Email</th>
-              <th class="px-3 py-2 text-left">Action</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap">Nama Peserta</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap">Email</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap">Jawaban (PDF)</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap">Keterangan</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap">Nilai</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap">Status</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap">Status Email</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -80,11 +80,11 @@
               @endphp
               <tr>
                 <td class="px-3 py-2"><input type="checkbox" name="ids[]" value="{{ $a->id }}"></td>
-                <td class="px-3 py-2">{{ $a->name }}</td>
-                <td class="px-3 py-2">{{ $a->email }}</td>
+                <td class="px-3 py-2 whitespace-nowrap">{{ $a->name }}</td>
+                <td class="px-3 py-2 whitespace-nowrap">{{ $a->email }}</td>
 
                 {{-- Jawaban --}}
-                <td class="px-3 py-2">
+                <td class="px-3 py-2 whitespace-nowrap">
                   @if($ans && $ans->answer_url)
                     <div class="flex items-center gap-3">
                       {{-- Icon PDF --}}
@@ -109,13 +109,13 @@
                 </td>
 
                 {{-- Keterangan --}}
-                <td class="px-3 py-2">{{ $ans?->keterangan ?? '-' }}</td>
+                <td class="px-3 py-2 whitespace-nowrap">{{ $ans?->keterangan ?? '-' }}</td>
 
                 {{-- Nilai --}}
-                <td class="px-3 py-2">{{ is_null($ans?->score) ? '-' : $ans->score }}</td>
+                <td class="px-3 py-2 whitespace-nowrap">{{ is_null($ans?->score) ? '-' : $ans->score }}</td>
 
                 {{-- Status peserta --}}
-                <td class="px-3 py-2">
+                <td class="px-3 py-2 whitespace-nowrap">
                   @php
                     // Default ambil status asli
                     $displayStatus = $a->status;
@@ -139,8 +139,8 @@
                     $isLolos = \Illuminate\Support\Str::startsWith($displayStatus, 'Lolos');
                     $isTidak = \Illuminate\Support\Str::startsWith($displayStatus, 'Tidak Lolos');
 
-                    $badgeClass = $isLolos ? 'bg-green-100 text-green-700'
-                                  : ($isTidak ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700');
+                    $badgeClass = $isLolos ? 'bg-[#69FFA0] text-[#2C6C44]'
+                                  : ($isTidak ? 'bg-[#FFDDDD] text-[#FF2525]' : 'bg-yellow-100 text-yellow-700');
                   @endphp
 
                   <span class="px-2 py-1 text-xs rounded {{ $badgeClass }}">
