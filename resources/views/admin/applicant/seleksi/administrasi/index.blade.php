@@ -108,8 +108,8 @@
                       $isTidak = \Illuminate\Support\Str::startsWith($displayStatus, 'Tidak Lolos');
 
                       $badgeClass = $isLolos
-                          ? 'bg-green-100 text-green-700'
-                          : ($isTidak ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700');
+                          ? 'bg-[#69FFA0] text-[#2C6C44]'
+                          : ($isTidak ? 'bg-[#FFDDDD] text-[#FF2525]' : 'bg-yellow-100 text-yellow-700');
                   @endphp
 
                   <span class="px-2 py-1 text-xs rounded {{ $badgeClass }}">
