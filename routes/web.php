@@ -37,6 +37,7 @@ use App\Http\Controllers\AdminPanel\Selection\OfferingController;
 use App\Http\Controllers\AdminPanel\Selection\ActionsController;
 use App\Http\Controllers\AdminPanel\Selection\AdministrasiEmailController;
 use App\Http\Controllers\AdminPanel\Selection\TesTulisEmailController;
+use App\Http\Controllers\AdminPanel\Selection\TechnicalTestEmailController;
 
 // ================= PUBLIC =================
 Route::get('/', fn () => view('welcome'))->name('welcome');
@@ -129,9 +130,14 @@ Route::prefix('admin/applicant/seleksi')->name('admin.applicant.seleksi.')->grou
             Route::post('/score-essay', [TesTulisController::class, 'scoreEssay'])->name('scoreEssay');
         });
 
-        Route::get('/technical-test', function (Request $r, ProcessController $c) {
-            return $c->index($r, 'Technical Test', 'admin.applicant.seleksi.technical-test.index');
-        })->name('technical_test');
+        // TECHNICAL TEST
+        Route::prefix('technical-test')->name('technical_test.')->group(function () {
+            Route::get('/', [TechnicalTestController::class, 'index'])->name('index');
+            Route::patch('/{answer}/update-score', [TechnicalTestController::class, 'updateScore'])->name('updateScore');
+            Route::post('/bulk-mark', [TechnicalTestController::class, 'bulkMark'])->name('bulkMark');
+            Route::get('/export', [TechnicalTestController::class, 'export'])->name('export');
+            Route::post('/send-email', [TechnicalTestEmailController::class, 'send'])->name('sendEmail');
+        });
 
         // INTERVIEW
         Route::prefix('interview')->name('interview.')->group(function () {
