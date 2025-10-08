@@ -5,13 +5,16 @@
     </div>
 
     {{-- Toolbar --}}
-    <div class="flex justify-between mb-3">
-      <form method="GET" class="flex gap-2 flex-1">
+    <div class="flex w-full mb-2 items-end gap-2">
+      <form method="GET" class="flex-1 min-w-[220px]">
         <input type="hidden" name="batch" value="{{ $batchId }}">
         <input type="hidden" name="position" value="{{ $positionId }}">
         <input type="text" name="search" value="{{ request('search') }}"
                placeholder="Cari nama/email/jurusan..."
-               class="border rounded px-3 py-2 flex-1 text-sm">
+               class="w-full h-10 pl-3 pr-9 border rounded text-sm focus:ring focus:border-blue-500">
+        <span class="absolute right-3 text-gray-500">
+            <x-search-button/>
+        </span>
       </form>
 
       {{-- Tombol Aksi --}}
@@ -63,16 +66,16 @@
           <thead class="bg-gray-100">
             <tr>
               <th class="px-3 py-2"><input type="checkbox" id="checkAll"></th>
-              <th class="px-3 py-2 text-left">Nama Peserta</th>
-              <th class="px-3 py-2 text-left">Section 1</th>
-              <th class="px-3 py-2 text-left">Section 2</th>
-              <th class="px-3 py-2 text-left">Section 3</th>
-              <th class="px-3 py-2 text-left">Section 4</th>
-              <th class="px-3 py-2 text-left">Section 5</th>
-              <th class="px-3 py-2 text-left">Total Nilai</th>
-              <th class="px-3 py-2 text-left">Status</th>
-              <th class="px-3 py-2 text-left">Email</th>
-              <th class="px-3 py-2 text-left">Action</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap">Nama Peserta</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap">Section 1</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap">Section 2</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap">Section 3</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap">Section 4</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap">Section 5</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap">Total Nilai</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap">Status</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap">Email</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -81,7 +84,7 @@
                 <td class="px-3 py-2">
                   <input type="checkbox" name="ids[]" value="{{ $a->id }}">
                 </td>
-                <td class="px-3 py-2">{{ $a->name }}</td>
+                <td class="px-3 py-2 whitespace-nowrap">{{ $a->name }}</td>
 
                 {{-- Loop 5 section --}}
                 @for ($i = 1; $i <= 5; $i++)
@@ -95,19 +98,19 @@
                     // $sectionResult = $a->latestTestResult?->sectionResults
                     //                     ->firstWhere('test_section_id', $i);
                   @endphp
-                  <td class="px-3 py-2">
+                  <td class="px-3 py-2 whitespace-nowrap">
                     {{ $sectionResult?->score ?? '-' }}
                   </td>
                 @endfor
 
 
                 {{-- Total nilai --}}
-                <td class="px-3 py-2">
+                <td class="px-3 py-2 whitespace-nowrap">
                   {{ $a->latestTestResult?->score ?? '-' }}
                 </td>
 
                 {{-- Status --}}
-                <td class="px-3 py-2">
+                <td class="px-3 py-2 whitespace-nowrap">
                   @php
                       $lolosTulisStatuses = [
                           'Technical Test',
@@ -130,8 +133,8 @@
                       $isLolos = \Illuminate\Support\Str::startsWith($displayStatus, 'Lolos');
                       $isTidak = \Illuminate\Support\Str::startsWith($displayStatus, 'Tidak Lolos');
                       $badgeClass = $isLolos
-                          ? 'bg-green-100 text-green-700'
-                          : ($isTidak ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700');
+                          ? 'bg-[#69FFA0] text-[#2C6C44]'
+                          : ($isTidak ? 'bg-[#FFDDDD] text-[#FF2525]' : 'bg-yellow-100 text-yellow-700');
                   @endphp
 
                   <span class="px-2 py-1 text-xs rounded {{ $badgeClass }}">

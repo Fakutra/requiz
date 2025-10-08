@@ -34,9 +34,9 @@
           {{-- Seleksi Administrasi --}}
           <tr>
             <td class="px-6 py-4">Seleksi Administrasi</td>
-            <td class="px-6 py-4">Jumlah Peserta: <strong>{{ $administrasi['expected'] }}</strong></td>
-            <td class="px-6 py-4">Lolos: {{ $administrasi['lolos'] }}</td>
-            <td class="px-6 py-4">Gagal: {{ $administrasi['gagal'] }}</td>
+            <td class="px-6 py-4 text-[#0026E5]">Jumlah Peserta: <strong>{{ $administrasi['expected'] }}</strong></td>
+            <td class="px-6 py-4 text-[#01D93B]">Lolos: {{ $administrasi['lolos'] }}</td>
+            <td class="px-6 py-4 text-[#EB0000]">Gagal: {{ $administrasi['gagal'] }}</td>
             <td class="px-6 py-4 text-right">
               <a href="{{ route('admin.applicant.seleksi.administrasi.index',['batch'=>$currentBatchId]) }}" 
                  class="bg-blue-600 text-white px-4 py-1 rounded">Proses</a>
@@ -46,9 +46,9 @@
           {{-- Tes Tulis --}}
           <tr>
             <td class="px-6 py-4">Tes Tulis</td>
-            <td class="px-6 py-4">Jumlah Peserta: <strong>{{ $tesTulis['expected'] }}</strong></td>
-            <td class="px-6 py-4">Lolos: {{ $tesTulis['lolos'] }}</td>
-            <td class="px-6 py-4">Gagal: {{ $tesTulis['gagal'] }}</td>
+            <td class="px-6 py-4 text-[#0026E5]">Jumlah Peserta: <strong>{{ $tesTulis['expected'] }}</strong></td>
+            <td class="px-6 py-4 text-[#01D93B]">Lolos: {{ $tesTulis['lolos'] }}</td>
+            <td class="px-6 py-4 text-[#EB0000]">Gagal: {{ $tesTulis['gagal'] }}</td>
             <td class="px-6 py-4 text-right">
               <a href="{{ route('admin.applicant.seleksi.tes_tulis.index',['batch'=>$currentBatchId]) }}" 
                  class="bg-blue-600 text-white px-4 py-1 rounded">Proses</a>
@@ -58,9 +58,9 @@
           {{-- Technical Test --}}
           <tr>
             <td class="px-6 py-4">Technical Test</td>
-            <td class="px-6 py-4">Jumlah Peserta: <strong>{{ $technical['expected'] }}</strong></td>
-            <td class="px-6 py-4">Lolos: {{ $technical['lolos'] }}</td>
-            <td class="px-6 py-4">Gagal: {{ $technical['gagal'] }}</td>
+            <td class="px-6 py-4 text-[#0026E5]">Jumlah Peserta: <strong>{{ $technical['expected'] }}</strong></td>
+            <td class="px-6 py-4 text-[#01D93B]">Lolos: {{ $technical['lolos'] }}</td>
+            <td class="px-6 py-4 text-[#EB0000]">Gagal: {{ $technical['gagal'] }}</td>
             <td class="px-6 py-4 text-right">
               <a href="{{ route('admin.applicant.seleksi.technical_test.index',['batch'=>$currentBatchId]) }}" 
                  class="bg-blue-600 text-white px-4 py-1 rounded">Proses</a>
@@ -70,9 +70,9 @@
           {{-- Interview --}}
           <tr>
             <td class="px-6 py-4">Interview</td>
-            <td class="px-6 py-4">Jumlah Peserta: <strong>{{ $interview['expected'] }}</strong></td>
-            <td class="px-6 py-4">Lolos: {{ $interview['lolos'] }}</td>
-            <td class="px-6 py-4">Gagal: {{ $interview['gagal'] }}</td>
+            <td class="px-6 py-4 text-[#0026E5]">Jumlah Peserta: <strong>{{ $interview['expected'] }}</strong></td>
+            <td class="px-6 py-4 text-[#01D93B]">Lolos: {{ $interview['lolos'] }}</td>
+            <td class="px-6 py-4 text-[#EB0000]">Gagal: {{ $interview['gagal'] }}</td>
             <td class="px-6 py-4 text-right">
               <a href="{{ route('admin.applicant.seleksi.interview.index',['batch'=>$currentBatchId]) }}" 
                  class="bg-blue-600 text-white px-4 py-1 rounded">Proses</a>
@@ -82,9 +82,9 @@
           {{-- Offering --}}
           <tr>
             <td class="px-6 py-4">Offering</td>
-            <td class="px-6 py-4">Jumlah Peserta: <strong>{{ $offering['expected'] }}</strong></td>
-            <td class="px-6 py-4">Lolos: {{ $offering['lolos'] }}</td>
-            <td class="px-6 py-4">Gagal: {{ $offering['gagal'] }}</td>
+            <td class="px-6 py-4 text-[#0026E5]">Jumlah Peserta: <strong>{{ $offering['expected'] }}</strong></td>
+            <td class="px-6 py-4 text-[#01D93B]">Lolos: {{ $offering['lolos'] }}</td>
+            <td class="px-6 py-4 text-[#EB0000]">Gagal: {{ $offering['gagal'] }}</td>
             <td class="px-6 py-4 text-right">
               <a href="{{ route('admin.applicant.seleksi.offering',['batch'=>$currentBatchId]) }}" 
                  class="bg-blue-600 text-white px-4 py-1 rounded">Proses</a>

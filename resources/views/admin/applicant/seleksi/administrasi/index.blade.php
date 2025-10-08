@@ -1,8 +1,16 @@
 <x-app-admin>
   <div class="bg-white rounded-lg shadow-sm p-4 mb-5">
-    <div class="flex justify-between items-center mb-4">
-      <h2 class="text-lg font-semibold">Seleksi Administrasi</h2>
+    <div class="relative flex items-center gap-2 mb-4">
+      <a href="{{ route('admin.applicant.seleksi.index') }}" 
+        class="text-gray-600 hover:text-gray-900 flex items-center">
+        <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+      </a>
+
+      <h2 class="text-lg font-semibold leading-none m-0">Seleksi Administrasi</h2>
     </div>
+
 
     {{-- Toolbar --}}
     <div class="flex justify-between mb-3">
@@ -57,30 +65,91 @@
     <form id="bulkActionForm" method="POST" action="{{ route('admin.applicant.seleksi.administrasi.bulkMark') }}">
       @csrf
       <div class="overflow-x-auto">
-        <table class="min-w-full text-sm border">
-          <thead class="bg-gray-100">
+        <table class="table-auto text-sm border w-full">
+          <thead class="bg-gray-100 text-gray-800">
             <tr>
-              <th class="px-3 py-2"><input type="checkbox" id="checkAll"></th>
-              <th class="px-3 py-2 text-left">Nama Peserta</th>
-              <th class="px-3 py-2 text-left">Email</th>
-              <th class="px-3 py-2 text-left">Jurusan</th>
-              <th class="px-3 py-2 text-left">Posisi</th>
-              <th class="px-3 py-2 text-left">Umur</th>
-              <th class="px-3 py-2 text-left">Status</th>
-              <th class="px-3 py-2 text-left">Status Email</th>
-              <th class="px-3 py-2 text-left">Action</th>
+              <th class="px-3 py-2">
+                <input type="checkbox" id="checkAll">
+              </th>
+
+              {{-- Nama Peserta --}}
+              <th class="px-3 py-2 text-left whitespace-nowrap">
+                <a href="{{ request()->fullUrlWithQuery([
+                    'sort' => 'name',
+                    'direction' => (request('sort') === 'name' && request('direction') === 'asc') ? 'desc' : 'asc'
+                ]) }}" 
+                  class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
+                  Nama Peserta
+                  <svg class="w-4 h-4 ml-1 transform {{ request('sort','name') === 'name' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}" 
+                      fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
+                  </svg>
+                </a>
+              </th>
+
+              {{-- Email --}}
+              <th class="px-3 py-2 text-left whitespace-nowrap">
+                <a href="{{ request()->fullUrlWithQuery([
+                    'sort' => 'email',
+                    'direction' => (request('sort') === 'email' && request('direction') === 'asc') ? 'desc' : 'asc'
+                ]) }}" 
+                  class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
+                  Email
+                  <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'email' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}" 
+                      fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
+                  </svg>
+                </a>
+              </th>
+
+              {{-- Jurusan --}}
+              <th class="px-3 py-2 text-left whitespace-nowrap">
+                <a href="{{ request()->fullUrlWithQuery([
+                    'sort' => 'jurusan',
+                    'direction' => (request('sort') === 'jurusan' && request('direction') === 'asc') ? 'desc' : 'asc'
+                ]) }}" 
+                  class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
+                  Jurusan
+                  <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'jurusan' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}" 
+                      fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
+                  </svg>
+                </a>
+              </th>
+
+              {{-- Posisi --}}
+              <th class="px-3 py-2 text-left whitespace-nowrap">
+                <a href="{{ request()->fullUrlWithQuery([
+                    'sort' => 'position_id',
+                    'direction' => (request('sort') === 'position_id' && request('direction') === 'asc') ? 'desc' : 'asc'
+                ]) }}" 
+                  class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
+                  Posisi
+                  <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'position_id' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}" 
+                      fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
+                  </svg>
+                </a>
+              </th>
+              <th class="px-3 py-2 text-left whitespace-nowrap font-semibold text-gray-800">Umur</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap font-semibold text-gray-800">Status</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap font-semibold text-gray-800">Status Email</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap font-semibold text-gray-800">Action</th>
             </tr>
           </thead>
+
           <tbody>
             @forelse($applicants as $a)
               <tr>
                 <td class="px-3 py-2"><input type="checkbox" name="ids[]" value="{{ $a->id }}"></td>
-                <td class="px-3 py-2">{{ $a->name }}</td>
-                <td class="px-3 py-2">{{ $a->email }}</td>
-                <td class="px-3 py-2">{{ $a->jurusan }}</td>
-                <td class="px-3 py-2">{{ $a->position->name ?? '-' }}</td>
-                <td class="px-3 py-2">{{ $a->age ?? '-' }}</td>
-                <td class="px-3 py-2">
+                <td class="px-3 py-2 whitespace-nowrap">{{ $a->name }}</td>
+                <td class="px-3 py-2 whitespace-nowrap">{{ $a->email }}</td>
+                <td class="px-3 py-2 whitespace-nowrap">{{ $a->jurusan }}</td>
+                <td class="px-3 py-2 whitespace-nowrap">{{ $a->position->name ?? '-' }}</td>
+                <td class="px-3 py-2 whitespace-nowrap">{{ $a->age ?? '-' }}</td>
+
+                {{-- Status --}}
+                <td class="px-3 py-2 whitespace-nowrap">
                   @php
                       // Mapping status untuk tampilan di Seleksi Administrasi
                       $lolosAdminStatuses = [
@@ -108,8 +177,8 @@
                       $isTidak = \Illuminate\Support\Str::startsWith($displayStatus, 'Tidak Lolos');
 
                       $badgeClass = $isLolos
-                          ? 'bg-green-100 text-green-700'
-                          : ($isTidak ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700');
+                          ? 'bg-[#69FFA0] text-[#2C6C44]'
+                          : ($isTidak ? 'bg-[#FFDDDD] text-[#FF2525]' : 'bg-yellow-100 text-yellow-700');
                   @endphp
 
                   <span class="px-2 py-1 text-xs rounded {{ $badgeClass }}">
@@ -135,7 +204,8 @@
                     <i class="fas fa-minus-circle text-gray-400" title="Belum dikirim"></i>
                   @endif
                 </td>
-                {{-- ✅ Action --}}
+
+                {{-- Action --}}
                 <td class="px-3 py-2 text-center">
                   <i class="fas fa-eye text-blue-600 cursor-pointer hover:text-blue-800"
                     title="Lihat Detail"
@@ -144,7 +214,7 @@
               </tr>
             @empty
               <tr>
-                <td colspan="8" class="text-center text-gray-500 py-5">Tidak ada data</td>
+                <td colspan="9" class="text-center text-gray-500 py-5">Tidak ada data</td>
               </tr>
             @endforelse
           </tbody>

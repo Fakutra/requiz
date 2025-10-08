@@ -28,6 +28,16 @@ class AdministrasiController extends Controller
         $search     = trim((string) $request->query('search'));
         $jurusan    = trim((string) $request->query('jurusan'));
 
+        // 🔹 ambil parameter sort & direction dari query
+        $sort      = $request->query('sort', 'name');       // default sort by name
+        $direction = $request->query('direction', 'asc');   // default asc
+
+        // whitelist kolom yang boleh di-sort
+        $allowedSorts = ['name', 'email', 'jurusan', 'position_id'];
+        if (!in_array($sort, $allowedSorts)) {
+            $sort = 'name'; // fallback
+        }
+
         $allJurusan = Applicant::select('jurusan')
             ->distinct()
             ->orderBy('jurusan')
@@ -60,12 +70,15 @@ class AdministrasiController extends Controller
             $q->whereRaw('LOWER(jurusan) LIKE ?', ['%'.mb_strtolower($jurusan).'%']);
         }
 
-        $applicants = $q->orderBy('name')
+        // 🔹 tambahkan orderBy dinamis
+        $applicants = $q->orderBy($sort, $direction)
             ->paginate(20)
             ->appends($request->query());
 
         return view('admin.applicant.seleksi.administrasi.index', compact(
-            'batches', 'positions', 'batchId', 'positionId', 'applicants', 'jurusan', 'allJurusan'
+            'batches', 'positions', 'batchId', 'positionId',
+            'applicants', 'jurusan', 'allJurusan',
+            'sort', 'direction'
         ));
     }
 
