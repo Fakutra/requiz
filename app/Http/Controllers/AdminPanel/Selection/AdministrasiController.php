@@ -31,7 +31,7 @@ class AdministrasiController extends Controller
         $direction = $request->query('direction', 'asc');   // default asc
 
         // whitelist kolom yang boleh di-sort
-        $allowedSorts = ['name', 'email', 'jurusan', 'position_id', 'age'];
+        $allowedSorts = ['name', 'email', 'jurusan', 'position_id'];
         if (!in_array($sort, $allowedSorts)) {
             $sort = 'name'; // fallback
         }

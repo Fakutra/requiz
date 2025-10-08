@@ -1,29 +1,32 @@
 <x-app-admin>
   <div class="bg-white rounded-lg shadow-sm p-4 mb-5">
-    <div class="flex justify-between items-center mb-4">
-      <h2 class="text-lg font-semibold">Seleksi Administrasi</h2>
+    <div class="relative flex items-center gap-2 mb-4">
+      <a href="{{ route('admin.applicant.seleksi.index') }}" 
+        class="text-gray-600 hover:text-gray-900 flex items-center">
+        <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+      </a>
+
+      <h2 class="text-lg font-semibold leading-none m-0">Seleksi Administrasi</h2>
     </div>
 
+
     {{-- Toolbar --}}
-    <div class="flex w-full mb-2 items-end gap-2">
-      <form method="GET" action="{{ route('admin.applicant.index') }}" class="flex-1 min-w-[220px]">
-        <label class="block text-xs text-gray-500 mb-1">Cari</label>
-        <div class="relative flex items-center">
-          <input type="text" name="search" value="{{ request('search') }}"
-                placeholder="Nama / Email / Jurusan / Posisi..."
-                class="w-full h-10 pl-3 pr-9 border rounded text-sm focus:ring focus:border-blue-500">
-          <span class="absolute right-3 text-gray-500">
-            <x-search-button/>
-          </span>
-        </div>
+    <div class="flex justify-between mb-3">
+      <form method="GET" action="{{ route('admin.applicant.seleksi.administrasi.index') }}" class="flex gap-2 flex-1">
+        <input type="text" name="search" value="{{ request('search') }}"
+              placeholder="Cari nama/email/jurusan..."
+              class="border rounded px-3 py-2 flex-1 text-sm">
       </form>
 
       {{-- Tombol Aksi --}}
       <div class="flex gap-2">
         {{-- Filter --}}
         <button type="button"
-                @click="showFilter=true"
-                class="h-10 px-3 flex items-center gap-2 border rounded bg-gray-600 text-white text-sm">
+                onclick="document.getElementById('filterModal').classList.remove('hidden')"
+                class="px-3 py-2 border rounded bg-gray-600 text-white flex items-center justify-center"
+                title="Filter">
           <i class="fas fa-filter"></i>
         </button>
 
@@ -39,7 +42,7 @@
         <a href="{{ route('admin.applicant.seleksi.administrasi.export', request()->query()) }}"
           class="px-3 py-2 border rounded bg-green-600 text-white flex items-center justify-center"
           title="Export">
-          <x-export-button/>
+          <i class="fas fa-file-export"></i>
         </a>
 
         {{-- Lolos --}}
@@ -63,20 +66,24 @@
       @csrf
       <div class="overflow-x-auto">
         <table class="table-auto text-sm border w-full">
-          <thead class="bg-gray-100">
+          <thead class="bg-gray-100 text-gray-800">
             <tr>
-              <th class="px-3 py-2"><input type="checkbox" id="checkAll"></th>
+              <th class="px-3 py-2">
+                <input type="checkbox" id="checkAll">
+              </th>
 
               {{-- Nama Peserta --}}
               <th class="px-3 py-2 text-left whitespace-nowrap">
                 <a href="{{ request()->fullUrlWithQuery([
                     'sort' => 'name',
-                    'direction' => request('sort') === 'name' && request('direction') === 'asc' ? 'desc' : 'asc'
-                ]) }}" class="flex items-center gap-1">
+                    'direction' => (request('sort') === 'name' && request('direction') === 'asc') ? 'desc' : 'asc'
+                ]) }}" 
+                  class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
                   Nama Peserta
-                  @if(request('sort') === 'name')
-                    {!! request('direction') === 'asc' ? '▲' : '▼' !!}
-                  @endif
+                  <svg class="w-4 h-4 ml-1 transform {{ request('sort','name') === 'name' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}" 
+                      fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
+                  </svg>
                 </a>
               </th>
 
@@ -84,12 +91,14 @@
               <th class="px-3 py-2 text-left whitespace-nowrap">
                 <a href="{{ request()->fullUrlWithQuery([
                     'sort' => 'email',
-                    'direction' => request('sort') === 'email' && request('direction') === 'asc' ? 'desc' : 'asc'
-                ]) }}" class="flex items-center gap-1">
+                    'direction' => (request('sort') === 'email' && request('direction') === 'asc') ? 'desc' : 'asc'
+                ]) }}" 
+                  class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
                   Email
-                  @if(request('sort') === 'email')
-                    {!! request('direction') === 'asc' ? '▲' : '▼' !!}
-                  @endif
+                  <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'email' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}" 
+                      fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
+                  </svg>
                 </a>
               </th>
 
@@ -97,12 +106,14 @@
               <th class="px-3 py-2 text-left whitespace-nowrap">
                 <a href="{{ request()->fullUrlWithQuery([
                     'sort' => 'jurusan',
-                    'direction' => request('sort') === 'jurusan' && request('direction') === 'asc' ? 'desc' : 'asc'
-                ]) }}" class="flex items-center gap-1">
+                    'direction' => (request('sort') === 'jurusan' && request('direction') === 'asc') ? 'desc' : 'asc'
+                ]) }}" 
+                  class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
                   Jurusan
-                  @if(request('sort') === 'jurusan')
-                    {!! request('direction') === 'asc' ? '▲' : '▼' !!}
-                  @endif
+                  <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'jurusan' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}" 
+                      fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
+                  </svg>
                 </a>
               </th>
 
@@ -110,31 +121,20 @@
               <th class="px-3 py-2 text-left whitespace-nowrap">
                 <a href="{{ request()->fullUrlWithQuery([
                     'sort' => 'position_id',
-                    'direction' => request('sort') === 'position_id' && request('direction') === 'asc' ? 'desc' : 'asc'
-                ]) }}" class="flex items-center gap-1">
+                    'direction' => (request('sort') === 'position_id' && request('direction') === 'asc') ? 'desc' : 'asc'
+                ]) }}" 
+                  class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
                   Posisi
-                  @if(request('sort') === 'position_id')
-                    {!! request('direction') === 'asc' ? '▲' : '▼' !!}
-                  @endif
+                  <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'position_id' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}" 
+                      fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
+                  </svg>
                 </a>
               </th>
-
-              {{-- Umur --}}
-              <th class="px-3 py-2 text-left whitespace-nowrap">
-                <a href="{{ request()->fullUrlWithQuery([
-                    'sort' => 'age',
-                    'direction' => request('sort') === 'age' && request('direction') === 'asc' ? 'desc' : 'asc'
-                ]) }}" class="flex items-center gap-1">
-                  Umur
-                  @if(request('sort') === 'age')
-                    {!! request('direction') === 'asc' ? '▲' : '▼' !!}
-                  @endif
-                </a>
-              </th>
-
-              <th class="px-3 py-2 text-left whitespace-nowrap">Status</th>
-              <th class="px-3 py-2 text-left whitespace-nowrap">Status Email</th>
-              <th class="px-3 py-2 text-left whitespace-nowrap">Action</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap font-semibold text-gray-800">Umur</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap font-semibold text-gray-800">Status</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap font-semibold text-gray-800">Status Email</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap font-semibold text-gray-800">Action</th>
             </tr>
           </thead>
 
@@ -150,12 +150,59 @@
 
                 {{-- Status --}}
                 <td class="px-3 py-2 whitespace-nowrap">
-                  {{-- status logic kamu --}}
+                  @php
+                      // Mapping status untuk tampilan di Seleksi Administrasi
+                      $lolosAdminStatuses = [
+                          'Tes Tulis',
+                          'Technical Test',
+                          'Interview',
+                          'Offering',
+                          'Menerima Offering',
+                          'Tidak Lolos Tes Tulis',
+                          'Tidak Lolos Technical Test',
+                          'Tidak Lolos Interview',
+                          'Menolak Offering',
+                      ];
+
+                      if (in_array($a->status, $lolosAdminStatuses)) {
+                          $displayStatus = 'Lolos Seleksi Administrasi';
+                      } elseif ($a->status === 'Tidak Lolos Seleksi Administrasi') {
+                          $displayStatus = 'Tidak Lolos Seleksi Administrasi';
+                      } else {
+                          $displayStatus = $a->status;
+                      }
+
+                      // Tentukan warna badge
+                      $isLolos = \Illuminate\Support\Str::startsWith($displayStatus, 'Lolos');
+                      $isTidak = \Illuminate\Support\Str::startsWith($displayStatus, 'Tidak Lolos');
+
+                      $badgeClass = $isLolos
+                          ? 'bg-[#69FFA0] text-[#2C6C44]'
+                          : ($isTidak ? 'bg-[#FFDDDD] text-[#FF2525]' : 'bg-yellow-100 text-yellow-700');
+                  @endphp
+
+                  <span class="px-2 py-1 text-xs rounded {{ $badgeClass }}">
+                      {{ $displayStatus }}
+                  </span>
                 </td>
 
                 {{-- Email Status --}}
                 <td class="px-3 py-2 text-center">
-                  {{-- status email --}}
+                  @php
+                    $log = $a->latestEmailLog;
+                    if ($log && $log->stage !== 'Seleksi Administrasi') {
+                        $log = null;
+                    }
+                  @endphp
+                  @if($log)
+                    @if($log->success)
+                      <i class="fas fa-check-circle text-green-500" title="Terkirim"></i>
+                    @else
+                      <i class="fas fa-times-circle text-red-500" title="Gagal: {{ $log->error }}"></i>
+                    @endif
+                  @else
+                    <i class="fas fa-minus-circle text-gray-400" title="Belum dikirim"></i>
+                  @endif
                 </td>
 
                 {{-- Action --}}
