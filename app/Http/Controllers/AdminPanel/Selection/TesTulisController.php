@@ -11,6 +11,7 @@ use App\Services\SelectionLogger;
 use Illuminate\Support\Facades\Auth;
 use App\Exports\TesTulisApplicantsExport;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Services\SelectionNotifier;
 
 class TesTulisController extends Controller
 {
@@ -138,6 +139,13 @@ class TesTulisController extends Controller
             $a->forceFill([
                 'status' => $this->newStatus($data['bulk_action'], $a->status)
             ])->save();
+
+            SelectionNotifier::notify(
+                $a,
+                $this->stage,                  // stage = "Seleksi Administrasi"
+                $data['bulk_action'],          // result = "lolos" atau "tidak_lolos"
+                $this->newStatus($data['bulk_action'], $a->status) // status baru
+            );
         }
 
         return back()->with('success', count($data['ids']).' peserta diperbarui.');

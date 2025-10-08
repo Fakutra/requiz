@@ -165,7 +165,6 @@
                                    class="block px-4 py-2 text-sm {{ request()->routeIs('essay_grading.*') ? 'bg-gray-100 text-gray-900' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900' }}">
                                     {{ __('Penilaian Essay Quiz') }}
                                 </a>
-                                {{-- TODO: Ganti route ini jika ada halaman khusus penilaian Technical Test --}}
                                 <a href="{{ route('tech-answers.index') }}"
                                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900">
                                     {{ __('Penilaian Technical Test') }}
@@ -176,11 +175,48 @@
                 @endif
             </div>
 
-            <!-- Settings Dropdown -->
-            <div class="hidden sm:flex sm:items-center sm:ms-6">
+            <!-- Settings + Notifikasi -->
+            <div class="hidden sm:flex sm:items-center sm:ms-6 gap-x-4">
+                {{-- 🔔 Notifikasi hanya untuk USER --}}
+                @if(Auth::user()->role === 'user')
+                    <div class="relative" x-data="{ openNotif: false }">
+                        <button @click="openNotif = !openNotif" class="relative focus:outline-none flex items-center">
+                            <i class="fas fa-bell text-gray-600 text-xl"></i>
+                            @if(auth()->user()->unreadNotifications->count() > 0)
+                                <span class="absolute -top-1 -right-1 inline-flex items-center justify-center 
+                                            px-1.5 py-0.5 text-xs font-bold leading-none text-white 
+                                            bg-red-600 rounded-full">
+                                    {{ auth()->user()->unreadNotifications->count() }}
+                                </span>
+                            @endif
+                        </button>
+
+                        <!-- Dropdown Notifikasi -->
+                        <div x-show="openNotif" @click.outside="openNotif = false"
+                            class="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg z-50">
+                            <ul class="divide-y divide-gray-200 max-h-96 overflow-y-auto">
+                                @forelse(auth()->user()->notifications as $notif)
+                                    <li class="p-3 {{ $notif->read_at ? 'bg-white' : 'bg-gray-50' }}">
+                                        <p class="text-sm font-medium">{{ $notif->data['title'] ?? 'Notifikasi' }}</p>
+                                        <p class="text-xs text-gray-500">{{ $notif->data['message'] ?? '' }}</p>
+                                        <span class="text-[10px] text-gray-400">
+                                            {{ $notif->created_at->diffForHumans() }}
+                                        </span>
+                                    </li>
+                                @empty
+                                    <li class="p-3 text-center text-gray-500 text-sm">Tidak ada notifikasi</li>
+                                @endforelse
+                            </ul>
+                        </div>
+                    </div>
+                @endif
+
+                <!-- Settings Dropdown -->
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
-                        <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition">
+                        <button class="inline-flex items-center px-3 py-2 border border-transparent 
+                                    text-sm leading-4 font-medium rounded-md 
+                                    text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition">
                             <div>{{ Auth::user()->name }}</div>
                             <div class="ms-1">
                                 <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">

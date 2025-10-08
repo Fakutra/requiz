@@ -11,6 +11,8 @@ use App\Services\SelectionLogger;
 use Illuminate\Support\Facades\Auth;
 use App\Exports\AdministrasiApplicantsExport;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Services\SelectionNotifier;
+use App\Notifications\SelectionResultNotification;
 
 class AdministrasiController extends Controller
 {
@@ -80,10 +82,22 @@ class AdministrasiController extends Controller
 
         foreach ($data['ids'] as $id) {
             $a = Applicant::find($id);
-            SelectionLogger::write($a, $this->stage, $data['bulk_action'], Auth::id());
-            $a->forceFill(['status' => $this->newStatus($data['bulk_action'], $a->status)])->save();
-        }
 
+            // 1) simpan log
+            SelectionLogger::write($a, $this->stage, $data['bulk_action'], Auth::id());
+
+            // 2) update status
+            $newStatus = $this->newStatus($data['bulk_action'], $a->status);
+            $a->forceFill(['status' => $newStatus])->save();
+
+            SelectionNotifier::notify(
+                $a,
+                $this->stage,                  // stage = "Seleksi Administrasi"
+                $data['bulk_action'],          // result = "lolos" atau "tidak_lolos"
+                $this->newStatus($data['bulk_action'], $a->status) // status baru
+            );
+
+        }
         return back()->with('success', count($data['ids']).' peserta diperbarui.');
     }
 

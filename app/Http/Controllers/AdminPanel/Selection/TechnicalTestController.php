@@ -12,6 +12,7 @@ use App\Services\SelectionLogger;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\TechnicalTestApplicantsExport;
+use App\Services\SelectionNotifier;
 
 class TechnicalTestController extends Controller
 {
@@ -90,14 +91,25 @@ class TechnicalTestController extends Controller
 
         foreach ($data['ids'] as $id) {
             $a = Applicant::find($id);
+
+            // Tentukan status baru
+            $newStatus = $data['bulk_action'] === 'lolos'
+                ? 'Interview'
+                : 'Tidak Lolos Technical Test';
+
             // log tahap
             SelectionLogger::write($a, $this->stage, $data['bulk_action'], Auth::id());
-            // update status global
-            $a->forceFill([
-                'status' => $data['bulk_action'] === 'lolos'
-                    ? 'Interview'
-                    : 'Tidak Lolos Technical Test'
-            ])->save();
+
+            // update status applicant
+            $a->forceFill(['status' => $newStatus])->save();
+
+            // kirim notifikasi ke user
+            SelectionNotifier::notify(
+                $a,
+                $this->stage,           // stage = "Technical Test"
+                $data['bulk_action'],   // result = "lolos" atau "tidak_lolos"
+                $newStatus              // status baru
+            );
         }
 
         return back()->with('success', count($data['ids']).' peserta diperbarui.');
