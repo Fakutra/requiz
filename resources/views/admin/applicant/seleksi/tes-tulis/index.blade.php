@@ -1,7 +1,14 @@
 <x-app-admin>
   <div class="bg-white rounded-lg shadow-sm p-4 mb-5">
-    <div class="flex justify-between items-center mb-4">
-      <h2 class="text-lg font-semibold">Seleksi Tes Tulis</h2>
+    <div class="relative flex items-center gap-2 mb-4">
+      <a href="{{ route('admin.applicant.seleksi.index') }}" 
+        class="text-gray-600 hover:text-gray-900 flex items-center">
+        <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+      </a>
+
+      <h2 class="text-lg font-semibold leading-none m-0">Seleksi Tes Tulis</h2>
     </div>
 
     {{-- Toolbar --}}
@@ -9,12 +16,14 @@
       <form method="GET" class="flex-1 min-w-[220px]">
         <input type="hidden" name="batch" value="{{ $batchId }}">
         <input type="hidden" name="position" value="{{ $positionId }}">
-        <input type="text" name="search" value="{{ request('search') }}"
-               placeholder="Cari nama/email/jurusan..."
-               class="w-full h-10 pl-3 pr-9 border rounded text-sm focus:ring focus:border-blue-500">
-        <span class="absolute right-3 text-gray-500">
+        <div class="relative flex items-center">
+          <input type="text" name="search" value="{{ request('search') }}"
+                placeholder="Nama / Email / Jurusan / Posisi..."
+                class="w-full h-10 pl-3 pr-9 border rounded text-sm focus:ring focus:border-blue-500">
+          <span class="absolute right-3 text-gray-500">
             <x-search-button/>
-        </span>
+          </span>
+        </div>
       </form>
 
       {{-- Tombol Aksi --}}
@@ -66,7 +75,19 @@
           <thead class="bg-gray-100">
             <tr>
               <th class="px-3 py-2"><input type="checkbox" id="checkAll"></th>
-              <th class="px-3 py-2 text-left whitespace-nowrap">Nama Peserta</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap">
+                <a href="{{ request()->fullUrlWithQuery([
+                    'sort' => 'name',
+                    'direction' => (request('sort') === 'name' && request('direction') === 'asc') ? 'desc' : 'asc'
+                ]) }}" 
+                  class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
+                  Nama Peserta
+                  <svg class="w-4 h-4 ml-1 transform {{ request('sort','name') === 'name' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}" 
+                      fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
+                  </svg>
+                </a>
+              </th>
               <th class="px-3 py-2 text-left whitespace-nowrap">Section 1</th>
               <th class="px-3 py-2 text-left whitespace-nowrap">Section 2</th>
               <th class="px-3 py-2 text-left whitespace-nowrap">Section 3</th>

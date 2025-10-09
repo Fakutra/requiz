@@ -24,6 +24,7 @@ use App\Http\Controllers\AdminPanel\EssayGradingController;
 use App\Http\Controllers\AdminPanel\ApplicantController;
 use App\Http\Controllers\AdminPanel\TechnicalTestScheduleController;
 use App\Http\Controllers\AdminPanel\InterviewScheduleController;
+use App\Http\Controllers\AdminPanel\ReportController;
 
 // ====== Seleksi (baru, dipisah per tahap) ======
 use App\Http\Controllers\AdminPanel\Selection\RekapController;
@@ -235,3 +236,4 @@ Route::get   ('admin/tech-answers',          [TechnicalTestAnswerController::cla
 Route::patch ('admin/tech-answers/{answer}', [TechnicalTestAnswerController::class, 'update'])->name('tech-answers.update');
 
 
+Route::get('/report', [ReportController::class, 'index'])->name('report.index');

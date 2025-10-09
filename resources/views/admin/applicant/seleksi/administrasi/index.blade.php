@@ -13,11 +13,16 @@
 
 
     {{-- Toolbar --}}
-    <div class="flex justify-between mb-3">
-      <form method="GET" action="{{ route('admin.applicant.seleksi.administrasi.index') }}" class="flex gap-2 flex-1">
-        <input type="text" name="search" value="{{ request('search') }}"
-              placeholder="Cari nama/email/jurusan..."
-              class="border rounded px-3 py-2 flex-1 text-sm">
+    <div class="flex w-full mb-2 items-end gap-2">
+      <form method="GET" action="{{ route('admin.applicant.seleksi.administrasi.index') }}" class="flex-1 min-w-[220px]">
+        <div class="relative flex items-center">
+          <input type="text" name="search" value="{{ request('search') }}"
+                placeholder="Nama / Email / Jurusan / Posisi..."
+                class="w-full h-10 pl-3 pr-9 border rounded text-sm focus:ring focus:border-blue-500">
+          <span class="absolute right-3 text-gray-500">
+            <x-search-button/>
+          </span>
+        </div>
       </form>
 
       {{-- Tombol Aksi --}}

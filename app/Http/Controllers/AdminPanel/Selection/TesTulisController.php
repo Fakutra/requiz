@@ -30,6 +30,16 @@ class TesTulisController extends Controller
         $batches   = Batch::orderBy('id')->get();
         $positions = $batchId ? Position::where('batch_id', $batchId)->get() : collect();
 
+         // 🔹 ambil parameter sort & direction dari query
+        $sort      = $request->query('sort', 'name');       // default sort by name
+        $direction = $request->query('direction', 'asc');   // default asc
+
+         // whitelist kolom yang boleh di-sort
+        $allowedSorts = ['name', 'section_1', 'section_2', 'section_3', 'section_4', 'section_5', 'total_nilai'];
+        if (!in_array($sort, $allowedSorts)) {
+            $sort = 'name';
+        }
+
         $q = Applicant::with([
             'position',
             'batch',
@@ -67,9 +77,10 @@ class TesTulisController extends Controller
             });
         }
 
-        $applicants = $q->orderBy('name')
-            ->paginate(20)
-            ->appends($request->query());
+         // 🔹 tambahkan orderBy dinamis
+            $applicants = $q->orderBy($sort, $direction)
+                ->paginate(20)
+                ->appends($request->query());
 
         return view('admin.applicant.seleksi.tes-tulis.index', compact(
             'batches', 'positions', 'batchId', 'positionId', 'applicants'
