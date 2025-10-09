@@ -250,43 +250,88 @@
   {{-- Modal Penilaian Technical Test --}}
   @foreach($applicants as $a)
     @php $ans = $latestAnswers[$a->id] ?? null; @endphp
-    <div id="scoreModal-{{ $a->id }}" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div class="bg-white rounded-xl shadow-lg w-full max-w-md p-6">
+    <div id="scoreModal-{{ $a->id }}" 
+        class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 overflow-y-auto">
+      <div class="bg-white rounded-xl shadow-lg w-full max-w-5xl p-6 relative">
+
+        {{-- Header --}}
         <div class="flex justify-between items-center border-b pb-2 mb-4">
-          <h3 class="text-lg font-semibold">Penilaian Technical Test - {{ $a->name }}</h3>
-          <button type="button" onclick="document.getElementById('scoreModal-{{ $a->id }}').classList.add('hidden')"
-                  class="text-gray-500 hover:text-gray-700">&times;</button>
+          <h3 class="text-lg font-semibold">
+            Penilaian Technical Test — {{ $a->name }}
+          </h3>
+          <button type="button"
+                  onclick="document.getElementById('scoreModal-{{ $a->id }}').classList.add('hidden')"
+                  class="text-gray-500 hover:text-gray-700 text-xl leading-none">&times;</button>
         </div>
 
         @if(!$ans)
-          <p class="text-gray-600">Belum ada jawaban yang diupload.</p>
+          <p class="text-gray-600 text-sm">Belum ada jawaban yang diupload.</p>
           <div class="mt-4 text-right">
-            <button type="button" class="px-3 py-1 border rounded"
-                    onclick="document.getElementById('scoreModal-{{ $a->id }}').classList.add('hidden')">Tutup</button>
+            <button type="button" 
+                    class="px-3 py-1 border rounded"
+                    onclick="document.getElementById('scoreModal-{{ $a->id }}').classList.add('hidden')">
+              Tutup
+            </button>
           </div>
         @else
-          <form method="POST" action="{{ route('admin.applicant.seleksi.technical_test.updateScore', $ans->id) }}">
-            @csrf
-            @method('PATCH')
+          {{-- ================== Layout Dua Kolom ================== --}}
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-            <div class="mb-3">
-              <label class="block text-sm font-medium">Nilai</label>
-              <input type="number" name="score" value="{{ $ans->score ?? '' }}"
-                     min="0" max="100" step="0.01"
-                     class="border rounded w-full px-2 py-1">
+            {{-- Kolom Kiri: PDF Preview --}}
+            <div class="border rounded overflow-hidden">
+              @if($ans->answer_path)
+                <iframe src="{{ asset('storage/'.$ans->answer_path) }}" 
+                        class="w-full h-[500px]" frameborder="0"></iframe>
+              @else
+                <div class="p-4 bg-gray-50 text-sm text-gray-600 h-[500px] flex items-center justify-center">
+                  Tidak ada file PDF yang bisa ditampilkan.
+                </div>
+              @endif
+
+              {{-- Optional: Link Rekaman --}}
+              @if($ans->screen_record_url)
+                <div class="p-2 text-center border-t bg-gray-50">
+                  <a href="{{ $ans->screen_record_url }}" target="_blank" 
+                    class="text-blue-600 text-sm hover:underline">
+                    🔗 Lihat rekaman screen test
+                  </a>
+                </div>
+              @endif
             </div>
 
-            <div class="mb-3">
-              <label class="block text-sm font-medium">Keterangan</label>
-              <textarea name="keterangan" class="border rounded w-full px-2 py-1">{{ $ans->keterangan ?? '' }}</textarea>
+            {{-- Kolom Kanan: Form Penilaian --}}
+            <div>
+              <form method="POST" 
+                    action="{{ route('admin.applicant.seleksi.technical_test.updateScore', $ans->id) }}" 
+                    class="flex flex-col h-full">
+                @csrf
+                @method('PATCH')
+
+                <div class="mb-4">
+                  <label class="block text-sm font-medium mb-1">Nilai</label>
+                  <input type="number" name="score" 
+                        value="{{ $ans->score ?? '' }}" 
+                        min="0" max="100" step="0.01"
+                        class="border rounded w-full px-3 py-2 focus:ring focus:ring-blue-200">
+                </div>
+
+                <div class="mb-4 flex-grow">
+                  <label class="block text-sm font-medium mb-1">Keterangan</label>
+                  <textarea name="keterangan" rows="8"
+                            class="border rounded w-full px-3 py-2 focus:ring focus:ring-blue-200">{{ $ans->keterangan ?? '' }}</textarea>
+                </div>
+
+                <div class="flex justify-end gap-2 mt-auto border-t pt-3">
+                  <button type="button" 
+                          onclick="document.getElementById('scoreModal-{{ $a->id }}').classList.add('hidden')"
+                          class="px-3 py-1 border rounded hover:bg-gray-50">Batal</button>
+                  <button type="submit" 
+                          class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">Simpan</button>
+                </div>
+              </form>
             </div>
 
-            <div class="flex justify-end gap-2">
-              <button type="button" onclick="document.getElementById('scoreModal-{{ $a->id }}').classList.add('hidden')"
-                      class="px-3 py-1 border rounded">Batal</button>
-              <button type="submit" class="px-3 py-1 bg-blue-600 text-white rounded">Simpan</button>
-            </div>
-          </form>
+          </div>
         @endif
       </div>
     </div>
