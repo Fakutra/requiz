@@ -156,4 +156,25 @@ class Applicant extends Model
         return $this->hasOne(InterviewResult::class)->where('user_id', auth()->id());
     }
 
+    public function offering()
+    {
+        return $this->hasOne(Offering::class);
+    }
+    
+    public function getFinalPositionAttribute()
+    {
+        // Kalau sudah ada offering.position, pakai itu
+        if ($this->offering && $this->offering->position) {
+            return $this->offering->position;
+        }
+
+        // Default: pakai posisi yang dilamar
+        return $this->position->name ?? '-';
+    }
+
+    public function interviewResults()
+    {
+        return $this->hasMany(InterviewResult::class, 'applicant_id');
+    }
+
 }
