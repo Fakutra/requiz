@@ -14,18 +14,17 @@
         <input type="text" name="search" value="{{ request('search') }}"
                placeholder="Cari nama/email/jurusan..."
                class="border rounded px-3 py-2 flex-1 text-sm">
-
-        <select name="jurusan" class="border rounded px-3 py-2 text-sm w-56">
-          <option value="">Semua Jurusan</option>
-          @foreach ($allJurusan as $j)
-            <option value="{{ $j }}" {{ request('jurusan') == $j ? 'selected' : '' }}>
-              {{ $j }}
-            </option>
-          @endforeach
-        </select>
       </form>
 
       <div class="flex gap-2">
+        {{-- Filter --}}
+        <button type="button"
+                onclick="document.getElementById('filterModalOffering').classList.remove('hidden')"
+                class="px-3 py-2 border rounded bg-gray-600 text-white"
+                title="Filter">
+          <i class="fas fa-filter"></i>
+        </button>
+
         {{-- Email --}}
         <button type="button"
                 onclick="document.getElementById('emailModalOffering').classList.remove('hidden')"
@@ -42,11 +41,14 @@
         </a>
 
         {{-- Accepted / Decline --}}
-        <button type="submit" form="bulkActionForm" name="bulk_action" value="accepted"
+        <button type="button"
+                onclick="openConfirmModal('accepted')"
                 class="px-3 py-2 rounded bg-blue-600 text-white">
           Accepted
         </button>
-        <button type="submit" form="bulkActionForm" name="bulk_action" value="decline"
+
+        <button type="button"
+                onclick="openConfirmModal('decline')"
                 class="px-3 py-2 rounded bg-red-600 text-white">
           Decline
         </button>
@@ -332,6 +334,87 @@
   </div>
 </div>
 
+{{-- Modal Konfirmasi --}}
+  <div id="confirmModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
+      <div class="flex justify-between items-center border-b pb-3 mb-4">
+        <h3 class="text-lg font-semibold">Konfirmasi Aksi</h3>
+        <button type="button"
+                onclick="document.getElementById('confirmModal').classList.add('hidden')"
+                class="text-gray-500 hover:text-gray-700 text-2xl leading-none">&times;</button>
+      </div>
+      <p id="confirmMessage" class="text-gray-700 mb-6">Apakah Anda yakin?</p>
+      <div class="flex justify-end gap-2">
+        <button type="button"
+                onclick="document.getElementById('confirmModal').classList.add('hidden')"
+                class="px-4 py-2 border rounded">Batal</button>
+        <button type="button" id="confirmYesBtn"
+                class="px-4 py-2 bg-blue-600 text-white rounded">Ya, Lanjutkan</button>
+      </div>
+    </div>
+  </div>
+
+  {{-- ✅ Modal Filter Offering --}}
+  <div id="filterModalOffering" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div class="bg-white rounded-lg shadow-lg w-full max-w-lg p-6">
+      <div class="flex justify-between items-center border-b pb-3 mb-4">
+        <h3 class="text-lg font-semibold">Filter Data Offering</h3>
+        <button type="button"
+                onclick="document.getElementById('filterModalOffering').classList.add('hidden')"
+                class="text-gray-500 hover:text-gray-700 text-2xl leading-none">&times;</button>
+      </div>
+
+      <form method="GET" action="{{ route('admin.applicant.seleksi.offering.index') }}" class="space-y-4">
+        {{-- Filter Batch --}}
+        <div>
+          <label class="block text-sm font-medium">Batch</label>
+          <select name="batch" class="border rounded w-full px-2 py-1 text-sm">
+            <option value="">Semua Batch</option>
+            @foreach($batches as $b)
+              <option value="{{ $b->id }}" {{ request('batch') == $b->id ? 'selected' : '' }}>
+                {{ $b->name }}
+              </option>
+            @endforeach
+          </select>
+        </div>
+
+        {{-- Filter Posisi --}}
+        <div>
+          <label class="block text-sm font-medium">Posisi</label>
+          <select name="position" class="border rounded w-full px-2 py-1 text-sm">
+            <option value="">Semua Posisi</option>
+            @foreach($positions as $p)
+              <option value="{{ $p->id }}" {{ request('position') == $p->id ? 'selected' : '' }}>
+                {{ $p->name }}
+              </option>
+            @endforeach
+          </select>
+        </div>
+
+        {{-- Filter Jurusan --}}
+        <div>
+          <label class="block text-sm font-medium">Jurusan</label>
+          <select name="jurusan" class="border rounded w-full px-2 py-1 text-sm">
+            <option value="">Semua Jurusan</option>
+            @foreach($allJurusan as $j)
+              <option value="{{ $j }}" {{ request('jurusan') == $j ? 'selected' : '' }}>
+                {{ $j }}
+              </option>
+            @endforeach
+          </select>
+        </div>
+
+        <div class="flex justify-end gap-2">
+          <button type="button"
+                  onclick="document.getElementById('filterModalOffering').classList.add('hidden')"
+                  class="px-3 py-1 border rounded">Batal</button>
+          <button type="submit" class="px-3 py-1 bg-blue-600 text-white rounded">Terapkan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
 {{-- ✅ Modal Tambah Divisi --}}
 <div id="addDivisionModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
   <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
@@ -434,6 +517,28 @@
       document.getElementById(this.dataset.tab).classList.remove('hidden');
     });
   });
+
+  // Confirm Modal
+    let selectedAction = null;
+    function openConfirmModal(action) {
+      selectedAction = action;
+      const msg = action === 'accepted'
+        ? "Apakah Anda yakin ingin menerima peserta yang dipilih?"
+        : "Apakah Anda yakin ingin menolak peserta yang dipilih?";
+      document.getElementById('confirmMessage').innerText = msg;
+      document.getElementById('confirmModal').classList.remove('hidden');
+    }
+    document.getElementById('confirmYesBtn').addEventListener('click', function() {
+      if (selectedAction) {
+        const form = document.getElementById('bulkActionForm');
+        let input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'bulk_action';
+        input.value = selectedAction;
+        form.appendChild(input);
+        form.submit();
+      }
+    });
 
   function setSelectedIdsOffering() {
     let ids = [];

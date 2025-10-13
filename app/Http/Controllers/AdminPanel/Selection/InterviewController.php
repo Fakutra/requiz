@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Models\Batch;
 use App\Models\Position;
+use App\Exports\InterviewApplicantsExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class InterviewController extends Controller
 {
@@ -31,7 +33,9 @@ class InterviewController extends Controller
             ->whereIn('status', [
                 'Interview',
                 'Offering',
+                'Menerima Offering',
                 'Tidak Lolos Interview',
+                'Menolak Offering',
             ]);
 
         if ($batchId) {
@@ -75,6 +79,20 @@ class InterviewController extends Controller
         return view('admin.applicant.seleksi.interview.index', compact(
             'batches', 'positions', 'batchId', 'positionId', 'applicants'
         ));
+    }
+
+    public function export(Request $request)
+    {
+        $batchId    = $request->query('batch');
+        $positionId = $request->query('position');
+        $search     = $request->query('search');
+
+        $fileName = 'Interview_Applicants_' . now()->format('Ymd_His') . '.xlsx';
+
+        return Excel::download(
+            new InterviewApplicantsExport($batchId, $positionId, $search),
+            $fileName
+        );
     }
 
 

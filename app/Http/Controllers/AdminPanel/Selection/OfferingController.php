@@ -13,6 +13,8 @@ use App\Models\Job;
 use App\Models\Placement;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
+use App\Exports\OfferingApplicantsExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class OfferingController extends Controller
 {
@@ -80,7 +82,17 @@ class OfferingController extends Controller
 
     public function export(Request $request)
     {
-        return back()->with('info', 'Export Offering belum diaktifkan.');
+        $batchId    = $request->query('batch');
+        $positionId = $request->query('position');
+        $search     = $request->query('search');
+        $jurusan    = $request->query('jurusan');
+
+        $fileName = 'Offering_Applicants_' . now()->format('Ymd_His') . '.xlsx';
+
+        return Excel::download(
+            new OfferingApplicantsExport($batchId, $positionId, $search, $jurusan),
+            $fileName
+        );
     }
 
     // Create Offering
@@ -181,4 +193,6 @@ class OfferingController extends Controller
 
         return back();
     }
+
+    
 }

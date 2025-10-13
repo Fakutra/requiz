@@ -51,13 +51,16 @@
         </a>
 
         {{-- Lolos --}}
-        <button type="submit" form="bulkActionForm" name="bulk_action" value="lolos"
+        {{-- Lolos --}}
+        <button type="button"
+                onclick="openConfirmModal('lolos')"
                 class="px-3 py-2 rounded bg-blue-600 text-white">
           Lolos
         </button>
 
         {{-- Gagal --}}
-        <button type="submit" form="bulkActionForm" name="bulk_action" value="tidak_lolos"
+        <button type="button"
+                onclick="openConfirmModal('tidak_lolos')"
                 class="px-3 py-2 rounded bg-red-600 text-white">
           Gagal
         </button>
@@ -134,26 +137,53 @@
                     <i class="fas fa-minus-circle text-gray-400" title="Belum dikirim"></i>
                   @endif
                 </td>
-                <td class="px-3 py-2">
+                <td class="px-3 py-2 whitespace-nowrap">
                   @php
-                      $displayStatus = $a->status;
-                      if ($a->status === 'Offering') {
-                          $displayStatus = 'Lolos Interview';
-                      }
+                    // Mapping status untuk tampilan di Seleksi Interview
+                    $lolosInterviewStatuses = [
+                        'Offering',
+                        'Menerima Offering',
+                        'Menolak Offering',
+                    ];
 
-                      $isLolos = \Illuminate\Support\Str::startsWith($displayStatus, 'Lolos');
-                      $isTidak = \Illuminate\Support\Str::startsWith($displayStatus, 'Tidak Lolos');
+                    if (in_array($a->status, $lolosInterviewStatuses)) {
+                        $displayStatus = 'Lolos Interview';
+                    } elseif ($a->status === 'Tidak Lolos Interview') {
+                        $displayStatus = 'Tidak Lolos Interview';
+                    } elseif ($a->status === 'Interview') {
+                        $displayStatus = 'Interview';
+                    } else {
+                        $displayStatus = $a->status;
+                    }
 
-                      $badgeClass = $isLolos
-                          ? 'bg-green-100 text-green-700'
-                          : ($isTidak ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700');
-                  @endphp
+                    // Tentukan warna badge
+                    $isLolos = \Illuminate\Support\Str::startsWith($displayStatus, 'Lolos');
+                    $isTidak = \Illuminate\Support\Str::startsWith($displayStatus, 'Tidak Lolos');
 
-                  <span class="px-2 py-1 text-xs rounded {{ $badgeClass }}">
+                    $badgeClass = $isLolos
+                        ? 'bg-[#69FFA0] text-[#2C6C44]'
+                        : ($isTidak ? 'bg-[#FFDDDD] text-[#FF2525]' : 'bg-yellow-100 text-yellow-700');
+                @endphp
+
+                <span class="px-2 py-1 text-xs rounded {{ $badgeClass }}">
                     {{ $displayStatus }}
-                  </span>
+                </span>
+
                 </td>
-                <td class="px-3 py-2">{{ $a->interview_note ?? '-' }}</td>
+                <td class="px-3 py-2">
+                  @if($a->interviewResults && $a->interviewResults->count() > 0)
+                    @foreach($a->interviewResults as $r)
+                      @if(!empty($r->note))
+                        <div class="mb-1">
+                          <span class="font-semibold text-sm text-gray-700">{{ $r->user->name ?? 'Tanpa Nama' }}:</span>
+                          <span class="text-sm text-gray-800">{{ $r->note }}</span>
+                        </div>
+                      @endif
+                    @endforeach
+                  @else
+                    <span class="text-gray-400">-</span>
+                  @endif
+                </td>
 
                 {{-- Aksi --}}
                 <td class="px-3 py-2 text-center">
@@ -245,6 +275,26 @@
     </div>
   </div>
   @endforeach
+
+  {{-- Modal Konfirmasi --}}
+  <div id="confirmModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
+      <div class="flex justify-between items-center border-b pb-3 mb-4">
+        <h3 class="text-lg font-semibold">Konfirmasi Aksi</h3>
+        <button type="button"
+                onclick="document.getElementById('confirmModal').classList.add('hidden')"
+                class="text-gray-500 hover:text-gray-700 text-2xl leading-none">&times;</button>
+      </div>
+      <p id="confirmMessage" class="text-gray-700 mb-6">Apakah Anda yakin?</p>
+      <div class="flex justify-end gap-2">
+        <button type="button"
+                onclick="document.getElementById('confirmModal').classList.add('hidden')"
+                class="px-4 py-2 border rounded">Batal</button>
+        <button type="button" id="confirmYesBtn"
+                class="px-4 py-2 bg-blue-600 text-white rounded">Ya, Lanjutkan</button>
+      </div>
+    </div>
+  </div>
 
   {{-- ✅ Modal Email Interview --}}
   <div id="emailModalInterview" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
@@ -408,6 +458,28 @@
         document.querySelectorAll('.tab-content-int').forEach(c => c.classList.add('hidden'));
         document.getElementById(target).classList.remove('hidden');
       });
+    });
+
+    // Confirm Modal
+    let selectedAction = null;
+    function openConfirmModal(action) {
+      selectedAction = action;
+      const msg = action === 'lolos'
+        ? "Apakah Anda yakin ingin meloloskan peserta yang dipilih?"
+        : "Apakah Anda yakin ingin menggagalkan peserta yang dipilih?";
+      document.getElementById('confirmMessage').innerText = msg;
+      document.getElementById('confirmModal').classList.remove('hidden');
+    }
+    document.getElementById('confirmYesBtn').addEventListener('click', function() {
+      if (selectedAction) {
+        const form = document.getElementById('bulkActionForm');
+        let input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'bulk_action';
+        input.value = selectedAction;
+        form.appendChild(input);
+        form.submit();
+      }
     });
 
     // Set selected IDs for "Terpilih"
