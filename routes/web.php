@@ -39,6 +39,9 @@ use App\Http\Controllers\AdminPanel\Selection\ActionsController;
 use App\Http\Controllers\AdminPanel\Selection\AdministrasiEmailController;
 use App\Http\Controllers\AdminPanel\Selection\TesTulisEmailController;
 use App\Http\Controllers\AdminPanel\Selection\TechnicalTestEmailController;
+use App\Http\Controllers\AdminPanel\Selection\InterviewEmailController;
+use App\Http\Controllers\AdminPanel\Selection\OfferingEmailController;
+
 
 // ================= PUBLIC =================
 Route::get('/', fn () => view('welcome'))->name('welcome');
@@ -146,15 +149,51 @@ Route::prefix('admin/applicant/seleksi')->name('admin.applicant.seleksi.')->grou
             Route::post('/score', [InterviewController::class, 'storeScore'])->name('storeScore');
             Route::post('/bulk-mark', [InterviewController::class, 'bulkMark'])->name('bulkMark');
             Route::get('/export', [InterviewController::class, 'export'])->name('export');
+            Route::post('/send-email', [InterviewEmailController::class, 'send'])->name('sendEmail');
         });
 
-        Route::get('/offering', function (Request $r, ProcessController $c) {
-            return $c->index($r, 'Offering', 'admin.applicant.seleksi.offering.index');
-        })->name('offering');
+        // Offering
+        Route::prefix('offering')->name('offering.')->group(function () {
+            Route::get('/', [OfferingController::class, 'index'])->name('index');
+            Route::post('/', [OfferingController::class, 'store'])->name('store');
+            Route::post('{id}/update', [OfferingController::class, 'update'])->name('update');
+            Route::get('/export', [OfferingController::class, 'export'])->name('export');
+            Route::post('/bulk-mark', [OfferingController::class, 'bulkMark'])->name('bulkMark');
+            Route::post('/send-email', [OfferingEmailController::class, 'send'])->name('sendEmail');
+
+        });
+
+         // Tambahan route master data
+        Route::post('/divisions/store', [\App\Http\Controllers\AdminPanel\Selection\DivisionController::class, 'store'])->name('divisions.store');
+        Route::post('/jobs/store', [\App\Http\Controllers\AdminPanel\Selection\JobController::class, 'store'])->name('jobs.store');
+        Route::post('/placements/store', [\App\Http\Controllers\AdminPanel\Selection\PlacementController::class, 'store'])->name('placements.store');
+
+        
 
         // AKSI: Lolos/Gagal (generik)
         Route::post('/mark', [StageActionController::class, 'mark'])->name('mark');
     });
+
+    // Route::get('/offering/{token}', [\App\Http\Controllers\OfferingPublicController::class,'show'])->name('offering.detail');
+    // Route::post('/offering/{token}/response', [\App\Http\Controllers\OfferingPublicController::class,'submit'])->name('offering.response');
+
+    
+
+    // // Tahap lain masih pakai ProcessController
+    // Route::get('/tes-tulis', function (Request $r, ProcessController $c) {
+    //     return $c->index($r, 'Tes Tulis', 'admin.applicant.seleksi.tes-tulis.index');
+    // })->name('tes_tulis');
+
+    // Route::get('/technical-test', function (Request $r, ProcessController $c) {
+    //     return $c->index($r, 'Technical Test', 'admin.applicant.seleksi.technical-test.index');
+    // })->name('technical_test');
+
+    // Route::get('/offering', function (Request $r, ProcessController $c) {
+    //     return $c->index($r, 'Offering', 'admin.applicant.seleksi.offering.index');
+    // })->name('offering');
+
+    // // AKSI: Lolos/Gagal (generik)
+    // Route::post('/mark', [StageActionController::class, 'mark'])->name('mark');
 });
 
 

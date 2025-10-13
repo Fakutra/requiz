@@ -86,7 +86,7 @@
             <td class="px-6 py-4 text-[#01D93B]">Lolos: {{ $offering['lolos'] }}</td>
             <td class="px-6 py-4 text-[#EB0000]">Gagal: {{ $offering['gagal'] }}</td>
             <td class="px-6 py-4 text-right">
-              <a href="{{ route('admin.applicant.seleksi.offering',['batch'=>$currentBatchId]) }}" 
+              <a href="{{ route('admin.applicant.seleksi.offering.index',['batch'=>$currentBatchId]) }}" 
                  class="bg-blue-600 text-white px-4 py-1 rounded">Proses</a>
             </td>
           </tr>
