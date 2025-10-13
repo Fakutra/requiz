@@ -155,24 +155,6 @@ Route::prefix('admin/applicant/seleksi')->name('admin.applicant.seleksi.')->grou
         // AKSI: Lolos/Gagal (generik)
         Route::post('/mark', [StageActionController::class, 'mark'])->name('mark');
     });
-
-    
-
-    // // Tahap lain masih pakai ProcessController
-    // Route::get('/tes-tulis', function (Request $r, ProcessController $c) {
-    //     return $c->index($r, 'Tes Tulis', 'admin.applicant.seleksi.tes-tulis.index');
-    // })->name('tes_tulis');
-
-    // Route::get('/technical-test', function (Request $r, ProcessController $c) {
-    //     return $c->index($r, 'Technical Test', 'admin.applicant.seleksi.technical-test.index');
-    // })->name('technical_test');
-
-    // Route::get('/offering', function (Request $r, ProcessController $c) {
-    //     return $c->index($r, 'Offering', 'admin.applicant.seleksi.offering.index');
-    // })->name('offering');
-
-    // // AKSI: Lolos/Gagal (generik)
-    // Route::post('/mark', [StageActionController::class, 'mark'])->name('mark');
 });
 
 
@@ -236,4 +218,8 @@ Route::get   ('admin/tech-answers',          [TechnicalTestAnswerController::cla
 Route::patch ('admin/tech-answers/{answer}', [TechnicalTestAnswerController::class, 'update'])->name('tech-answers.update');
 
 
-Route::get('/report', [ReportController::class, 'index'])->name('report.index');
+// Route::get('/admin/report', [ReportController::class, 'index'])->name('report.index');
+Route::get('/admin/report', [ReportController::class, 'index'])
+        ->name('admin.report.index');
+Route::get('/admin/report/export', [ReportController::class, 'export'])
+        ->name('admin.report.export');
