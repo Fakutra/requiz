@@ -252,6 +252,17 @@
                                                     @enderror
                                                 </div>
 
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Ekspektasi Gaji (Rp)</label>
+                                                    <input type="number" name="ekspektasi_gaji"
+                                                        class="form-control @error('ekspektasi_gaji') is-invalid @enderror"
+                                                        value="{{ old('ekspektasi_gaji') }}"
+                                                        min="0" placeholder="Contoh: 5500000" required>
+                                                    @error('ekspektasi_gaji')
+                                                        <div class="invalid-feedback">{{ $message }}</div>
+                                                    @enderror
+                                                </div>
+
                                                 <div class="col-md-12">
                                                     <label class="form-label">Skills</label>
                                                     <div class="d-flex flex-wrap gap-3">
