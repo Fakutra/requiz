@@ -58,20 +58,24 @@ class LowonganController extends Controller
 
         // Validasi input form
         $validated = $request->validate([
-            'name'          => 'required|string|max:255',
-            'email'         => 'required|email|max:255',
-            'nik'           => 'required|digits:16',
-            'no_telp'       => 'required|string|max:14',
-            'tpt_lahir'     => 'required|string|max:255',
-            'tgl_lahir'     => 'required|date',
-            'alamat'        => 'required|string',
-            'pendidikan'    => 'required',
-            'universitas'   => 'required|string',
-            'jurusan'       => 'required|string',
-            'thn_lulus'     => 'required|string|max:4',
-            'skills'        => 'array',
-            'cv_document'   => 'required|file|mimes:pdf|max:3072',
+            'name'              => 'required|string|max:255',
+            'email'             => 'required|email|max:255',
+            'nik'               => 'required|digits:16',
+            'no_telp'           => 'required|string|max:14',
+            'tpt_lahir'         => 'required|string|max:255',
+            'tgl_lahir'         => 'required|date',
+            'alamat'            => 'required|string',
+            'pendidikan'        => 'required',
+            'universitas'       => 'required|string',
+            'jurusan'           => 'required|string',
+            'thn_lulus'         => 'required|string|max:4',
+            'ekspektasi_gaji'   => 'required|numeric|min:0|max:100000000',
+            'skills'            => 'array',
+            'cv_document'       => 'required|file|mimes:pdf|max:3072',
         ]);
+
+        // Handle input gaji
+        $validated['ekspektasi_gaji'] = (int) str_replace(['.', ',', ' '], '', $request->ekspektasi_gaji);
 
         // Handle file upload
         $validated['cv_document'] = $request->file('cv_document')->store('cv-applicant', 'public');

@@ -26,6 +26,7 @@ class Applicant extends Model
         'jurusan',
         'thn_lulus',
         'skills',
+        'ekspektasi_gaji',
         'cv_document',
         'status',
     ];
@@ -33,7 +34,18 @@ class Applicant extends Model
     // Biar tgl_lahir otomatis jadi Carbon instance
     protected $casts = [
         'tgl_lahir' => 'date',
+        'ekspektasi_gaji' => 'integer', // 🆕 otomatis jadi integer
     ];
+
+    /* ================== Accessors ================== */
+    public function getEkspektasiGajiFormattedAttribute(): string
+    {
+        if (is_null($this->ekspektasi_gaji)) {
+            return '-';
+        }
+
+        return 'Rp ' . number_format($this->ekspektasi_gaji, 0, ',', '.');
+    }
 
     /* ================== Relationships ================== */
 

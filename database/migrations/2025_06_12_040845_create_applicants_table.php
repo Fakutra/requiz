@@ -28,6 +28,7 @@ return new class extends Migration
             $table->string('jurusan');
             $table->string('thn_lulus')->nullable();
             $table->text('skills')->nullable();
+            $table->bigInteger('ekspektasi_gaji')->nullable();
             $table->string('cv_document');
             $table->enum('status', [
                 'Seleksi Administrasi',

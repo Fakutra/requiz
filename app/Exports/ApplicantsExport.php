@@ -48,7 +48,7 @@ class ApplicantsExport implements FromQuery, WithHeadings, WithMapping, WithStyl
         return [
             'ID','Nama','Email','NIK','No Telp','Tempat Lahir','Tanggal Lahir',
             'Alamat','Pendidikan','Universitas','Jurusan','Tahun Lulus',
-            'Posisi','Batch','Status','Skills'
+            'Posisi','Batch','Status','Skills','Ekspektasi Gaji'
         ];
     }
 
@@ -71,6 +71,7 @@ class ApplicantsExport implements FromQuery, WithHeadings, WithMapping, WithStyl
             $a->batch->name ?? $a->batch_id,
             $a->status,
             $a->skills,
+            $a->ekspektasi_gaji_formatted ?? '-',
         ];
     }
 

@@ -241,6 +241,17 @@
                                                     @enderror
                                                 </div>
 
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Tahun Lulus</label>
+                                                    <input type="text" name="thn_lulus"
+                                                        class="form-control @error('thn_lulus') is-invalid @enderror"
+                                                        value="{{ old('thn_lulus') }}" maxlength="4"
+                                                        pattern="\d{4}" required>
+                                                    @error('thn_lulus')
+                                                        <div class="invalid-feedback">{{ $message }}</div>
+                                                    @enderror
+                                                </div>
+
                                                 <div class="col-md-12">
                                                     <label class="form-label">Skills</label>
                                                     <div class="d-flex flex-wrap gap-3">

@@ -78,6 +78,7 @@
               <th class="px-3 py-2 text-left">Nama Peserta</th>
               <th class="px-3 py-2 text-left">Jurusan</th>
               <th class="px-3 py-2 text-left">Posisi</th>
+              <th class="px-3 py-2 text-left">Ekspektasi Gaji</th>
               <th class="px-3 py-2 text-left">Dokumen</th>
               <th class="px-3 py-2 text-left">Score Quiz</th>
               <th class="px-3 py-2 text-left">Score Praktik</th>
@@ -101,6 +102,9 @@
                 <td class="px-3 py-2">{{ $a->name }}</td>
                 <td class="px-3 py-2">{{ $a->jurusan }}</td>
                 <td class="px-3 py-2">{{ $a->position->name ?? '-' }}</td>
+                <td class="px-3 py-2 text-left">
+                  {{ $a->ekspektasi_gaji_formatted ?? '-' }}
+                </td>
                 <td class="px-3 py-2 text-center">
                   @if($a->cv_document)
                     <a href="{{ asset('storage/'.$a->cv_document) }}" target="_blank" class="text-blue-600 hover:underline">
@@ -275,6 +279,68 @@
     </div>
   </div>
   @endforeach
+
+  {{-- ✅ Modal Filter Interview --}}
+  <div id="filterModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div class="bg-white rounded-lg shadow-lg w-full max-w-lg p-6">
+      {{-- Header --}}
+      <div class="flex justify-between items-center border-b pb-3 mb-4">
+        <h3 class="text-lg font-semibold">Filter Data Interview</h3>
+        <button type="button"
+                onclick="document.getElementById('filterModal').classList.add('hidden')"
+                class="text-gray-500 hover:text-gray-700 text-2xl leading-none">&times;</button>
+      </div>
+
+      {{-- Content --}}
+      <form method="GET" action="{{ route('admin.applicant.seleksi.interview.index') }}" class="space-y-4">
+        {{-- Batch --}}
+        <div>
+          <label class="block text-sm font-medium">Batch</label>
+          <select name="batch" class="border rounded w-full px-2 py-1 text-sm">
+            <option value="">Semua Batch</option>
+            @foreach($batches as $b)
+              <option value="{{ $b->id }}" {{ (string)$batchId === (string)$b->id ? 'selected' : '' }}>
+                {{ $b->name }}
+              </option>
+            @endforeach
+          </select>
+        </div>
+
+        {{-- Posisi --}}
+        <div>
+          <label class="block text-sm font-medium">Posisi</label>
+          <select name="position" class="border rounded w-full px-2 py-1 text-sm">
+            <option value="">Semua Posisi</option>
+            @foreach($positions as $p)
+              <option value="{{ $p->id }}" {{ $positionId == $p->id ? 'selected' : '' }}>
+                {{ $p->name }}
+              </option>
+            @endforeach
+          </select>
+        </div>
+
+        {{-- Status Seleksi --}}
+        <div>
+          <label class="block text-sm font-medium">Status Seleksi</label>
+          <select name="status" class="border rounded w-full px-2 py-1 text-sm">
+            <option value="">Semua Status</option>
+            <option value="Interview" {{ request('status') === 'Interview' ? 'selected' : '' }}>Interview</option>
+            <option value="Lolos Interview" {{ request('status') === 'Lolos Interview' ? 'selected' : '' }}>Lolos Interview</option>
+            <option value="Tidak Lolos Interview" {{ request('status') === 'Tidak Lolos Interview' ? 'selected' : '' }}>Tidak Lolos Interview</option>
+          </select>
+        </div>
+
+        {{-- Footer --}}
+        <div class="flex justify-end gap-2">
+          <button type="button"
+                  onclick="document.getElementById('filterModal').classList.add('hidden')"
+                  class="px-3 py-1 border rounded">Batal</button>
+          <button type="submit" class="px-3 py-1 bg-blue-600 text-white rounded">Terapkan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
 
   {{-- Modal Konfirmasi --}}
   <div id="confirmModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
