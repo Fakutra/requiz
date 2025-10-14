@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Exports\AdministrasiApplicantsExport;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Services\SelectionNotifier;
-use App\Notifications\SelectionResultNotification;
+use App\Services\ActivityLogger; // ✅ tambahkan ini
 
 class AdministrasiController extends Controller
 {
@@ -46,7 +46,7 @@ class AdministrasiController extends Controller
         $batches   = Batch::orderBy('id')->get();
         $positions = $batchId ? Position::where('batch_id', $batchId)->get() : Position::all();
 
-        // 🔹 ambil semua peserta di batch, jangan filter status di sini
+        // 🔹 ambil semua peserta di batch
         $q = Applicant::with(['position', 'batch', 'latestEmailLog']);
 
         if ($batchId) {
@@ -61,8 +61,8 @@ class AdministrasiController extends Controller
             $needle = "%".mb_strtolower($search)."%";
             $q->where(function ($w) use ($needle) {
                 $w->whereRaw('LOWER(name) LIKE ?', [$needle])
-                ->orWhereRaw('LOWER(email) LIKE ?', [$needle])
-                ->orWhereRaw('LOWER(jurusan) LIKE ?', [$needle]);
+                  ->orWhereRaw('LOWER(email) LIKE ?', [$needle])
+                  ->orWhereRaw('LOWER(jurusan) LIKE ?', [$needle]);
             });
         }
 
@@ -96,21 +96,30 @@ class AdministrasiController extends Controller
         foreach ($data['ids'] as $id) {
             $a = Applicant::find($id);
 
-            // 1) simpan log
+            // 1️⃣ log internal seleksi
             SelectionLogger::write($a, $this->stage, $data['bulk_action'], Auth::id());
 
-            // 2) update status
+            // 2️⃣ update status pelamar
             $newStatus = $this->newStatus($data['bulk_action'], $a->status);
             $a->forceFill(['status' => $newStatus])->save();
 
+            // 3️⃣ kirim notifikasi ke peserta
             SelectionNotifier::notify(
                 $a,
-                $this->stage,                  // stage = "Seleksi Administrasi"
-                $data['bulk_action'],          // result = "lolos" atau "tidak_lolos"
-                $this->newStatus($data['bulk_action'], $a->status) // status baru
+                $this->stage,
+                $data['bulk_action'],
+                $newStatus
             );
 
+            // 4️⃣ catat log aktivitas admin (ActivityLogger)
+            ActivityLogger::log(
+                $data['bulk_action'],                  // action (lolos / tidak_lolos)
+                'Seleksi Administrasi',                // module
+                Auth::user()->name." menandai peserta {$a->name} sebagai '".strtoupper($data['bulk_action'])."'", // description
+                "Applicant ID: {$a->id}"               // target
+            );
         }
+
         return back()->with('success', count($data['ids']).' peserta diperbarui.');
     }
 
@@ -130,6 +139,13 @@ class AdministrasiController extends Controller
      */
     public function export(Request $r)
     {
+        // 🧩 log aktivitas export
+        ActivityLogger::log(
+            'export',
+            'Seleksi Administrasi',
+            Auth::user()->name.' mengekspor data peserta seleksi administrasi'
+        );
+
         return Excel::download(
             new AdministrasiApplicantsExport(
                 $r->query('batch'),
@@ -141,7 +157,7 @@ class AdministrasiController extends Controller
     }
 
     /**
-     * Simpan selected IDs di session
+     * Simpan selected IDs di session (kirim email massal)
      */
     public function setSelectedIds(Request $r)
     {
@@ -155,10 +171,16 @@ class AdministrasiController extends Controller
         $applicants = Applicant::whereIn('id', $ids)->get();
 
         foreach ($applicants as $a) {
-            // gunakan service email yang sudah ada
-            // misalnya dispatch job atau langsung kirim
             // Mail::to($a->email)->send(new SeleksiEmail(...));
         }
+
+        // 🧩 catat log aktivitas pengiriman email
+        ActivityLogger::log(
+            'send_email',
+            'Seleksi Administrasi',
+            Auth::user()->name.' mengirim email ke '.count($applicants).' peserta',
+            implode(',', $ids)
+        );
 
         return back()->with('success', 'Email terkirim ke '.count($applicants).' peserta terpilih.');
     }

@@ -25,6 +25,7 @@ use App\Http\Controllers\AdminPanel\ApplicantController;
 use App\Http\Controllers\AdminPanel\TechnicalTestScheduleController;
 use App\Http\Controllers\AdminPanel\InterviewScheduleController;
 use App\Http\Controllers\AdminPanel\ReportController;
+use App\Http\Controllers\AdminPanel\ActivityLogController;
 
 // ====== Seleksi (baru, dipisah per tahap) ======
 use App\Http\Controllers\AdminPanel\Selection\RekapController;
@@ -168,32 +169,9 @@ Route::prefix('admin/applicant/seleksi')->name('admin.applicant.seleksi.')->grou
         Route::post('/jobs/store', [\App\Http\Controllers\AdminPanel\Selection\JobController::class, 'store'])->name('jobs.store');
         Route::post('/placements/store', [\App\Http\Controllers\AdminPanel\Selection\PlacementController::class, 'store'])->name('placements.store');
 
-        
-
         // AKSI: Lolos/Gagal (generik)
         Route::post('/mark', [StageActionController::class, 'mark'])->name('mark');
     });
-
-    // Route::get('/offering/{token}', [\App\Http\Controllers\OfferingPublicController::class,'show'])->name('offering.detail');
-    // Route::post('/offering/{token}/response', [\App\Http\Controllers\OfferingPublicController::class,'submit'])->name('offering.response');
-
-    
-
-    // // Tahap lain masih pakai ProcessController
-    // Route::get('/tes-tulis', function (Request $r, ProcessController $c) {
-    //     return $c->index($r, 'Tes Tulis', 'admin.applicant.seleksi.tes-tulis.index');
-    // })->name('tes_tulis');
-
-    // Route::get('/technical-test', function (Request $r, ProcessController $c) {
-    //     return $c->index($r, 'Technical Test', 'admin.applicant.seleksi.technical-test.index');
-    // })->name('technical_test');
-
-    // Route::get('/offering', function (Request $r, ProcessController $c) {
-    //     return $c->index($r, 'Offering', 'admin.applicant.seleksi.offering.index');
-    // })->name('offering');
-
-    // // AKSI: Lolos/Gagal (generik)
-    // Route::post('/mark', [StageActionController::class, 'mark'])->name('mark');
 });
 
 
@@ -262,3 +240,7 @@ Route::get('/admin/report', [ReportController::class, 'index'])
         ->name('admin.report.index');
 Route::get('/admin/report/export', [ReportController::class, 'export'])
         ->name('admin.report.export');
+
+// -------- Activity Logs ----------
+Route::get('/admin/logs', [ActivityLogController::class, 'index'])
+     ->name('admin.logs.index');

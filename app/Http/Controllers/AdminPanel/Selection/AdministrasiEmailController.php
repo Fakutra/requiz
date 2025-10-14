@@ -9,6 +9,8 @@ use App\Models\EmailLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Throwable;
+use Illuminate\Support\Facades\Auth;
+use App\Services\ActivityLogger;
 
 class AdministrasiEmailController extends Controller
 {
@@ -27,7 +29,7 @@ class AdministrasiEmailController extends Controller
             'attachments.*' => 'file|max:5120', // maksimal 5 MB
         ]);
 
-        // Tentukan target applicants
+        // 🧩 Tentukan target applicants
         if ($data['type'] === 'selected') {
             $ids = array_filter(explode(',', $data['ids'] ?? ''));
             $applicants = Applicant::whereIn('id', $ids)->get();
@@ -45,7 +47,6 @@ class AdministrasiEmailController extends Controller
                     'Interview',
                     'Offering',
                     'Menerima Offering',
-                    // meskipun gagal di tahap setelah admin, tetap dianggap sudah lolos admin
                     'Tidak Lolos Tes Tulis',
                     'Tidak Lolos Technical Test',
                     'Tidak Lolos Interview',
@@ -60,10 +61,11 @@ class AdministrasiEmailController extends Controller
         }
 
         $successCount = 0;
+        $failCount = 0;
 
         foreach ($applicants as $a) {
             try {
-                // Buat mail object
+                // ✉️ Buat mail object
                 $mail = new SelectionResultMail(
                     $data['subject'],
                     $data['message'],
@@ -96,6 +98,7 @@ class AdministrasiEmailController extends Controller
                 ]);
 
                 $successCount++;
+
             } catch (Throwable $e) {
                 // Simpan log gagal
                 EmailLog::create([
@@ -106,12 +109,47 @@ class AdministrasiEmailController extends Controller
                     'success'      => false,
                     'error'        => $e->getMessage(),
                 ]);
+
+                $failCount++;
             }
         }
 
+        // ============================
+        // ✅ Log Aktivitas Berdasarkan Tab Email
+        // ============================
+        $total = count($applicants);
+
+        // Tentukan jenis aksi berdasarkan tab
+        $action = match ($data['type']) {
+            'lolos'        => 'send_email_lolos',
+            'tidak_lolos'  => 'send_email_tidak_lolos',
+            'selected'     => 'send_email_terpilih',
+            default        => 'send_email',
+        };
+
+        // Label tampilan untuk log
+        $tabLabel = match ($data['type']) {
+            'lolos'        => 'Lolos Seleksi Administrasi',
+            'tidak_lolos'  => 'Tidak Lolos Seleksi Administrasi',
+            'selected'     => 'Peserta Terpilih',
+            default        => 'Seleksi Administrasi',
+        };
+
+        // Simpan log ke ActivityLogger
+        ActivityLogger::log(
+            $action,
+            'Seleksi Administrasi',
+            Auth::user()->name." mengirim email hasil {$tabLabel} ke {$successCount} dari {$total} peserta (gagal: {$failCount})",
+            $data['type'] === 'selected'
+                ? 'Selected IDs: '.implode(',', $ids ?? [])
+                : 'Batch ID: '.$data['batch']
+        );
+
+        // ============================
+
         return back()->with(
             'success',
-            "Email berhasil dikirim ke {$successCount} peserta dari total " . count($applicants)
+            "Email berhasil dikirim ke {$successCount} peserta dari total {$total}"
         );
     }
 }

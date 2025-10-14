@@ -9,6 +9,8 @@ use App\Models\EmailLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Throwable;
+use Illuminate\Support\Facades\Auth;
+use App\Services\ActivityLogger; // ✅ tambahkan ini
 
 class TesTulisEmailController extends Controller
 {
@@ -24,38 +26,22 @@ class TesTulisEmailController extends Controller
             'message'       => 'required|string',
             'attachments'   => 'nullable|array',
             'attachments.*' => 'file|max:5120',
-            'ids'           => 'nullable|string', // khusus selected
+            'ids'           => 'nullable|string',
         ]);
 
         // 🔹 Tentukan target applicants
         if ($data['type'] === 'selected') {
-            // ✅ Safety check kalau tidak ada ids
-            if (empty($data['ids'])) {
-                return back()->with('error', 'Silakan pilih peserta terlebih dahulu.');
-            }
-
-            $ids = array_filter(explode(',', $data['ids']));
-            if (empty($ids)) {
-                return back()->with('error', 'Silakan pilih peserta terlebih dahulu.');
-            }
-
+            $ids = array_filter(explode(',', $data['ids'] ?? ''));
             $applicants = Applicant::whereIn('id', $ids)->get();
         } else {
             $query = Applicant::where('batch_id', $data['batch']);
-
-            if ($data['position']) {
-                $query->where('position_id', $data['position']);
-            }
+            if ($data['position']) $query->where('position_id', $data['position']);
 
             if ($data['type'] === 'lolos') {
                 $query->whereIn('status', [
-                    'Technical Test',
-                    'Interview',
-                    'Offering',
-                    'Menerima Offering',
-                    'Tidak Lolos Technical Test',
-                    'Tidak Lolos Interview',
-                    'Menolak Offering',
+                    'Technical Test', 'Interview', 'Offering',
+                    'Menerima Offering', 'Tidak Lolos Technical Test',
+                    'Tidak Lolos Interview', 'Menolak Offering'
                 ]);
             } else {
                 $query->where('status', 'Tidak Lolos Tes Tulis');
@@ -65,16 +51,13 @@ class TesTulisEmailController extends Controller
         }
 
         $successCount = 0;
+        $failCount = 0;
 
-        // 🔹 Kirim email ke setiap peserta
         foreach ($applicants as $a) {
             try {
                 $mail = new SelectionResultMail(
-                    $data['subject'],
-                    $data['message'],
-                    $this->stage,
-                    $data['type'],
-                    $a
+                    $data['subject'], $data['message'],
+                    $this->stage, $data['type'], $a
                 );
 
                 if ($request->hasFile('attachments')) {
@@ -107,12 +90,38 @@ class TesTulisEmailController extends Controller
                     'success'      => false,
                     'error'        => $e->getMessage(),
                 ]);
+                $failCount++;
             }
         }
 
+        // 🧩 Log aktivitas admin
+        $total = count($applicants);
+        $action = match ($data['type']) {
+            'lolos'        => 'send_email_lolos',
+            'tidak_lolos'  => 'send_email_tidak_lolos',
+            'selected'     => 'send_email_terpilih',
+            default        => 'send_email',
+        };
+
+        $tabLabel = match ($data['type']) {
+            'lolos'        => 'Lolos Tes Tulis',
+            'tidak_lolos'  => 'Tidak Lolos Tes Tulis',
+            'selected'     => 'Peserta Terpilih Tes Tulis',
+            default        => 'Tes Tulis',
+        };
+
+        ActivityLogger::log(
+            $action,
+            'Tes Tulis',
+            Auth::user()->name." mengirim email hasil {$tabLabel} ke {$successCount} dari {$total} peserta (gagal: {$failCount})",
+            $data['type'] === 'selected'
+                ? 'Selected IDs: '.implode(',', $ids ?? [])
+                : 'Batch ID: '.$data['batch']
+        );
+
         return back()->with(
             'success',
-            "Email berhasil dikirim ke {$successCount} peserta dari total " . count($applicants)
+            "Email berhasil dikirim ke {$successCount} peserta dari total {$total}"
         );
     }
 }
