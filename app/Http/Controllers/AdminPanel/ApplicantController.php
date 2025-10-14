@@ -83,7 +83,6 @@ class ApplicantController extends Controller
             'position_id' => ['required','exists:positions,id'],
             'batch_id'    => ['nullable','exists:batches,id'],
             'status'      => ['nullable', Rule::in($allowedStatus)],
-            'ekspektasi_gaji'   => 'required|numeric|min:0|max:100000000',
             'skills'      => ['nullable','string','max:5000'],
             'cv_document' => ['nullable','file','mimes:pdf','max:3072'], // 3 MB
         ]);
