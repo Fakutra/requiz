@@ -1,4 +1,4 @@
-<x-app-layout>
+<x-app-admin>
     {{-- HEADER HALAMAN --}}
     <x-slot name="header">
         <div>
@@ -228,4 +228,4 @@
             });
         });
     </script>
-</x-app-layout>
+</x-app-admin>

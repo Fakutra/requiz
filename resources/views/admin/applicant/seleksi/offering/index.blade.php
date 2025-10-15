@@ -1,9 +1,16 @@
 <x-app-admin>
   <div class="bg-white rounded-lg shadow-sm p-4 mb-5">
     {{-- Header --}}
-    <div class="flex justify-between items-center mb-4">
-      <h2 class="text-lg font-semibold">Offering</h2>
-    </div>
+    <div class="relative flex items-center gap-2 mb-4">
+        <a href="{{ route('admin.applicant.seleksi.index') }}" 
+          class="text-gray-600 hover:text-gray-900 flex items-center">
+          <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+        </a>
+
+        <h2 class="text-lg font-semibold leading-none m-0">Offering</h2>
+      </div>
 
     {{-- Toolbar --}}
     <div class="flex justify-between mb-3">

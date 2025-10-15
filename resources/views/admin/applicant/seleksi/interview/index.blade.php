@@ -1,15 +1,15 @@
   <x-app-admin>
     <div class="bg-white rounded-lg shadow-sm p-4 mb-5">
       <div class="relative flex items-center gap-2 mb-4">
-      <a href="{{ route('admin.applicant.seleksi.index') }}" 
-        class="text-gray-600 hover:text-gray-900 flex items-center">
-        <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-        </svg>
-      </a>
+        <a href="{{ route('admin.applicant.seleksi.index') }}" 
+          class="text-gray-600 hover:text-gray-900 flex items-center">
+          <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+        </a>
 
-      <h2 class="text-lg font-semibold leading-none m-0">Interview</h2>
-    </div>
+        <h2 class="text-lg font-semibold leading-none m-0">Interview</h2>
+      </div>
 
       {{-- Toolbar --}}
       <div class="flex w-full mb-2 items-end gap-2">
@@ -99,7 +99,7 @@
               @endphp
               <tr>
                 <td class="px-3 py-2"><input type="checkbox" name="ids[]" value="{{ $a->id }}"></td>
-                <td class="px-3 py-2">{{ $a->name }}</td>
+                <td class="px-3 py-2 whitespace-nowrap">{{ $a->name }}</td>
                 <td class="px-3 py-2">{{ $a->jurusan }}</td>
                 <td class="px-3 py-2">{{ $a->position->name ?? '-' }}</td>
                 <td class="px-3 py-2 text-left">
