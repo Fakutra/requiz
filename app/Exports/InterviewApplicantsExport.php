@@ -3,8 +3,11 @@
 namespace App\Exports;
 
 use App\Models\Applicant;
+use App\Services\ActivityLogger; // ✅ tambahkan
+use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
+use Illuminate\Support\Facades\Log;
 
 class InterviewApplicantsExport implements FromCollection, WithHeadings
 {
@@ -22,7 +25,7 @@ class InterviewApplicantsExport implements FromCollection, WithHeadings
     public function collection()
     {
         $q = Applicant::with([
-                'position', 
+                'position',
                 'batch',
                 'interviewResults.user'
             ])
@@ -51,8 +54,32 @@ class InterviewApplicantsExport implements FromCollection, WithHeadings
             });
         }
 
-        return $q->get()->map(function ($a) {
+        $data = $q->get();
 
+        /**
+         * ✅ Catat log aktivitas export otomatis
+         * ------------------------------------------------------------
+         * Log ini akan tersimpan setiap kali proses export dipanggil.
+         * Misalnya: “admin mengekspor 25 peserta Interview (Batch A, Posisi: Developer)”
+         */
+        try {
+            $userName = Auth::user()?->name ?? 'System';
+            $batchInfo = $this->batchId ? "Batch ID {$this->batchId}" : "Semua Batch";
+            $positionInfo = $this->positionId ? "Posisi ID {$this->positionId}" : "Semua Posisi";
+            $count = $data->count();
+
+            ActivityLogger::log(
+                'export',
+                'Seleksi Interview',
+                "{$userName} mengekspor data peserta interview ({$count} baris, {$batchInfo}, {$positionInfo})",
+                "Jumlah Data: {$count}"
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Gagal mencatat log export InterviewApplicants: '.$e->getMessage());
+        }
+
+        // 🔹 Mapping hasil export
+        return $data->map(function ($a) {
             // 🧮 Hitung rata-rata dari semua pewawancara
             $avgInterview = $a->interviewResults->count()
                 ? number_format(
@@ -66,12 +93,8 @@ class InterviewApplicantsExport implements FromCollection, WithHeadings
             // 📝 Gabungkan semua note pewawancara
             $allNotes = $a->interviewResults
                 ->filter(fn($r) => !empty($r->note))
-                ->map(fn($r) => ($r->user->name ?? 'Tanpa Nama') . ': ' . $r->note)
-                ->implode(' | ');
-            
-            if (empty($allNotes)) {
-                $allNotes = '-';
-            }
+                ->map(fn($r) => ($r->user->name ?? 'Tanpa Nama').': '.$r->note)
+                ->implode(' | ') ?: '-';
 
             return [
                 'Nama'            => $a->name,
@@ -82,7 +105,7 @@ class InterviewApplicantsExport implements FromCollection, WithHeadings
                 'Score Interview' => $avgInterview,
                 'Catatan'         => $allNotes,
                 'Status'          => $a->status,
-                'Tanggal Daftar'  => $a->created_at->format('d-m-Y'),
+                'Tanggal Daftar'  => $a->created_at->format('d-m-Y H:i:s'),
             ];
         });
     }
@@ -98,7 +121,7 @@ class InterviewApplicantsExport implements FromCollection, WithHeadings
             'Score Interview',
             'Catatan',
             'Status',
-            'Tanggal Daftar'
+            'Tanggal Daftar',
         ];
     }
 }

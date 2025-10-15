@@ -3,6 +3,9 @@
 namespace App\Exports;
 
 use App\Models\Applicant;
+use App\Services\ActivityLogger; // ✅ tambahkan
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log; // ✅ tambahkan
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -47,13 +50,32 @@ class AdministrasiApplicantsExport implements FromQuery, WithHeadings, WithMappi
             });
         }
 
+        /**
+         * ✅ Setelah query siap, catat log export di sini.
+         * Kita hitung jumlah data sementara untuk keperluan log.
+         */
+        try {
+            $count = $q->count();
+            $userName = Auth::user()?->name ?? 'System';
+            $batchInfo = $this->batchId ? "Batch ID {$this->batchId}" : "Semua Batch";
+            $positionInfo = $this->positionId ? "Posisi ID {$this->positionId}" : "Semua Posisi";
+
+            ActivityLogger::log(
+                'export',
+                'Seleksi Administrasi',
+                "{$userName} mengekspor data peserta Seleksi Administrasi ({$count} baris, {$batchInfo}, {$positionInfo})",
+                "Jumlah Data: {$count}"
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Gagal mencatat log export AdministrasiApplicants: '.$e->getMessage());
+        }
+
         return $q->orderBy('name');
     }
 
     public function headings(): array
     {
         return [
-            // 'ID',
             'NAMA',
             'EMAIL',
             'JURUSAN',
@@ -61,7 +83,7 @@ class AdministrasiApplicantsExport implements FromQuery, WithHeadings, WithMappi
             'UMUR',
             'BATCH',
             'STATUS SELEKSI',
-            'STATUS EMAIL', // kolom tambahan
+            'STATUS EMAIL',
         ];
     }
 
@@ -88,15 +110,14 @@ class AdministrasiApplicantsExport implements FromQuery, WithHeadings, WithMappi
         }
 
         return [
-            // $a->id,
             $a->name,
             $a->email,
             $a->jurusan,
             $a->position->name ?? '-',
             $a->age ?? '-',
             $a->batch->name ?? $a->batch_id,
-            $status,       // ✅ sudah di-convert
-            $emailStatus,  // status email
+            $status,
+            $emailStatus,
         ];
     }
 

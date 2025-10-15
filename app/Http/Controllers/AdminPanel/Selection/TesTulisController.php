@@ -173,11 +173,11 @@ class TesTulisController extends Controller
     public function export(Request $r)
     {
         // 🧩 log aktivitas export
-        ActivityLogger::log(
-            'export',
-            'Tes Tulis',
-            Auth::user()->name.' mengekspor data peserta Tes Tulis'
-        );
+        // ActivityLogger::log(
+        //     'export',
+        //     'Tes Tulis',
+        //     Auth::user()->name.' mengekspor data peserta Tes Tulis'
+        // );
 
         return Excel::download(
             new TesTulisApplicantsExport(

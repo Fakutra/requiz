@@ -9,6 +9,9 @@ use App\Models\Offering;
 use App\Models\EmailLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Auth; // ✅ tambahkan
+use Illuminate\Support\Facades\Log;  // ✅ tambahkan
+use App\Services\ActivityLogger;     // ✅ tambahkan
 use Throwable;
 
 class OfferingEmailController extends Controller
@@ -37,37 +40,37 @@ class OfferingEmailController extends Controller
             if ($data['position']) {
                 $query->where('position_id', $data['position']);
             }
-            // Offering dianggap hanya yang statusnya Offering
             $query->where('status', 'Offering');
             $applicants = $query->get();
         }
 
         $successCount = 0;
+        $failCount = 0;
 
         foreach ($applicants as $a) {
             try {
                 $offering = Offering::where('applicant_id', $a->id)->first();
 
-                // --- Data pengganti token dalam template ---
+                // --- Token data pribadi ---
                 $placeholders = [
-                    '{{name}}' => $a->name ?? '-',
-                    '{{job}}' => optional($offering->job ?? null)->name ?? '-',
-                    '{{division}}' => optional($offering->division ?? null)->name ?? '-',
-                    '{{placement}}' => optional($offering->placement ?? null)->name ?? '-',
-                    '{{gaji}}' => $offering ? number_format($offering->gaji, 0, ',', '.') : '-',
-                    '{{uang_makan}}' => $offering ? number_format($offering->uang_makan, 0, ',', '.') : '-',
-                    '{{uang_transport}}' => $offering ? number_format($offering->uang_transport, 0, ',', '.') : '-',
-                    '{{kontrak_mulai}}' => optional($offering->kontrak_mulai)->format('d-m-Y') ?? '-',
+                    '{{name}}'            => $a->name ?? '-',
+                    '{{job}}'             => optional($offering->job ?? null)->name ?? '-',
+                    '{{division}}'        => optional($offering->division ?? null)->name ?? '-',
+                    '{{placement}}'       => optional($offering->placement ?? null)->name ?? '-',
+                    '{{gaji}}'            => $offering ? number_format($offering->gaji, 0, ',', '.') : '-',
+                    '{{uang_makan}}'      => $offering ? number_format($offering->uang_makan, 0, ',', '.') : '-',
+                    '{{uang_transport}}'  => $offering ? number_format($offering->uang_transport, 0, ',', '.') : '-',
+                    '{{kontrak_mulai}}'   => optional($offering->kontrak_mulai)->format('d-m-Y') ?? '-',
                     '{{kontrak_selesai}}' => optional($offering->kontrak_selesai)->format('d-m-Y') ?? '-',
                     '{{periode_kontrak}}' => $offering && $offering->kontrak_mulai && $offering->kontrak_selesai
-                                                ? $offering->kontrak_mulai->diffInMonths($offering->kontrak_selesai) . ' bulan'
-                                                : '-',
-                    '{{link_pkwt}}' => $offering->link_pkwt ?? '#',
-                    '{{link_berkas}}' => $offering->link_berkas ?? '#',
-                    '{{link_form_pelamar}}' => $offering->link_form_pelamar ?? '#',
+                        ? $offering->kontrak_mulai->diffInMonths($offering->kontrak_selesai) . ' bulan'
+                        : '-',
+                    '{{link_pkwt}}'        => $offering->link_pkwt ?? '#',
+                    '{{link_berkas}}'      => $offering->link_berkas ?? '#',
+                    '{{link_form_pelamar}}'=> $offering->link_form_pelamar ?? '#',
                 ];
 
-                // --- Ganti token di pesan dengan data sebenarnya ---
+                // --- Ganti token dalam pesan ---
                 $personalizedMessage = strtr($data['message'], $placeholders);
 
                 $mail = new SelectionResultMail(
@@ -99,6 +102,7 @@ class OfferingEmailController extends Controller
 
                 $successCount++;
             } catch (Throwable $e) {
+                $failCount++;
                 EmailLog::create([
                     'applicant_id' => $a->id,
                     'email'        => $a->email,
@@ -107,7 +111,31 @@ class OfferingEmailController extends Controller
                     'success'      => false,
                     'error'        => $e->getMessage(),
                 ]);
+                Log::warning("Gagal kirim email Offering ke {$a->email}: ".$e->getMessage());
             }
+        }
+
+        // ✅ Catat log aktivitas setelah semua email selesai dikirim
+        try {
+            $user = Auth::user()?->name ?? 'System';
+            $total = count($applicants);
+            $typeLabel = $data['type'] === 'selected' ? 'individual' : 'massal';
+            $desc = "{$user} mengirim email Offering ({$typeLabel}) ke {$total} peserta — Berhasil: {$successCount}, Gagal: {$failCount}";
+
+            ActivityLogger::log(
+                'send_email',
+                'Offering',
+                $desc,
+                json_encode([
+                    'subject' => $data['subject'],
+                    'berhasil' => $successCount,
+                    'gagal' => $failCount,
+                    'total' => $total,
+                    'tipe' => $data['type'],
+                ])
+            );
+        } catch (Throwable $e) {
+            Log::warning('Gagal mencatat log pengiriman email Offering: '.$e->getMessage());
         }
 
         return back()->with(

@@ -3,11 +3,14 @@
 namespace App\Exports;
 
 use App\Models\Applicant;
+use App\Services\ActivityLogger; // ✅ tambahkan ini
+use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use Illuminate\Support\Facades\Log;
 
 class ApplicantsExport implements FromQuery, WithHeadings, WithMapping, WithStyles
 {
@@ -36,8 +39,26 @@ class ApplicantsExport implements FromQuery, WithHeadings, WithMapping, WithStyl
         if (!empty($this->positionId)) {
             $q->where('position_id', $this->positionId);
         }
+
         if (!empty($this->batchId)) {
             $q->where('batch_id', $this->batchId);
+        }
+
+        // 🔹 Catat aktivitas export saat query dieksekusi
+        try {
+            $count = $q->count();
+            $user  = Auth::user()?->name ?? 'System';
+
+            ActivityLogger::log(
+                'export',
+                'Data Pelamar',
+                "{$user} mengekspor data pelamar ({$count} baris) "
+                .($this->batchId ? "Batch ID {$this->batchId}" : "Semua Batch")
+                .($this->positionId ? ", Position ID {$this->positionId}" : ""),
+                "Jumlah Data: {$count}"
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Gagal mencatat log export pelamar: '.$e->getMessage());
         }
 
         return $q->orderBy('name');

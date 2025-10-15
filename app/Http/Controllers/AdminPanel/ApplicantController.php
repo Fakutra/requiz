@@ -11,11 +11,12 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Storage;
 use App\Exports\ApplicantsExport;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Services\ActivityLogger; // ✅ tambahkan ini
 
 class ApplicantController extends Controller
 {
     /**
-     * INDEX: search + filter batch + filter position (DB-agnostic)
+     * INDEX: search + filter batch + filter position
      */
     public function index(Request $request)
     {
@@ -25,7 +26,6 @@ class ApplicantController extends Controller
 
         $q = Applicant::query()->with(['position','batch']);
 
-        // Pencarian aman untuk MySQL & Postgres
         if ($search !== '') {
             $needle = '%'.mb_strtolower($search).'%';
             $q->where(function ($w) use ($needle) {
@@ -38,19 +38,13 @@ class ApplicantController extends Controller
             });
         }
 
-        // Filter
-        if (!empty($positionId)) {
-            $q->where('position_id', $positionId);
-        }
-        if (!empty($batchId)) {
-            $q->where('batch_id', $batchId);
-        }
+        if (!empty($positionId)) $q->where('position_id', $positionId);
+        if (!empty($batchId)) $q->where('batch_id', $batchId);
 
         $applicants = $q->orderBy('name')->paginate(15)->withQueryString();
 
-        // Dropdown data
-        $positions  = Position::orderBy('name')->get(['id','name']);
-        $batches    = Batch::orderBy('id')->get(['id','name']);
+        $positions = Position::orderBy('name')->get(['id','name']);
+        $batches   = Batch::orderBy('id')->get(['id','name']);
 
         return view('admin.applicant.index', compact('applicants','positions','batches'));
     }
@@ -63,7 +57,7 @@ class ApplicantController extends Controller
         $allowedPendidikan = ['SMA/Sederajat','Diploma','S1','S2','S3'];
         $allowedStatus = [
             'Seleksi Administrasi','Tes Tulis','Technical Test','Interview','Offering',
-            'Tidak Lolos Seleksi Administrasi','Tidak Lolos Seleksi Tes Tulis',
+            'Tidak Lolos Seleksi Administrasi','Tidak Lolos Tes Tulis',
             'Tidak Lolos Technical Test','Tidak Lolos Interview',
             'Menerima Offering','Menolak Offering',
         ];
@@ -82,14 +76,16 @@ class ApplicantController extends Controller
             'thn_lulus'   => ['nullable','digits:4'],
             'position_id' => ['required','exists:positions,id'],
             'batch_id'    => ['nullable','exists:batches,id'],
-            'ekspektasi_gaji'   => 'required|numeric|min:0|max:100000000',
+            'ekspektasi_gaji' => 'required|numeric|min:0|max:100000000',
             'status'      => ['nullable', Rule::in($allowedStatus)],
             'skills'      => ['nullable','string','max:5000'],
             'cv_document' => ['nullable','file','mimes:pdf','max:3072'], // 3 MB
         ]);
 
-        // Handle input gaji
-        $validated['ekspektasi_gaji'] = (int) str_replace(['.', ',', ' '], '', $request->ekspektasi_gaji);
+        // Simpan data lama (hanya field yang relevan untuk log)
+        $oldData = $applicant->only([
+            'name','email','jurusan','status','ekspektasi_gaji','position_id','batch_id'
+        ]);
 
         // Handle CV baru
         if ($request->hasFile('cv_document')) {
@@ -99,9 +95,17 @@ class ApplicantController extends Controller
             $data['cv_document'] = $request->file('cv_document')->store('cv_documents', 'public');
         }
 
+        // Update data applicant
         $applicant->update($data);
 
-        // Bawa kembali query string (supaya filter/pagination tetap)
+        // Simpan data baru setelah update
+        $newData = $applicant->only([
+            'name','email','jurusan','status','ekspektasi_gaji','position_id','batch_id'
+        ]);
+
+        // ✅ Log perubahan (before & after)
+        ActivityLogger::logUpdate('Data Pelamar', $applicant, $oldData, $newData);
+
         return redirect()
             ->route('admin.applicant.index', $request->only('search','position','batch','page'))
             ->with('success','Data pelamar berhasil diperbarui.');
@@ -112,17 +116,26 @@ class ApplicantController extends Controller
      */
     public function destroy(Applicant $applicant)
     {
+        $name = $applicant->name;
+
         if ($applicant->cv_document) {
             Storage::disk('public')->delete($applicant->cv_document);
         }
         $applicant->delete();
+
+        // ✅ Log penghapusan data
+        ActivityLogger::log(
+            'delete',
+            'Data Pelamar',
+            auth()->user()->name." menghapus data pelamar {$name}",
+            "Nama: {$name}"
+        );
 
         return redirect()->route('admin.applicant.index')->with('success','Data pelamar berhasil dihapus.');
     }
 
     /**
      * EXPORT: mengikuti filter aktif (search + position + batch)
-     * (Heading tebal diatur di ApplicantsExport via WithStyles)
      */
     public function export(Request $request)
     {
@@ -131,6 +144,14 @@ class ApplicantController extends Controller
         $batchId    = $request->query('batch');
 
         $fileName = 'data-pelamar-' . now()->format('Y-m-d') . '.xlsx';
+
+        // ✅ Log export data
+        ActivityLogger::log(
+            'export',
+            'Data Pelamar',
+            auth()->user()->name.' mengekspor data pelamar ke file Excel',
+            "File: {$fileName}"
+        );
 
         return Excel::download(
             new ApplicantsExport($search, $positionId, $batchId),
