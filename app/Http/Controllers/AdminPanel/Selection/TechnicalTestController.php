@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\TechnicalTestApplicantsExport;
 use App\Services\SelectionNotifier;
+use App\Services\ActivityLogger; // ✅ tambahkan ini
 
 class TechnicalTestController extends Controller
 {
@@ -28,7 +29,6 @@ class TechnicalTestController extends Controller
         $batches   = Batch::orderBy('id')->get();
         $positions = $batchId ? Position::where('batch_id', $batchId)->get() : collect();
 
-        // Daftar status yang relevan untuk tahap Technical Test
         $relevantStatuses = [
             'Technical Test',
             'Interview',
@@ -42,15 +42,9 @@ class TechnicalTestController extends Controller
         $q = Applicant::with(['position','batch','latestEmailLog'])
             ->whereIn('status', $relevantStatuses);
 
-        if ($batchId) {
-            $q->where('batch_id', $batchId);
-        }
-        if ($positionId) {
-            $q->where('position_id', $positionId);
-        }
-        if ($status) {
-            $q->where('status', $status);
-        }
+        if ($batchId) $q->where('batch_id', $batchId);
+        if ($positionId) $q->where('position_id', $positionId);
+        if ($status) $q->where('status', $status);
         if ($search !== '') {
             $needle = "%".mb_strtolower($search)."%";
             $q->where(function ($w) use ($needle) {
@@ -64,13 +58,11 @@ class TechnicalTestController extends Controller
             ->paginate(20)
             ->appends($request->query());
 
-        // Ambil jawaban Technical Test terbaru per applicant (1 query)
         $answerRows = TechnicalTestAnswer::whereIn('applicant_id', $applicants->pluck('id'))
             ->orderBy('applicant_id')
             ->orderByDesc('submitted_at')
             ->get();
 
-        // unique('applicant_id') menjaga baris pertama (yang terbaru) untuk tiap pelamar
         $latestAnswers = $answerRows->unique('applicant_id')->keyBy('applicant_id');
 
         return view('admin.applicant.seleksi.technical-test.index', compact(
@@ -92,23 +84,25 @@ class TechnicalTestController extends Controller
         foreach ($data['ids'] as $id) {
             $a = Applicant::find($id);
 
-            // Tentukan status baru
             $newStatus = $data['bulk_action'] === 'lolos'
                 ? 'Interview'
                 : 'Tidak Lolos Technical Test';
 
-            // log tahap
+            // Log internal seleksi
             SelectionLogger::write($a, $this->stage, $data['bulk_action'], Auth::id());
 
-            // update status applicant
+            // Update status applicant
             $a->forceFill(['status' => $newStatus])->save();
 
-            // kirim notifikasi ke user
-            SelectionNotifier::notify(
-                $a,
-                $this->stage,           // stage = "Technical Test"
-                $data['bulk_action'],   // result = "lolos" atau "tidak_lolos"
-                $newStatus              // status baru
+            // Kirim notifikasi
+            SelectionNotifier::notify($a, $this->stage, $data['bulk_action'], $newStatus);
+
+            // ✅ Catat aktivitas admin
+            ActivityLogger::log(
+                $data['bulk_action'],
+                'Technical Test',
+                Auth::user()->name." menandai peserta {$a->name} sebagai '".strtoupper($data['bulk_action'])."' pada tahap Technical Test",
+                "Applicant ID: {$a->id}"
             );
         }
 
@@ -117,7 +111,6 @@ class TechnicalTestController extends Controller
 
     /**
      * Update nilai & keterangan untuk satu jawaban Technical Test
-     * (route-model binding parameter {answer} = TechnicalTestAnswer)
      */
     public function updateScore(Request $request, TechnicalTestAnswer $answer)
     {
@@ -126,10 +119,20 @@ class TechnicalTestController extends Controller
             'keterangan' => 'nullable|string',
         ]);
 
+        // Simpan data lama
+        $oldData = $answer->only(['score', 'keterangan']);
+
+        // Update nilai baru
         $answer->update([
             'score'      => $data['score'],
             'keterangan' => $data['keterangan'] ?? null,
         ]);
+
+        // Simpan data baru
+        $newData = $answer->only(['score', 'keterangan']);
+
+        // ✅ Catat perbedaan ke log aktivitas
+        \App\Services\ActivityLogger::logUpdate('Technical Test', $answer, $oldData, $newData);
 
         return back()->with('success', 'Nilai Technical Test berhasil disimpan.');
     }
@@ -139,6 +142,13 @@ class TechnicalTestController extends Controller
      */
     public function export(Request $r)
     {
+        // ✅ Log aktivitas export
+        ActivityLogger::log(
+            'export',
+            'Technical Test',
+            Auth::user()->name.' mengekspor data peserta tahap Technical Test'
+        );
+
         return Excel::download(
             new TechnicalTestApplicantsExport(
                 $r->query('batch'),

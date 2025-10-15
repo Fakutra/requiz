@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Exports\TesTulisApplicantsExport;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Services\SelectionNotifier;
+use App\Services\ActivityLogger; // ✅ tambahkan ini
 
 class TesTulisController extends Controller
 {
@@ -30,11 +31,10 @@ class TesTulisController extends Controller
         $batches   = Batch::orderBy('id')->get();
         $positions = $batchId ? Position::where('batch_id', $batchId)->get() : collect();
 
-         // 🔹 ambil parameter sort & direction dari query
-        $sort      = $request->query('sort', 'name');       // default sort by name
-        $direction = $request->query('direction', 'asc');   // default asc
+        // 🔹 ambil parameter sort & direction
+        $sort      = $request->query('sort', 'name');
+        $direction = $request->query('direction', 'asc');
 
-         // whitelist kolom yang boleh di-sort
         $allowedSorts = ['name', 'section_1', 'section_2', 'section_3', 'section_4', 'section_5', 'total_nilai'];
         if (!in_array($sort, $allowedSorts)) {
             $sort = 'name';
@@ -60,34 +60,30 @@ class TesTulisController extends Controller
             'Menolak Offering',
         ]);
 
-        if ($positionId) {
-            $q->where('position_id', $positionId);
-        }
-
-        if ($status) {
-            $q->where('status', $status);
-        }
+        if ($positionId) $q->where('position_id', $positionId);
+        if ($status) $q->where('status', $status);
 
         if ($search !== '') {
             $needle = "%".mb_strtolower($search)."%";
             $q->where(function ($w) use ($needle) {
                 $w->whereRaw('LOWER(name) LIKE ?', [$needle])
-                ->orWhereRaw('LOWER(email) LIKE ?', [$needle])
-                ->orWhereRaw('LOWER(jurusan) LIKE ?', [$needle]);
+                  ->orWhereRaw('LOWER(email) LIKE ?', [$needle])
+                  ->orWhereRaw('LOWER(jurusan) LIKE ?', [$needle]);
             });
         }
 
-         // 🔹 tambahkan orderBy dinamis
-            $applicants = $q->orderBy($sort, $direction)
-                ->paginate(20)
-                ->appends($request->query());
+        $applicants = $q->orderBy($sort, $direction)
+            ->paginate(20)
+            ->appends($request->query());
 
         return view('admin.applicant.seleksi.tes-tulis.index', compact(
             'batches', 'positions', 'batchId', 'positionId', 'applicants'
         ));
     }
 
-
+    /**
+     * Simpan nilai essay
+     */
     public function scoreEssay(Request $request)
     {
         $data = $request->validate([
@@ -103,8 +99,7 @@ class TesTulisController extends Controller
             $count = 0;
 
             foreach ($data['answer_scores'][$sectionResultId] ?? [] as $answerId => $score) {
-                $answer = \App\Models\Answer::where('test_section_result_id', $sectionResult->id)
-                                            ->find($answerId);
+                $answer = \App\Models\Answer::where('test_section_result_id', $sectionResult->id)->find($answerId);
                 if ($answer) {
                     $answer->score = $score;
                     $answer->save();
@@ -113,28 +108,29 @@ class TesTulisController extends Controller
                 }
             }
 
-            // Simpan nilai total section
             $sectionResult->score = $count > 0 ? $totalScore : null;
             $sectionResult->save();
 
-            // Update total nilai tes
             $testResult = $sectionResult->testResult;
             if ($testResult) {
-                $total = $testResult->sectionResults()
-                    ->whereNotNull('score')
-                    ->sum('score');
-
+                $total = $testResult->sectionResults()->whereNotNull('score')->sum('score');
                 $testResult->score = $total > 0 ? $total : null;
                 $testResult->save();
-
             }
         }
+
+        // 🧩 catat aktivitas admin
+        ActivityLogger::log(
+            'update_score',
+            'Tes Tulis',
+            Auth::user()->name . ' memperbarui nilai essay peserta Tes Tulis'
+        );
 
         return back()->with('success', 'Nilai essay berhasil disimpan.');
     }
 
     /**
-     * Bulk update hasil tes (lolos / gagal)
+     * Bulk update hasil Tes Tulis (lolos / gagal)
      */
     public function bulkMark(Request $r)
     {
@@ -146,16 +142,20 @@ class TesTulisController extends Controller
 
         foreach ($data['ids'] as $id) {
             $a = Applicant::find($id);
-            SelectionLogger::write($a, $this->stage, $data['bulk_action'], Auth::id());
-            $a->forceFill([
-                'status' => $this->newStatus($data['bulk_action'], $a->status)
-            ])->save();
 
-            SelectionNotifier::notify(
-                $a,
-                $this->stage,                  // stage = "Seleksi Administrasi"
-                $data['bulk_action'],          // result = "lolos" atau "tidak_lolos"
-                $this->newStatus($data['bulk_action'], $a->status) // status baru
+            SelectionLogger::write($a, $this->stage, $data['bulk_action'], Auth::id());
+
+            $newStatus = $this->newStatus($data['bulk_action'], $a->status);
+            $a->forceFill(['status' => $newStatus])->save();
+
+            SelectionNotifier::notify($a, $this->stage, $data['bulk_action'], $newStatus);
+
+            // 🧩 log aktivitas admin
+            ActivityLogger::log(
+                $data['bulk_action'],
+                'Tes Tulis',
+                Auth::user()->name . " menandai peserta {$a->name} sebagai '".strtoupper($data['bulk_action'])."'",
+                "Applicant ID: {$a->id}"
             );
         }
 
@@ -164,10 +164,7 @@ class TesTulisController extends Controller
 
     private function newStatus(string $result, string $current): string
     {
-        if ($result === 'lolos') {
-            return 'Technical Test';
-        }
-        return 'Tidak Lolos Tes Tulis';
+        return $result === 'lolos' ? 'Technical Test' : 'Tidak Lolos Tes Tulis';
     }
 
     /**
@@ -175,11 +172,18 @@ class TesTulisController extends Controller
      */
     public function export(Request $r)
     {
+        // 🧩 log aktivitas export
+        ActivityLogger::log(
+            'export',
+            'Tes Tulis',
+            Auth::user()->name.' mengekspor data peserta Tes Tulis'
+        );
+
         return Excel::download(
             new TesTulisApplicantsExport(
                 $r->query('batch'),
                 $r->query('position'),
-                $r->query('search'),
+                $r->query('search')
             ),
             'seleksi-tes-tulis.xlsx'
         );

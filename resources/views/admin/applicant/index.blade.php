@@ -47,6 +47,7 @@
                 <th class="px-4 py-2">Nama</th>
                 <th class="px-4 py-2">Email</th>
                 <th class="px-4 py-2">Posisi</th>
+                <th class="px-4 py-2">Ekspektasi Gaji</th>
                 <th class="px-4 py-2">Umur</th>
                 <th class="px-4 py-2">Pendidikan</th>
                 <th class="px-4 py-2">Jurusan</th>
@@ -61,6 +62,7 @@
                   <td class="px-4 py-2 w-auto">{{ $a->name }}</td>
                   <td class="px-4 py-2 w-auto">{{ $a->email }}</td>
                   <td class="px-4 py-2 w-auto">{{ $a->position->name ?? '-' }}</td>
+                  <td class="px-4 py-2 w-auto">{{ $a->ekspektasi_gaji_formatted ?? '-' }}</td>
                   <td class="px-4 py-2 w-auto">{{ $a->age }} tahun</td>
                   <td class="px-4 py-2 w-auto">{{ $a->pendidikan }} - {{ $a->universitas }}</td>
                   <td class="px-4 py-2 w-auto">{{ $a->jurusan }}</td>
@@ -94,6 +96,8 @@
                                 'skills'      => $a->skills,
                                 'cv_document' => $a->cv_document,
                                 'age'         => $a->age,
+                                'ekspektasi_gaji' => $a->ekspektasi_gaji,
+                                'ekspektasi_gaji_formatted' => $a->ekspektasi_gaji_formatted,
                               ]))">
                         <x-view-button/>
                       </button>
@@ -121,6 +125,7 @@
                                 'skills'      => $a->skills,
                                 'cv_document' => $a->cv_document,
                                 'age'         => $a->age,
+                                'ekspektasi_gaji' => $a->ekspektasi_gaji,
                               ]))">
                         <x-edit-button/>
                       </button>
@@ -212,6 +217,10 @@
           <div><div class="text-xs text-gray-500">Nama</div><div class="font-medium" x-text="view.name"></div></div>
           <div><div class="text-xs text-gray-500">Email</div><div class="font-medium" x-text="view.email"></div></div>
           <div><div class="text-xs text-gray-500">Posisi</div><div class="font-medium" x-text="view.position ?? '-'"></div></div>
+          <div>
+            <div class="text-xs text-gray-500">Ekspektasi Gaji</div>
+            <div class="font-medium" x-text="view.ekspektasi_gaji_formatted ?? '-'"></div>
+          </div>
           <div><div class="text-xs text-gray-500">Batch</div><div class="font-medium" x-text="view.batch ?? (view.batch_id ?? '-')"></div></div>
           <div><div class="text-xs text-gray-500">Status</div><div class="font-medium" x-text="view.status ?? '-'"></div></div>
           <div><div class="text-xs text-gray-500">No. Telp</div><div class="font-medium" x-text="view.no_telp ?? '-'"></div></div>
@@ -222,6 +231,7 @@
           <div><div class="text-xs text-gray-500">Universitas</div><div class="font-medium" x-text="view.universitas ?? '-'"></div></div>
           <div><div class="text-xs text-gray-500">Jurusan</div><div class="font-medium" x-text="view.jurusan ?? '-'"></div></div>
           <div><div class="text-xs text-gray-500">Tahun Lulus</div><div class="font-medium" x-text="view.thn_lulus ?? '-'"></div></div>
+          
 
           <div class="md:col-span-2">
             <div class="text-xs text-gray-500">CV</div>
@@ -320,6 +330,14 @@
                   <option value="{{ $p->id }}">{{ $p->name }}</option>
                 @endforeach
               </select>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium">Ekspektasi Gaji (Rp)</label>
+              <input type="number" name="ekspektasi_gaji"
+                    x-model="form.ekspektasi_gaji"
+                    class="w-full mt-1 border rounded px-3 py-2 text-sm"
+                    placeholder="Contoh: 5500000" min="0">
             </div>
 
             <div>

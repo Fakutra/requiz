@@ -9,6 +9,8 @@ use App\Models\EmailLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Throwable;
+use Illuminate\Support\Facades\Auth;
+use App\Services\ActivityLogger; // ✅ tambahkan
 
 class TechnicalTestEmailController extends Controller
 {
@@ -24,7 +26,7 @@ class TechnicalTestEmailController extends Controller
             'message'       => 'required|string',
             'attachments'   => 'nullable|array',
             'attachments.*' => 'file|max:5120',
-            'ids'           => 'nullable|string', // khusus selected (comma-separated)
+            'ids'           => 'nullable|string',
         ]);
 
         // Tentukan target applicants
@@ -32,19 +34,15 @@ class TechnicalTestEmailController extends Controller
             if (empty($data['ids'])) {
                 return back()->with('error', 'Silakan pilih peserta terlebih dahulu.');
             }
+
             $ids = array_filter(explode(',', $data['ids']));
-            if (empty($ids)) {
-                return back()->with('error', 'Silakan pilih peserta terlebih dahulu.');
-            }
             $applicants = Applicant::whereIn('id', $ids)->get();
         } else {
             $query = Applicant::where('batch_id', $data['batch']);
-            if ($data['position']) {
-                $query->where('position_id', $data['position']);
-            }
+
+            if ($data['position']) $query->where('position_id', $data['position']);
 
             if ($data['type'] === 'lolos') {
-                // Semua yang dianggap sudah melewati Technical Test:
                 $query->whereIn('status', [
                     'Interview',
                     'Offering',
@@ -60,6 +58,7 @@ class TechnicalTestEmailController extends Controller
         }
 
         $successCount = 0;
+        $failCount = 0;
 
         foreach ($applicants as $a) {
             try {
@@ -101,12 +100,40 @@ class TechnicalTestEmailController extends Controller
                     'success'      => false,
                     'error'        => $e->getMessage(),
                 ]);
+
+                $failCount++;
             }
         }
 
+        // ✅ Simpan aktivitas ke Activity Log
+        $total = count($applicants);
+
+        $action = match ($data['type']) {
+            'lolos'        => 'send_email_lolos',
+            'tidak_lolos'  => 'send_email_tidak_lolos',
+            'selected'     => 'send_email_terpilih',
+            default        => 'send_email',
+        };
+
+        $tabLabel = match ($data['type']) {
+            'lolos'        => 'Lolos Technical Test',
+            'tidak_lolos'  => 'Tidak Lolos Technical Test',
+            'selected'     => 'Peserta Terpilih',
+            default        => 'Technical Test',
+        };
+
+        ActivityLogger::log(
+            $action,
+            'Technical Test',
+            Auth::user()->name." mengirim email hasil {$tabLabel} ke {$successCount} dari {$total} peserta (gagal: {$failCount})",
+            $data['type'] === 'selected'
+                ? 'Selected IDs: '.implode(',', $ids ?? [])
+                : 'Batch ID: '.$data['batch']
+        );
+
         return back()->with(
             'success',
-            "Email berhasil dikirim ke {$successCount} peserta dari total " . count($applicants)
+            "Email berhasil dikirim ke {$successCount} peserta dari total {$total}"
         );
     }
 }
