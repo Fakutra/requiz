@@ -442,6 +442,11 @@
             <trix-editor input="messageTidakLolosInterview" class="trix-content border rounded w-full"></trix-editor>
           </div>
 
+          <div class="mb-3">
+            <label class="block text-sm font-medium">Lampiran</label>
+            <input type="file" name="attachments[]" multiple>
+          </div>
+
           <div class="flex justify-end gap-2">
             <button type="button" onclick="document.getElementById('emailModalInterview').classList.add('hidden')"
                     class="px-3 py-1 border rounded">Batal</button>
@@ -466,6 +471,11 @@
             <label class="block text-sm font-medium">Isi Email</label>
             <input id="messageSelectedInterview" type="hidden" name="message">
             <trix-editor input="messageSelectedInterview" class="trix-content border rounded w-full"></trix-editor>
+          </div>
+
+          <div class="mb-3">
+            <label class="block text-sm font-medium">Lampiran</label>
+            <input type="file" name="attachments[]" multiple>
           </div>
 
           <div class="flex justify-end gap-2">

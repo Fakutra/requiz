@@ -324,6 +324,11 @@
           <trix-editor input="messageSelectedOffering" class="trix-content border rounded w-full"></trix-editor>
         </div>
 
+        <div class="mb-3">
+          <label class="block text-sm font-medium">Lampiran</label>
+          <input type="file" name="attachments[]" multiple>
+        </div>
+
         <div class="flex justify-end gap-2">
           <button type="button" onclick="document.getElementById('emailModalOffering').classList.add('hidden')"
                   class="px-3 py-1 border rounded">Batal</button>
