@@ -143,11 +143,11 @@ class TechnicalTestController extends Controller
     public function export(Request $r)
     {
         // ✅ Log aktivitas export
-        ActivityLogger::log(
-            'export',
-            'Technical Test',
-            Auth::user()->name.' mengekspor data peserta tahap Technical Test'
-        );
+        // ActivityLogger::log(
+        //     'export',
+        //     'Technical Test',
+        //     Auth::user()->name.' mengekspor data peserta tahap Technical Test'
+        // );
 
         return Excel::download(
             new TechnicalTestApplicantsExport(

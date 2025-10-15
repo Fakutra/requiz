@@ -4,6 +4,9 @@ namespace App\Exports;
 
 use App\Models\Applicant;
 use App\Models\TechnicalTestAnswer;
+use App\Services\ActivityLogger; // ✅ tambahkan
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log; // ✅ tambahkan
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 
@@ -52,6 +55,23 @@ class TechnicalTestApplicantsExport implements FromCollection, WithHeadings
 
         $apps = $q->orderBy('name')->get();
 
+        // ✅ Log aktivitas export
+        try {
+            $userName = Auth::user()?->name ?? 'System';
+            $batchInfo = $this->batchId ? "Batch ID {$this->batchId}" : "Semua Batch";
+            $positionInfo = $this->positionId ? "Posisi ID {$this->positionId}" : "Semua Posisi";
+            $count = $apps->count();
+
+            ActivityLogger::log(
+                'export',
+                'Technical Test',
+                "{$userName} mengekspor data peserta Technical Test ({$count} baris, {$batchInfo}, {$positionInfo})",
+                "Jumlah Data: {$count}"
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Gagal mencatat log export TechnicalTestApplicants: '.$e->getMessage());
+        }
+
         // Ambil jawaban terbaru per applicant
         $answers = TechnicalTestAnswer::whereIn('applicant_id', $apps->pluck('id'))
             ->orderBy('applicant_id')
@@ -85,7 +105,7 @@ class TechnicalTestApplicantsExport implements FromCollection, WithHeadings
                 'Nilai'       => is_null($ans?->score) ? '-' : $ans->score,
                 'Keterangan'  => $ans?->keterangan ?? '-',
                 'Status'      => $statusTampil,
-                'Dikirim'     => optional($ans?->submitted_at)->format('d-m-Y H:i') ?? '-',
+                'Dikirim'     => optional($ans?->submitted_at)->format('d-m-Y H:i:s') ?? '-',
                 'Jawaban PDF' => $ans?->answer_path ? url('storage/'.$ans->answer_path) : '-',
             ];
         });

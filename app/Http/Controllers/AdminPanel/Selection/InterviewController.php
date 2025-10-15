@@ -7,12 +7,13 @@ use App\Models\Applicant;
 use App\Models\InterviewResult;
 use Illuminate\Http\Request;
 use App\Services\SelectionLogger;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 use App\Models\Batch;
 use App\Models\Position;
 use App\Exports\InterviewApplicantsExport;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Services\ActivityLogger; // ✅ Tambahkan
 
 class InterviewController extends Controller
 {
@@ -24,11 +25,9 @@ class InterviewController extends Controller
         $positionId = $request->query('position');
         $search     = trim((string) $request->query('search'));
 
-        // Ambil semua batch & posisi (supaya bisa dipakai di filter dropdown)
         $batches   = Batch::orderBy('id')->get();
         $positions = $batchId ? Position::where('batch_id', $batchId)->get() : collect();
 
-        // Query applicants (samakan style dengan Administrasi)
         $q = Applicant::with(['position', 'batch', 'latestEmailLog', 'myInterviewResult'])
             ->whereIn('status', [
                 'Interview',
@@ -38,39 +37,30 @@ class InterviewController extends Controller
                 'Menolak Offering',
             ]);
 
-        if ($batchId) {
-            $q->where('batch_id', $batchId);
-        }
-
-        if ($positionId) {
-            $q->where('position_id', $positionId);
-        }
-
+        if ($batchId) $q->where('batch_id', $batchId);
+        if ($positionId) $q->where('position_id', $positionId);
         if ($search !== '') {
             $needle = "%".mb_strtolower($search)."%";
             $q->where(function ($w) use ($needle) {
                 $w->whereRaw('LOWER(name) LIKE ?', [$needle])
-                ->orWhereRaw('LOWER(email) LIKE ?', [$needle])
-                ->orWhereRaw('LOWER(jurusan) LIKE ?', [$needle]);
+                  ->orWhereRaw('LOWER(email) LIKE ?', [$needle])
+                  ->orWhereRaw('LOWER(jurusan) LIKE ?', [$needle]);
             });
         }
 
-        // Urutkan, paginate, sertakan query string
-        $applicants = $q->orderBy('name')
-            ->paginate(20)
-            ->appends($request->query());
+        $applicants = $q->orderBy('name')->paginate(20)->appends($request->query());
 
-        // Tambahkan nilai interview khusus
         foreach ($applicants as $a) {
             $a->quiz_score     = $a->testResults()->latest()->value('score');
             $a->praktik_score  = $a->technicalTestAnswers()->latest()->value('score');
             $a->interview_avg  = InterviewResult::where('applicant_id', $a->id)->avg('score');
             $a->potential_by   = InterviewResult::where('applicant_id', $a->id)
-                                    ->where('potencial', true)
-                                    ->with('user')
-                                    ->get()
-                                    ->pluck('user.name')
-                                    ->toArray();
+                                ->where('potencial', true)
+                                ->with('user')
+                                ->get()
+                                ->map(fn($r) => $r->user?->name)
+                                ->filter()
+                                ->toArray();
             $a->interview_note = InterviewResult::where('applicant_id', $a->id)
                                     ->orderByDesc('id')
                                     ->value('note');
@@ -81,6 +71,9 @@ class InterviewController extends Controller
         ));
     }
 
+    /**
+     * EXPORT data interview ke Excel + catat log
+     */
     public function export(Request $request)
     {
         $batchId    = $request->query('batch');
@@ -89,21 +82,25 @@ class InterviewController extends Controller
 
         $fileName = 'Interview_Applicants_' . now()->format('Ymd_His') . '.xlsx';
 
+        // ✅ Catat log aktivitas export
+        // ActivityLogger::log(
+        //     'export',
+        //     'Seleksi Interview',
+        //     Auth::user()->name." mengekspor data peserta Seleksi Interview ke file Excel.",
+        //     "File: {$fileName}"
+        // );
+
         return Excel::download(
             new InterviewApplicantsExport($batchId, $positionId, $search),
             $fileName
         );
     }
 
-
+    /**
+     * Simpan atau update nilai interview + log perbandingan before/after
+     */
     public function storeScore(Request $request)
     {
-        Log::info('=== storeScore Dijalankan ===', [
-            'auth_id' => auth()->id(),
-            'all_input' => $request->all(),
-        ]);
-
-        // ✅ Ubah validasi: hapus "boolean" pada potencial
         $data = $request->validate([
             'applicant_id'     => 'required|exists:applicants,id',
             'poin_kepribadian' => 'required|integer|min:0|max:100',
@@ -111,10 +108,8 @@ class InterviewController extends Controller
             'poin_gestur'      => 'required|integer|min:0|max:100',
             'poin_cara_bicara' => 'required|integer|min:0|max:100',
             'note'             => 'nullable|string',
-            'potencial'        => 'nullable', // ❌ jangan pakai boolean di sini
+            'potencial'        => 'nullable',
         ]);
-
-        Log::info('=== storeScore Input Validated ===', $data);
 
         $total = (
             $data['poin_kepribadian'] +
@@ -123,7 +118,18 @@ class InterviewController extends Controller
             $data['poin_cara_bicara']
         ) / 4;
 
-        InterviewResult::updateOrCreate(
+        // Cek apakah data sebelumnya sudah ada
+        $existing = InterviewResult::where('applicant_id', $data['applicant_id'])
+            ->where('user_id', auth()->id())
+            ->first();
+
+        $oldData = $existing ? [
+            'score'      => number_format($existing->score, 2),
+            'note'       => $existing->note,
+            'potencial'  => $existing->potencial ? 'Ya' : 'Tidak'
+        ] : null;
+
+        $result = InterviewResult::updateOrCreate(
             [
                 'applicant_id' => $data['applicant_id'],
                 'user_id'      => auth()->id(),
@@ -134,15 +140,49 @@ class InterviewController extends Controller
                 'poin_gestur'      => $data['poin_gestur'],
                 'poin_cara_bicara' => $data['poin_cara_bicara'],
                 'note'             => $data['note'],
-                // ✅ di sini tetap pakai boolean agar "on" → true/1
                 'potencial'        => $request->boolean('potencial'),
                 'score'            => $total,
             ]
         );
 
+        // Siapkan data baru
+        $newData = [
+            'score'     => number_format($result->score, 2),
+            'note'      => $result->note,
+            'potencial' => $result->potencial ? 'Ya' : 'Tidak'
+        ];
+
+        // ✅ Catat log perubahan
+        if ($oldData) {
+            $changes = [];
+            foreach ($newData as $key => $value) {
+                if ($oldData[$key] != $value) {
+                    $changes[] = "{$key}: '{$oldData[$key]}' → '{$value}'";
+                }
+            }
+
+            $desc = Auth::user()->name." memperbarui hasil interview peserta "
+                .$result->applicant->name." (ID: {$result->applicant_id}) — "
+                .implode(', ', $changes);
+        } else {
+            $desc = Auth::user()->name." menambahkan hasil interview baru untuk peserta "
+                .$result->applicant->name." (Score: {$total}, Potensial: "
+                .($request->boolean('potencial') ? 'Ya' : 'Tidak').")";
+        }
+
+        ActivityLogger::log(
+            'update_score',
+            'Seleksi Interview',
+            $desc,
+            "Applicant: {$result->applicant->name}"
+        );
+
         return back()->with('success', 'Penilaian interview berhasil disimpan.');
     }
 
+    /**
+     * Tandai hasil interview lolos/tidak lolos + log aktivitas
+     */
     public function bulkMark(Request $r)
     {
         $data = $r->validate([
@@ -151,23 +191,30 @@ class InterviewController extends Controller
             'bulk_action' => 'required|in:lolos,tidak_lolos',
         ]);
 
+        $count = 0;
         foreach ($data['ids'] as $id) {
             $a = Applicant::find($id);
+            $oldStatus = $a->status;
+            $newStatus = $this->newStatus($data['bulk_action'], $a->status);
+
             SelectionLogger::write($a, $this->stage, $data['bulk_action'], auth()->id());
-            $a->forceFill([
-                'status' => $this->newStatus($data['bulk_action'], $a->status)
-            ])->save();
+            $a->forceFill(['status' => $newStatus])->save();
+            $count++;
+
+            // ✅ Catat log perubahan
+            ActivityLogger::log(
+                $data['bulk_action'],
+                'Seleksi Interview',
+                Auth::user()->name." mengubah status peserta {$a->name} — status: '{$oldStatus}' → '{$newStatus}'",
+                "Applicant ID: {$a->id}"
+            );
         }
 
-        return back()->with('success', count($data['ids']).' peserta diperbarui.');
+        return back()->with('success', "{$count} peserta diperbarui.");
     }
-
 
     private function newStatus(string $result, string $current): string
     {
-        if ($result === 'lolos') {
-            return 'Offering'; // tahap setelah Interview
-        }
-        return 'Tidak Lolos Interview';
+        return $result === 'lolos' ? 'Offering' : 'Tidak Lolos Interview';
     }
 }

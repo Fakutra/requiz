@@ -12,9 +12,11 @@ use App\Models\Division;
 use App\Models\Job;
 use App\Models\Placement;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth; // ✅ tambahkan
 use Illuminate\Validation\ValidationException;
 use App\Exports\OfferingApplicantsExport;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Services\ActivityLogger; // ✅ tambahkan
 
 class OfferingController extends Controller
 {
@@ -80,6 +82,9 @@ class OfferingController extends Controller
         ));
     }
 
+    /**
+     * EXPORT DATA OFFERING
+     */
     public function export(Request $request)
     {
         $batchId    = $request->query('batch');
@@ -89,13 +94,33 @@ class OfferingController extends Controller
 
         $fileName = 'Offering_Applicants_' . now()->format('Ymd_His') . '.xlsx';
 
+        // ✅ Log aktivitas export
+        try {
+            $user = Auth::user()?->name ?? 'System';
+            $filters = collect([
+                $batchId ? "Batch ID {$batchId}" : "Semua Batch",
+                $positionId ? "Posisi ID {$positionId}" : "Semua Posisi",
+                $jurusan ? "Jurusan: {$jurusan}" : "Semua Jurusan"
+            ])->implode(', ');
+
+            // ActivityLogger::log(
+            //     'export',
+            //     'Offering',
+            //     "{$user} mengekspor data peserta Offering ({$filters})"
+            // );
+        } catch (\Throwable $e) {
+            Log::warning('Gagal mencatat log export Offering: '.$e->getMessage());
+        }
+
         return Excel::download(
             new OfferingApplicantsExport($batchId, $positionId, $search, $jurusan),
             $fileName
         );
     }
 
-    // Create Offering
+    /**
+     * CREATE / UPDATE OFFERING DATA
+     */
     public function store(Request $request)
     {
         $data = $request->validate([
@@ -117,14 +142,33 @@ class OfferingController extends Controller
         try {
             $applicant = Applicant::findOrFail($data['applicant_id']);
 
-            // ✅ Simpan dulu Offering (update kalau sudah ada)
-            $applicant->offering()->updateOrCreate(
+            $existingOffering = $applicant->offering()->first();
+            $oldData = $existingOffering ? $existingOffering->toArray() : [];
+
+            // ✅ Simpan atau update Offering
+            $offering = $applicant->offering()->updateOrCreate(
                 ['applicant_id' => $applicant->id],
                 $data
             );
 
-            // ✅ Baru ubah status applicant
+            // ✅ Update status applicant
             $applicant->update(['status' => 'Offering']);
+
+            // ✅ Log aktivitas
+            $user = Auth::user()?->name ?? 'System';
+            $desc = $existingOffering
+                ? "{$user} memperbarui data Offering untuk {$applicant->name}"
+                : "{$user} membuat data Offering untuk {$applicant->name}";
+
+            ActivityLogger::log(
+                $existingOffering ? 'update' : 'create',
+                'Offering',
+                $desc,
+                json_encode([
+                    'Sebelumnya' => $oldData,
+                    'Sesudahnya' => $offering->toArray(),
+                ])
+            );
 
             return back()->with('success', 'Data Offering berhasil disimpan.');
         } catch (\Throwable $e) {
@@ -133,8 +177,46 @@ class OfferingController extends Controller
         }
     }
 
+    /**
+     * BULK MARK (MENERIMA / MENOLAK OFFERING)
+     */
+    public function bulkMark(Request $request)
+    {
+        if (!$request->has('ids')) {
+            return back();
+        }
 
-    // public function update(Request $request, $id)
+        $ids = $request->input('ids', []);
+        $action = $request->input('bulk_action');
+
+        if (!empty($ids)) {
+            $status = $action === 'accepted' ? 'Menerima Offering' : 'Menolak Offering';
+            Applicant::whereIn('id', $ids)->update(['status' => $status]);
+
+            // ✅ Log aktivitas
+            $user = Auth::user()?->name ?? 'System';
+            $actionLabel = $status === 'Menerima Offering' ? 'menerima' : 'menolak';
+            $count = count($ids);
+
+            ActivityLogger::log(
+                $action,
+                'Offering',
+                "{$user} menandai {$count} peserta sebagai {$actionLabel} Offering",
+                "Jumlah Peserta: {$count}"
+            );
+
+            return back()->with('success', 'Status peserta berhasil diperbarui.');
+        }
+
+        return back();
+    }
+}
+
+
+
+
+
+// public function update(Request $request, $id)
     // {
     //     try {
     //         $data = $request->validate([
@@ -173,26 +255,3 @@ class OfferingController extends Controller
     //         return back()->with('error', $e->getMessage())->withInput();
     //     }
     // }
-
-    // Bulk mark accepted / decline
-    public function bulkMark(Request $request)
-    {
-        if (!$request->has('ids')) {
-            // kalau tidak ada id dipilih, jangan ubah apa pun
-            return back();
-        }
-
-        $ids = $request->input('ids', []);
-        $action = $request->input('bulk_action');
-
-        if (!empty($ids)) {
-            $status = $action === 'accepted' ? 'Menerima Offering' : 'Menolak Offering';
-            Applicant::whereIn('id', $ids)->update(['status' => $status]);
-            return back()->with('success', 'Status peserta berhasil diperbarui.');
-        }
-
-        return back();
-    }
-
-    
-}

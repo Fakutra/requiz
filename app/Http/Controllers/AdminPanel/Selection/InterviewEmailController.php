@@ -9,6 +9,8 @@ use App\Models\EmailLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Throwable;
+use Illuminate\Support\Facades\Auth;
+use App\Services\ActivityLogger; // ✅ tambahkan ini
 
 class InterviewEmailController extends Controller
 {
@@ -27,18 +29,15 @@ class InterviewEmailController extends Controller
             'attachments.*' => 'file|max:5120',
         ]);
 
-        // Tentukan target applicants
         if ($data['type'] === 'selected') {
             $ids = array_filter(explode(',', $data['ids'] ?? ''));
             $applicants = Applicant::whereIn('id', $ids)->get();
         } else {
             $query = Applicant::where('batch_id', $data['batch']);
-            if ($data['position']) {
-                $query->where('position_id', $data['position']);
-            }
+            if ($data['position']) $query->where('position_id', $data['position']);
 
             if ($data['type'] === 'lolos') {
-                $query->where('status', 'Offering'); // dianggap Lolos Interview
+                $query->where('status', 'Offering');
             } else {
                 $query->where('status', 'Tidak Lolos Interview');
             }
@@ -47,6 +46,7 @@ class InterviewEmailController extends Controller
         }
 
         $successCount = 0;
+        $failCount = 0;
 
         foreach ($applicants as $a) {
             try {
@@ -87,12 +87,32 @@ class InterviewEmailController extends Controller
                     'success'      => false,
                     'error'        => $e->getMessage(),
                 ]);
+
+                $failCount++;
             }
         }
 
+        // ✅ Log pengiriman email
+        $total = count($applicants);
+        $tabLabel = match ($data['type']) {
+            'lolos'       => 'Lolos Interview',
+            'tidak_lolos' => 'Tidak Lolos Interview',
+            'selected'    => 'Peserta Terpilih',
+            default       => 'Interview'
+        };
+
+        ActivityLogger::log(
+            'send_email',
+            'Seleksi Interview',
+            Auth::user()->name." mengirim email hasil {$tabLabel} ke {$successCount} dari {$total} peserta (gagal: {$failCount})",
+            $data['type'] === 'selected'
+                ? 'Selected IDs: '.implode(',', $ids ?? [])
+                : 'Batch ID: '.$data['batch']
+        );
+
         return back()->with(
             'success',
-            "Email berhasil dikirim ke {$successCount} peserta dari total " . count($applicants)
+            "Email berhasil dikirim ke {$successCount} peserta dari total {$total}"
         );
     }
 }

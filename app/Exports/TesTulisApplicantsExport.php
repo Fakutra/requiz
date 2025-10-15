@@ -3,6 +3,9 @@
 namespace App\Exports;
 
 use App\Models\Applicant;
+use App\Services\ActivityLogger; // ✅ tambahkan
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log; // ✅ tambahkan
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 
@@ -52,11 +55,34 @@ class TesTulisApplicantsExport implements FromCollection, WithHeadings
             });
         }
 
-        return $q->get()->map(function ($a) {
-            // Ambil hasil tes terbaru
+        $data = $q->get();
+
+        /**
+         * ✅ Catat log aktivitas export otomatis
+         * ------------------------------------------------------------
+         * Tercatat siapa yang mengekspor, berapa banyak data,
+         * dan batch/posisi yang sedang difilter.
+         */
+        try {
+            $userName = Auth::user()?->name ?? 'System';
+            $batchInfo = $this->batchId ? "Batch ID {$this->batchId}" : "Semua Batch";
+            $positionInfo = $this->positionId ? "Posisi ID {$this->positionId}" : "Semua Posisi";
+            $count = $data->count();
+
+            ActivityLogger::log(
+                'export',
+                'Tes Tulis',
+                "{$userName} mengekspor data peserta Tes Tulis ({$count} baris, {$batchInfo}, {$positionInfo})",
+                "Jumlah Data: {$count}"
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Gagal mencatat log export TesTulisApplicants: '.$e->getMessage());
+        }
+
+        // 🔹 Mapping hasil export
+        return $data->map(function ($a) {
             $latestTest = $a->latestTestResult;
 
-            // Default nilai section kosong
             $sections = [
                 'section_1' => null,
                 'section_2' => null,
@@ -74,11 +100,10 @@ class TesTulisApplicantsExport implements FromCollection, WithHeadings
                     }
                 }
 
-                // Hitung total nilai (jika ada)
                 $sections['total'] = $latestTest->score ?? array_sum(array_filter($sections));
             }
 
-            // ✅ Logika konversi status ke hasil Tes Tulis
+            // ✅ Konversi status ke hasil Tes Tulis
             $statusAsli = $a->status;
             $statusTampil = match (true) {
                 str_contains($statusAsli, 'Tidak Lolos Tes Tulis') => 'Tidak Lolos Tes Tulis',
@@ -91,19 +116,19 @@ class TesTulisApplicantsExport implements FromCollection, WithHeadings
             };
 
             return [
-                'Nama'        => $a->name,
-                'Email'       => $a->email,
-                'Jurusan'     => $a->jurusan,
-                'Posisi'      => $a->position->name ?? '-',
-                'Batch'       => $a->batch->name ?? '-',
-                'Section 1'   => $sections['section_1'],
-                'Section 2'   => $sections['section_2'],
-                'Section 3'   => $sections['section_3'],
-                'Section 4'   => $sections['section_4'],
-                'Section 5'   => $sections['section_5'],
-                'Total Nilai' => $sections['total'],
-                'Status'      => $statusTampil,
-                'Tanggal Daftar' => $a->created_at->format('d-m-Y'),
+                'Nama'           => $a->name,
+                'Email'          => $a->email,
+                'Jurusan'        => $a->jurusan,
+                'Posisi'         => $a->position->name ?? '-',
+                'Batch'          => $a->batch->name ?? '-',
+                'Section 1'      => $sections['section_1'],
+                'Section 2'      => $sections['section_2'],
+                'Section 3'      => $sections['section_3'],
+                'Section 4'      => $sections['section_4'],
+                'Section 5'      => $sections['section_5'],
+                'Total Nilai'    => $sections['total'],
+                'Status'         => $statusTampil,
+                'Tanggal Daftar' => $a->created_at->format('d-m-Y H:i:s'),
             ];
         });
     }

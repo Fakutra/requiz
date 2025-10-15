@@ -140,11 +140,11 @@ class AdministrasiController extends Controller
     public function export(Request $r)
     {
         // 🧩 log aktivitas export
-        ActivityLogger::log(
-            'export',
-            'Seleksi Administrasi',
-            Auth::user()->name.' mengekspor data peserta seleksi administrasi'
-        );
+        // ActivityLogger::log(
+        //     'export',
+        //     'Seleksi Administrasi',
+        //     Auth::user()->name.' mengekspor data peserta seleksi administrasi'
+        // );
 
         return Excel::download(
             new AdministrasiApplicantsExport(
