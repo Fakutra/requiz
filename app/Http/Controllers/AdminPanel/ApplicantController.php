@@ -82,10 +82,14 @@ class ApplicantController extends Controller
             'thn_lulus'   => ['nullable','digits:4'],
             'position_id' => ['required','exists:positions,id'],
             'batch_id'    => ['nullable','exists:batches,id'],
+            'ekspektasi_gaji'   => 'required|numeric|min:0|max:100000000',
             'status'      => ['nullable', Rule::in($allowedStatus)],
             'skills'      => ['nullable','string','max:5000'],
             'cv_document' => ['nullable','file','mimes:pdf','max:3072'], // 3 MB
         ]);
+
+        // Handle input gaji
+        $validated['ekspektasi_gaji'] = (int) str_replace(['.', ',', ' '], '', $request->ekspektasi_gaji);
 
         // Handle CV baru
         if ($request->hasFile('cv_document')) {
