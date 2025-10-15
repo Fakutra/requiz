@@ -394,33 +394,6 @@
         </form>
       </div>
     </div>
-
-    {{-- Flash Modal (Success / Error) --}}
-    <div x-cloak x-show="showFlash" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div @click.outside="showFlash=false" class="bg-white w-full max-w-sm rounded-lg shadow-lg p-6">
-        <div class="flex items-start gap-3">
-          <div :class="flash.type === 'success' ? 'text-green-600' : 'text-red-600'">
-            <!-- icon -->
-            <svg x-show="flash.type === 'success'" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M9 12l2 2l4 -4M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10s-4.477 10 -10 10z" />
-            </svg>
-            <svg x-show="flash.type === 'error'" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M12 9v4m0 4h.01M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10s-4.477 10 -10 10z" />
-            </svg>
-          </div>
-          <div class="flex-1">
-            <h3 class="font-semibold" x-text="flash.type === 'success' ? 'Berhasil' : 'Terjadi Kesalahan'"></h3>
-            <p class="text-sm text-gray-700 mt-1" x-text="flash.message"></p>
-          </div>
-        </div>
-        <div class="mt-4 flex justify-end">
-          <button class="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white text-sm" @click="showFlash=false">OK</button>
-        </div>
-      </div>
-    </div>
-
   </div>
 
   {{-- Alpine Component --}}
