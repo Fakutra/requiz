@@ -18,22 +18,40 @@ class BatchSeeder extends Seeder
                 'status' => 'Active',
                 'start_date' => '2025-07-01',
                 'end_date' => '2025-07-31',
+                'positions' => [
+                    'Software Engineer',
+                    'Data Analyst',
+                    'UI/UX Designer',
+                    'Network Engineer',
+                    'Technical Writer',
+                ],
             ],
             [
                 'name' => 'Batch 2',
                 'status' => 'Active',
                 'start_date' => '2025-08-01',
                 'end_date' => '2025-08-31',
+                'positions' => [
+                    'Project Manager',
+                    'Quality Assurance',
+                    'System Administrator',
+                    'Database Administrator',
+                    'Cyber Security Specialist',
+                ],
             ],
-        ];
-
-        // === 5 posisi berbeda untuk setiap batch ===
-        $positionNames = [
-            'Software Engineer',
-            'Data Analyst',
-            'UI/UX Designer',
-            'Network Engineer',
-            'Technical Writer',
+            [
+                'name' => 'Batch 3',
+                'status' => 'Active',
+                'start_date' => '2025-08-01',
+                'end_date' => '2025-08-31',
+                'positions' => [
+                    'Project Manager',
+                    'Quality Assurance',
+                    'System Administrator',
+                    'Database Administrator',
+                    'Cyber Security Specialist',
+                ],
+            ],
         ];
 
         foreach ($batches as $batchData) {
@@ -46,12 +64,12 @@ class BatchSeeder extends Seeder
                 'end_date' => $batchData['end_date'],
             ]);
 
-            // Buat 5 posisi untuk batch ini
-            foreach ($positionNames as $name) {
+            // Buat posisi sesuai daftar pada batch
+            foreach ($batchData['positions'] as $name) {
                 Position::create([
                     'batch_id' => $batch->id,
                     'name' => $name,
-                    'slug' => Str::slug($name . '-' . $batch->id), // unik per batch
+                    'slug' => Str::slug($name . '-' . $batch->id),
                     'quota' => rand(10, 100),
                     'status' => 'Active',
                     'description' => "Lowongan untuk posisi {$name} pada {$batch->name}",

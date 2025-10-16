@@ -32,8 +32,8 @@ class UserSeeder extends Seeder
 
         // === 20 Regular Users ===
         $users = [
-            ['name' => 'Wahyu', 'email' => 'wahyu@gmail.com'],
-            ['name' => 'Fatur', 'email' => 'fatur@gmail.com'],
+            ['name' => 'Delanda', 'email' => 'delanda.f@gmail.com'],
+            ['name' => 'Sela', 'email' => 'marselatrianggraini27@gmail.com'],
             ['name' => 'Dina', 'email' => 'dina@gmail.com'],
             ['name' => 'Rizky', 'email' => 'rizky@gmail.com'],
             ['name' => 'Salsa', 'email' => 'salsa@gmail.com'],

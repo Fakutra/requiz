@@ -16,7 +16,12 @@ class InterviewScheduleController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        $positions = Position::orderBy('name')->get();
+        $positions = Position::with('batch')
+                    ->join('batches', 'positions.batch_id', '=', 'batches.id')
+                    ->orderBy('batches.name')
+                    ->orderBy('positions.name')
+                    ->select('positions.*')
+                    ->get();
 
         return view('admin.interview-schedule.index', compact('schedules', 'positions'));
     }
