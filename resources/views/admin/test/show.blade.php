@@ -1,42 +1,26 @@
 <x-app-admin>
-    <x-slot name="header">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <div>
-                <h2 class="font-semibold text-xl text-gray-800 leading-tight mb-0">
-                    Kelola Section: <span class="fw-bold">{{ $test->name }}</span>
-                </h2>
-                <a href="{{ route('test.index') }}" class="text-primary text-decoration-none mt-2 d-inline-block">
-                    <i class="bi bi-arrow-left-circle"></i> Kembali ke Semua Quiz
-                </a>
-            </div>
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#tambahSection{{ $test->id }}">
+    <div class="bg-white rounded-lg shadow-sm p-4 mb-5">
+        <div class="relative flex items-center gap-2 mb-4">
+            <a href="{{ route('test.index') }}" 
+                class="text-gray-600 hover:text-gray-900 flex items-center">
+                <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+            </a>
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight mb-0">
+                Kelola Section: <span class="fw-bold">{{ $test->name }}</span>
+            </h2>
+            <button class="btn btn-primary ml-auto" data-bs-toggle="modal" data-bs-target="#tambahSection{{ $test->id }}">
                 <i class="bi bi-plus-circle me-2"></i>Tambah Section Baru
             </button>
         </div>
-
-        {{-- Modal Notifikasi Sukses --}}
-        @if (session('success'))
-            <div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered">
-                    <div class="modal-content">
-                        <div class="modal-body text-center p-4">
-                            <h5 class="text-success mb-3">✅ {{ session('success') }}</h5>
-                            <button type="button" class="btn btn-success" data-bs-dismiss="modal">OK</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        @endif
-    </x-slot>
-
-    <div class="py-4">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="card shadow-sm">
                 <div class="card-body p-0">
                     @if ($test->sections->isNotEmpty())
                         <div class="table-responsive">
-                            <table class="table table-hover table-striped mb-0">
-                                <thead class="table-dark">
+                            <table class="table-auto text-sm border w-full">
+                                <thead class="bg-gray-100 text-gray-800">
                                     <tr>
                                         <th class="text-center">No.</th>
                                         <th>Nama Section</th>

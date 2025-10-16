@@ -1,21 +1,18 @@
 <x-app-admin>
-    <x-slot name="header">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight mb-0">
-                {{ __('Question Banks') }}
-            </h2>
-            {{-- Tombol ini sekarang akan membuka modal --}}
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createQuestionModal">
-                Create Question
-            </button>
-        </div>
-    </x-slot>
 
-    <div class="py-3">
+
+    <div class="bg-white rounded-lg shadow-sm p-4 mb-5">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900">
-
+                <div class="d-flex justify-content-between align-items-center mb-3 ">
+                    <h2 class="font-semibold text-xl text-gray-800 leading-tight mb-0 **bg-gray-100 p-2 rounded**">
+                         {{ __('Question Banks') }}
+                    </h2>
+                    {{-- Tombol ini sekarang akan membuka modal --}}
+                     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createQuestionModal">
+                         Create Question
+                    </button>
+                    </div>
                     {{-- Tombol Import dan Form Filter/Search --}}
                     <div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-3">
                         {{-- Tombol Import --}}
