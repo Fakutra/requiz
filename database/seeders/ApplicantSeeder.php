@@ -4,8 +4,6 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 use Carbon\Carbon;
 use App\Models\User;
 use App\Models\Position;
@@ -14,85 +12,73 @@ class ApplicantSeeder extends Seeder
 {
     public function run(): void
     {
-        // Ambil 2 posisi pertama (pakai slug jika ada, fallback ke urutan id)
-        $posA = Position::where('slug', 'technical-support')->first() ?? Position::orderBy('id')->first();
-        $posB = Position::where('slug', 'technical-writer')->first()
-            ?? Position::orderBy('id')->skip(1)->first()
-            ?? $posA;
+        $positions = Position::all();
+        $users = User::where('role', 'user')->orderBy('id')->take(20)->get();
 
-        if (!$posA) {
-            $this->command->warn('Tidak ada Position. Seed Batch & Position dulu.');
+        if ($positions->isEmpty()) {
+            $this->command->warn('⚠️ Tidak ada data Position. Jalankan BatchSeeder dulu.');
+            return;
+        }
+        if ($users->isEmpty()) {
+            $this->command->warn('⚠️ Tidak ada data User (role=user). Jalankan UserSeeder dulu.');
             return;
         }
 
-        // User 1
-        $user1 = User::firstOrCreate(
-            ['email' => 'delanda.f@gmail.com'],
-            ['name' => 'Delanda', 'password' => Hash::make('password')]
-        );
-
-        // User 2
-        $user2 = User::firstOrCreate(
-            ['email' => 'marselatrianggraini27@gmail.com'],
-            ['name' => 'Sela', 'password' => Hash::make('password')]
-        );
-
+        $faker = \Faker\Factory::create('id_ID');
         $now = Carbon::now();
+        $rows = [];
 
-        $rows = [
-            [
-                'user_id'     => $user1->id,
-                'batch_id'    => $posA->batch_id,
-                'position_id' => $posA->id,
-                'name'        => 'Delanda',
-                'email'       => 'delanda.f@gmail.com',
-                'nik'         => '320101199801010001', // 16+ digit? --> pastikan 16 digit
-                'no_telp'     => '081234567801',
-                'tpt_lahir'   => 'Bandung',
-                'tgl_lahir'   => '1998-01-01',
-                'alamat'      => 'Jl. Anggrek No. 10, Bandung',
-                'pendidikan'  => 'S1',
-                'universitas' => 'Institut Teknologi Bandung',
-                'jurusan'     => 'Informatika',
-                'thn_lulus'   => '2020',
-                'skills'      => 'Laravel, MySQL, Git, REST API',
-                'ekspektasi_gaji' => 5200000,
-                'cv_document' => 'cv-applicant/bNiMu0GHHkuATKPg4WadEGdenrY4C4NDrd1A9PU0.pdf',
-                'status'      => 'Seleksi Administrasi',
-                'created_at'  => $now,
-                'updated_at'  => $now,
-            ],
-            [
-                'user_id'     => $user2->id,
-                'batch_id'    => $posB?->batch_id ?? $posA->batch_id,
-                'position_id' => $posB?->id ?? $posA->id,
-                'name'        => 'Sela',
-                'email'       => 'marselatrianggraini27@gmail.com',
-                'nik'         => '320102199901020002', // pastikan 16 digit
-                'no_telp'     => '081234567802',
-                'tpt_lahir'   => 'Jakarta',
-                'tgl_lahir'   => '1999-02-02',
-                'alamat'      => 'Jl. Melati No. 5, Jakarta',
-                'pendidikan'  => 'S1',
-                'universitas' => 'Universitas Indonesia',
-                'jurusan'     => 'Sistem Informasi',
-                'thn_lulus'   => '2021',
-                'skills'      => 'Technical Writing, Excel, Power BI',
-                'ekspektasi_gaji' => 6500000,
-                'cv_document' => 'cv-applicant/bNiMu0GHHkuATKPg4WadEGdenrY4C4NDrd1A9PU0.pdf',
-                'status'      => 'Seleksi Administrasi',
-                'created_at'  => $now,
-                'updated_at'  => $now,
-            ],
-        ];
+        // HANYA nilai yang lolos constraint
+        $pendidikanOptions = ['SMA/Sederajat', 'Diploma', 'S1', 'S2', 'S3'];
 
-        // Pastikan NIK 16 digit (kalau contoh di atas kepanjangan, ini pemotong aman)
-        foreach ($rows as &$r) {
-            $r['nik'] = substr(preg_replace('/\D/', '', $r['nik']), 0, 16);
+        foreach ($users as $i => $user) {
+            $position = $positions[$i % $positions->count()];
+
+            // NIK 16 digit fix
+            $nik = preg_replace('/\D/', '', $faker->numerify('################'));
+            $nik = str_pad(substr($nik, 0, 16), 16, '0', STR_PAD_RIGHT);
+
+            $rows[] = [
+                'user_id'         => $user->id,
+                'batch_id'        => $position->batch_id,
+                'position_id'     => $position->id,
+                'name'            => $user->name,
+                'email'           => $user->email,
+                'nik'             => $nik,
+                'no_telp'         => $faker->phoneNumber(),
+                'tpt_lahir'       => $faker->city(),
+                'tgl_lahir'       => $faker->date('Y-m-d', '2001-01-01'),
+                'alamat'          => $faker->address(),
+                'pendidikan'      => $faker->randomElement($pendidikanOptions), // ✅ aman utk CHECK
+                'universitas'     => $faker->randomElement([
+                    'Universitas Indonesia',
+                    'Institut Teknologi Bandung',
+                    'Universitas Gadjah Mada',
+                    'Universitas Brawijaya',
+                    'Universitas Diponegoro',
+                ]),
+                'jurusan'         => $faker->randomElement([
+                    'Informatika', 'Sistem Informasi', 'Teknik Komputer',
+                    'Manajemen', 'Statistika', 'Teknik Elektro'
+                ]),
+                'thn_lulus'       => $faker->numberBetween(2018, 2024),
+                'skills'          => $faker->randomElement([
+                    'Laravel, MySQL, Git',
+                    'Python, Excel, Power BI',
+                    'Networking, Mikrotik, Cisco',
+                    'UI/UX, Figma, Tailwind',
+                    'PHP, REST API, Docker'
+                ]),
+                'ekspektasi_gaji' => $faker->numberBetween(4_500_000, 8_000_000),
+                'cv_document'     => 'cv-applicant/sample.pdf',
+                'status'          => 'Seleksi Administrasi',
+                'created_at'      => $now,
+                'updated_at'      => $now,
+            ];
         }
 
         DB::table('applicants')->insert($rows);
 
-        $this->command->info('✅ 2 applicant berhasil di-seed.');
+        $this->command->info('✅ ' . count($rows) . ' applicant berhasil di-seed berdasarkan user.');
     }
 }
