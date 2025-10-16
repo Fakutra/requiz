@@ -16,7 +16,12 @@ class TechnicalTestScheduleController extends Controller
             ->orderByDesc('schedule_date')
             ->paginate(15);
 
-        $positions = Position::orderBy('name')->get(['id','name']);
+        $positions = Position::with('batch')
+                    ->join('batches', 'positions.batch_id', '=', 'batches.id')
+                    ->orderBy('batches.name')
+                    ->orderBy('positions.name')
+                    ->select('positions.*')
+                    ->get();
 
         return view('admin.tech_schedule.index', compact('schedules', 'positions'));
     }

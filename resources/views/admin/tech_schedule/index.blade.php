@@ -206,11 +206,15 @@
                     <div class="modal-body">
                         <div class="mb-3">
                             <label class="form-label">Posisi</label>
-                            <select name="position_id" class="form-select" required>
-                                <option value="">-- Pilih --</option>
-                                @foreach ($positions as $pos)
-                                    <option value="{{ $pos->id }}">{{ $pos->name }}</option>
-                                @endforeach
+                            <select name="position_id" class="form-select" required style="max-height: 250px; overflow-y: auto;">
+                            <option value="">-- Pilih --</option>
+                            @foreach ($positions->groupBy(fn($p) => $p->batch->name ?? 'Tanpa Batch') as $batchName => $batchPositions)
+                                <optgroup label="{{ $batchName }}">
+                                    @foreach ($batchPositions as $pos)
+                                        <option value="{{ $pos->id }}">{{ $pos->name }}</option>
+                                    @endforeach
+                                </optgroup>
+                            @endforeach
                             </select>
                         </div>
 
