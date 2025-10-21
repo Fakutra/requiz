@@ -11,12 +11,14 @@
                 @csrf
                 @method('PUT')
                 <div class="modal-body">
+                    {{-- Nama Quiz --}}
                     <div class="mb-3">
                         <label for="name" class="form-label">Nama Quiz</label>
-                        <input type="text" class="form-control" name="name" value="{{ old('name', $test->name) }}"
-                            required>
+                        <input type="text" class="form-control" name="name"
+                            value="{{ old('name', $test->name) }}" required>
                     </div>
 
+                    {{-- Posisi --}}
                     <div class="mb-3">
                         <label for="position_id" class="form-label">Posisi</label>
                         <select name="position_id" class="form-select" required>
@@ -30,25 +32,41 @@
                         </select>
                     </div>
 
+                    {{-- Nilai Minimum --}}
+                    <div class="mb-3">
+                        <label for="nilai_minimum" class="form-label">Nilai Minimum (Opsional)</label>
+                        <input type="number" step="0.01" min="0" max="9999.99"
+                            class="form-control @error('nilai_minimum') is-invalid @enderror"
+                            name="nilai_minimum"
+                            value="{{ old('nilai_minimum', number_format($test->nilai_minimum, 2, '.', '')) }}"
+                            placeholder="Contoh: 123.45">
+                        @error('nilai_minimum')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    {{-- Test Date --}}
                     <div class="mb-3">
                         <label for="test_date" class="form-label">Test Date (Tombol dibuka)</label>
                         <input type="datetime-local" class="form-control" name="test_date"
                             value="{{ old('test_date', optional($test->test_date)->format('Y-m-d\TH:i')) }}">
                     </div>
 
+                    {{-- Test Closed --}}
                     <div class="mb-3">
                         <label for="test_closed" class="form-label">Tombol ditutup (Opsional)</label>
                         <input type="datetime-local" class="form-control" name="test_closed"
                             value="{{ old('test_closed', optional($test->test_closed)->format('Y-m-d\TH:i')) }}">
                     </div>
 
+                    {{-- Test End --}}
                     <div class="mb-3">
                         <label for="test_end" class="form-label">Hard End (Waktu berakhirnya Quiz)</label>
                         <input type="datetime-local" class="form-control" name="test_end"
                             value="{{ old('test_end', optional($test->test_end)->format('Y-m-d\TH:i')) }}">
                     </div>
-
                 </div>
+
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                     <button type="submit" class="btn btn-primary">Simpan Perubahan</button>

@@ -16,6 +16,7 @@ return new class extends Migration
             $table->foreignId('position_id')->constrained()->onDelete('cascade');
             $table->string('name');
             $table->string('slug')->unique(); // untuk akses URL
+            $table->decimal('nilai_minimum', 6, 2)->nullable();
             $table->dateTime('test_date')->nullable();
             $table->dateTime('test_closed')->nullable();
             $table->dateTime('test_end')->nullable();

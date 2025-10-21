@@ -94,6 +94,7 @@
               <th class="px-3 py-2 text-left whitespace-nowrap">Section 4</th>
               <th class="px-3 py-2 text-left whitespace-nowrap">Section 5</th>
               <th class="px-3 py-2 text-left whitespace-nowrap">Total Nilai</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap">KKM</th>
               <th class="px-3 py-2 text-left whitespace-nowrap">Status</th>
               <th class="px-3 py-2 text-left whitespace-nowrap">Email</th>
               <th class="px-3 py-2 text-left whitespace-nowrap">Action</th>
@@ -107,27 +108,81 @@
                 </td>
                 <td class="px-3 py-2 whitespace-nowrap">{{ $a->name }}</td>
 
-                {{-- Loop 5 section --}}
+                {{-- Loop 5 section + tampilkan RAW / MAX atau RAW / MAX → FINAL --}}
                 @for ($i = 1; $i <= 5; $i++)
                   @php
-                    // Ambil section sesuai urutan (misal pakai field 'order' di test_sections)
                     $sectionResult = $a->latestTestResult?->sectionResults
-                                  ->filter(fn($s) => $s->testSection && $s->testSection->order == $i)
-                                  ->first();
+                                  ->firstWhere(fn($s) => $s->testSection && $s->testSection->order == $i);
 
-                    // Jika tidak ada kolom 'order', bisa pakai id section
-                    // $sectionResult = $a->latestTestResult?->sectionResults
-                    //                     ->firstWhere('test_section_id', $i);
+                    $rawScore   = null;
+                    $maxScore   = null;
+                    $finalScore = null;
+                    $isPersonality = false;
+
+                    if ($sectionResult && $sectionResult->testSection && $sectionResult->testSection->questionBundle) {
+                      $questions = $sectionResult->testSection->questionBundle->questions ?? collect();
+                      $rawScore  = (float) ($sectionResult->score ?? 0);
+
+                      // DETEKSI PERSONALITY
+                      $isPersonality = $questions->contains(fn($q) => $q->type === 'Poin');
+
+                      // HITUNG MAX SCORE per tipe
+                      if ($isPersonality) {
+                        $maxScore = $questions->count() * 5;
+                      } else {
+                        $pgCount     = $questions->where('type','PG')->count();
+                        $multiCount  = $questions->where('type','Multiple')->count();
+                        $essayCount  = $questions->where('type','Essay')->count();
+                        $maxScore = ($pgCount * 1) + ($multiCount * 1) + ($essayCount * 3);
+                      }
+
+                      // FINAL khusus personality
+                      if ($isPersonality) {
+                        $percent = $maxScore > 0 ? ($rawScore / $maxScore) * 100 : 0;
+                        $rule = DB::table('personality_rules')
+                            ->where('min_percentage', '<=', $percent)
+                            ->where(function ($q) use ($percent) {
+                                $q->where('max_percentage', '>=', $percent)
+                                  ->orWhereNull('max_percentage');
+                            })
+                            ->orderByDesc('min_percentage')
+                            ->first();
+                        $finalScore = $rule ? (int) $rule->score_value : 0;
+                      }
+                    }
                   @endphp
+
                   <td class="px-3 py-2 whitespace-nowrap">
-                    {{ $sectionResult?->score ?? '-' }}
+                    @if (!$sectionResult)
+                      -
+                    @else
+                      @if ($isPersonality)
+                        {{-- RAW / MAX → FINAL --}}
+                        {{ $rawScore }} / {{ $maxScore }} → <span class="font-semibold text-blue-700">{{ $finalScore }}</span>
+                      @else
+                        {{-- RAW / MAX --}}
+                        {{ $rawScore }} / {{ $maxScore }}
+                      @endif
+                    @endif
                   </td>
                 @endfor
 
-
-                {{-- Total nilai --}}
+                {{-- Total nilai FINAL / MAX TOTAL --}}
                 <td class="px-3 py-2 whitespace-nowrap">
-                  {{ $a->latestTestResult?->score ?? '-' }}
+                  @if (isset($a->final_total_score) && isset($a->max_total_score))
+                    {{ $a->final_total_score }} / {{ $a->max_total_score }}
+                  @else
+                    -
+                  @endif
+                </td>
+
+                {{-- KKM --}}
+                <td class="px-3 py-2 whitespace-nowrap">
+                  @php
+                    $kkm = $a->latestTestResult->test->nilai_minimum ?? null;
+                  @endphp
+
+                  {{ $kkm !== null ? $kkm : '-' }}
                 </td>
 
                 {{-- Status --}}
@@ -208,7 +263,6 @@
       </div>
     </form>
 
-
     <div class="mt-3">{{ $applicants->links() }}</div>
   </div>
 
@@ -276,7 +330,6 @@
             @csrf
 
             @foreach($testResult->sectionResults->sortBy('testSection.order') as $sectionResult)
-              {{-- Cari semua soal essay pada section ini --}}
               @php
                 $essayQuestions = $sectionResult->testSection
                                   ? $sectionResult->testSection->questionBundle?->questions->where('type', 'Essay')
@@ -363,7 +416,7 @@
       {{-- Bagian detail soal per section --}}
       @if($testResult && $testResult->sectionResults->isNotEmpty())
         @php
-          $questionNumber = 1; // 🔹 Counter global soal
+          $questionNumber = 1;
         @endphp
 
         @foreach($testResult->sectionResults->sortBy('testSection.order') as $sectionResult)
@@ -371,7 +424,6 @@
             $shuffle = $sectionResult->shuffle_state ?? [];
             $questionOrder = $shuffle['questions'] ?? $sectionResult->answers->pluck('question_id')->toArray();
 
-            // urutkan jawaban sesuai urutan soal saat dikerjakan peserta
             $answersOrdered = $sectionResult->answers->sortBy(function($ans) use ($questionOrder) {
               return array_search($ans->question_id, $questionOrder);
             });
@@ -384,11 +436,9 @@
 
             @foreach($answersOrdered as $ans)
               <div class="mb-4 pb-3 border-b">
-                {{-- Soal --}}
                 <p class="font-medium">Soal {{ $questionNumber++ }}:</p>
                 <p class="text-gray-700 mb-2">{{ $ans->question->question }}</p>
 
-                {{-- PG / Multiple / Poin --}}
                 @if($ans->question->type === 'Poin')
                   @php
                     $pesertaAnswers = $ans->answer ? explode(',', $ans->answer) : [];
@@ -452,7 +502,6 @@
                   </ul>
 
                 @else
-                  {{-- Essay --}}
                   <p class="text-sm text-gray-500 mt-1">Jawaban Peserta:</p>
                   <p class="text-gray-900 border px-2 py-1 rounded bg-white mb-2">
                     {{ $ans->answer ?? '-' }}
@@ -480,7 +529,6 @@
     </div>
   </div>
 @endforeach
-
 
   {{-- Modal Filter --}}
   <div id="filterModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
@@ -679,7 +727,6 @@
                     onclick="document.getElementById('emailModal').classList.add('hidden')" 
                     class="px-3 py-1 border rounded">Batal</button>
 
-            {{-- ✅ type=button + JS submit manual --}}
             <button type="submit" class="px-3 py-1 rounded bg-blue-600 text-white">
               Kirim
             </button>
@@ -694,7 +741,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/trix/2.0.8/trix.min.css"/>
 
     <script>
-    // 🔹 Set selected IDs untuk tab "Terpilih"
+    // Set selected IDs untuk tab "Terpilih"
     function setSelectedIds() {
       let ids = [];
       document.querySelectorAll('input[name="ids[]"]:checked')
@@ -702,19 +749,19 @@
 
       if (ids.length === 0) { 
         alert("Silakan pilih peserta terlebih dahulu."); 
-        return false; // ❌ jangan submit
+        return false;
       }
 
       document.getElementById('selectedIds').value = ids.join(',');
-      return true; // ✅ lanjut submit
+      return true;
     }
 
-    // 🔹 Check All
+    // Check All
     document.getElementById('checkAll').addEventListener('change', function(e){
       document.querySelectorAll('input[name="ids[]"]').forEach(cb => cb.checked = e.target.checked);
     });
 
-    // 🔹 Tab switcher (Lolos / Tidak Lolos / Terpilih)
+    // Tab switcher
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', function() {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('border-blue-600','text-blue-600'));
@@ -725,7 +772,7 @@
       });
     });
 
-    // 🔹 Modal Konfirmasi (bulk action)
+    // Modal Konfirmasi (bulk action)
     let selectedAction = null;
     function openConfirmModal(action) {
       selectedAction = action;
@@ -748,7 +795,7 @@
       }
     });
 
-    // 🔹 Gunakan template email untuk peserta LOLOS Tes Tulis
+    // Template email LOLOS
     const useTemplateLolos = document.getElementById('useTemplateLolosTesTulis');
     if (useTemplateLolos) {
       useTemplateLolos.addEventListener('change', function() {
@@ -768,7 +815,7 @@
       });
     }
 
-    // 🔹 Gunakan template email untuk peserta TIDAK LOLOS Tes Tulis
+    // Template email TIDAK LOLOS
     const useTemplateTidakLolos = document.getElementById('useTemplateTidakLolosTesTulis');
     if (useTemplateTidakLolos) {
       useTemplateTidakLolos.addEventListener('change', function() {
