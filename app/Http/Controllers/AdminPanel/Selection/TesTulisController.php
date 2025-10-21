@@ -63,7 +63,7 @@ class TesTulisController extends Controller
         ]);
 
         if ($positionId) $q->where('position_id', $positionId);
-        if ($status) $q->where('status', $status);
+        if ($status)     $q->where('status', $status);
 
         if ($search !== '') {
             $keyword = "%".mb_strtolower($search)."%";
@@ -74,8 +74,11 @@ class TesTulisController extends Controller
             });
         }
 
-        // ⬇️ Ambil data
+        // ⬇️ Ambil peserta
         $applicants = $q->get();
+
+        // ⬇️ Ambil max nilai personality dari rules (contoh: 35)
+        $maxPersonalityFinal = (int) (DB::table('personality_rules')->max('score_value') ?? 0);
 
         // ⬇️ Hitung final_total_score & max_total_score
         foreach ($applicants as $a) {
@@ -97,20 +100,21 @@ class TesTulisController extends Controller
                 $questions = $section->questionBundle->questions ?? collect();
                 $isPersonality = $questions->contains(fn($q) => $q->type === 'Poin');
 
-                // HITUNG MAX per section
+                // 1️⃣ MAX (khusus personality gunakan rule tertinggi)
                 if ($isPersonality) {
-                    $maxSection = $questions->count() * 5;
+                    $maxTotal += $maxPersonalityFinal;
                 } else {
-                    $pgCount     = $questions->where('type','PG')->count();
-                    $multiCount  = $questions->where('type','Multiple')->count();
-                    $essayCount  = $questions->where('type','Essay')->count();
-                    $maxSection = ($pgCount * 1) + ($multiCount * 1) + ($essayCount * 3);
+                    $pg    = $questions->where('type','PG')->count();
+                    $multi = $questions->where('type','Multiple')->count();
+                    $essay = $questions->where('type','Essay')->count();
+                    $maxSection = ($pg * 1) + ($multi * 1) + ($essay * 3);
+                    $maxTotal += $maxSection;
                 }
-                $maxTotal += $maxSection;
 
-                // FINAL SCORE
+                // 2️⃣ FINAL SCORE
                 if ($isPersonality) {
-                    $percent = $maxSection > 0 ? ($rawScore / $maxSection) * 100 : 0;
+                    $rawMaxSection = $questions->count() * 5;
+                    $percent = $rawMaxSection > 0 ? ($rawScore / $rawMaxSection) * 100 : 0;
                     $rule = DB::table('personality_rules')
                         ->where('min_percentage', '<=', $percent)
                         ->where(function ($q) use ($percent) {
@@ -119,7 +123,6 @@ class TesTulisController extends Controller
                         })
                         ->orderByDesc('min_percentage')
                         ->first();
-
                     $finalScore = $rule ? (int) $rule->score_value : 0;
                     $finalTotal += $finalScore;
                 } else {
@@ -131,14 +134,10 @@ class TesTulisController extends Controller
             $a->max_total_score   = $maxTotal;
         }
 
-        // ⬇️ Sorting setelah nilai dihitung (manual collection sorting)
-        $applicants = $applicants->sortBy(
-            $sort,
-            SORT_REGULAR,
-            $direction === 'desc'
-        );
+        // ⬇️ Sorting
+        $applicants = $applicants->sortBy($sort, SORT_REGULAR, $direction === 'desc');
 
-        // ⬇️ Pagination manual
+        // ⬇️ Pagination
         $page = request('page', 1);
         $perPage = 20;
         $applicants = new \Illuminate\Pagination\LengthAwarePaginator(
@@ -153,6 +152,7 @@ class TesTulisController extends Controller
             'batches', 'positions', 'batchId', 'positionId', 'applicants'
         ));
     }
+
 
     /**
      * Simpan nilai essay
