@@ -71,23 +71,23 @@
     <form id="bulkActionForm" method="POST" action="{{ route('admin.applicant.seleksi.interview.bulkMark') }}">
       @csrf
       <div class="overflow-x-auto">
-        <table class="min-w-full text-sm border">
-          <thead class="bg-gray-100">
+        <table class="table-auto text-sm border w-full">
+          <thead class="bg-gray-100 text-gray-800">
             <tr>
               <th class="px-3 py-2"><input type="checkbox" id="checkAll"></th>
-              <th class="px-3 py-2 text-left">Nama Peserta</th>
-              <th class="px-3 py-2 text-left">Jurusan</th>
-              <th class="px-3 py-2 text-left">Posisi</th>
-              <th class="px-3 py-2 text-left">Ekspektasi Gaji</th>
-              <th class="px-3 py-2 text-left">Dokumen</th>
-              <th class="px-3 py-2 text-left">Score Quiz</th>
-              <th class="px-3 py-2 text-left">Score Praktik</th>
-              <th class="px-3 py-2 text-left">Score Interview</th>
-              <th class="px-3 py-2 text-left">Potential By</th>
-              <th class="px-3 py-2 text-left">Status Email</th>
-              <th class="px-3 py-2 text-left">Status</th>
-              <th class="px-3 py-2 text-left">Note</th>
-              <th class="px-3 py-2 text-left">Aksi</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap">Nama Peserta</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap">Jurusan</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap">Posisi</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap">Ekspektasi Gaji</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap">Dokumen</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap">Score Quiz</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap">Score Praktik</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap">Score Interview</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap">Potential By</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap">Status Email</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap">Status</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap">Note</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap">Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -232,29 +232,45 @@
         <div class="mb-3">
           <label class="block text-sm">Poin Kepribadian</label>
           <input type="number" name="poin_kepribadian"
-                 value="{{ $myResult->poin_kepribadian ?? '' }}"
-                 class="border rounded w-full px-2 py-1" required>
+                value="{{ $myResult->poin_kepribadian ?? '' }}"
+                class="border rounded w-full px-2 py-1" 
+                placeholder="1 - 100" 
+                min="1"
+                max="100"
+                required>
         </div>
 
         <div class="mb-3">
           <label class="block text-sm">Poin Wawasan</label>
           <input type="number" name="poin_wawasan"
-                 value="{{ $myResult->poin_wawasan ?? '' }}"
-                 class="border rounded w-full px-2 py-1" required>
+                value="{{ $myResult->poin_wawasan ?? '' }}"
+                class="border rounded w-full px-2 py-1" 
+                placeholder="1 - 100"
+                min="1"
+                max="100"
+                required>
         </div>
 
         <div class="mb-3">
           <label class="block text-sm">Poin Gestur</label>
           <input type="number" name="poin_gestur"
                  value="{{ $myResult->poin_gestur ?? '' }}"
-                 class="border rounded w-full px-2 py-1" required>
+                 class="border rounded w-full px-2 py-1" 
+                 placeholder="1 - 100"
+                 min="1"
+                 max="100"
+                 required>
         </div>
 
         <div class="mb-3">
           <label class="block text-sm">Poin Cara Bicara</label>
           <input type="number" name="poin_cara_bicara"
                  value="{{ $myResult->poin_cara_bicara ?? '' }}"
-                 class="border rounded w-full px-2 py-1" required>
+                 class="border rounded w-full px-2 py-1" 
+                 placeholder="1 - 100"
+                 min="1"
+                 max="100"
+                 required>
         </div>
 
         <div class="mb-3">
@@ -368,7 +384,7 @@
       <div class="flex justify-between items-center border-b pb-2 mb-4">
         <h3 class="text-lg font-semibold">Kirim Email Peserta Seleksi Interview</h3>
         <button type="button" onclick="document.getElementById('emailModalInterview').classList.add('hidden')"
-                class="text-gray-500 hover:text-gray-700">&times;</button>
+                class="text-gray-500 hover:text-gray-700 text-2xl leading-none">&times;</button>
       </div>
 
       {{-- Tabs --}}
@@ -399,10 +415,10 @@
             <input type="text" name="subject" id="subjectLolosInterview" class="border rounded w-full px-2 py-1" required>
           </div>
 
-          <div class="mb-3">
+          <div class="border rounded w-full h-64 overflow-y-auto">
             <label class="block text-sm font-medium">Isi Email</label>
             <input id="messageLolosInterview" type="hidden" name="message">
-            <trix-editor input="messageLolosInterview" class="trix-content border rounded w-full"></trix-editor>
+            <trix-editor input="messageLolosInterview" class="trix-content border rounded w-full h-full"></trix-editor>
           </div>
 
           <div class="mb-3">

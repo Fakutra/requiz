@@ -72,9 +72,50 @@ class TesTulisController extends Controller
             });
         }
 
-        $applicants = $q->orderBy($sort, $direction)
-            ->paginate(20)
-            ->appends($request->query());
+        // 🔹 Ambil semua data dengan relasi yang dibutuhkan
+        $applicants = $q->get()->map(function ($a) {
+            // Ambil setiap section 1–5 berdasarkan urutan testSection->order
+            $sectionScores = [];
+            for ($i = 1; $i <= 5; $i++) {
+                $sectionScores[$i] = optional(
+                    $a->latestTestResult?->sectionResults
+                        ->first(fn($s) => $s->testSection && $s->testSection->order == $i)
+                )->score ?? null;
+            }
+
+            // Simpan skor section & total ke properti virtual
+            $a->section_1 = $sectionScores[1];
+            $a->section_2 = $sectionScores[2];
+            $a->section_3 = $sectionScores[3];
+            $a->section_4 = $sectionScores[4];
+            $a->section_5 = $sectionScores[5];
+            $a->total_nilai = $a->latestTestResult?->score ?? null;
+
+            return $a;
+        });
+
+        // 🔹 Sorting manual berdasarkan kolom
+        if (in_array($sort, ['section_1','section_2','section_3','section_4','section_5','total_nilai'])) {
+            $applicants = $applicants->sortBy($sort, SORT_REGULAR, $direction === 'desc');
+        } else {
+            $applicants = $applicants->sortBy($sort, SORT_NATURAL | SORT_FLAG_CASE, $direction === 'desc');
+        }
+
+        // 🔹 Pagination manual
+        $page = request('page', 1);
+        $perPage = 20;
+        $applicants = new \Illuminate\Pagination\LengthAwarePaginator(
+            $applicants->forPage($page, $perPage),
+            $applicants->count(),
+            $perPage,
+            $page,
+            ['path' => request()->url(), 'query' => request()->query()]
+        );
+
+        return view('admin.applicant.seleksi.tes-tulis.index', compact(
+            'batches', 'positions', 'batchId', 'positionId', 'applicants'
+        ));
+
 
         return view('admin.applicant.seleksi.tes-tulis.index', compact(
             'batches', 'positions', 'batchId', 'positionId', 'applicants'

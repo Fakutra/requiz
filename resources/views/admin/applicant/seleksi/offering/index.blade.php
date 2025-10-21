@@ -263,7 +263,7 @@
     <div class="flex justify-between items-center border-b pb-2 mb-4">
       <h3 class="text-lg font-semibold">Kirim Email Offering</h3>
       <button type="button" onclick="document.getElementById('emailModalOffering').classList.add('hidden')"
-              class="text-gray-500 hover:text-gray-700">&times;</button>
+              class="text-gray-500 hover:text-gray-700 text-2xl leading-none">&times;</button>
     </div>
 
     {{-- Tabs --}}

@@ -33,7 +33,7 @@ class AdministrasiController extends Controller
         $direction = $request->query('direction', 'asc');   // default asc
 
         // whitelist kolom yang boleh di-sort
-        $allowedSorts = ['name', 'email', 'jurusan', 'position_id'];
+        $allowedSorts = ['name', 'email', 'jurusan', 'position_id', 'age'];
         if (!in_array($sort, $allowedSorts)) {
             $sort = 'name'; // fallback
         }
@@ -71,9 +71,28 @@ class AdministrasiController extends Controller
         }
 
         // 🔹 tambahkan orderBy dinamis
-        $applicants = $q->orderBy($sort, $direction)
-            ->paginate(20)
-            ->appends($request->query());
+        $applicants = $q->get()->map(function ($a) {
+                $a->age = $a->birth_date ? \Carbon\Carbon::parse($a->birth_date)->age : null;
+                return $a;
+            });
+
+        if ($sort === 'age') {
+            $applicants = $applicants->sortBy('age', SORT_REGULAR, $direction === 'desc');
+        } else {
+            $applicants = $applicants->sortBy($sort, SORT_REGULAR, $direction === 'desc');
+        }
+
+        // Pagination manual (opsional)
+        $page = request('page', 1);
+        $perPage = 20;
+        $applicants = new \Illuminate\Pagination\LengthAwarePaginator(
+            $applicants->forPage($page, $perPage),
+            $applicants->count(),
+            $perPage,
+            $page,
+            ['path' => request()->url(), 'query' => request()->query()]
+        );
+
 
         return view('admin.applicant.seleksi.administrasi.index', compact(
             'batches', 'positions', 'batchId', 'positionId',

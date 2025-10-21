@@ -430,7 +430,7 @@
       <div class="flex justify-between items-center border-b pb-2 mb-4">
         <h3 class="text-lg font-semibold">Kirim Email Peserta Technical Test</h3>
         <button type="button" onclick="document.getElementById('emailModal').classList.add('hidden')"
-                class="text-gray-500 hover:text-gray-700">&times;</button>
+                class="text-gray-500 hover:text-gray-700 text-2xl leading-none">&times;</button>
       </div>
 
       <div class="border-b mb-4 flex">
@@ -457,10 +457,10 @@
             <input type="text" name="subject" id="subjectLolosTech" class="border rounded w-full px-2 py-1" required>
           </div>
 
-          <div class="mb-3">
+          <div class="border rounded w-full h-64 overflow-y-auto">
             <label class="block text-sm font-medium">Isi Email</label>
             <input id="messageLolosTech" type="hidden" name="message">
-            <trix-editor input="messageLolosTech" class="trix-content border rounded w-full"></trix-editor>
+            <trix-editor input="messageLolosTech" class="trix-content border rounded w-full h-full"></trix-editor>
           </div>
 
           <div class="mb-3">

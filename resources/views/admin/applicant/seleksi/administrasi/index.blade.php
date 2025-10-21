@@ -136,7 +136,19 @@
                   </svg>
                 </a>
               </th>
-              <th class="px-3 py-2 text-left whitespace-nowrap font-semibold text-gray-800">Umur</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap">
+                <a href="{{ request()->fullUrlWithQuery([
+                    'sort' => 'age',
+                    'direction' => (request('sort') === 'age' && request('direction') === 'asc') ? 'desc' : 'asc'
+                ]) }}" 
+                  class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
+                  Umur
+                  <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'age' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}" 
+                      fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
+                  </svg>
+                </a>
+              </th>
               <th class="px-3 py-2 text-left whitespace-nowrap font-semibold text-gray-800">Status</th>
               <th class="px-3 py-2 text-left whitespace-nowrap font-semibold text-gray-800">Status Email</th>
               <th class="px-3 py-2 text-left whitespace-nowrap font-semibold text-gray-800">Action</th>
@@ -295,9 +307,13 @@
           <p class="text-gray-900">{{ $a->jurusan }}</p>
         </div>
 
-        <div class="col-span-2">
+        <div>
           <p class="text-gray-500 font-medium">Skills</p>
           <p class="text-gray-900">{{ $a->skills ?? '-' }}</p>
+        </div>
+        <div>
+          <p class="text-gray-500 font-medium">Ekpektasi Gaji</p>
+          <p class="text-gray-900">{{ $a->ekspektasi_gaji_formatted ?? '-' }}</p>
         </div>
 
         <div>
@@ -440,7 +456,7 @@
       <div class="flex justify-between items-center border-b pb-2 mb-4">
         <h3 class="text-lg font-semibold">Kirim Email Peserta Seleksi Administrasi</h3>
         <button type="button" onclick="document.getElementById('emailModal').classList.add('hidden')"
-                class="text-gray-500 hover:text-gray-700">&times;</button>
+                class="text-gray-500 hover:text-gray-700 text-2xl leading-none">&times;</button>
       </div>
 
       {{-- Tabs --}}
@@ -471,10 +487,10 @@
             <input type="text" name="subject" id="subjectLolos" class="border rounded w-full px-2 py-1" required>
           </div>
 
-          <div class="mb-3">
+          <div class="border rounded w-full h-64 overflow-y-auto">
             <label class="block text-sm font-medium">Isi Email</label>
             <input id="messageLolos" type="hidden" name="message">
-            <trix-editor input="messageLolos" class="trix-content border rounded w-full"></trix-editor>
+            <trix-editor input="messageLolos" class="trix-content border rounded w-full h-full"></trix-editor>
           </div>
 
           <div class="mb-3">

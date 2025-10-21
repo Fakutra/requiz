@@ -88,12 +88,87 @@
                   </svg>
                 </a>
               </th>
-              <th class="px-3 py-2 text-left whitespace-nowrap">Section 1</th>
-              <th class="px-3 py-2 text-left whitespace-nowrap">Section 2</th>
-              <th class="px-3 py-2 text-left whitespace-nowrap">Section 3</th>
-              <th class="px-3 py-2 text-left whitespace-nowrap">Section 4</th>
-              <th class="px-3 py-2 text-left whitespace-nowrap">Section 5</th>
-              <th class="px-3 py-2 text-left whitespace-nowrap">Total Nilai</th>
+              {{-- Section 1 --}}
+              <th class="px-3 py-2 text-left whitespace-nowrap">
+                <a href="{{ request()->fullUrlWithQuery([
+                    'sort' => 'section_1',
+                    'direction' => (request('sort') === 'section_1' && request('direction') === 'asc') ? 'desc' : 'asc'
+                ]) }}" class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
+                  Section 1
+                  <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'section_1' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
+                      fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                  </svg>
+                </a>
+              </th>
+              <th class="px-3 py-2 text-left whitespace-nowrap">
+                <a href="{{ request()->fullUrlWithQuery([
+                    'sort' => 'section_2',
+                    'direction' => (request('sort') === 'section_2' && request('direction') === 'asc') ? 'desc' : 'asc'
+                ]) }}" class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
+                  Section 2
+                  <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'section_2' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
+                      fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                  </svg>
+                </a>
+              </th>
+              <th class="px-3 py-2 text-left whitespace-nowrap">
+                <a href="{{ request()->fullUrlWithQuery([
+                    'sort' => 'section_3',
+                    'direction' => (request('sort') === 'section_3' && request('direction') === 'asc') ? 'desc' : 'asc'
+                ]) }}" class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
+                  Section 3
+                  <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'section_3' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
+                      fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                  </svg>
+                </a>
+              </th>
+              {{-- Section 4 --}}
+              <th class="px-3 py-2 text-left whitespace-nowrap">
+                <a href="{{ request()->fullUrlWithQuery([
+                    'sort' => 'section_4',
+                    'direction' => (request('sort') === 'section_4' && request('direction') === 'asc') ? 'desc' : 'asc'
+                ]) }}" 
+                  class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
+                  Section 4
+                  <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'section_4' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}" 
+                      fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </a>
+              </th>
+
+              {{-- Section 5 --}}
+              <th class="px-3 py-2 text-left whitespace-nowrap">
+                <a href="{{ request()->fullUrlWithQuery([
+                    'sort' => 'section_5',
+                    'direction' => (request('sort') === 'section_5' && request('direction') === 'asc') ? 'desc' : 'asc'
+                ]) }}" 
+                  class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
+                  Section 5
+                  <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'section_5' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}" 
+                      fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </a>
+              </th>
+
+              {{-- Total Nilai --}}
+              <th class="px-3 py-2 text-left whitespace-nowrap">
+                <a href="{{ request()->fullUrlWithQuery([
+                    'sort' => 'total_nilai',
+                    'direction' => (request('sort') === 'total_nilai' && request('direction') === 'asc') ? 'desc' : 'asc'
+                ]) }}" 
+                  class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
+                  Total Nilai
+                  <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'total_nilai' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}" 
+                      fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </a>
+              </th>
               <th class="px-3 py-2 text-left whitespace-nowrap">Status</th>
               <th class="px-3 py-2 text-left whitespace-nowrap">Email</th>
               <th class="px-3 py-2 text-left whitespace-nowrap">Action</th>
@@ -563,7 +638,7 @@
       <div class="flex justify-between items-center border-b pb-2 mb-4">
         <h3 class="text-lg font-semibold">Kirim Email Peserta Tes Tulis</h3>
         <button type="button" onclick="document.getElementById('emailModal').classList.add('hidden')"
-                class="text-gray-500 hover:text-gray-700">&times;</button>
+                class="text-gray-500 hover:text-gray-700 text-2xl leading-none">&times;</button>
       </div>
 
       <div class="border-b mb-4 flex">
@@ -591,7 +666,7 @@
             <input type="text" name="subject" id="subjectLolosTesTulis" class="border rounded w-full px-2 py-1" required>
           </div>
 
-          <div class="mb-3">
+          <div class="border rounded w-full h-64 overflow-y-auto">
             <label class="block text-sm font-medium">Isi Email</label>
             <input id="messageLolosTesTulis" type="hidden" name="message">
             <trix-editor input="messageLolosTesTulis" class="trix-content border rounded w-full"></trix-editor>
