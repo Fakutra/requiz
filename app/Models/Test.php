@@ -14,15 +14,17 @@ class Test extends Model
         'position_id',
         'name',
         'slug',
+        'nilai_minimum',   // ✅ tambahkan ini
         'test_date',
         'test_closed',
         'test_end',
     ];
 
     protected $casts = [
-        'test_date'   => 'datetime',
-        'test_closed' => 'datetime',
-        'test_end'    => 'datetime',
+        'nilai_minimum' => 'decimal:2',  // ✅ supaya otomatis dikonversi ke float 2 desimal
+        'test_date'     => 'datetime',
+        'test_closed'   => 'datetime',
+        'test_end'      => 'datetime',
     ];
 
     public function position()

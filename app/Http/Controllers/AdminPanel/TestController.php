@@ -33,31 +33,31 @@ class TestController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name'        => 'required|string|max:255',
-            'position_id' => 'required|exists:positions,id',
-            'test_date'   => 'nullable|date',
-            'test_closed' => 'nullable|date|after_or_equal:test_date',
-            'test_end'    => 'nullable|date|after_or_equal:test_closed',
+            'name'          => 'required|string|max:255',
+            'position_id'   => 'required|exists:positions,id',
+            'nilai_minimum' => 'nullable|numeric|min:0', // ✅ tambahkan validasi ini
+            'test_date'     => 'nullable|date',
+            'test_closed'   => 'nullable|date|after_or_equal:test_date',
+            'test_end'      => 'nullable|date|after_or_equal:test_closed',
         ]);
 
-        Test::create($validated);
+        Test::create($validated); // ✅ otomatis menyimpan nilai_minimum juga karena sudah ada di $fillable
 
         return redirect()->route('test.index')->with('success', 'New Quiz has been added!');
     }
 
     public function update(Request $request, Test $test)
     {
-        $rules = [
-            'name'        => 'required|string|max:255',
-            'position_id' => 'required|exists:positions,id',
-            'test_date'   => 'nullable|date',
-            'test_closed' => 'nullable|date|after_or_equal:test_date',
-            'test_end'    => 'nullable|date|after_or_equal:test_closed',
-        ];
+        $validatedData = $request->validate([
+            'name'          => 'required|string|max:255',
+            'position_id'   => 'required|exists:positions,id',
+            'nilai_minimum' => 'nullable|numeric|min:0', // ✅ tambahkan validasi ini
+            'test_date'     => 'nullable|date',
+            'test_closed'   => 'nullable|date|after_or_equal:test_date',
+            'test_end'      => 'nullable|date|after_or_equal:test_closed',
+        ]);
 
-        $validatedData = $request->validate($rules);
-
-        $test->update($validatedData);
+        $test->update($validatedData); // ✅ otomatis meng-update nilai_minimum juga
 
         return redirect()->route('test.index')->with('success', 'Quiz has been updated!');
     }

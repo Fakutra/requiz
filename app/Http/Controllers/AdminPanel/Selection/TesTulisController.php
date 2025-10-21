@@ -12,7 +12,8 @@ use Illuminate\Support\Facades\Auth;
 use App\Exports\TesTulisApplicantsExport;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Services\SelectionNotifier;
-use App\Services\ActivityLogger; // ✅ tambahkan ini
+use App\Services\ActivityLogger;
+use Illuminate\Support\Facades\DB; // ⬅️ untuk query personality_rules
 
 class TesTulisController extends Controller
 {
@@ -31,11 +32,10 @@ class TesTulisController extends Controller
         $batches   = Batch::orderBy('id')->get();
         $positions = $batchId ? Position::where('batch_id', $batchId)->get() : collect();
 
-        // 🔹 ambil parameter sort & direction
         $sort      = $request->query('sort', 'name');
         $direction = $request->query('direction', 'asc');
 
-        $allowedSorts = ['name', 'section_1', 'section_2', 'section_3', 'section_4', 'section_5', 'total_nilai'];
+        $allowedSorts = ['name', 'total_nilai'];
         if (!in_array($sort, $allowedSorts)) {
             $sort = 'name';
         }
@@ -45,6 +45,7 @@ class TesTulisController extends Controller
             'batch',
             'latestEmailLog',
             'latestTestResult.sectionResults.testSection',
+            'latestTestResult.sectionResults.testSection.questionBundle.questions',
             'latestTestResult.sectionResults.answers.question',
         ])
         ->where('batch_id', $batchId)
@@ -64,11 +65,11 @@ class TesTulisController extends Controller
         if ($status) $q->where('status', $status);
 
         if ($search !== '') {
-            $needle = "%".mb_strtolower($search)."%";
-            $q->where(function ($w) use ($needle) {
-                $w->whereRaw('LOWER(name) LIKE ?', [$needle])
-                  ->orWhereRaw('LOWER(email) LIKE ?', [$needle])
-                  ->orWhereRaw('LOWER(jurusan) LIKE ?', [$needle]);
+            $keyword = "%".mb_strtolower($search)."%";
+            $q->where(function ($w) use ($keyword) {
+                $w->whereRaw('LOWER(name) LIKE ?', [$keyword])
+                  ->orWhereRaw('LOWER(email) LIKE ?', [$keyword])
+                  ->orWhereRaw('LOWER(jurusan) LIKE ?', [$keyword]);
             });
         }
 
@@ -116,6 +117,70 @@ class TesTulisController extends Controller
             'batches', 'positions', 'batchId', 'positionId', 'applicants'
         ));
 
+
+        // ============================================================
+        //  HITUNG FINAL TOTAL + MAX TOTAL PER APPLICANT
+        // ============================================================
+        foreach ($applicants as $a) {
+            $testResult = $a->latestTestResult;
+            if (!$testResult) {
+                $a->final_total_score = null;
+                $a->max_total_score   = null;
+                continue;
+            }
+
+            $finalTotal  = 0;
+            $maxTotal    = 0;
+
+            foreach ($testResult->sectionResults as $sr) {
+                $section = $sr->testSection;
+                if (!$section) continue;
+
+                $rawScore = (float) ($sr->score ?? 0);
+                $questions = $section->questionBundle->questions ?? collect();
+
+                $isPersonality = $questions->contains(fn($q) => $q->type === 'Poin');
+
+                // ========================
+                // HITUNG MAX SECTION (RAW)
+                // ========================
+                if ($isPersonality) {
+                    $maxSection = $questions->count() * 5; // 5 per soal
+                } else {
+                    $pgCount     = $questions->where('type','PG')->count();
+                    $multiCount  = $questions->where('type','Multiple')->count();
+                    $essayCount  = $questions->where('type','Essay')->count();
+
+                    $maxSection = ($pgCount * 1) + ($multiCount * 1) + ($essayCount * 3);
+                }
+
+                $maxTotal += $maxSection;
+
+                // ========================
+                // HITUNG FINAL (untuk total nilai)
+                // ========================
+                if ($isPersonality) {
+                    $percent = $maxSection > 0 ? ($rawScore / $maxSection) * 100 : 0;
+
+                    $rule = DB::table('personality_rules')
+                        ->where('min_percentage', '<=', $percent)
+                        ->where(function ($q) use ($percent) {
+                            $q->where('max_percentage', '>=', $percent)
+                              ->orWhereNull('max_percentage');
+                        })
+                        ->orderByDesc('min_percentage')
+                        ->first();
+
+                    $finalScore = $rule ? (int) $rule->score_value : 0;
+                    $finalTotal += $finalScore;
+                } else {
+                    $finalTotal += $rawScore;
+                }
+            }
+
+            $a->final_total_score = $finalTotal;
+            $a->max_total_score   = $maxTotal;
+        }
 
         return view('admin.applicant.seleksi.tes-tulis.index', compact(
             'batches', 'positions', 'batchId', 'positionId', 'applicants'
@@ -213,7 +278,6 @@ class TesTulisController extends Controller
      */
     public function export(Request $r)
     {
-        // 🧩 log aktivitas export
         // ActivityLogger::log(
         //     'export',
         //     'Tes Tulis',

@@ -4,20 +4,8 @@
             <h2 class="font-semibold text-xl text-gray-800 leading-tight mb-0">
                 {{ __('Quiz') }}
             </h2>
-            <a href="#" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#tambahTest">Create New
-                Quiz</a>
+            <a href="#" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#tambahTest">Create New Quiz</a>
         </div>
-
-        {{-- <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered modal-md">
-                <div class="modal-content">
-                    <div class="modal-body text-center">
-                        <h5 class="text-success">✅ {{ session('success') }}</h5>
-                        <button type="button" class="btn btn-success mt-3" data-bs-dismiss="modal">OK</button>
-                    </div>
-                </div>
-            </div>
-        </div> --}}
     </x-slot>
 
     <div class="py-3">
@@ -38,8 +26,14 @@
                                         <span class="mx-2">|</span>
                                         <i class="bi bi-briefcase"></i>
                                         {{ $test->sections_count }} Section
+                                        @if ($test->nilai_minimum)
+                                            <span class="mx-2">|</span>
+                                            <i class="bi bi-graph-down"></i>
+                                            Nilai Min: <strong>{{ number_format($test->nilai_minimum, 2) }}</strong>
+                                        @endif
                                     </small>
                                 </div>
+
                                 <div class="btn-group" role="group">
                                     <a href="{{ route('test.show', $test) }}" class="btn btn-primary btn-sm">
                                         <i class="bi bi-gear"></i> Kelola Section
@@ -61,6 +55,7 @@
                                 </div>
                             </div>
 
+                            {{-- Include modal edit --}}
                             @include('admin.test.partials.modal-edit-test', [
                                 'test' => $test,
                                 'positions' => $positions,
@@ -90,6 +85,7 @@
                     enctype="multipart/form-data">
                     @csrf
                     <div class="modal-body">
+                        {{-- Nama Test --}}
                         <div class="mb-3 col-md-12">
                             <label for="name" class="form-label">Title</label>
                             <input type="text" class="form-control @error('name') is-invalid @enderror"
@@ -99,6 +95,7 @@
                             @enderror
                         </div>
 
+                        {{-- Posisi --}}
                         <div class="mb-3 col-md-12">
                             <label for="position_id" class="form-label">Posisi</label>
                             <select name="position_id" id="position_id" class="form-select mb-2" required>
@@ -111,6 +108,19 @@
                             </select>
                         </div>
 
+                        {{-- Nilai Minimum --}}
+                        <div class="mb-3 col-md-12">
+                            <label for="nilai_minimum" class="form-label">Nilai Minimum (Opsional)</label>
+                            <input type="number" step="0.01" min="0" max="9999.99"
+                                class="form-control @error('nilai_minimum') is-invalid @enderror"
+                                id="nilai_minimum" name="nilai_minimum"
+                                value="{{ old('nilai_minimum') }}" placeholder="Contoh: 123.45">
+                            @error('nilai_minimum')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        {{-- Jadwal Buka Test --}}
                         <div class="mb-3 col-md-12">
                             <label for="test_date" class="form-label">Test Date (Buka Tombol)</label>
                             <input type="datetime-local" class="form-control @error('test_date') is-invalid @enderror"
@@ -120,15 +130,18 @@
                             @enderror
                         </div>
 
+                        {{-- Tutup Test --}}
                         <div class="mb-3 col-md-12">
                             <label for="test_closed" class="form-label">Tutup Tombol (Opsional)</label>
-                            <input type="datetime-local" class="form-control @error('test_closed') is-invalid @enderror"
-                                id="test_closed" name="test_closed" value="{{ old('test_closed') }}">
+                            <input type="datetime-local"
+                                class="form-control @error('test_closed') is-invalid @enderror" id="test_closed"
+                                name="test_closed" value="{{ old('test_closed') }}">
                             @error('test_closed')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
 
+                        {{-- Hard End --}}
                         <div class="mb-3 col-md-12">
                             <label for="test_end" class="form-label">Hard End (Opsional)</label>
                             <input type="datetime-local" class="form-control @error('test_end') is-invalid @enderror"
@@ -149,6 +162,7 @@
         </div>
     </div>
 
+    {{-- Modal success --}}
     @if (session('success'))
         <script>
             document.addEventListener('DOMContentLoaded', function() {

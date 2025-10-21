@@ -23,6 +23,10 @@ class DatabaseSeeder extends Seeder
             DivisionSeeder::class,
             JobSeeder::class,
             PlacementSeeder::class,
+            QuestionSeeder::class,
+            QuestionBundleSeeder::class,
+            BundleQuestionSeeder::class,
+            PersonalityRuleSeeder::class,
         ]);
 
     }
