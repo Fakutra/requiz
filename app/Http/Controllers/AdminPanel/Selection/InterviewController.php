@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use App\Services\SelectionLogger;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use App\Models\Batch;
 use App\Models\Position;
 use App\Exports\InterviewApplicantsExport;
@@ -51,9 +52,66 @@ class InterviewController extends Controller
         $applicants = $q->orderBy('name')->paginate(20)->appends($request->query());
 
         foreach ($applicants as $a) {
-            $a->quiz_score     = $a->testResults()->latest()->value('score');
+
+            // ========= TES TULIS (FINAL & MAX) =========
+            $testResult = $a->latestTestResult;
+            $finalTotal = 0;
+            $maxTotal   = 0;
+
+            if ($testResult) {
+                foreach ($testResult->sectionResults as $sr) {
+                    $section = $sr->testSection;
+                    if (!$section) continue;
+
+                    $rawScore  = (float) ($sr->score ?? 0);
+                    $questions = $section->questionBundle->questions ?? collect();
+
+                    $isPersonality = $questions->contains(fn($q) => $q->type === 'Poin');
+
+                    // Hitung Max Tiap Section
+                    if ($isPersonality) {
+                        $maxSection = $questions->count() * 5;
+                    } else {
+                        $pgCount     = $questions->where('type','PG')->count();
+                        $multiCount  = $questions->where('type','Multiple')->count();
+                        $essayCount  = $questions->where('type','Essay')->count();
+                        $maxSection  = ($pgCount * 1) + ($multiCount * 1) + ($essayCount * 3);
+                    }
+
+                    $maxTotal += $maxSection;
+
+                    // Hitung Final Score Section
+                    if ($isPersonality) {
+                        $percent = $maxSection > 0 ? ($rawScore / $maxSection) * 100 : 0;
+
+                        $rule = DB::table('personality_rules')
+                            ->where('min_percentage', '<=', $percent)
+                            ->where(function ($q) use ($percent) {
+                                $q->where('max_percentage', '>=', $percent)
+                                ->orWhereNull('max_percentage');
+                            })
+                            ->orderByDesc('min_percentage')
+                            ->first();
+
+                        $finalTotal += $rule ? (int) $rule->score_value : 0;
+                    } else {
+                        $finalTotal += $rawScore;
+                    }
+                }
+            }
+
+            $a->quiz_final = $finalTotal ?: null;
+            $a->quiz_max   = $maxTotal ?: null;
+
+
+            // ========= INTERVIEW (FINAL & MAX 100) =========
+            $avgInterview = InterviewResult::where('applicant_id', $a->id)->avg('score');
+            $a->interview_final = $avgInterview ? round($avgInterview, 2) : null;
+            $a->interview_max   = 100;
+
+
+            // ========= DATA TAMBAHAN LAIN (TETAP) =========
             $a->praktik_score  = $a->technicalTestAnswers()->latest()->value('score');
-            $a->interview_avg  = InterviewResult::where('applicant_id', $a->id)->avg('score');
             $a->potential_by   = InterviewResult::where('applicant_id', $a->id)
                                 ->where('potencial', true)
                                 ->with('user')
@@ -62,9 +120,10 @@ class InterviewController extends Controller
                                 ->filter()
                                 ->toArray();
             $a->interview_note = InterviewResult::where('applicant_id', $a->id)
-                                    ->orderByDesc('id')
-                                    ->value('note');
+                                ->orderByDesc('id')
+                                ->value('note');
         }
+
 
         return view('admin.applicant.seleksi.interview.index', compact(
             'batches', 'positions', 'batchId', 'positionId', 'applicants'

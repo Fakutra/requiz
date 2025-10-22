@@ -169,6 +169,7 @@
                   </svg>
                 </a>
               </th>
+              <th class="px-3 py-2 text-left whitespace-nowrap">KKM</th>
               <th class="px-3 py-2 text-left whitespace-nowrap">Status</th>
               <th class="px-3 py-2 text-left whitespace-nowrap">Email</th>
               <th class="px-3 py-2 text-left whitespace-nowrap">Action</th>
@@ -436,7 +437,7 @@
                             name="answer_scores[{{ $sectionResult->id }}][{{ $answer?->id ?? $q->id }}]"
                             value="{{ $answer?->score }}"
                             min="0" max="100"
-                            class="border rounded px-2 py-1 w-24">
+                            class="border rounded px-2 py-1 w-24" placeholder="0-3">
                     </div>
                   @endforeach
                 </div>

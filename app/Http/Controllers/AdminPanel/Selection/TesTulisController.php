@@ -35,7 +35,7 @@ class TesTulisController extends Controller
         $sort      = $request->query('sort', 'name');
         $direction = $request->query('direction', 'asc');
 
-        $allowedSorts = ['name', 'total_nilai'];
+        $allowedSorts = ['name', 'section_1', 'section_2', 'section_3', 'section_4', 'section_5', 'total_nilai'];
         if (!in_array($sort, $allowedSorts)) {
             $sort = 'name';
         }
@@ -44,6 +44,7 @@ class TesTulisController extends Controller
             'position',
             'batch',
             'latestEmailLog',
+            'latestTestResult.test',
             'latestTestResult.sectionResults.testSection',
             'latestTestResult.sectionResults.testSection.questionBundle.questions',
             'latestTestResult.sectionResults.answers.question',
@@ -62,47 +63,81 @@ class TesTulisController extends Controller
         ]);
 
         if ($positionId) $q->where('position_id', $positionId);
-        if ($status) $q->where('status', $status);
+        if ($status)     $q->where('status', $status);
 
         if ($search !== '') {
             $keyword = "%".mb_strtolower($search)."%";
             $q->where(function ($w) use ($keyword) {
                 $w->whereRaw('LOWER(name) LIKE ?', [$keyword])
-                  ->orWhereRaw('LOWER(email) LIKE ?', [$keyword])
-                  ->orWhereRaw('LOWER(jurusan) LIKE ?', [$keyword]);
+                ->orWhereRaw('LOWER(email) LIKE ?', [$keyword])
+                ->orWhereRaw('LOWER(jurusan) LIKE ?', [$keyword]);
             });
         }
 
-        // 🔹 Ambil semua data dengan relasi yang dibutuhkan
-        $applicants = $q->get()->map(function ($a) {
-            // Ambil setiap section 1–5 berdasarkan urutan testSection->order
-            $sectionScores = [];
-            for ($i = 1; $i <= 5; $i++) {
-                $sectionScores[$i] = optional(
-                    $a->latestTestResult?->sectionResults
-                        ->first(fn($s) => $s->testSection && $s->testSection->order == $i)
-                )->score ?? null;
+        // ⬇️ Ambil peserta
+        $applicants = $q->get();
+
+        // ⬇️ Ambil max nilai personality dari rules (contoh: 35)
+        $maxPersonalityFinal = (int) (DB::table('personality_rules')->max('score_value') ?? 0);
+
+        // ⬇️ Hitung final_total_score & max_total_score
+        foreach ($applicants as $a) {
+            $testResult = $a->latestTestResult;
+            if (!$testResult) {
+                $a->final_total_score = null;
+                $a->max_total_score   = null;
+                continue;
             }
 
-            // Simpan skor section & total ke properti virtual
-            $a->section_1 = $sectionScores[1];
-            $a->section_2 = $sectionScores[2];
-            $a->section_3 = $sectionScores[3];
-            $a->section_4 = $sectionScores[4];
-            $a->section_5 = $sectionScores[5];
-            $a->total_nilai = $a->latestTestResult?->score ?? null;
+            $finalTotal = 0;
+            $maxTotal   = 0;
 
-            return $a;
-        });
+            foreach ($testResult->sectionResults as $sr) {
+                $section = $sr->testSection;
+                if (!$section) continue;
 
-        // 🔹 Sorting manual berdasarkan kolom
-        if (in_array($sort, ['section_1','section_2','section_3','section_4','section_5','total_nilai'])) {
-            $applicants = $applicants->sortBy($sort, SORT_REGULAR, $direction === 'desc');
-        } else {
-            $applicants = $applicants->sortBy($sort, SORT_NATURAL | SORT_FLAG_CASE, $direction === 'desc');
+                $rawScore = (float) ($sr->score ?? 0);
+                $questions = $section->questionBundle->questions ?? collect();
+                $isPersonality = $questions->contains(fn($q) => $q->type === 'Poin');
+
+                // 1️⃣ MAX (khusus personality gunakan rule tertinggi)
+                if ($isPersonality) {
+                    $maxTotal += $maxPersonalityFinal;
+                } else {
+                    $pg    = $questions->where('type','PG')->count();
+                    $multi = $questions->where('type','Multiple')->count();
+                    $essay = $questions->where('type','Essay')->count();
+                    $maxSection = ($pg * 1) + ($multi * 1) + ($essay * 3);
+                    $maxTotal += $maxSection;
+                }
+
+                // 2️⃣ FINAL SCORE
+                if ($isPersonality) {
+                    $rawMaxSection = $questions->count() * 5;
+                    $percent = $rawMaxSection > 0 ? ($rawScore / $rawMaxSection) * 100 : 0;
+                    $rule = DB::table('personality_rules')
+                        ->where('min_percentage', '<=', $percent)
+                        ->where(function ($q) use ($percent) {
+                            $q->where('max_percentage', '>=', $percent)
+                            ->orWhereNull('max_percentage');
+                        })
+                        ->orderByDesc('min_percentage')
+                        ->first();
+                    $finalScore = $rule ? (int) $rule->score_value : 0;
+                    $finalTotal += $finalScore;
+                } else {
+                    $finalTotal += $rawScore;
+                }
+            }
+
+            $a->final_total_score = $finalTotal;
+            $a->max_total_score   = $maxTotal;
         }
 
-        // 🔹 Pagination manual
+        // ⬇️ Sorting
+        $applicants = $applicants->sortBy($sort, SORT_REGULAR, $direction === 'desc');
+
+        // ⬇️ Pagination
         $page = request('page', 1);
         $perPage = 20;
         $applicants = new \Illuminate\Pagination\LengthAwarePaginator(
@@ -116,76 +151,8 @@ class TesTulisController extends Controller
         return view('admin.applicant.seleksi.tes-tulis.index', compact(
             'batches', 'positions', 'batchId', 'positionId', 'applicants'
         ));
-
-
-        // ============================================================
-        //  HITUNG FINAL TOTAL + MAX TOTAL PER APPLICANT
-        // ============================================================
-        foreach ($applicants as $a) {
-            $testResult = $a->latestTestResult;
-            if (!$testResult) {
-                $a->final_total_score = null;
-                $a->max_total_score   = null;
-                continue;
-            }
-
-            $finalTotal  = 0;
-            $maxTotal    = 0;
-
-            foreach ($testResult->sectionResults as $sr) {
-                $section = $sr->testSection;
-                if (!$section) continue;
-
-                $rawScore = (float) ($sr->score ?? 0);
-                $questions = $section->questionBundle->questions ?? collect();
-
-                $isPersonality = $questions->contains(fn($q) => $q->type === 'Poin');
-
-                // ========================
-                // HITUNG MAX SECTION (RAW)
-                // ========================
-                if ($isPersonality) {
-                    $maxSection = $questions->count() * 5; // 5 per soal
-                } else {
-                    $pgCount     = $questions->where('type','PG')->count();
-                    $multiCount  = $questions->where('type','Multiple')->count();
-                    $essayCount  = $questions->where('type','Essay')->count();
-
-                    $maxSection = ($pgCount * 1) + ($multiCount * 1) + ($essayCount * 3);
-                }
-
-                $maxTotal += $maxSection;
-
-                // ========================
-                // HITUNG FINAL (untuk total nilai)
-                // ========================
-                if ($isPersonality) {
-                    $percent = $maxSection > 0 ? ($rawScore / $maxSection) * 100 : 0;
-
-                    $rule = DB::table('personality_rules')
-                        ->where('min_percentage', '<=', $percent)
-                        ->where(function ($q) use ($percent) {
-                            $q->where('max_percentage', '>=', $percent)
-                              ->orWhereNull('max_percentage');
-                        })
-                        ->orderByDesc('min_percentage')
-                        ->first();
-
-                    $finalScore = $rule ? (int) $rule->score_value : 0;
-                    $finalTotal += $finalScore;
-                } else {
-                    $finalTotal += $rawScore;
-                }
-            }
-
-            $a->final_total_score = $finalTotal;
-            $a->max_total_score   = $maxTotal;
-        }
-
-        return view('admin.applicant.seleksi.tes-tulis.index', compact(
-            'batches', 'positions', 'batchId', 'positionId', 'applicants'
-        ));
     }
+
 
     /**
      * Simpan nilai essay
