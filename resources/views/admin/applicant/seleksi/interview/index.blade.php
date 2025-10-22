@@ -98,14 +98,14 @@
                                 ->first();
               @endphp
               <tr>
-                <td class="px-3 py-2"><input type="checkbox" name="ids[]" value="{{ $a->id }}"></td>
+                <td class="px-3 py-2 whitespace-nowrap"><input type="checkbox" name="ids[]" value="{{ $a->id }}"></td>
                 <td class="px-3 py-2 whitespace-nowrap">{{ $a->name }}</td>
-                <td class="px-3 py-2">{{ $a->jurusan }}</td>
-                <td class="px-3 py-2">{{ $a->position->name ?? '-' }}</td>
-                <td class="px-3 py-2 text-left">
+                <td class="px-3 py-2 whitespace-nowrap">{{ $a->jurusan }}</td>
+                <td class="px-3 py-2 whitespace-nowrap">{{ $a->position->name ?? '-' }}</td>
+                <td class="px-3 py-2 whitespace-nowrap text-left">
                   {{ $a->ekspektasi_gaji_formatted ?? '-' }}
                 </td>
-                <td class="px-3 py-2 text-center">
+                <td class="px-3 py-2 whitespace-nowrap text-center">
                   @if($a->cv_document)
                     <a href="{{ asset('storage/'.$a->cv_document) }}" target="_blank" class="text-blue-600 hover:underline">
                       <i class="fas fa-file-pdf"></i>
@@ -114,17 +114,17 @@
                     <span class="text-gray-400">-</span>
                   @endif
                 </td>
-                <td class="px-3 py-2 text-center">{{ $a->quiz_score ?? '-' }}</td>
-                <td class="px-3 py-2 text-center">{{ $a->praktik_score ?? '-' }}</td>
-                <td class="px-3 py-2 text-center">
+                <td class="px-3 py-2 whitespace-nowrap text-center">{{ $a->quiz_score ?? '-' }}</td>
+                <td class="px-3 py-2 whitespace-nowrap text-center">{{ $a->praktik_score ?? '-' }}</td>
+                <td class="px-3 py-2 whitespace-nowrap text-center">
                   {{ $a->interview_avg ? number_format($a->interview_avg, 2) : '-' }}
                 </td>
-                <td class="px-3 py-2">
+                <td class="px-3 py-2 whitespace-nowrap">
                   {{ $a->potential_by ? implode(', ', $a->potential_by) : '-' }}
                 </td>
 
                 {{-- Email Status --}}
-                <td class="px-3 py-2 text-center">
+                <td class="px-3 py-2 whitespace-nowrap text-center">
                   @php
                     $log = $a->latestEmailLog;
                     if ($log && $log->stage !== 'Interview') {
@@ -141,7 +141,7 @@
                     <i class="fas fa-minus-circle text-gray-400" title="Belum dikirim"></i>
                   @endif
                 </td>
-                <td class="px-3 py-2 whitespace-nowrap">
+                <td class="px-3 py-2 whitespace-nowrap whitespace-nowrap">
                   @php
                     // Mapping status untuk tampilan di Seleksi Interview
                     $lolosInterviewStatuses = [
@@ -174,7 +174,7 @@
                 </span>
 
                 </td>
-                <td class="px-3 py-2">
+                <td class="px-3 py-2 whitespace-nowrap">
                   @if($a->interviewResults && $a->interviewResults->count() > 0)
                     @foreach($a->interviewResults as $r)
                       @if(!empty($r->note))
@@ -190,7 +190,7 @@
                 </td>
 
                 {{-- Aksi --}}
-                <td class="px-3 py-2 text-center">
+                <td class="px-3 py-2 whitespace-nowrap text-center">
                   <i class="fas fa-pen text-blue-600 cursor-pointer hover:text-blue-800"
                     title="Input Penilaian Interview"
                     onclick="document.getElementById('scoreModal-{{ $a->id }}').classList.remove('hidden')"></i>
