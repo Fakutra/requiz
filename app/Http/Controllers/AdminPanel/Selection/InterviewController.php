@@ -51,6 +51,9 @@ class InterviewController extends Controller
 
         $applicants = $q->orderBy('name')->paginate(20)->appends($request->query());
 
+        // Ambil nilai max personality final dari rules (supaya sama dengan TesTulisController)
+        $maxPersonalityFinal = (int) (DB::table('personality_rules')->max('score_value') ?? 0);
+
         foreach ($applicants as $a) {
 
             // ========= TES TULIS (FINAL & MAX) =========
@@ -65,24 +68,24 @@ class InterviewController extends Controller
 
                     $rawScore  = (float) ($sr->score ?? 0);
                     $questions = $section->questionBundle->questions ?? collect();
-
                     $isPersonality = $questions->contains(fn($q) => $q->type === 'Poin');
 
-                    // Hitung Max Tiap Section
+                    // ===== MAX SCORE (SAMAKAN DENGAN TesTulisController) =====
                     if ($isPersonality) {
-                        $maxSection = $questions->count() * 5;
+                        // personality max pakai nilai rules tertinggi, bukan raw×5
+                        $maxTotal += $maxPersonalityFinal;
                     } else {
-                        $pgCount     = $questions->where('type','PG')->count();
-                        $multiCount  = $questions->where('type','Multiple')->count();
-                        $essayCount  = $questions->where('type','Essay')->count();
-                        $maxSection  = ($pgCount * 1) + ($multiCount * 1) + ($essayCount * 3);
+                        $pg    = $questions->where('type','PG')->count();
+                        $multi = $questions->where('type','Multiple')->count();
+                        $essay = $questions->where('type','Essay')->count();
+                        $maxSection = ($pg * 1) + ($multi * 1) + ($essay * 3);
+                        $maxTotal += $maxSection;
                     }
 
-                    $maxTotal += $maxSection;
-
-                    // Hitung Final Score Section
+                    // ===== FINAL SCORE =====
                     if ($isPersonality) {
-                        $percent = $maxSection > 0 ? ($rawScore / $maxSection) * 100 : 0;
+                        $rawMax = $questions->count() * 5;
+                        $percent = $rawMax > 0 ? ($rawScore / $rawMax) * 100 : 0;
 
                         $rule = DB::table('personality_rules')
                             ->where('min_percentage', '<=', $percent)
@@ -104,13 +107,13 @@ class InterviewController extends Controller
             $a->quiz_max   = $maxTotal ?: null;
 
 
-            // ========= INTERVIEW (FINAL & MAX 100) =========
+            // ========= INTERVIEW (FINAL AVG & MAX = 100) =========
             $avgInterview = InterviewResult::where('applicant_id', $a->id)->avg('score');
             $a->interview_final = $avgInterview ? round($avgInterview, 2) : null;
             $a->interview_max   = 100;
 
 
-            // ========= DATA TAMBAHAN LAIN (TETAP) =========
+            // ========= DATA TAMBAHAN (TETAP) =========
             $a->praktik_score  = $a->technicalTestAnswers()->latest()->value('score');
             $a->potential_by   = InterviewResult::where('applicant_id', $a->id)
                                 ->where('potencial', true)
