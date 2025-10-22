@@ -101,9 +101,9 @@
               <tr>
                 <td class="px-3 py-2 whitespace-nowrap"><input type="checkbox" name="ids[]" value="{{ $a->id }}"></td>
                 <td class="px-3 py-2 whitespace-nowrap">{{ $a->name }}</td>
-                <td class="px-3 py-2">{{ $a->universitas ?? '-' }}</td>
-                <td class="px-3 py-2">{{ $a->jurusan }}</td>
-                <td class="px-3 py-2">{{ $a->position->name ?? '-' }}</td>
+                <td class="px-3 py-2 whitespace-nowrap">{{ $a->universitas ?? '-' }}</td>
+                <td class="px-3 py-2 whitespace-nowrap">{{ $a->jurusan }}</td>
+                <td class="px-3 py-2 whitespace-nowrap">{{ $a->position->name ?? '-' }}</td>
                 <td class="px-3 py-2 text-left">
                   {{ $a->ekspektasi_gaji_formatted ?? '-' }}
                 </td>
@@ -116,11 +116,11 @@
                     <span class="text-gray-400">-</span>
                   @endif
                 </td>
-                <td class="px-3 py-2 text-center">
+                <td class="px-3 py-2 whitespace-nowrap text-center">
                   {{ $a->quiz_final ? $a->quiz_final.' / '.$a->quiz_max : '-' }}
                 </td>
-                <td class="px-3 py-2 text-center">{{ $a->praktik_score ?? '-' }}</td>
-                <td class="px-3 py-2 text-center">
+                <td class="px-3 py-2 whitespace-nowrap text-center">{{ $a->praktik_score ?? '-' }}</td>
+                <td class="px-3 py-2 whitespace-nowrap text-center">
                   {{ $a->interview_final ? number_format($a->interview_final, 2).' / '.$a->interview_max : '-' }}
                 </td>
                 <td class="px-3 py-2 whitespace-nowrap">
@@ -145,7 +145,7 @@
                     <i class="fas fa-minus-circle text-gray-400" title="Belum dikirim"></i>
                   @endif
                 </td>
-                <td class="px-3 py-2 whitespace-nowrap whitespace-nowrap">
+                <td class="px-3 py-2 whitespace-nowrap">
                   @php
                     // Mapping status untuk tampilan di Seleksi Interview
                     $lolosInterviewStatuses = [

@@ -324,7 +324,8 @@
                   <input type="number" name="score" 
                         value="{{ $ans->score ?? '' }}" 
                         min="0" max="100" step="0.01"
-                        class="border rounded w-full px-3 py-2 focus:ring focus:ring-blue-200">
+                        class="border rounded w-full px-3 py-2 focus:ring focus:ring-blue-200"
+                        placeholder = "0-100">
                 </div>
 
                 <div class="mb-4 flex-grow">
