@@ -68,17 +68,17 @@ class InterviewController extends Controller
 
                     $isPersonality = $questions->contains(fn($q) => $q->type === 'Poin');
 
-                    // Hitung Max Tiap Section
+                    // Hitung Max Tiap Section (HANYA PG, Multiple, Essay yang masuk maxTotal)
                     if ($isPersonality) {
-                        $maxSection = $questions->count() * 5;
+                        // personality raw TIDAK ikut max_total (hanya untuk kalkulasi final)
+                        $maxSection = $questions->count() * 5; // tetap dihitung untuk persentase
                     } else {
                         $pgCount     = $questions->where('type','PG')->count();
                         $multiCount  = $questions->where('type','Multiple')->count();
                         $essayCount  = $questions->where('type','Essay')->count();
                         $maxSection  = ($pgCount * 1) + ($multiCount * 1) + ($essayCount * 3);
+                        $maxTotal   += $maxSection;
                     }
-
-                    $maxTotal += $maxSection;
 
                     // Hitung Final Score Section
                     if ($isPersonality) {
@@ -110,7 +110,7 @@ class InterviewController extends Controller
             $a->interview_max   = 100;
 
 
-            // ========= DATA TAMBAHAN LAIN (TETAP) =========
+            // ========= DATA TAMBAHAN (seperti sebelumnya) =========
             $a->praktik_score  = $a->technicalTestAnswers()->latest()->value('score');
             $a->potential_by   = InterviewResult::where('applicant_id', $a->id)
                                 ->where('potencial', true)
@@ -123,8 +123,7 @@ class InterviewController extends Controller
                                 ->orderByDesc('id')
                                 ->value('note');
         }
-
-
+        
         return view('admin.applicant.seleksi.interview.index', compact(
             'batches', 'positions', 'batchId', 'positionId', 'applicants'
         ));
