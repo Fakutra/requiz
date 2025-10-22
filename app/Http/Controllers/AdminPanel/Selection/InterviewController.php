@@ -114,7 +114,8 @@ class InterviewController extends Controller
 
 
             // ========= DATA TAMBAHAN (TETAP) =========
-            $a->praktik_score  = $a->technicalTestAnswers()->latest()->value('score');
+            $a->praktik_final = $a->technicalTestAnswers()->latest()->value('score');
+            $a->praktik_max   = 100;
             $a->potential_by   = InterviewResult::where('applicant_id', $a->id)
                                 ->where('potencial', true)
                                 ->with('user')

@@ -119,7 +119,9 @@
                 <td class="px-3 py-2 whitespace-nowrap text-center">
                   {{ $a->quiz_final ? $a->quiz_final.' / '.$a->quiz_max : '-' }}
                 </td>
-                <td class="px-3 py-2 whitespace-nowrap text-center">{{ $a->praktik_score ?? '-' }}</td>
+                <td class="px-3 py-2 whitespace-nowrap text-center">
+                  {{ $a->praktik_final ? $a->praktik_final.' / '.$a->praktik_max : '-' }}
+                </td>
                 <td class="px-3 py-2 whitespace-nowrap text-center">
                   {{ $a->interview_final ? number_format($a->interview_final, 2).' / '.$a->interview_max : '-' }}
                 </td>
