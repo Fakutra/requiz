@@ -14,20 +14,6 @@
                 <i class="bi bi-plus-circle me-2"></i>Tambah Posisi Baru
             </button>
         </div>
-
-        {{-- Modal Notifikasi Sukses --}}
-        @if (session('success'))
-            <div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered">
-                    <div class="modal-content">
-                        <div class="modal-body text-center p-4">
-                            <h5 class="text-success mb-3">✅ {{ session('success') }}</h5>
-                            <button type="button" class="btn btn-success" data-bs-dismiss="modal">OK</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        @endif
     </x-slot>
 
     <div class="py-4">

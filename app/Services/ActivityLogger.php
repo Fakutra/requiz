@@ -40,24 +40,28 @@ class ActivityLogger
             }
         }
 
-        if (!empty($changes)) {
-            // cek apakah model punya relasi applicant
-            $applicantName = method_exists($model, 'applicant') && $model->applicant
-                ? $model->applicant->name
-                : 'Data Tidak Dikenal';
-
-            $desc = Auth::user()->name
-                  ." memperbarui data pada {$module} untuk peserta {$applicantName} "
-                  ."— ".implode(', ', $changes);
-
-            self::log(
-                'update',
-                $module,
-                $desc,
-                "Peserta: {$applicantName}"
-            );
+        if (empty($changes)) {
+            return;
         }
+
+        // ✅ Nama objek yang diedit (lebih universal)
+        $modelName =
+            ($model->name ?? null) ?: // Batch, Position, Test, Job, dsb
+            (method_exists($model, 'applicant') && $model->applicant ? $model->applicant->name : null) ?: // Applicant
+            $model->id; // fallback terakhir
+
+        $desc = Auth::user()->name
+            ." memperbarui data pada {$module} '{$modelName}' — "
+            .implode(', ', $changes);
+
+        self::log(
+            'update',
+            $module,
+            $desc,
+            "{$module}: {$modelName}"
+        );
     }
+
 
     /**
      * Ambil IP Address user (support proxy/reverse proxy)
