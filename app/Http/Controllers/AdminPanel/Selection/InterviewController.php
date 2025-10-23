@@ -29,6 +29,19 @@ class InterviewController extends Controller
         $batches   = Batch::orderBy('id')->get();
         $positions = $batchId ? Position::where('batch_id', $batchId)->get() : collect();
 
+        // Parameter sorting
+        $sort      = $request->query('sort', 'name');
+        $direction = $request->query('direction', 'asc');
+
+        $allowedSorts = [
+            'name', 'universitas', 'jurusan', 'posisi',
+            'ekspektasi_gaji', 'dokumen',
+            'quiz_final', 'praktik_final', 'interview_final'
+        ];
+        if (!in_array($sort, $allowedSorts)) {
+            $sort = 'name';
+        }
+
         $q = Applicant::with(['position', 'batch', 'latestEmailLog', 'myInterviewResult'])
             ->whereIn('status', [
                 'Interview',
@@ -44,19 +57,20 @@ class InterviewController extends Controller
             $needle = "%".mb_strtolower($search)."%";
             $q->where(function ($w) use ($needle) {
                 $w->whereRaw('LOWER(name) LIKE ?', [$needle])
-                  ->orWhereRaw('LOWER(email) LIKE ?', [$needle])
-                  ->orWhereRaw('LOWER(jurusan) LIKE ?', [$needle]);
+                ->orWhereRaw('LOWER(email) LIKE ?', [$needle])
+                ->orWhereRaw('LOWER(jurusan) LIKE ?', [$needle]);
             });
         }
 
-        $applicants = $q->orderBy('name')->paginate(20)->appends($request->query());
+        // Ambil semua data dulu tanpa orderBy
+        $applicants = $q->get();
 
-        // Ambil nilai max personality final dari rules (supaya sama dengan TesTulisController)
+        // Ambil max personality rule (dari Tes Tulis)
         $maxPersonalityFinal = (int) (DB::table('personality_rules')->max('score_value') ?? 0);
 
         foreach ($applicants as $a) {
 
-            // ========= TES TULIS (FINAL & MAX) =========
+            // ========= TES TULIS =========
             $testResult = $a->latestTestResult;
             $finalTotal = 0;
             $maxTotal   = 0;
@@ -70,19 +84,15 @@ class InterviewController extends Controller
                     $questions = $section->questionBundle->questions ?? collect();
                     $isPersonality = $questions->contains(fn($q) => $q->type === 'Poin');
 
-                    // ===== MAX SCORE (SAMAKAN DENGAN TesTulisController) =====
                     if ($isPersonality) {
-                        // personality max pakai nilai rules tertinggi, bukan raw×5
                         $maxTotal += $maxPersonalityFinal;
                     } else {
                         $pg    = $questions->where('type','PG')->count();
                         $multi = $questions->where('type','Multiple')->count();
                         $essay = $questions->where('type','Essay')->count();
-                        $maxSection = ($pg * 1) + ($multi * 1) + ($essay * 3);
-                        $maxTotal += $maxSection;
+                        $maxTotal += ($pg * 1) + ($multi * 1) + ($essay * 3);
                     }
 
-                    // ===== FINAL SCORE =====
                     if ($isPersonality) {
                         $rawMax = $questions->count() * 5;
                         $percent = $rawMax > 0 ? ($rawScore / $rawMax) * 100 : 0;
@@ -106,28 +116,48 @@ class InterviewController extends Controller
             $a->quiz_final = $finalTotal ?: null;
             $a->quiz_max   = $maxTotal ?: null;
 
-
-            // ========= INTERVIEW (FINAL AVG & MAX = 100) =========
+            // ========= INTERVIEW =========
             $avgInterview = InterviewResult::where('applicant_id', $a->id)->avg('score');
             $a->interview_final = $avgInterview ? round($avgInterview, 2) : null;
             $a->interview_max   = 100;
 
-
-            // ========= DATA TAMBAHAN (TETAP) =========
+            // ========= PRAKTIK =========
             $a->praktik_final = $a->technicalTestAnswers()->latest()->value('score');
             $a->praktik_max   = 100;
-            $a->potential_by   = InterviewResult::where('applicant_id', $a->id)
+
+            // ========= DOKUMEN (ada/tidak) =========
+            $a->dokumen = $a->cv_path ? 1 : 0;
+
+            // ========= POSISI (nama posisi relasi) =========
+            $a->posisi = $a->position?->name ?? null;
+
+            // ========= DATA TAMBAHAN =========
+            $a->potential_by = InterviewResult::where('applicant_id', $a->id)
                                 ->where('potencial', true)
                                 ->with('user')
                                 ->get()
                                 ->map(fn($r) => $r->user?->name)
                                 ->filter()
                                 ->toArray();
+
             $a->interview_note = InterviewResult::where('applicant_id', $a->id)
                                 ->orderByDesc('id')
                                 ->value('note');
         }
 
+        // Sorting collection berdasarkan request
+        $applicants = $applicants->sortBy($sort, SORT_NATURAL, $direction === 'desc');
+
+        // Pagination manual
+        $page = request('page', 1);
+        $perPage = 20;
+        $applicants = new \Illuminate\Pagination\LengthAwarePaginator(
+            $applicants->forPage($page, $perPage),
+            $applicants->count(),
+            $perPage,
+            $page,
+            ['path' => request()->url(), 'query' => request()->query()]
+        );
 
         return view('admin.applicant.seleksi.interview.index', compact(
             'batches', 'positions', 'batchId', 'positionId', 'applicants'

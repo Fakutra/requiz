@@ -75,15 +75,114 @@
           <thead class="bg-gray-100 text-gray-800">
             <tr>
               <th class="px-3 py-2"><input type="checkbox" id="checkAll"></th>
-              <th class="px-3 py-2 text-left whitespace-nowrap">Nama Peserta</th>
-              <th class="px-3 py-2 text-left whitespace-nowrap">Universitas</th>
-              <th class="px-3 py-2 text-left whitespace-nowrap">Jurusan</th>
-              <th class="px-3 py-2 text-left whitespace-nowrap">Posisi</th>
-              <th class="px-3 py-2 text-left whitespace-nowrap">Ekspektasi Gaji</th>
-              <th class="px-3 py-2 text-left whitespace-nowrap">Dokumen</th>
-              <th class="px-3 py-2 text-left whitespace-nowrap">Score Quiz</th>
-              <th class="px-3 py-2 text-left whitespace-nowrap">Score Praktik</th>
-              <th class="px-3 py-2 text-left whitespace-nowrap">Score Interview</th>
+              {{-- Nama Peserta --}}
+              <th class="px-3 py-2 text-left whitespace-nowrap">
+                <a href="{{ request()->fullUrlWithQuery([
+                    'sort' => 'name',
+                    'direction' => (request('sort') === 'name' && request('direction') === 'asc') ? 'desc' : 'asc'
+                ]) }}" class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
+                  Nama Peserta
+                  <svg class="w-4 h-4 transform {{ request('sort') === 'name' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
+                      fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                </a>
+              </th>
+
+              {{-- Universitas --}}
+              <th class="px-3 py-2 text-left whitespace-nowrap">
+                <a href="{{ request()->fullUrlWithQuery([
+                    'sort' => 'universitas',
+                    'direction' => (request('sort') === 'universitas' && request('direction') === 'asc') ? 'desc' : 'asc'
+                ]) }}" class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
+                  Universitas
+                  <svg class="w-4 h-4 transform {{ request('sort') === 'universitas' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
+                      fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                </a>
+              </th>
+
+              {{-- Jurusan --}}
+              <th class="px-3 py-2 text-left whitespace-nowrap">
+                <a href="{{ request()->fullUrlWithQuery([
+                    'sort' => 'jurusan',
+                    'direction' => (request('sort') === 'jurusan' && request('direction') === 'asc') ? 'desc' : 'asc'
+                ]) }}" class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
+                  Jurusan
+                  <svg class="w-4 h-4 transform {{ request('sort') === 'jurusan' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
+                      fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                </a>
+              </th>
+
+              {{-- Posisi --}}
+              <th class="px-3 py-2 text-left whitespace-nowrap">
+                <a href="{{ request()->fullUrlWithQuery([
+                    'sort' => 'posisi',
+                    'direction' => (request('sort') === 'posisi' && request('direction') === 'asc') ? 'desc' : 'asc'
+                ]) }}" class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
+                  Posisi
+                  <svg class="w-4 h-4 transform {{ request('sort') === 'posisi' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
+                      fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                </a>
+              </th>
+
+              {{-- Ekspektasi Gaji --}}
+              <th class="px-3 py-2 text-left whitespace-nowrap">
+                <a href="{{ request()->fullUrlWithQuery([
+                    'sort' => 'ekspektasi_gaji',
+                    'direction' => (request('sort') === 'ekspektasi_gaji' && request('direction') === 'asc') ? 'desc' : 'asc'
+                ]) }}" class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
+                  Ekspektasi Gaji
+                  <svg class="w-4 h-4 transform {{ request('sort') === 'ekspektasi_gaji' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
+                      fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                </a>
+              </th>
+
+              {{-- Dokumen --}}
+              <th class="px-3 py-2 text-left whitespace-nowrap">
+                <a href="{{ request()->fullUrlWithQuery([
+                    'sort' => 'dokumen',
+                    'direction' => (request('sort') === 'dokumen' && request('direction') === 'asc') ? 'desc' : 'asc'
+                ]) }}" class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
+                  Dokumen
+                  <svg class="w-4 h-4 transform {{ request('sort') === 'dokumen' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
+                      fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                </a>
+              </th>
+
+              {{-- Score Quiz --}}
+              <th class="px-3 py-2 text-left whitespace-nowrap">
+                <a href="{{ request()->fullUrlWithQuery([
+                    'sort' => 'score_quiz',
+                    'direction' => (request('sort') === 'score_quiz' && request('direction') === 'asc') ? 'desc' : 'asc'
+                ]) }}" class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
+                  Score Quiz
+                  <svg class="w-4 h-4 transform {{ request('sort') === 'score_quiz' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
+                      fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                </a>
+              </th>
+
+              {{-- Score Praktik --}}
+              <th class="px-3 py-2 text-left whitespace-nowrap">
+                <a href="{{ request()->fullUrlWithQuery([
+                    'sort' => 'score_praktik',
+                    'direction' => (request('sort') === 'score_praktik' && request('direction') === 'asc') ? 'desc' : 'asc'
+                ]) }}" class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
+                  Score Praktik
+                  <svg class="w-4 h-4 transform {{ request('sort') === 'score_praktik' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
+                      fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                </a>
+              </th>
+
+              {{-- Score Interview --}}
+              <th class="px-3 py-2 text-left whitespace-nowrap">
+                <a href="{{ request()->fullUrlWithQuery([
+                    'sort' => 'score_interview',
+                    'direction' => (request('sort') === 'score_interview' && request('direction','asc') === 'asc') ? 'desc' : 'asc'
+                ]) }}" class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
+                  Score Interview
+                  <svg class="w-4 h-4 transform {{ request('sort') === 'score_interview' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
+                      fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                </a>
+              </th>
+
               <th class="px-3 py-2 text-left whitespace-nowrap">Potential By</th>
               <th class="px-3 py-2 text-left whitespace-nowrap">Status Email</th>
               <th class="px-3 py-2 text-left whitespace-nowrap">Status</th>
@@ -578,6 +677,11 @@
         form.appendChild(input);
         form.submit();
       }
+    });
+
+    // Check All
+    document.getElementById('checkAll').addEventListener('change', function(e){
+      document.querySelectorAll('input[name="ids[]"]').forEach(cb => cb.checked = e.target.checked);
     });
 
     // Set selected IDs for "Terpilih"

@@ -94,7 +94,7 @@
                     'sort' => 'section_1',
                     'direction' => (request('sort') === 'section_1' && request('direction') === 'asc') ? 'desc' : 'asc'
                 ]) }}" class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
-                  Section 1
+                  Umum PG
                   <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'section_1' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
                       fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
@@ -106,7 +106,7 @@
                     'sort' => 'section_2',
                     'direction' => (request('sort') === 'section_2' && request('direction') === 'asc') ? 'desc' : 'asc'
                 ]) }}" class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
-                  Section 2
+                  Teknis PG
                   <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'section_2' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
                       fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
@@ -118,7 +118,7 @@
                     'sort' => 'section_3',
                     'direction' => (request('sort') === 'section_3' && request('direction') === 'asc') ? 'desc' : 'asc'
                 ]) }}" class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
-                  Section 3
+                  Umum Essay
                   <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'section_3' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
                       fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
@@ -132,7 +132,7 @@
                     'direction' => (request('sort') === 'section_4' && request('direction') === 'asc') ? 'desc' : 'asc'
                 ]) }}" 
                   class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
-                  Section 4
+                  Teknis Essay
                   <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'section_4' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}" 
                       fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
@@ -147,7 +147,7 @@
                     'direction' => (request('sort') === 'section_5' && request('direction') === 'asc') ? 'desc' : 'asc'
                 ]) }}" 
                   class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
-                  Section 5
+                  Psikologi
                   <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'section_5' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}" 
                       fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />

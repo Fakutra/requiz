@@ -49,8 +49,8 @@
                         @error('description')
                             <p class="text-danger">{{ $message }}</p>
                         @enderror
-                        <input id="description" type="hidden" name="description">
-                        <trix-editor input="description"></trix-editor>
+                        <input id="description" type="hidden" name="description" required>
+                        <trix-editor input="description" required></trix-editor>
                     </div>
                     <button type="submit" class="btn btn-primary">Create Position</button>
                 </form>

@@ -29,6 +29,16 @@ class TechnicalTestController extends Controller
         $batches   = Batch::orderBy('id')->get();
         $positions = $batchId ? Position::where('batch_id', $batchId)->get() : collect();
 
+        // ambil parameter sort & direction
+        $sort      = $request->query('sort', 'name');
+        $direction = $request->query('direction', 'asc');
+
+        // kolom yang boleh di-sort
+        $allowedSorts = ['name', 'email', 'pdf', 'keterangan', 'score'];
+        if (!in_array($sort, $allowedSorts)) {
+            $sort = 'name';
+        }
+
         $relevantStatuses = [
             'Technical Test',
             'Interview',
@@ -49,21 +59,44 @@ class TechnicalTestController extends Controller
             $needle = "%".mb_strtolower($search)."%";
             $q->where(function ($w) use ($needle) {
                 $w->whereRaw('LOWER(name) LIKE ?', [$needle])
-                  ->orWhereRaw('LOWER(email) LIKE ?', [$needle])
-                  ->orWhereRaw('LOWER(jurusan) LIKE ?', [$needle]);
+                ->orWhereRaw('LOWER(email) LIKE ?', [$needle])
+                ->orWhereRaw('LOWER(jurusan) LIKE ?', [$needle]);
             });
         }
 
-        $applicants = $q->orderBy('name')
-            ->paginate(20)
-            ->appends($request->query());
+        // ambil semua applicant dulu (tanpa orderBy)
+        $applicants = $q->get();
 
+        // ambil jawaban dan pairing ke applicant
         $answerRows = TechnicalTestAnswer::whereIn('applicant_id', $applicants->pluck('id'))
             ->orderBy('applicant_id')
             ->orderByDesc('submitted_at')
             ->get();
 
         $latestAnswers = $answerRows->unique('applicant_id')->keyBy('applicant_id');
+
+        // inject pdf, keterangan, score ke setiap applicant (virtual field)
+        $applicants = $applicants->map(function ($a) use ($latestAnswers) {
+            $ans = $latestAnswers[$a->id] ?? null;
+            $a->pdf        = $ans && $ans->answer_url ? 1 : 0;
+            $a->keterangan = $ans?->keterangan ?? null;
+            $a->score      = $ans?->score ?? null;
+            return $a;
+        });
+
+        // sorting collection
+        $applicants = $applicants->sortBy($sort, SORT_NATURAL, $direction === 'desc');
+
+        // pagination manual
+        $page = request('page', 1);
+        $perPage = 20;
+        $applicants = new \Illuminate\Pagination\LengthAwarePaginator(
+            $applicants->forPage($page, $perPage),
+            $applicants->count(),
+            $perPage,
+            $page,
+            ['path' => request()->url(), 'query' => request()->query()]
+        );
 
         return view('admin.applicant.seleksi.technical-test.index', compact(
             'batches','positions','batchId','positionId','applicants','latestAnswers'

@@ -28,8 +28,8 @@
                     <div class="mb-3">
                         <label class="form-label">Deskripsi</label>
                         <input type="hidden" id="description{{ $batch->id }}" name="description"
-                            value="{{ old('description') }}">
-                        <trix-editor input="description{{ $batch->id }}"></trix-editor>
+                            value="{{ old('description') }}" required>
+                        <trix-editor input="description{{ $batch->id }}" required></trix-editor>
                     </div>
                 </div>
                 <div class="modal-footer">

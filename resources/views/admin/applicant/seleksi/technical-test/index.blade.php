@@ -74,11 +74,75 @@
           <thead class="bg-gray-100">
             <tr>
               <th class="px-3 py-2"><input type="checkbox" id="checkAll"></th>
-              <th class="px-3 py-2 text-left whitespace-nowrap">Nama Peserta</th>
-              <th class="px-3 py-2 text-left whitespace-nowrap">Email</th>
-              <th class="px-3 py-2 text-left whitespace-nowrap">Jawaban (PDF)</th>
-              <th class="px-3 py-2 text-left whitespace-nowrap">Keterangan</th>
-              <th class="px-3 py-2 text-left whitespace-nowrap">Nilai</th>
+              {{-- Nama Peserta --}}
+              <th class="px-3 py-2 text-left whitespace-nowrap">
+                <a href="{{ request()->fullUrlWithQuery([
+                    'sort' => 'name',
+                    'direction' => (request('sort') === 'name' && request('direction') === 'asc') ? 'desc' : 'asc'
+                ]) }}" class="flex items-center gap-1 font-semibold text-gray-800 hover:text-gray-900 no-underline">
+                  Nama Peserta
+                  <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'name' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
+                    fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                  </svg>
+                </a>
+              </th>
+
+              {{-- Email --}}
+              <th class="px-3 py-2 text-left whitespace-nowrap">
+                <a href="{{ request()->fullUrlWithQuery([
+                    'sort' => 'email',
+                    'direction' => (request('sort') === 'email' && request('direction') === 'asc') ? 'desc' : 'asc'
+                ]) }}" class="flex items-center gap-1 font-semibold text-gray-800 hover:text-gray-900 no-underline">
+                  Email
+                  <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'email' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
+                    fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                  </svg>
+                </a>
+              </th>
+
+              {{-- Jawaban --}}
+              <th class="px-3 py-2 text-left whitespace-nowrap">
+                <a href="{{ request()->fullUrlWithQuery([
+                    'sort' => 'pdf',
+                    'direction' => (request('sort') === 'pdf' && request('direction') === 'asc') ? 'desc' : 'asc'
+                ]) }}" class="flex items-center gap-1 font-semibold text-gray-800 hover:text-gray-900 no-underline">
+                  Jawaban (PDF)
+                  <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'pdf' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
+                    fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                  </svg>
+                </a>
+              </th>
+
+              {{-- Keterangan --}}
+              <th class="px-3 py-2 text-left whitespace-nowrap">
+                <a href="{{ request()->fullUrlWithQuery([
+                    'sort' => 'keterangan',
+                    'direction' => (request('sort') === 'keterangan' && request('direction') === 'asc') ? 'desc' : 'asc'
+                ]) }}" class="flex items-center gap-1 font-semibold text-gray-800 hover:text-gray-900 no-underline">
+                  Keterangan
+                  <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'keterangan' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
+                    fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                  </svg>
+                </a>
+              </th>
+
+              {{-- Nilai --}}
+              <th class="px-3 py-2 text-left whitespace-nowrap">
+                <a href="{{ request()->fullUrlWithQuery([
+                    'sort' => 'score',
+                    'direction' => (request('sort') === 'score' && request('direction') === 'asc') ? 'desc' : 'asc'
+                ]) }}" class="flex items-center gap-1 font-semibold text-gray-800 hover:text-gray-900 no-underline">
+                  Nilai
+                  <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'score' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
+                    fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                  </svg>
+                </a>
+              </th>
               <th class="px-3 py-2 text-left whitespace-nowrap">Status</th>
               <th class="px-3 py-2 text-left whitespace-nowrap">Status Email</th>
               <th class="px-3 py-2 text-left whitespace-nowrap">Action</th>

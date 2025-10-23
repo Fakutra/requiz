@@ -66,9 +66,39 @@ class OfferingController extends Controller
             $q->whereRaw('LOWER(jurusan) LIKE ?', ['%'.mb_strtolower($jurusan).'%']);
         }
 
-        $applicants = $q->orderBy('name')
-            ->paginate(20)
-            ->appends($request->query());
+        // Ambil parameter sorting
+        $sort      = $request->query('sort', 'name');
+        $direction = $request->query('direction', 'asc');
+
+        // Kolom yang boleh di-sort
+        $allowedSorts = ['name', 'email', 'posisi', 'penempatan', 'jabatan', 'divisi', 'status'];
+        if (!in_array($sort, $allowedSorts)) {
+            $sort = 'name';
+        }
+
+        // Ambil semua data dulu (tanpa orderBy)
+        $applicants = $q->get()->map(function ($a) {
+            $a->posisi     = $a->position?->name;
+            $a->penempatan = $a->offering?->placement?->name;
+            $a->jabatan    = $a->offering?->job?->name;
+            $a->divisi     = $a->offering?->division?->name;
+            return $a;
+        });
+
+        // Sorting collection
+        $applicants = $applicants->sortBy($sort, SORT_NATURAL, $direction === 'desc');
+
+        // Pagination manual
+        $page = request('page', 1);
+        $perPage = 20;
+        $applicants = new \Illuminate\Pagination\LengthAwarePaginator(
+            $applicants->forPage($page, $perPage),
+            $applicants->count(),
+            $perPage,
+            $page,
+            ['path' => request()->url(), 'query' => request()->query()]
+        );
+
 
         // master untuk dropdown
         $divisions  = Division::orderBy('name')->get();
