@@ -105,7 +105,7 @@
                 @endphp
 
                 <aside
-                    class="w-64 bg-white p-6 absolute z-30 inset-y-0 left-0 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 -translate-x-full"
+                    class="w-64 bg-white p-6 absolute z-30 inset-y-0 left-0 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 -translate-x-full shadow-md"
                     :class="{ '-translate-x-full': !sidebarOpen, 'translate-x-0': sidebarOpen }"
                     x-data="{
                         userOpen: {{ request()->is('admin/applicant*') || request()->is('admin') || request()->is('selection') ? 'true' : 'false' }},
@@ -293,7 +293,7 @@
                 </aside>
 
                 {{-- Overlay mobile --}}
-                <div class="fixed inset-0 bg-black bg-opacity-0 z-20 lg:hidden" x-show="sidebarOpen"
+                <div class="fixed inset-0 z-20 lg:hidden" x-show="sidebarOpen"
                     @click="sidebarOpen = false" x-transition.opacity></div>
                 <div class="min-h-screen w-full bg-gray-100">
                     @if (isset($header))

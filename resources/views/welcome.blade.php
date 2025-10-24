@@ -1,6 +1,6 @@
 <x-guest-layout>
     <div>
-        <div class="bg-cover bg-center bg-no-repeat px-8 py-20 md:px-18" style="background-image: url('/img/cover.png');">
+        <div class="bg-cover bg-center bg-no-repeat px-8 py-20 md:px-18" style="background-image: url('/img/bg-cover.png');">
             <div class="max-w-7xl mx-auto">
                 <h3 class="text-3xl text-white">Welcome!</h3>
                 <h1 class="font-semibold text-4xl mt-2 text-white">Recruitment TAD/Outsourcing</h1>

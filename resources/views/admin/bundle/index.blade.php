@@ -1,20 +1,17 @@
 <x-app-admin>
-    <x-slot name="header">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight mb-0">
-                {{ __('Bundle') }}
-            </h2>
-            {{-- Tombol ini sekarang akan membuka modal --}}
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#tambahBundle">
-                Create Bundle
-            </button>
-        </div>
-    </x-slot>
-
     <div class="py-3">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-4 p-md-5 text-gray-900">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h2 class="font-semibold text-xl text-gray-800 leading-tight mb-0">
+                            {{ __('Bundle') }}
+                        </h2>
+                        {{-- Tombol ini sekarang akan membuka modal --}}
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#tambahBundle">
+                            Create Bundle
+                        </button>
+                    </div>
 
                     {{-- ====================================================== --}}
                     {{-- MULAI: Tampilan Kartu (Pengganti Akordeon) --}}
