@@ -13,13 +13,21 @@ return new class extends Migration
     {
         Schema::create('personality_rules', function (Blueprint $table) {
             $table->id();
-            // Persentase dalam 0–100, dua angka di belakang koma
-            $table->decimal('min_percentage', 5, 2);         // inklusif (>=)
-            $table->decimal('max_percentage', 5, 2)->nullable(); // inklusif (<=), null = tak berbatas atas
-            $table->unsignedSmallInteger('score_value');     // contoh: 10/15/25/35/40
+
+            // rule terikat ke batch
+            $table->foreignId('batch_id')
+                ->constrained('batches')
+                ->cascadeOnDelete();
+
+            // Persentase dalam 0–100 (dua angka decimal)
+            $table->decimal('min_percentage', 5, 2);                // inklusif (>=)
+            $table->decimal('max_percentage', 5, 2)->nullable();    // inklusif (<=), null = tak berbatas atas
+            $table->unsignedSmallInteger('score_value');            // contoh: 10/15/25/35/40
+
             $table->timestamps();
 
-            $table->index(['min_percentage', 'max_percentage']);
+            // indeks gabungan untuk mempercepat pencarian rule berdasarkan batch + rentang persen
+            $table->index(['batch_id', 'min_percentage', 'max_percentage']);
         });
     }
 

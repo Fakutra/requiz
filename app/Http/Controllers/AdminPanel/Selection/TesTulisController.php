@@ -40,6 +40,7 @@ class TesTulisController extends Controller
             $sort = 'name';
         }
 
+        // ⬇️ Query peserta
         $q = Applicant::with([
             'position',
             'batch',
@@ -51,15 +52,8 @@ class TesTulisController extends Controller
         ])
         ->where('batch_id', $batchId)
         ->whereIn('status', [
-            'Tes Tulis',
-            'Technical Test',
-            'Interview',
-            'Offering',
-            'Menerima Offering',
-            'Tidak Lolos Tes Tulis',
-            'Tidak Lolos Technical Test',
-            'Tidak Lolos Interview',
-            'Menolak Offering',
+            'Tes Tulis','Technical Test','Interview','Offering','Menerima Offering',
+            'Tidak Lolos Tes Tulis','Tidak Lolos Technical Test','Tidak Lolos Interview','Menolak Offering',
         ]);
 
         if ($positionId) $q->where('position_id', $positionId);
@@ -77,8 +71,15 @@ class TesTulisController extends Controller
         // ⬇️ Ambil peserta
         $applicants = $q->get();
 
-        // ⬇️ Ambil max nilai personality dari rules (contoh: 35)
-        $maxPersonalityFinal = (int) (DB::table('personality_rules')->max('score_value') ?? 0);
+        // ⬇️ Ambil max personality score KHUSUS batch ini
+        $maxPersonalityFinal = (int) DB::table('personality_rules')
+            ->where('batch_id', $batchId)
+            ->max('score_value');
+
+        // Kalau batch belum punya rules → aman (nilai personality = 0)
+        if (!$maxPersonalityFinal) {
+            $maxPersonalityFinal = 0;
+        }
 
         // ⬇️ Hitung final_total_score & max_total_score
         foreach ($applicants as $a) {
@@ -100,7 +101,7 @@ class TesTulisController extends Controller
                 $questions = $section->questionBundle->questions ?? collect();
                 $isPersonality = $questions->contains(fn($q) => $q->type === 'Poin');
 
-                // 1️⃣ MAX (khusus personality gunakan rule tertinggi)
+                // 1️⃣ MAX
                 if ($isPersonality) {
                     $maxTotal += $maxPersonalityFinal;
                 } else {
@@ -115,7 +116,9 @@ class TesTulisController extends Controller
                 if ($isPersonality) {
                     $rawMaxSection = $questions->count() * 5;
                     $percent = $rawMaxSection > 0 ? ($rawScore / $rawMaxSection) * 100 : 0;
+
                     $rule = DB::table('personality_rules')
+                        ->where('batch_id', $batchId)
                         ->where('min_percentage', '<=', $percent)
                         ->where(function ($q) use ($percent) {
                             $q->where('max_percentage', '>=', $percent)
@@ -123,6 +126,7 @@ class TesTulisController extends Controller
                         })
                         ->orderByDesc('min_percentage')
                         ->first();
+
                     $finalScore = $rule ? (int) $rule->score_value : 0;
                     $finalTotal += $finalScore;
                 } else {
@@ -152,7 +156,6 @@ class TesTulisController extends Controller
             'batches', 'positions', 'batchId', 'positionId', 'applicants'
         ));
     }
-
 
     /**
      * Simpan nilai essay

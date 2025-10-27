@@ -103,7 +103,7 @@
                                                     data-point_d="{{ $question->point_d }}"
                                                     data-point_e="{{ $question->point_e }}"
                                                     data-answer="{{ $question->answer }}"
-                                                    data-image_path="{{ $question->image_path ? asset($question->image_path) : 'None' }}">
+                                                    data-image_path="{{ $question->image_path ? url($question->image_path) : '' }}">
                                                     Edit
                                                 </button>
 
@@ -137,20 +137,6 @@
             </div>
         </div>
     </div>
-
-    {{-- Modal untuk notifikasi sukses --}}
-    @if (session('success'))
-        <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-body text-center p-4">
-                        <h5 class="text-success mb-3">✅ {{ session('success') }}</h5>
-                        <button type="button" class="btn btn-success" data-bs-dismiss="modal">OK</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    @endif
 
     <!-- Modal Import Question -->
     <div class="modal fade" id="importQuestionModal" tabindex="-1" aria-labelledby="importQuestionModalLabel"
@@ -321,13 +307,13 @@
                     <h5 class="modal-title" id="editQuestionModalLabel">Edit Question</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
+
                 <div class="modal-body">
-                    {{-- Form untuk mengedit pertanyaan --}}
                     <form id="editQuestionForm" method="POST" enctype="multipart/form-data">
                         @csrf
                         @method('PUT')
 
-                        {{-- Konten form sama seperti modal create, tapi dengan ID yang berbeda --}}
+                        {{-- TYPE & CATEGORY --}}
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="edit_type" class="form-label">Type</label>
@@ -340,41 +326,35 @@
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="edit_category" class="form-label">Category</label>
-                                {{-- Atribut 'value' akan diisi oleh JavaScript saat modal muncul --}}
-                                <input type="text" class="form-control" id="edit_category" name="category"
-                                    required>
+                                <input type="text" class="form-control" id="edit_category" name="category" required>
                             </div>
                         </div>
 
+                        {{-- QUESTION --}}
                         <div class="mb-3">
                             <label for="edit_question" class="form-label">Question</label>
                             <textarea class="form-control" id="edit_question" name="question" rows="3" required></textarea>
                         </div>
 
+                        {{-- OPTIONS & POINTS --}}
                         <div id="edit_options_container">
                             <hr>
                             <p class="fw-bold">Options & Points</p>
                             @foreach (['a', 'b', 'c', 'd', 'e'] as $option)
                                 <div class="row mb-2">
                                     <div class="col-md-8">
-                                        <label for="edit_option_{{ $option }}" class="form-label">Option
-                                            {{ strtoupper($option) }}</label>
-                                        <input type="text" class="form-control"
-                                            id="edit_option_{{ $option }}" name="option_{{ $option }}">
+                                        <label for="edit_option_{{ $option }}" class="form-label">Option {{ strtoupper($option) }}</label>
+                                        <input type="text" class="form-control" id="edit_option_{{ $option }}" name="option_{{ $option }}">
                                     </div>
                                     <div class="col-md-4 edit-point-input-wrapper">
-                                        <label for="edit_point_{{ $option }}" class="form-label">Point
-                                            {{ strtoupper($option) }}</label>
-                                        <input type="number" class="form-control"
-                                            id="edit_point_{{ $option }}" name="point_{{ $option }}"
-                                            value="0">
+                                        <label for="edit_point_{{ $option }}" class="form-label">Point {{ strtoupper($option) }}</label>
+                                        <input type="number" class="form-control" id="edit_point_{{ $option }}" name="point_{{ $option }}" value="0">
                                     </div>
                                 </div>
                             @endforeach
                         </div>
 
-                        <hr>
-
+                        {{-- PG ANSWER --}}
                         <div class="mb-3" id="edit_pg_answer_container">
                             <label for="edit_answer" class="form-label">Correct Answer</label>
                             <select class="form-select" id="edit_answer" name="answer">
@@ -387,35 +367,44 @@
                             </select>
                         </div>
 
+                        {{-- MULTIPLE ANSWER --}}
                         <div class="mb-3" id="edit_multiple_answer_container">
                             <label class="form-label">Correct Answers</label>
                             @foreach (['A', 'B', 'C', 'D', 'E'] as $option)
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="answer[]"
-                                        value="{{ $option }}" id="edit_answer_check_{{ $option }}">
-                                    <label class="form-check-label"
-                                        for="edit_answer_check_{{ $option }}">Option
-                                        {{ $option }}</label>
+                                    <input class="form-check-input" type="checkbox" name="answer[]" value="{{ $option }}" id="edit_answer_check_{{ $option }}">
+                                    <label class="form-check-label" for="edit_answer_check_{{ $option }}">Option {{ $option }}</label>
                                 </div>
                             @endforeach
                         </div>
 
+                        {{-- ✅ CURRENT IMAGE PREVIEW --}}
                         <div class="mb-3">
-                            <label for="edit_image" class="form-label">Image (Optional)</label>
-                            <input class="form-control" type="file" id="edit_image" name="image">
-                            <small class="form-text text-muted">Current Image: <span
-                                    id="current_image_text">None</span></small>
+                            <label class="form-label">Current Image</label>
+                            <div class="mb-2" id="current_image_wrapper">
+                                <span id="no_image_text" class="text-muted" style="display:none;">No image available</span>
+                                <img id="current_image_preview"
+                                    src=""
+                                    class="img-fluid rounded border"
+                                    style="max-height: 180px; display:none;">
+                            </div>
+
+                            <label for="edit_image" class="form-label">Replace Image (Optional)</label>
+                            <input class="form-control" type="file" id="edit_image" name="image" accept="image/*">
                         </div>
 
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                             <button type="submit" class="btn btn-primary">Update Question</button>
                         </div>
+
                     </form>
                 </div>
+
             </div>
         </div>
     </div>
+
 
     {{-- Script untuk menampilkan modal sukses secara otomatis --}}
     @if (session('success'))
@@ -429,93 +418,93 @@
 
     {{-- Script untuk menangani modal edit pertanyaan --}}
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Tangkap event saat modal akan ditampilkan
+        document.addEventListener('DOMContentLoaded', function () {
             var editQuestionModal = document.getElementById('editQuestionModal');
-            editQuestionModal.addEventListener('show.bs.modal', function(event) {
-                // Dapatkan tombol yang memicu modal
+
+            editQuestionModal.addEventListener('show.bs.modal', function (event) {
                 var button = event.relatedTarget;
-
-                // Ekstrak data dari atribut data-*
-                var action = button.getAttribute('data-action');
-                var type = button.getAttribute('data-type');
-                var category = button.getAttribute('data-category');
-                var questionText = button.getAttribute('data-question');
-                var answer = button.getAttribute('data-answer');
-                var imagePath = button.getAttribute('data-image_path');
-
-                // Dapatkan elemen form di dalam modal
                 var form = document.getElementById('editQuestionForm');
-                var modal = this; // 'this' merujuk ke modal
+                var modal = this;
 
-                // Set action form
+                var action     = button.getAttribute('data-action');
+                var type       = button.getAttribute('data-type');
+                var category   = button.getAttribute('data-category');
+                var question   = button.getAttribute('data-question');
+                var answer     = button.getAttribute('data-answer');
+                var imagePath  = button.getAttribute('data-image_path');
+
                 form.action = action;
-
-                // Isi nilai form
                 modal.querySelector('#edit_type').value = type;
-                modal.querySelector('input[name="category"]').value = category;
-                modal.querySelector('#edit_question').value = questionText;
+                modal.querySelector('#edit_category').value = category;
+                modal.querySelector('#edit_question').value = question;
 
-                // Isi nilai options dan points
-                ['a', 'b', 'c', 'd', 'e'].forEach(function(opt) {
-                    var optionValue = button.getAttribute('data-option_' + opt);
-                    var pointValue = button.getAttribute('data-point_' + opt);
-                    modal.querySelector('#edit_option_' + opt).value = optionValue;
-                    modal.querySelector('#edit_point_' + opt).value = pointValue ||
-                        0; // Default ke 0 jika null
+                // SET OPTION & POINT
+                ['a','b','c','d','e'].forEach(function(opt) {
+                    modal.querySelector('#edit_option_' + opt).value = button.getAttribute('data-option_' + opt);
+                    modal.querySelector('#edit_point_' + opt).value = button.getAttribute('data-point_' + opt) || 0;
                 });
 
-                // Reset semua jawaban sebelum diisi
+                // SET ANSWER
                 modal.querySelector('#edit_answer').value = '';
-                modal.querySelectorAll('input[name="answer[]"]').forEach(function(chk) {
-                    chk.checked = false;
-                });
-
-                // Atur jawaban berdasarkan tipe
-                if (type === 'PG') {
-                    modal.querySelector('#edit_answer').value = answer;
-                } else if (type === 'Multiple' && answer) {
-                    var answers = answer.split(',');
-                    answers.forEach(function(ans) {
-                        var checkbox = modal.querySelector('#edit_answer_check_' + ans);
-                        if (checkbox) {
-                            checkbox.checked = true;
-                        }
+                modal.querySelectorAll('input[name="answer[]"]').forEach(chk => chk.checked = false);
+                if (type === 'PG') modal.querySelector('#edit_answer').value = answer;
+                if (type === 'Multiple' && answer) {
+                    answer.split(',').forEach(ans => {
+                        let chk = modal.querySelector('#edit_answer_check_' + ans);
+                        if (chk) chk.checked = true;
                     });
                 }
 
-                // Tampilkan path gambar saat ini
-                modal.querySelector('#current_image_text').textContent = imagePath;
+                // SET IMAGE
+                const imgPreview = modal.querySelector('#current_image_preview');
+                const noImgText  = modal.querySelector('#no_image_text');
+                if (imagePath) {
+                    imgPreview.src = imagePath;
+                    imgPreview.style.display = 'block';
+                    noImgText.style.display = 'none';
+                } else {
+                    imgPreview.style.display = 'none';
+                    noImgText.style.display = 'block';
+                }
 
-                // Panggil fungsi untuk menampilkan/menyembunyikan field berdasarkan tipe soal
-                // (Anda mungkin sudah punya fungsi ini, panggil lagi di sini)
+                // ✅ Panggil toggle untuk EDIT
                 toggleEditFields(type);
             });
 
-            // Fungsi untuk menampilkan/menyembunyikan field (wajib ada)
+            // ✅ TOGGLE EDIT FIELDS
             function toggleEditFields(type) {
                 const optionsContainer = document.getElementById('edit_options_container');
                 const pgAnswerContainer = document.getElementById('edit_pg_answer_container');
                 const multipleAnswerContainer = document.getElementById('edit_multiple_answer_container');
+                const pointInputs = optionsContainer.querySelectorAll('.edit-point-input-wrapper');
 
-                // Sembunyikan semua kontainer dulu
+                // Hide all
                 optionsContainer.style.display = 'none';
                 pgAnswerContainer.style.display = 'none';
                 multipleAnswerContainer.style.display = 'none';
+                pointInputs.forEach(input => input.style.display = 'none');
 
-                if (type === 'PG' || type === 'Multiple' || type === 'Poin') {
-                    optionsContainer.style.display = 'block';
-                }
-                if (type === 'PG') {
-                    pgAnswerContainer.style.display = 'block';
-                }
-                if (type === 'Multiple') {
-                    multipleAnswerContainer.style.display = 'block';
+                switch (type) {
+                    case 'PG':
+                        optionsContainer.style.display = 'block';
+                        pgAnswerContainer.style.display = 'block';
+                        break;
+                    case 'Multiple':
+                        optionsContainer.style.display = 'block';
+                        multipleAnswerContainer.style.display = 'block';
+                        break;
+                    case 'Poin':
+                        optionsContainer.style.display = 'block';
+                        pointInputs.forEach(input => input.style.display = 'block');
+                        break;
+                    case 'Essay':
+                        // semuanya hidden
+                        break;
                 }
             }
 
-            // Listener untuk select type di modal edit
-            document.getElementById('edit_type').addEventListener('change', function() {
+            // ✅ Listener untuk saat user mengubah TYPE di modal edit
+            document.getElementById('edit_type').addEventListener('change', function () {
                 toggleEditFields(this.value);
             });
 
@@ -582,4 +571,59 @@
             @endif
         });
     </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+
+            var editQuestionModal = document.getElementById('editQuestionModal');
+
+            editQuestionModal.addEventListener('show.bs.modal', function (event) {
+                var button = event.relatedTarget;
+                var form = document.getElementById('editQuestionForm');
+                var modal = this;
+
+                var action     = button.getAttribute('data-action');
+                var type       = button.getAttribute('data-type');
+                var category   = button.getAttribute('data-category');
+                var question   = button.getAttribute('data-question');
+                var answer     = button.getAttribute('data-answer');
+                var imagePath  = button.getAttribute('data-image_path');
+
+                form.action = action;
+                modal.querySelector('#edit_type').value = type;
+                modal.querySelector('#edit_category').value = category;
+                modal.querySelector('#edit_question').value = question;
+
+                // Set OPTION & POINT
+                ['a','b','c','d','e'].forEach(function(opt) {
+                    modal.querySelector('#edit_option_' + opt).value = button.getAttribute('data-option_' + opt);
+                    modal.querySelector('#edit_point_' + opt).value = button.getAttribute('data-point_' + opt) || 0;
+                });
+
+                // Set ANSWER
+                modal.querySelector('#edit_answer').value = '';
+                modal.querySelectorAll('input[name="answer[]"]').forEach(chk => chk.checked = false);
+
+                if (type === 'PG') modal.querySelector('#edit_answer').value = answer;
+                if (type === 'Multiple' && answer) {
+                    answer.split(',').forEach(ans => {
+                        let chk = modal.querySelector('#edit_answer_check_' + ans);
+                        if (chk) chk.checked = true;
+                    });
+                }
+
+                // ✅ PREVIEW CURRENT IMAGE
+                const imgPreview = modal.querySelector('#current_image_preview');
+                if (imagePath && imagePath !== 'None') {
+                    imgPreview.src = imagePath;
+                    imgPreview.style.display = 'block';
+                } else {
+                    imgPreview.src = '';
+                    imgPreview.style.display = 'none';
+                }
+            });
+
+        });
+    </script>
+
 </x-app-admin>

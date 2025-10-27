@@ -458,152 +458,158 @@
   @endforeach
 
   {{-- Modal Detail Tes Tulis --}}
-@foreach($applicants as $a)
-  <div id="quizDetailModal-{{ $a->id }}" 
-      class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-    <div class="bg-white rounded-xl shadow-lg w-full max-w-6xl p-6 overflow-y-auto max-h-[90vh]">
-      <div class="flex justify-between items-center border-b pb-3 mb-4">
-        <h3 class="text-xl font-semibold text-gray-800">Detail Tes Tulis - {{ $a->name }}</h3>
-        <button type="button"
-                onclick="document.getElementById('quizDetailModal-{{ $a->id }}').classList.add('hidden')"
-                class="text-gray-500 hover:text-gray-700 text-2xl leading-none">&times;</button>
-      </div>
-
-      @php
-        $testResult = $a->latestTestResult;
-      @endphp
-
-      {{-- Bagian detail pengerjaan --}}
-      @if($testResult)
-        <div class="grid grid-cols-2 gap-4 text-sm mb-6">
-          <div><span class="text-gray-500">Nama Peserta:</span> <span class="font-medium">{{ $a->name }}</span></div>
-          <div><span class="text-gray-500">Email:</span> <span class="font-medium">{{ $a->email }}</span></div>
-          <div><span class="text-gray-500">Mulai Tes:</span> <span class="font-medium">{{ $testResult->started_at ?? '-' }}</span></div>
-          <div><span class="text-gray-500">Selesai Tes:</span> <span class="font-medium">{{ $testResult->finished_at ?? '-' }}</span></div>
-          <div><span class="text-gray-500">Total Skor:</span> 
-            <span class="font-medium text-blue-600">{{ $testResult->score ?? '-' }}</span>
-          </div>
+  @foreach($applicants as $a)
+    <div id="quizDetailModal-{{ $a->id }}" 
+        class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div class="bg-white rounded-xl shadow-lg w-full max-w-6xl p-6 overflow-y-auto max-h-[90vh]">
+        <div class="flex justify-between items-center border-b pb-3 mb-4">
+          <h3 class="text-xl font-semibold text-gray-800">Detail Tes Tulis - {{ $a->name }}</h3>
+          <button type="button"
+                  onclick="document.getElementById('quizDetailModal-{{ $a->id }}').classList.add('hidden')"
+                  class="text-gray-500 hover:text-gray-700 text-2xl leading-none">&times;</button>
         </div>
-      @else
-        <p class="text-gray-600">Peserta belum mengerjakan Tes Tulis.</p>
-      @endif
 
-      {{-- Bagian detail soal per section --}}
-      @if($testResult && $testResult->sectionResults->isNotEmpty())
         @php
-          $questionNumber = 1;
+          $testResult = $a->latestTestResult;
         @endphp
 
-        @foreach($testResult->sectionResults->sortBy('testSection.order') as $sectionResult)
-          @php
-            $shuffle = $sectionResult->shuffle_state ?? [];
-            $questionOrder = $shuffle['questions'] ?? $sectionResult->answers->pluck('question_id')->toArray();
+        {{-- Bagian detail pengerjaan --}}
+        @if($testResult)
+          <div class="grid grid-cols-2 gap-4 text-sm mb-6">
+            <div><span class="text-gray-500">Nama Peserta:</span> <span class="font-medium">{{ $a->name }}</span></div>
+            <div><span class="text-gray-500">Email:</span> <span class="font-medium">{{ $a->email }}</span></div>
+            <div><span class="text-gray-500">Mulai Tes:</span> <span class="font-medium">{{ $testResult->started_at ?? '-' }}</span></div>
+            <div><span class="text-gray-500">Selesai Tes:</span> <span class="font-medium">{{ $testResult->finished_at ?? '-' }}</span></div>
+            <div><span class="text-gray-500">Total Skor:</span> 
+              <span class="font-medium text-blue-600">{{ $testResult->score ?? '-' }}</span>
+            </div>
+          </div>
+        @else
+          <p class="text-gray-600">Peserta belum mengerjakan Tes Tulis.</p>
+        @endif
 
-            $answersOrdered = $sectionResult->answers->sortBy(function($ans) use ($questionOrder) {
-              return array_search($ans->question_id, $questionOrder);
-            });
+        {{-- Bagian detail soal per section --}}
+        @if($testResult && $testResult->sectionResults->isNotEmpty())
+          @php
+            $questionNumber = 1;
           @endphp
 
-          <div class="mb-6 border rounded-lg p-4 bg-gray-50">
-            <h4 class="font-semibold text-lg mb-3">
-              Section {{ $sectionResult->testSection->order ?? '-' }}: {{ $sectionResult->testSection->name ?? '-' }}
-            </h4>
+          @foreach($testResult->sectionResults->sortBy('testSection.order') as $sectionResult)
+            @php
+              $shuffle = $sectionResult->shuffle_state ?? [];
+              $questionOrder = $shuffle['questions'] ?? $sectionResult->answers->pluck('question_id')->toArray();
 
-            @foreach($answersOrdered as $ans)
-              <div class="mb-4 pb-3 border-b">
-                <p class="font-medium">Soal {{ $questionNumber++ }}:</p>
-                <p class="text-gray-700 mb-2">{{ $ans->question->question }}</p>
+              $answersOrdered = $sectionResult->answers->sortBy(function($ans) use ($questionOrder) {
+                return array_search($ans->question_id, $questionOrder);
+              });
+            @endphp
 
-                @if($ans->question->type === 'Poin')
-                  @php
-                    $pesertaAnswers = $ans->answer ? explode(',', $ans->answer) : [];
-                    $optionOrder = $shuffle['options'][$ans->question->id] ?? ['A','B','C','D','E'];
-                  @endphp
-                  <ul class="space-y-1">
-                    @foreach($optionOrder as $opt)
-                      @php
-                        $pilihan = $ans->question->{'option_'.strtolower($opt)};
-                        $point   = $ans->question->{'point_'.strtolower($opt)};
-                        if(!$pilihan) continue;
+            <div class="mb-6 border rounded-lg p-4 bg-gray-50">
+              <h4 class="font-semibold text-lg mb-3">
+                Section {{ $sectionResult->testSection->order ?? '-' }}: {{ $sectionResult->testSection->name ?? '-' }}
+              </h4>
 
-                        $isPeserta = in_array($opt, $pesertaAnswers);
+              @foreach($answersOrdered as $ans)
+                <div class="mb-4 pb-3 border-b">
+                  <p class="font-medium">Soal {{ $questionNumber++ }}:</p>
+                  <p class="text-gray-700 mb-2">{{ $ans->question->question }}</p>
 
-                        $class = "border px-2 py-1 rounded";
-                        if($isPeserta) {
-                          $class .= " bg-green-100 text-green-700 border-green-400";
-                        } else {
-                          $class .= " bg-gray-50 border-gray-200";
-                        }
-                      @endphp
-                      <li class="{{ $class }}">
-                        <strong>{{ $opt }}.</strong> {{ $pilihan }}
-                        @if(!is_null($point)) 
-                          <span class="text-xs text-gray-500">({{ $point }} poin)</span>
-                        @endif
-                      </li>
-                    @endforeach
-                  </ul>
-
-                @elseif(in_array($ans->question->type, ['PG','Multiple']))
-                  @php
-                    $pesertaAnswers = $ans->answer ? explode(',', $ans->answer) : [];
-                    $benarAnswers   = $ans->question->answer ? explode(',', $ans->question->answer) : [];
-                    $optionOrder = $shuffle['options'][$ans->question->id] ?? ['A','B','C','D','E'];
-                  @endphp
-                  <ul class="space-y-1">
-                    @foreach($optionOrder as $opt)
-                      @php
-                        $pilihan = $ans->question->{'option_'.strtolower($opt)};
-                        if(!$pilihan) continue;
-
-                        $isPeserta = in_array($opt, $pesertaAnswers);
-                        $isBenar   = in_array($opt, $benarAnswers);
-
-                        $class = "border px-2 py-1 rounded";
-                        if($isPeserta && $isBenar) {
-                          $class .= " bg-green-100 text-green-700 border-green-400"; 
-                        } elseif($isPeserta && !$isBenar) {
-                          $class .= " bg-red-100 text-red-700 border-red-400"; 
-                        } elseif(!$isPeserta && $isBenar) {
-                          $class .= " bg-green-50 border-green-200"; 
-                        } else {
-                          $class .= " bg-gray-50 border-gray-200";
-                        }
-                      @endphp
-                      <li class="{{ $class }}">
-                        <strong>{{ $opt }}.</strong> {{ $pilihan }}
-                      </li>
-                    @endforeach
-                  </ul>
-
-                @else
-                  <p class="text-sm text-gray-500 mt-1">Jawaban Peserta:</p>
-                  <p class="text-gray-900 border px-2 py-1 rounded bg-white mb-2">
-                    {{ $ans->answer ?? '-' }}
-                  </p>
-                  <p class="text-sm text-gray-500">Nilai yang diberikan:</p>
-                  <input type="number" 
-                        value="{{ $ans->score ?? '' }}" 
-                        class="border rounded px-2 py-1 w-24 bg-gray-100 text-gray-700"
-                        disabled>
-                  @if(is_null($ans->score))
-                    <span class="text-xs text-gray-400 ml-2">Belum dinilai</span>
+                  @if($ans->question->image_path)
+                    <img src="{{ asset($ans->question->image_path) }}"
+                        class="quiz-image mb-3"
+                        alt="question image">
                   @endif
-                @endif
-              </div>
-            @endforeach
-          </div>
-        @endforeach
-      @endif
 
-      <div class="mt-6 text-right">
-        <button type="button"
-                onclick="document.getElementById('quizDetailModal-{{ $a->id }}').classList.add('hidden')"
-                class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">Tutup</button>
+                  @if($ans->question->type === 'Poin')
+                    @php
+                      $pesertaAnswers = $ans->answer ? explode(',', $ans->answer) : [];
+                      $optionOrder = $shuffle['options'][$ans->question->id] ?? ['A','B','C','D','E'];
+                    @endphp
+                    <ul class="space-y-1">
+                      @foreach($optionOrder as $opt)
+                        @php
+                          $pilihan = $ans->question->{'option_'.strtolower($opt)};
+                          $point   = $ans->question->{'point_'.strtolower($opt)};
+                          if(!$pilihan) continue;
+
+                          $isPeserta = in_array($opt, $pesertaAnswers);
+
+                          $class = "border px-2 py-1 rounded";
+                          if($isPeserta) {
+                            $class .= " bg-green-100 text-green-700 border-green-400";
+                          } else {
+                            $class .= " bg-gray-50 border-gray-200";
+                          }
+                        @endphp
+                        <li class="{{ $class }}">
+                          <strong>{{ $opt }}.</strong> {{ $pilihan }}
+                          @if(!is_null($point)) 
+                            <span class="text-xs text-gray-500">({{ $point }} poin)</span>
+                          @endif
+                        </li>
+                      @endforeach
+                    </ul>
+
+                  @elseif(in_array($ans->question->type, ['PG','Multiple']))
+                    @php
+                      $pesertaAnswers = $ans->answer ? explode(',', $ans->answer) : [];
+                      $benarAnswers   = $ans->question->answer ? explode(',', $ans->question->answer) : [];
+                      $optionOrder = $shuffle['options'][$ans->question->id] ?? ['A','B','C','D','E'];
+                    @endphp
+                    <ul class="space-y-1">
+                      @foreach($optionOrder as $opt)
+                        @php
+                          $pilihan = $ans->question->{'option_'.strtolower($opt)};
+                          if(!$pilihan) continue;
+
+                          $isPeserta = in_array($opt, $pesertaAnswers);
+                          $isBenar   = in_array($opt, $benarAnswers);
+
+                          $class = "border px-2 py-1 rounded";
+                          if($isPeserta && $isBenar) {
+                            $class .= " bg-green-100 text-green-700 border-green-400"; 
+                          } elseif($isPeserta && !$isBenar) {
+                            $class .= " bg-red-100 text-red-700 border-red-400"; 
+                          } elseif(!$isPeserta && $isBenar) {
+                            $class .= " bg-green-50 border-green-200"; 
+                          } else {
+                            $class .= " bg-gray-50 border-gray-200";
+                          }
+                        @endphp
+                        <li class="{{ $class }}">
+                          <strong>{{ $opt }}.</strong> {{ $pilihan }}
+                        </li>
+                      @endforeach
+                    </ul>
+
+                  @else
+                    <p class="text-sm text-gray-500 mt-1">Jawaban Peserta:</p>
+                    <p class="text-gray-900 border px-2 py-1 rounded bg-white mb-2">
+                      {{ $ans->answer ?? '-' }}
+                    </p>
+                    <p class="text-sm text-gray-500">Nilai yang diberikan:</p>
+                    <input type="number" 
+                          value="{{ $ans->score ?? '' }}" 
+                          class="border rounded px-2 py-1 w-24 bg-gray-100 text-gray-700"
+                          disabled>
+                    @if(is_null($ans->score))
+                      <span class="text-xs text-gray-400 ml-2">Belum dinilai</span>
+                    @endif
+                  @endif
+                </div>
+              @endforeach
+            </div>
+          @endforeach
+        @endif
+
+        <div class="mt-6 text-right">
+          <button type="button"
+                  onclick="document.getElementById('quizDetailModal-{{ $a->id }}').classList.add('hidden')"
+                  class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">Tutup</button>
+        </div>
       </div>
     </div>
-  </div>
-@endforeach
+  @endforeach
 
   {{-- Modal Filter --}}
   <div id="filterModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">

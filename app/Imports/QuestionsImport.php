@@ -3,80 +3,115 @@
 namespace App\Imports;
 
 use App\Models\Question;
+use Illuminate\Support\Str;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
-use Illuminate\Support\Str;
 
 class QuestionsImport implements ToModel, WithHeadingRow, WithValidation
 {
-    /**
-    * @param array $row
-    *
-    * @return \Illuminate\Database\Eloquent\Model|null
-    */
+    private int $rowCount = 0;
+
+    public function getRowCount(): int
+    {
+        return $this->rowCount;
+    }
+
     public function model(array $row)
     {
-        // Membersihkan data poin jika tipe bukan 'Poin'
-        if (strtolower($row['type']) !== 'poin') {
-            $row['point_a'] = null;
-            $row['point_b'] = null;
-            $row['point_c'] = null;
-            $row['point_d'] = null;
-            $row['point_e'] = null;
+        // Normalize TYPE
+        $typeLower = strtolower(trim($row['type'] ?? ''));
+        $typeMap = [
+            'pg'       => 'PG',
+            'multiple' => 'Multiple',
+            'poin'     => 'Poin',
+            'essay'    => 'Essay',
+        ];
+
+        if (!isset($typeMap[$typeLower])) {
+            throw new \Exception("Invalid TYPE: '{$row['type']}'. Allowed: PG, Multiple, Poin, Essay.");
         }
 
-        // Membersihkan data opsi dan jawaban jika tipe 'Essay'
-        if (strtolower($row['type']) === 'essay') {
-            $row['option_a'] = null;
-            $row['option_b'] = null;
-            $row['option_c'] = null;
-            $row['option_d'] = null;
-            $row['option_e'] = null;
-            $row['answer'] = null;
+        $typeCanonical = $typeMap[$typeLower];
+
+        // Normalize OPTIONS (Capitalize)
+        $opt = [];
+        foreach (['option_a','option_b','option_c','option_d','option_e'] as $k) {
+            $val = $row[$k] ?? null;
+            $opt[$k] = $val !== null && trim($val) !== '' ? Str::ucfirst(trim($val)) : null;
         }
 
+        // Normalize ANSWER (UPPERCASE for PG/Multiple)
+        $answerNormalized = null;
+        $answerRaw = $row['answer'] ?? null;
+
+        if (in_array($typeLower, ['pg','multiple'])) {
+            if (!is_null($answerRaw) && trim($answerRaw) !== '') {
+                $parts = array_map('trim', explode(',', (string)$answerRaw));
+                $parts = array_filter($parts, fn($v) => $v !== '');
+                $parts = array_map(fn($v) => strtoupper($v), $parts);
+                $answerNormalized = implode(',', $parts);
+            } else {
+                throw new \Exception("ANSWER is required for type: {$typeCanonical}");
+            }
+        }
+
+        // Normalize POINTS
+        $pts = [];
+        foreach (['point_a','point_b','point_c','point_d','point_e'] as $k) {
+            $v = $row[$k] ?? null;
+            $pts[$k] = ($v === '' || is_null($v)) ? null : (int)$v;
+        }
+
+        // Cleanup by Type
+        switch ($typeLower) {
+            case 'pg':
+            case 'multiple':
+                $pts = array_map(fn() => null, $pts);
+                break;
+
+            case 'poin':
+                if ($pts['point_a'] === null && $pts['point_b'] === null) {
+                    throw new \Exception("POINT fields are required for type: Poin");
+                }
+                $answerNormalized = null;
+                break;
+
+            case 'essay':
+                $opt = array_map(fn() => null, $opt);
+                $pts = array_map(fn() => null, $pts);
+                $answerNormalized = null;
+                break;
+        }
+
+        // Count success row
+        $this->rowCount++;
+
+        // Final insert
         return new Question([
-            'type'     => $row['type'],
-            'category' => $row['category'],
-            'question' => $row['question'],
-            'option_a' => $row['option_a'],
-            'option_b' => $row['option_b'],
-            'option_c' => $row['option_c'],
-            'option_d' => $row['option_d'],
-            'option_e' => $row['option_e'],
-            'answer'   => $row['answer'],
-            'point_a'  => $row['point_a'],
-            'point_b'  => $row['point_b'],
-            'point_c'  => $row['point_c'],
-            'point_d'  => $row['point_d'],
-            'point_e'  => $row['point_e'],
+            'type'      => $typeCanonical,
+            'category'  => $row['category'] ?? null,
+            'question'  => $row['question'] ?? null,
+            'option_a'  => $opt['option_a'],
+            'option_b'  => $opt['option_b'],
+            'option_c'  => $opt['option_c'],
+            'option_d'  => $opt['option_d'],
+            'option_e'  => $opt['option_e'],
+            'answer'    => $answerNormalized,
+            'point_a'   => $pts['point_a'],
+            'point_b'   => $pts['point_b'],
+            'point_c'   => $pts['point_c'],
+            'point_d'   => $pts['point_d'],
+            'point_e'   => $pts['point_e'],
         ]);
     }
 
-    /**
-     * Aturan validasi untuk setiap baris.
-     *
-     * @return array
-     */
     public function rules(): array
     {
         return [
-            'type' => ['required', 'in:PG,Multiple,Poin,Essay'],
-            'category' => ['required', 'in:Umum,Teknis,Psikologi'],
+            'type'     => ['required'],
             'question' => ['required', 'string'],
-
-            // *.field_name digunakan untuk validasi setiap baris
-            '*.option_a' => ['required_if:*.type,PG,Multiple,Poin', 'nullable'],
-            '*.option_b' => ['required_if:*.type,PG,Multiple,Poin', 'nullable'],
-
-            '*.point_a' => ['required_if:*.type,Poin', 'nullable', 'integer'],
-            '*.point_b' => ['required_if:*.type,Poin', 'nullable', 'integer'],
-            '*.point_c' => ['required_if:*.type,Poin', 'nullable', 'integer'],
-            '*.point_d' => ['required_if:*.type,Poin', 'nullable', 'integer'],
-            '*.point_e' => ['required_if:*.type,Poin', 'nullable', 'integer'],
-
-            '*.answer' => ['required_if:*.type,PG,Multiple', 'nullable'],
+            'category' => ['nullable', 'string'],
         ];
     }
 }

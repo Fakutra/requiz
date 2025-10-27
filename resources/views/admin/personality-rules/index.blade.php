@@ -1,76 +1,100 @@
 <x-app-admin>
   <div class="bg-white rounded-lg shadow-sm p-5">
-    <div class="flex justify-between items-center mb-4">
-      <h2 class="text-lg font-semibold">Personality Rules</h2>
-      <button onclick="document.getElementById('addModal').classList.remove('hidden')"
-        class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
-        + Tambah Rule
-      </button>
-    </div>
 
-    {{-- @if(session('success'))
-      <div class="mb-3 p-2 bg-green-100 text-green-800 rounded">
-        {{ session('success') }}
+    {{-- HEADER --}}
+    <div class="flex justify-between items-center mb-5">
+      <h2 class="text-xl font-semibold text-gray-800">Personality Rules</h2>
+
+      <div class="flex items-center gap-3">
+        {{-- Dropdown Batch --}}
+        <form method="GET">
+          <select name="batch" onchange="this.form.submit()"
+            class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring focus:border-blue-500">
+            <option value="">Pilih Batch</option>
+            @foreach ($batches as $b)
+              <option value="{{ $b->id }}" {{ (string)request('batch') === (string)$b->id ? 'selected' : '' }}>
+                {{ $b->name }}
+              </option>
+            @endforeach
+          </select>
+        </form>
+
+        {{-- Button tambah rule --}}
+        @if(request('batch'))
+          <button onclick="document.getElementById('addModal').classList.remove('hidden')"
+            class="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm shadow">
+            <i class="fas fa-plus text-xs"></i> Tambah Rule
+          </button>
+        @endif
       </div>
-    @endif --}}
-
-    <div class="overflow-x-auto">
-      <table class="w-full border text-sm">
-        <thead class="bg-gray-100">
-          <tr>
-            <th class="px-3 py-2 border">Min (%)</th>
-            <th class="px-3 py-2 border">Max (%)</th>
-            <th class="px-3 py-2 border">Nilai</th>
-            <th class="px-3 py-2 border text-center">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          @forelse ($rules as $rule)
-            <tr>
-              <td class="px-3 py-2 border">{{ $rule->min_percentage }}</td>
-              <td class="px-3 py-2 border">{{ $rule->max_percentage ?? '∞' }}</td>
-              <td class="px-3 py-2 border font-semibold">{{ $rule->score_value }}</td>
-              <td class="px-3 py-2 border text-center flex justify-center gap-2">
-
-                {{-- Edit --}}
-                <i class="fas fa-edit cursor-pointer text-yellow-600 hover:text-yellow-800"
-                  onclick="openEditModal({{ $rule->id }}, {{ $rule->min_percentage }}, {{ $rule->max_percentage ?? 'null' }}, {{ $rule->score_value }})">
-                </i>
-
-                {{-- Hapus --}}
-                <form method="POST" action="{{ route('admin.personality-rules.destroy', $rule->id) }}"
-                  onsubmit="return confirm('Yakin ingin menghapus rule ini?')">
-                  @csrf @method('DELETE')
-                  <button class="text-red-600 hover:text-red-800">
-                    <i class="fas fa-trash"></i>
-                  </button>
-                </form>
-
-              </td>
-            </tr>
-          @empty
-            <tr>
-              <td colspan="4" class="text-center p-3 text-gray-500">Belum ada data</td>
-            </tr>
-          @endforelse
-        </tbody>
-      </table>
     </div>
+
+    {{-- ALERT --}}
+    @if(!request('batch'))
+      <div class="p-3 bg-yellow-50 text-yellow-700 rounded border mb-4 text-sm">
+        Silakan pilih batch terlebih dahulu untuk menampilkan / menambahkan Personality Rules.
+      </div>
+    @endif
+
+    @if(request('batch'))
+      {{-- TABLE --}}
+      <div class="overflow-x-auto">
+        <table class="w-full border text-sm rounded-lg overflow-hidden">
+          <thead class="bg-gray-100 text-gray-700">
+            <tr>
+              <th class="px-3 py-2 border">Min (%)</th>
+              <th class="px-3 py-2 border">Max (%)</th>
+              <th class="px-3 py-2 border">Nilai</th>
+              <th class="px-3 py-2 border text-center">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            @forelse ($rules as $rule)
+              <tr>
+                <td class="px-3 py-2 border">{{ $rule->min_percentage }}</td>
+                <td class="px-3 py-2 border">{{ $rule->max_percentage ?? '∞' }}</td>
+                <td class="px-3 py-2 border font-semibold">{{ $rule->score_value }}</td>
+                <td class="px-3 py-2 border text-center flex justify-center gap-3">
+                  {{-- Edit --}}
+                  <i class="fas fa-edit cursor-pointer text-yellow-600 hover:text-yellow-800"
+                    onclick="openEditModal({{ $rule->id }}, {{ $rule->min_percentage }}, {{ $rule->max_percentage ?? 'null' }}, {{ $rule->score_value }})"></i>
+
+                  {{-- Delete --}}
+                  <form method="POST" action="{{ route('admin.personality-rules.destroy', $rule->id) }}"
+                    onsubmit="return confirm('Yakin ingin menghapus rule ini?')">
+                    @csrf @method('DELETE')
+                    <button class="text-red-600 hover:text-red-800">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            @empty
+              <tr>
+                <td colspan="4" class="text-center p-3 text-gray-500">Belum ada data</td>
+              </tr>
+            @endforelse
+          </tbody>
+        </table>
+      </div>
+    @endif
   </div>
 
-  {{-- MODAL: ADD RULE --}}
+  {{-- MODAL ADD --}}
   <div id="addModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
     <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-5">
       <h3 class="text-lg font-semibold mb-3">Tambah Rule</h3>
 
       <form method="POST" action="{{ route('admin.personality-rules.store') }}" class="space-y-3">
         @csrf
+        <input type="hidden" name="batch_id" value="{{ request('batch') }}">
+
         <div>
           <label class="text-sm">Min Percentage</label>
-          <input type="number" step="0.01" name="min_percentage" class="w-full border rounded px-2 py-1" required>
+          <input type="number" step="0.01" name="min_percentage" class="w-full border rounded px-2 py-1" required autofocus>
         </div>
         <div>
-          <label class="text-sm">Max Percentage (optional)</label>
+          <label class="text-sm">Max Percentage</label>
           <input type="number" step="0.01" name="max_percentage" class="w-full border rounded px-2 py-1">
         </div>
         <div>
@@ -89,13 +113,15 @@
     </div>
   </div>
 
-  {{-- MODAL: EDIT RULE --}}
+  {{-- MODAL EDIT --}}
   <div id="editModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
     <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-5">
       <h3 class="text-lg font-semibold mb-3">Edit Rule</h3>
 
       <form method="POST" id="editForm" class="space-y-3">
-        @csrf
+        @csrf @method('PUT')
+        <input type="hidden" name="batch_id" value="{{ request('batch') }}">
+
         <div>
           <label class="text-sm">Min Percentage</label>
           <input id="editMin" type="number" step="0.01" name="min_percentage" class="w-full border rounded px-2 py-1" required>
@@ -125,7 +151,6 @@
       document.getElementById('editMin').value = minP;
       document.getElementById('editMax').value = (maxP === null ? '' : maxP);
       document.getElementById('editScore').value = score;
-
       document.getElementById('editForm').action = "/admin/personality-rules/" + id;
       document.getElementById('editModal').classList.remove('hidden');
     }
