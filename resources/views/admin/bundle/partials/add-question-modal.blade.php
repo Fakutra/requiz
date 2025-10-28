@@ -18,31 +18,43 @@
                     {{-- Toolbar untuk Filter dan Aksi --}}
                     <div class="p-3 bg-white rounded-3 mb-3 shadow-sm">
                         {{-- BARIS INI DIMODIFIKASI untuk menampung filter kategori --}}
-                        <div class="row g-2 align-items-center">
-                            <div class="col-md-5">
-                                <input type="text" class="form-control question-search-input"
-                                    placeholder="Cari soal..." data-target-list="#question-list-{{ $bundle->id }}">
-                            </div>
+                        <div class="row g-3 align-items-center">
+                        {{-- 🔍 Kolom Pencarian Soal --}}
+                        <div class="col-12 col-md-5">
+                              <input 
+                                    type="text" 
+                                    class="form-control question-search-input" 
+                                    placeholder="Cari soal..." 
+                                    data-target-list="#question-list-{{ $bundle->id }}">
+                        </div>
 
-                            <div class="col-md-3">
-                                <div class="form-check form-switch pt-2 pt-sm-0 ps-sm-4">
-                                    <input class="form-check-input select-all-questions" type="checkbox" role="switch"
-                                        data-target-list="#question-list-{{ $bundle->id }}">
-                                    <label class="form-check-label">Pilih Semua</label>
-                                </div>
-                            </div>
+                        {{-- ✅ Kolom Pilih Semua --}}
+                        <div class="col-12 col-md-3">
+                              <div class="d-flex align-items-center justify-content-start justify-content-md-center">
+                                    <div class="form-check form-switch">
+                                          <input 
+                                                class="form-check-input select-all-questions" 
+                                                type="checkbox" 
+                                                role="switch" 
+                                                data-target-list="#question-list-{{ $bundle->id }}">
+                                          <label class="form-check-label ms-2">Pilih Semua</label>
+                                    </div>
+                              </div>
+                        </div>
 
-                            {{-- Filter Kategori (BARU) --}}
-                            <div class="col-md-4">
-                                <select class="form-select question-category-filter"
+                        {{-- 🏷️ Filter Kategori --}}
+                        <div class="col-12 col-md-4">
+                              <select 
+                                    class="form-select question-category-filter"
                                     data-target-list="#question-list-{{ $bundle->id }}">
                                     <option value="">Semua Kategori</option>
                                     @foreach ($categories as $category)
-                                        <option value="{{ $category }}">{{ $category }}</option>
+                                          <option value="{{ $category }}">{{ $category }}</option>
                                     @endforeach
-                                </select>
-                            </div>
+                              </select>
                         </div>
+                    </div>
+
                     </div>
 
                     <div class="question-scroll-area" style="max-height: 45vh; overflow-y: auto;">

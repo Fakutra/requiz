@@ -16,19 +16,19 @@
 
                     {{-- NAMA POSISI --}}
                     <div class="mb-3">
-                        <label class="form-label">Nama Posisi</label>
+                        <label class="form-label">Nama Posisi *</label>
                         <input type="text" class="form-control" name="name" required>
                     </div>
 
                     {{-- KUOTA --}}
                     <div class="mb-3">
-                        <label class="form-label">Kuota</label>
+                        <label class="form-label">Kuota *</label>
                         <input type="number" class="form-control" name="quota" min="1" required>
                     </div>
 
                     {{-- STATUS --}}
                     <div class="mb-3">
-                        <label class="form-label">Status</label>
+                        <label class="form-label">Status *</label>
                         <select class="form-select" name="status" required>
                             <option value="Active">Active</option>
                             <option value="Inactive">Inactive</option>
@@ -39,10 +39,6 @@
                     <div class="mb-3">
                         <label class="form-label">Deskripsi *</label>
                         <input type="hidden" id="description{{ $batch->id }}" name="description"
-<<<<<<< HEAD
-                            value="{{ old('description') }}" required>
-                        <trix-editor input="description{{ $batch->id }}" required></trix-editor>
-=======
                             value="{{ old('description') }}">
                         <trix-editor input="description{{ $batch->id }}"></trix-editor>
 
@@ -50,7 +46,6 @@
                         @error('description')
                             <small class="text-danger">{{ $message }}</small>
                         @enderror
->>>>>>> 33237c6ca08cf72bd318f651aaecdaf7e8d6acd9
                     </div>
 
                 </div>
