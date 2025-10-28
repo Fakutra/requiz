@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Batch;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Services\ActivityLogger;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class PersonalityRuleController extends Controller
 {
@@ -22,6 +25,19 @@ class PersonalityRuleController extends Controller
                 ->get();
         }
 
+        // ✅ Log aktivitas akses halaman
+        try {
+            $user = Auth::user()?->name ?? 'System';
+            $batchLabel = $batchId ? "Batch ID {$batchId}" : 'Semua Batch';
+            ActivityLogger::log(
+                'view',
+                'Personality Rules',
+                "{$user} mengakses halaman aturan kepribadian untuk {$batchLabel}"
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Gagal mencatat log view Personality Rules: ' . $e->getMessage());
+        }
+
         return view('admin.personality-rules.index', compact('batches', 'batchId', 'rules'));
     }
 
@@ -34,12 +50,12 @@ class PersonalityRuleController extends Controller
             'score_value'    => 'required|numeric|min:0',
         ]);
 
-        // opsional: normalisasi jika min > max dan max diisi
+        // Normalisasi jika min > max
         if (!is_null($data['max_percentage']) && $data['min_percentage'] > $data['max_percentage']) {
             [$data['min_percentage'], $data['max_percentage']] = [$data['max_percentage'], $data['min_percentage']];
         }
 
-        DB::table('personality_rules')->insert([
+        $id = DB::table('personality_rules')->insertGetId([
             'batch_id'       => $data['batch_id'],
             'min_percentage' => $data['min_percentage'],
             'max_percentage' => $data['max_percentage'],
@@ -47,6 +63,24 @@ class PersonalityRuleController extends Controller
             'created_at'     => now(),
             'updated_at'     => now(),
         ]);
+
+        // ✅ Log CREATE
+        try {
+            $user = Auth::user()?->name ?? 'System';
+            $batch = Batch::find($data['batch_id'])?->name ?? "Batch {$data['batch_id']}";
+            $min = $data['min_percentage'];
+            $max = $data['max_percentage'] ?? '∞';
+            $score = $data['score_value'];
+
+            ActivityLogger::log(
+                'create',
+                'Personality Rules',
+                "{$user} menambahkan rule kepribadian ({$min}% - {$max}%) = skor {$score} pada {$batch}",
+                "Rule ID: {$id}"
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Gagal mencatat log create Personality Rules: ' . $e->getMessage());
+        }
 
         return back()->with('success', 'Rule berhasil ditambahkan.');
     }
@@ -64,6 +98,9 @@ class PersonalityRuleController extends Controller
             [$data['min_percentage'], $data['max_percentage']] = [$data['max_percentage'], $data['min_percentage']];
         }
 
+        // Ambil data lama sebelum update
+        $oldData = DB::table('personality_rules')->where('id', $id)->first();
+
         DB::table('personality_rules')
             ->where('id', $id)
             ->update([
@@ -74,12 +111,58 @@ class PersonalityRuleController extends Controller
                 'updated_at'     => now(),
             ]);
 
+        // ✅ Log UPDATE
+        try {
+            $user = Auth::user()?->name ?? 'System';
+            $batch = Batch::find($data['batch_id'])?->name ?? "Batch {$data['batch_id']}";
+            $changes = [];
+
+            foreach ($data as $key => $value) {
+                $oldValue = $oldData->$key ?? null;
+                if ($oldValue != $value) {
+                    $changes[] = "{$key}: '{$oldValue}' → '{$value}'";
+                }
+            }
+
+            if (!empty($changes)) {
+                ActivityLogger::log(
+                    'update',
+                    'Personality Rules',
+                    "{$user} memperbarui rule kepribadian (Rule ID {$id}) pada {$batch} — " . implode(', ', $changes),
+                    "Rule ID: {$id}"
+                );
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Gagal mencatat log update Personality Rules: ' . $e->getMessage());
+        }
+
         return back()->with('success', 'Rule berhasil diperbarui.');
     }
 
     public function destroy($id)
     {
+        $rule = DB::table('personality_rules')->where('id', $id)->first();
+
         DB::table('personality_rules')->where('id', $id)->delete();
+
+        // ✅ Log DELETE
+        try {
+            $user = Auth::user()?->name ?? 'System';
+            $batch = Batch::find($rule->batch_id)?->name ?? "Batch {$rule->batch_id}";
+            $min = $rule->min_percentage;
+            $max = $rule->max_percentage ?? '∞';
+            $score = $rule->score_value;
+
+            ActivityLogger::log(
+                'delete',
+                'Personality Rules',
+                "{$user} menghapus rule kepribadian ({$min}% - {$max}%) = skor {$score} dari {$batch}",
+                "Rule ID: {$id}"
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Gagal mencatat log delete Personality Rules: ' . $e->getMessage());
+        }
+
         return back()->with('success', 'Rule dihapus.');
     }
 }

@@ -8,18 +8,6 @@
                 Create New Schedule
             </a>
         </div>
-
-        {{-- Success modal --}}
-        <div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered modal-md">
-                <div class="modal-content">
-                    <div class="modal-body text-center">
-                        <h5 class="text-success">✅ {{ session('success') }}</h5>
-                        <button type="button" class="btn btn-success mt-3" data-bs-dismiss="modal">OK</button>
-                    </div>
-                </div>
-            </div>
-        </div>
     </x-slot>
 
     <div class="py-3">

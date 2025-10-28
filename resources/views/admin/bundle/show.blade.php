@@ -128,20 +128,6 @@
         </div>
     </div>
 
-    {{-- Modal untuk notifikasi sukses --}}
-    @if (session('success'))
-        <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-body text-center p-4">
-                        <h5 class="text-success mb-3">✅ {{ session('success') }}</h5>
-                        <button type="button" class="btn btn-success" data-bs-dismiss="modal">OK</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    @endif
-
     {{-- Script untuk menampilkan modal sukses secara otomatis --}}
     @if (session('success'))
         <script>
