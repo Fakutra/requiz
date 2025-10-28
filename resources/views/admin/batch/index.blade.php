@@ -36,7 +36,7 @@
                                     {{ $batch->status }}
                                 </span>
                             </h5>
-                            <small class="text-gray-500 block mt-1 flex items-center">
+                            <small class="text-gray-500 block mt-1 flex items-center gap-1">
                                 <i class="bi bi-calendar-range"></i>
                                 {{ \Carbon\Carbon::parse($batch->start_date)->translatedFormat('d F Y') }} -
                                 {{ \Carbon\Carbon::parse($batch->end_date)->translatedFormat('d F Y') }}

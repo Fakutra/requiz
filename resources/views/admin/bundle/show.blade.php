@@ -1,20 +1,16 @@
 <x-app-admin>
-    {{-- HEADER HALAMAN --}}
-    <x-slot name="header">
-        <div>
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg py-4">
+        <div class = "relative flex items-center gap-2 mb-4 sm:px-6 lg:px-8">
+            <a href="{{ route('bundle.index') }}" 
+                class="text-gray-600 hover:text-gray-900 flex items-center">
+                <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+            </a>
+            <h2 class="text-lg font-semibold leading-none m-0">
                 Kelola Bundle
             </h2>
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb mb-0" style="background-color: transparent; padding: 0;">
-                    <li class="breadcrumb-item"><a href="{{ route('bundle.index') }}">Semua Bundle</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">{{ $bundle->name }}</li>
-                </ol>
-            </nav>
         </div>
-    </x-slot>
-
-    <div class="py-4">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="row">
 

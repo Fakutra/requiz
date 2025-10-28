@@ -1,71 +1,69 @@
 <x-app-admin>
     <div class="bg-white rounded-lg shadow-sm p-4 mb-5">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg"> 
-                <div class="p-6 text-gray-900">
-                    <div class="d-flex justify-content-between align-items-center mb-3 "">
-                        <h2 class="font-semibold text-xl text-gray-800 leading-tight mb-0">
-                            {{ __('Quiz') }}
-                        </h2>
-                        <a href="#" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#tambahTest">Create New Quiz</a>
-                    </div>
-                    <div class="list-group">
-                        @forelse ($tests as $test)
-                            <div
-                                class="list-group-item list-group-item-action d-flex flex-column flex-md-row justify-content-between align-items-center mb-2">
-                                <div class="me-md-3 mb-2 mb-md-0">
-                                    <h5 class="mb-0 fw-bold d-inline-flex align-items-center">
-                                        {{ $test->name }}
-                                    </h5>
-                                    <small class="text-muted d-block mt-1">
-                                        <i class="bi bi-calendar-range"></i>
-                                        {{ \Carbon\Carbon::parse($test->test_date ?? $test->created_at)->translatedFormat('d F Y H:i') }}
-                                        <span class="mx-2">|</span>
-                                        <i class="bi bi-briefcase"></i>
-                                        {{ $test->sections_count }} Section
-                                        @if ($test->nilai_minimum)
-                                            <span class="mx-2">|</span>
-                                            <i class="bi bi-graph-down"></i>
-                                            Nilai Min: <strong>{{ number_format($test->nilai_minimum, 2) }}</strong>
-                                        @endif
-                                    </small>
-                                </div>
-
-                                <div class="btn-group" role="group">
-                                    <a href="{{ route('test.show', $test) }}" class="btn btn-primary btn-sm">
-                                        <i class="bi bi-gear"></i> Kelola Section
-                                    </a>
-
-                                    <button class="btn btn-info btn-sm text-white" data-bs-toggle="modal"
-                                        data-bs-target="#editTest{{ $test->id }}">
-                                        <i class="bi bi-pencil-square"></i> Edit
-                                    </button>
-
-                                    <form action="{{ route('test.destroy', $test) }}" method="post" class="d-inline"
-                                        onsubmit="return confirm('Anda yakin ingin menghapus test ini?')">
-                                        @method('delete')
-                                        @csrf
-                                        <button type="submit" class="btn btn-danger btn-sm">
-                                            <i class="bi bi-trash"></i> Hapus
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
-
-                            {{-- Include modal edit --}}
-                            @include('admin.test.partials.modal-edit-test', [
-                                'test' => $test,
-                                'positions' => $positions,
-                            ])
-
-                        @empty
-                            <div class="list-group-item">
-                                <p class="text-center text-muted my-3">Belum ada Test yang dibuat.</p>
-                            </div>
-                        @endforelse
-                    </div>
+        <div class="max-w-7xl mx-auto">             
+            <div class="p-6 text-gray-900">
+                <div class="d-flex justify-content-between align-items-center mb-3 ">
+                    <h2 class="font-semibold text-xl text-gray-800 leading-tight mb-0">
+                        {{ __('Quiz') }}
+                    </h2>
+                    <a href="#" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#tambahTest">Create New Quiz</a>
                 </div>
-            </div>
+                <div class="list-group">
+                    @forelse ($tests as $test)
+                        <div
+                            class="list-group-item list-group-item-action d-flex flex-column flex-md-row justify-content-between align-items-center mb-2">
+                            <div class="me-md-3 mb-2 mb-md-0">
+                                <h5 class="mb-0 fw-bold d-inline-flex align-items-center">
+                                    {{ $test->name }}
+                                </h5>
+                                <small class="text-muted d-block mt-1">
+                                    <i class="bi bi-calendar-range"></i>
+                                    {{ \Carbon\Carbon::parse($test->test_date ?? $test->created_at)->translatedFormat('d F Y H:i') }}
+                                    <span class="mx-2">|</span>
+                                    <i class="bi bi-briefcase"></i>
+                                    {{ $test->sections_count }} Section
+                                    @if ($test->nilai_minimum)
+                                        <span class="mx-2">|</span>
+                                        <i class="bi bi-graph-down"></i>
+                                        Nilai Min: <strong>{{ number_format($test->nilai_minimum, 2) }}</strong>
+                                    @endif
+                                </small>
+                            </div>
+
+                            <div class="btn-group" role="group">
+                                <a href="{{ route('test.show', $test) }}" class="btn btn-primary btn-sm">
+                                    <i class="bi bi-gear"></i> Kelola Section
+                                </a>
+
+                                <button class="btn btn-info btn-sm text-white" data-bs-toggle="modal"
+                                    data-bs-target="#editTest{{ $test->id }}">
+                                    <i class="bi bi-pencil-square"></i> Edit
+                                </button>
+
+                                <form action="{{ route('test.destroy', $test) }}" method="post" class="d-inline"
+                                    onsubmit="return confirm('Anda yakin ingin menghapus test ini?')">
+                                    @method('delete')
+                                    @csrf
+                                    <button type="submit" class="btn btn-danger btn-sm">
+                                        <i class="bi bi-trash"></i> Hapus
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        {{-- Include modal edit --}}
+                        @include('admin.test.partials.modal-edit-test', [
+                            'test' => $test,
+                            'positions' => $positions,
+                        ])
+
+                    @empty
+                        <div class="list-group-item">
+                            <p class="text-center text-muted my-3">Belum ada Test yang dibuat.</p>
+                        </div>
+                    @endforelse
+                </div>
+            </div>            
         </div>
     </div>
 

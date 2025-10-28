@@ -1,29 +1,28 @@
 {{-- resources/views/admin/batch/show.blade.php --}}
 <x-app-admin>
-    <x-slot name="header">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <div>
-                <h2 class="font-semibold text-xl text-gray-800 leading-tight mb-0">
-                    Kelola Posisi: <span class="fw-bold">{{ $batch->name }}</span>
-                </h2>
-                <a href="{{ route('batch.index') }}" class="text-primary text-decoration-none mt-2 d-inline-block">
-                    <i class="bi bi-arrow-left-circle"></i> Kembali ke Semua Batch
-                </a>
-            </div>
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#tambahPosisi{{ $batch->id }}">
+    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg py-4">
+        <div class = "relative flex items-center gap-2 mb-4 sm:px-6 lg:px-8">
+            <a href="{{ route('batch.index') }}" 
+                class="text-gray-600 hover:text-gray-900 flex items-center">
+                <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+            </a>
+            <h2 class="text-lg font-semibold leading-none m-0">
+                Kelola Posisi: <span class="fw-bold">{{ $batch->name }}</span>
+            </h2>
+
+            <button class="btn btn-primary ml-auto" data-bs-toggle="modal" data-bs-target="#tambahPosisi{{ $batch->id }}">
                 <i class="bi bi-plus-circle me-2"></i>Tambah Posisi Baru
             </button>
         </div>
-    </x-slot>
-
-    <div class="py-4">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="card shadow-sm">
                 <div class="card-body p-0">
                     @if ($batch->position->isNotEmpty())
                         <div class="table-responsive">
                             <table class="table table-hover table-striped mb-0">
-                                <thead class="table-dark">
+                                <thead class="bg-gray-100 text-gray-800">
                                     <tr>
                                         <th scope="col" class="text-center" style="width: 5%;">No.</th>
                                         <th scope="col">Nama Posisi</th>

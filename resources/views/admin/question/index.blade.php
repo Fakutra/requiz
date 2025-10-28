@@ -1,7 +1,7 @@
 <x-app-admin>
     <div class="bg-white rounded-lg shadow-sm p-4 mb-5">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+            <div class="bg-white overflow-hidden sm:rounded-lg">
                 <div class="d-flex justify-content-between align-items-center mb-3 ">
                     <h2 class="font-semibold text-xl text-gray-800 leading-tight mb-0 **bg-gray-100 p-2 rounded**">
                          {{ __('Question Banks') }}
@@ -13,11 +13,7 @@
                     </div>
                     {{-- Tombol Import dan Form Filter/Search --}}
                     <div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-3">
-                        {{-- Tombol Import --}}
-                        <button type="button" class="btn btn-success" data-bs-toggle="modal"
-                            data-bs-target="#importQuestionModal">
-                            <i class="bi bi-file-earmark-spreadsheet-fill"></i> Import from Excel
-                        </button>
+                        
 
                         {{-- Form untuk Search dan Filter --}}
                         <form action="{{ route('question.index') }}" method="GET" class="flex-grow-1">
@@ -59,6 +55,11 @@
                                 </div>
                             </div>
                         </form>
+                        {{-- Tombol Import --}}
+                        <button type="button" class="btn btn-success" data-bs-toggle="modal"
+                            data-bs-target="#importQuestionModal">
+                            <i class="bi bi-file-earmark-spreadsheet-fill"></i> Import from Excel
+                        </button>
                     </div>
 
                     {{-- Tabel Pertanyaan --}}
