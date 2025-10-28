@@ -159,6 +159,10 @@
                                 </svg>
                             </button>
                             <div x-show="userOpen" x-transition class="mt-3 ml-10 space-y-4 text-sm text-gray-600">
+                                <a href="{{ route('admin.user.index') }}"
+                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/user') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                                    Admin
+                                </a>
                                 <a href="{{ route('admin.applicant.index') }}"
                                     class="block hover:text-blue-600 no-underline {{ request()->is('admin/applicant') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
                                     Applicant

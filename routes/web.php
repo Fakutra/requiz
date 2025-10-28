@@ -27,6 +27,8 @@ use App\Http\Controllers\AdminPanel\InterviewScheduleController;
 use App\Http\Controllers\AdminPanel\ReportController;
 use App\Http\Controllers\AdminPanel\ActivityLogController;
 use App\Http\Controllers\AdminPanel\PersonalityRuleController;
+use App\Http\Controllers\AdminPanel\UserController;
+
 
 // ====== Seleksi (baru, dipisah per tahap) ======
 use App\Http\Controllers\AdminPanel\Selection\RekapController;
@@ -89,6 +91,13 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin', fn () => view('admin/dashboard'));
     Route::get('admin/dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
 
+
+    // -------- User Admin Management ----------
+    Route::get   ('admin/user',             [UserController::class, 'index'])->name('admin.user.index');
+    Route::post  ('admin/user',             [UserController::class, 'store'])->name('admin.user.store');
+    Route::put   ('admin/user/{user}',      [UserController::class, 'update'])->name('admin.user.update');
+    Route::delete('admin/user/{user}',      [UserController::class, 'destroy'])->name('admin.user.destroy');
+    
     // -------- Batch & Position ----------
     Route::get   ('admin/batch',            [BatchController::class, 'index'])->name('batch.index');
     Route::post  ('admin/batch',            [BatchController::class, 'store'])->name('batch.store');
