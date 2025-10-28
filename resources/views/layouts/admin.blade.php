@@ -112,12 +112,15 @@
                         jobOpen: {{ request()->is('admin/batch') ? 'true' : 'false' }},
                         quizOpen: {{ request()->is('quiz') ? 'true' : 'false' }},
                         scheduleOpen: {{ request()->is('tech-answers*') || request()->is('interview-schedule*') ? 'true' : 'false' }},
-
+                        
                         toggleMenu(menu) {
-                            this.userOpen = false;
-                            this.jobOpen = false;
-                            this.quizOpen = false;
-                            this.scheduleOpen = false;
+                            // Tutup semua menu dulu
+                            const menus = ['userOpen', 'jobOpen', 'quizOpen', 'scheduleOpen'];
+                            menus.forEach(m => {
+                                if (m !== menu) this[m] = false;
+                            });
+
+                            // Toggle menu yang diklik
                             this[menu] = !this[menu];
                         }
                     }">
