@@ -8,7 +8,8 @@ use App\Models\TestSection;
 use Illuminate\Http\Request;
 use App\Models\QuestionBundle;
 use App\Http\Controllers\Controller;
-use \Cviebrock\EloquentSluggable\Services\SlugService;
+use App\Services\ActivityLogger;
+use Cviebrock\EloquentSluggable\Services\SlugService;
 
 class TestController extends Controller
 {
@@ -35,13 +36,21 @@ class TestController extends Controller
         $validated = $request->validate([
             'name'          => 'required|string|max:255',
             'position_id'   => 'required|exists:positions,id',
-            'nilai_minimum' => 'nullable|numeric|min:0', // ✅ tambahkan validasi ini
+            'nilai_minimum' => 'nullable|numeric|min:0',
             'test_date'     => 'nullable|date',
             'test_closed'   => 'nullable|date|after_or_equal:test_date',
             'test_end'      => 'nullable|date|after_or_equal:test_closed',
         ]);
 
-        Test::create($validated); // ✅ otomatis menyimpan nilai_minimum juga karena sudah ada di $fillable
+        $test = Test::create($validated);
+
+        // ✅ LOG CREATE
+        ActivityLogger::log(
+            'create',
+            'Test',
+            auth()->user()->name . " membuat test baru: '{$test->name}'",
+            "Test ID: {$test->id}"
+        );
 
         return redirect()->route('test.index')->with('success', 'New Quiz has been added!');
     }
@@ -51,13 +60,48 @@ class TestController extends Controller
         $validatedData = $request->validate([
             'name'          => 'required|string|max:255',
             'position_id'   => 'required|exists:positions,id',
-            'nilai_minimum' => 'nullable|numeric|min:0', // ✅ tambahkan validasi ini
+            'nilai_minimum' => 'nullable|numeric|min:0',
             'test_date'     => 'nullable|date',
             'test_closed'   => 'nullable|date|after_or_equal:test_date',
             'test_end'      => 'nullable|date|after_or_equal:test_closed',
         ]);
 
-        $test->update($validatedData); // ✅ otomatis meng-update nilai_minimum juga
+        // ✅ Ambil data lama sebelum update (untuk referensi log)
+        $oldData = $test->only(['name', 'position_id', 'nilai_minimum', 'test_date', 'test_closed', 'test_end']);
+
+        // ✅ Lakukan update
+        $test->update($validatedData);
+
+        // ✅ Ambil hanya field yang berubah
+        $changes = $test->getChanges();
+
+        if (!empty($changes)) {
+            // Format perubahan
+            $changeList = collect($changes)->map(function ($new, $key) use ($oldData) {
+                $old = $oldData[$key] ?? '(kosong)';
+
+                // Format tanggal agar rapi
+                if (str_contains($key, 'date') || str_contains($key, 'closed') || str_contains($key, 'end')) {
+                    try {
+                        $old = $old ? \Carbon\Carbon::parse($old)->format('Y-m-d') : '(kosong)';
+                        $new = $new ? \Carbon\Carbon::parse($new)->format('Y-m-d') : '(kosong)';
+                    } catch (\Exception $e) {
+                        // Abaikan jika parsing gagal
+                    }
+                }
+
+                return "{$key}: '{$old}' → '{$new}'";
+            })->implode(', ');
+
+            // ✅ Catat log aktivitas update
+            ActivityLogger::log(
+                'update',
+                'Test',
+                (auth()->user()->name ?? 'System') .
+                " memperbarui data Test '{$test->name}' — {$changeList}",
+                "Test ID: {$test->id}"
+            );
+        }
 
         return redirect()->route('test.index')->with('success', 'Quiz has been updated!');
     }
@@ -65,10 +109,21 @@ class TestController extends Controller
     public function destroy(Test $test)
     {
         try {
+            $name = $test->name;
+
             $test->delete();
+
+            // ✅ LOG DELETE
+            ActivityLogger::log(
+                'delete',
+                'Test',
+                auth()->user()->name . " menghapus test: '{$name}'",
+                "Test ID: {$test->id}"
+            );
+
             return redirect()->route('test.index')->with('success', 'Quiz berhasil dihapus!');
         } catch (\Exception $e) {
-            return redirect()->route('test.index')->with('error', 'Gagal menghapus quiz. Error: '.$e->getMessage());
+            return redirect()->route('test.index')->with('error', 'Gagal menghapus quiz. Error: ' . $e->getMessage());
         }
     }
 

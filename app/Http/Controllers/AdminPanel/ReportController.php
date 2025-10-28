@@ -6,15 +6,17 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Batch;
 use App\Models\Position;
-use App\Models\Applicant;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\ReportExport;
-use App\Services\ActivityLogger; // ✅ tambahkan
-use Illuminate\Support\Facades\Auth; // ✅ tambahkan
-use Illuminate\Support\Facades\Log;  // ✅ tambahkan
+use App\Services\ActivityLogger;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class ReportController extends Controller
 {
+    /**
+     * Tampilkan halaman laporan seleksi.
+     */
     public function index(Request $request)
     {
         $batchId = $request->query('batch');
@@ -43,31 +45,33 @@ class ReportController extends Controller
             ->orderBy('batch_id')
             ->get();
 
+        // ✅ Catat log akses halaman laporan
+        try {
+            $user = Auth::user()?->name ?? 'System';
+            $batchLabel = $batchId ? "Batch ID {$batchId}" : "Semua Batch";
+            $searchLabel = $search ? "dengan pencarian '{$search}'" : 'tanpa filter pencarian';
+
+            ActivityLogger::log(
+                'view',
+                'Report',
+                "{$user} mengakses halaman laporan seleksi ({$batchLabel}, {$searchLabel})"
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Gagal mencatat log view Report: ' . $e->getMessage());
+        }
+
         return view('admin.report.index', compact('batches', 'positions', 'batchId', 'search'));
     }
 
     /**
-     * EXPORT LAPORAN SELEKSI
+     * EXPORT LAPORAN SELEKSI KE EXCEL
      */
     public function export(Request $request)
     {
         $batchId = $request->query('batch');
         $fileName = 'Laporan_Seleksi_' . now()->format('Ymd_His') . '.xlsx';
 
-        try {
-            // ✅ Catat log aktivitas export
-            $user = Auth::user()?->name ?? 'System';
-            $batchLabel = $batchId ? "Batch ID {$batchId}" : "Semua Batch";
-
-            ActivityLogger::log(
-                'export',
-                'Report',
-                "{$user} mengekspor laporan seleksi ({$batchLabel})"
-            );
-        } catch (\Throwable $e) {
-            Log::warning('Gagal mencatat log export Report: ' . $e->getMessage());
-        }
-
+        // 🧹 Log export dihapus dari sini karena sudah dicatat di ReportExport.php
         return Excel::download(new ReportExport($batchId), $fileName);
     }
 }
