@@ -54,7 +54,7 @@
         <div class="mt-3">{{ $users->links() }}</div>
 
         {{-- ========== MODAL TAMBAH ========== --}}
-        <div x-show="openAdd" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+        <div x-show="openAdd" x-cloak class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
             <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
                 <h3 class="text-lg font-semibold mb-4">Tambah Admin</h3>
                 <form method="POST" action="{{ route('admin.user.store') }}">
@@ -82,6 +82,7 @@
                 </form>
             </div>
         </div>
+
 
         {{-- ========== MODAL EDIT ========== --}}
         <template x-if="userToEdit">

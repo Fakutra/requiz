@@ -173,6 +173,10 @@
                                     x-transition:leave-start="opacity-100 scale-100 translate-y-0"
                                     x-transition:leave-end="opacity-0 scale-95 -translate-y-2"
                                     class="mt-3 ml-10 space-y-4 text-sm text-gray-600">
+                                <a href="{{ route('admin.user.index') }}"
+                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/user') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                                    Admin
+                                </a>
                                 <a href="{{ route('admin.applicant.index') }}"
                                     class="block hover:text-blue-600 no-underline {{ request()->is('admin/applicant') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
                                     Applicant
