@@ -77,17 +77,99 @@
 
         <!-- Page Heading -->
         @if (isset($header))
-            <header class="bg-white shadow">
-                <div class="max-w-7xl mx-auto py-3 px-4 sm:px-6 lg:px-8">
-                    {{ $header }}
-                </div>
-            </header>
+        <header class="bg-white shadow">
+            <div class="max-w-7xl mx-auto py-3 px-4 sm:px-6 lg:px-8">
+                {{ $header }}
+            </div>
+        </header>
         @endif
 
         <!-- Page Content -->
         <main>
             {{ $slot }}
         </main>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-j1CDi7MgGQ12Z7Qab0qlWQ/Qqz24Gc6BM0thvEMVjHnfYGF0rmFCozFSxQBxwHKO" crossorigin="anonymous">
+        // document.addEventListener('DOMContentLoaded', function() {
+        //     const selectAll = document.getElementById('selectAll');
+        //     const checkboxes = document.querySelectorAll('.applicant-checkbox');
+        //     if (selectAll) {
+        //         selectAll.addEventListener('change', function() {
+        //             checkboxes.forEach(cb => cb.checked = this.checked);
+        //         });
+        //         checkboxes.forEach(cb => {
+        //             cb.addEventListener('change', function() {
+        //                 selectAll.checked = [...checkboxes].every(i => i.checked);
+        //             });
+        //         });
+        //     }
+        // });
+    </script>
+
+                        <div x-show="open" x-cloak class="mt-2 space-y-1 pl-4 text-sm transition-all duration-300">
+                            <a href="{{ route('admin.applicant.index') }}" class="block text-gray-600 hover:text-blue-600">Pelamar</a>
+                            <a href="{{ route('admin.applicant.seleksi.index') }}" class="block text-gray-600 hover:text-blue-600">Seleksi</a>
+                            <a href="#" class="block text-gray-600 hover:text-blue-600">Jadwal Wawancara</a>
+                            <a href="#" class="block text-gray-600 hover:text-blue-600">Hasil Akhir</a>
+                        </div>
+                    </div>
+
+                    <x-nav-link :href="route('test.index')" :active="request()->routeIs('test.index')">
+                        {{ __('Quiz') }}
+                    </x-nav-link>
+                    <x-nav-link :href="route('question.index')" :active="request()->routeIs('question.index')">
+                        {{ __('Questions') }}
+                    </x-nav-link>
+                    <x-nav-link :href="route('bundle.index')" :active="request()->routeIs('bundle.index')">
+                        {{ __('Bundles') }}
+                    </x-nav-link>
+                </nav>
+            </div>
+        </aside>
+        <!-- Overlay untuk mobile -->
+<div 
+    x-show="sidebarOpen"
+    @click="sidebarOpen = false"
+    class="fixed inset-0 z-30 sm:hidden"
+    x-transition:enter="transition-opacity ease-linear duration-200"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+    x-transition:leave="transition-opacity ease-linear duration-200"
+    x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0"
+    x-cloak>
+</div>
+
+
+        <!-- Konten Utama -->
+        <div class="flex-1 flex flex-col">
+            <!-- Toggle Sidebar Button (Mobile Only) -->
+            <div class="bg-white shadow px-4 py-2 sm:hidden">
+                <button @click="sidebarOpen = !sidebarOpen" class="text-gray-700 focus:outline-none">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="hidden sm:block">
+                @include('layouts.navigation')
+            </div>
+
+            @if (isset($header))
+                <header class="bg-white shadow">
+                    <div class="max-w-7xl mx-auto py-3 px-4 sm:px-6 lg:px-8">
+                        {{ $header }}
+                    </div>
+                </header>
+            @endif
+
+            <main class="p-4">
+                {{ $slot }}
+            </main>
+        </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-j1CDi7MgGQ12Z7Qab0qlWQ/Qqz24Gc6BM0thvEMVjHnfYGF0rmFCozFSxQBxwHKO" crossorigin="anonymous">

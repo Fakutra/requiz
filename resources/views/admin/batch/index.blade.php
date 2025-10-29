@@ -28,7 +28,7 @@
             <div class="space-y-2">
                 @forelse ($batchs as $batch)
                     <div class="flex flex-col md:flex-row justify-between items-center bg-white rounded-lg border border-zinc-300 p-4 mb-4">
-                        <div class="md:me-3 mb-2 md:mb-0">
+                        <div class="w-full md:w-auto md:me-3 mb-2 md:mb-0">
                             <h5 class="mb-0 font-bold flex items-center">
                                 {{ $batch->name }}
                                 <span class="ms-3 px-2 py-1 rounded text-white text-xs font-medium

@@ -6,36 +6,48 @@ use App\Models\Applicant;
 use App\Models\Batch;
 use App\Models\Position;
 use App\Models\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class LowonganController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $q   = trim($request->input('q', ''));
+        $edu = $request->input('edu', ''); // contoh: 'SMA/SMK', 'D3', 'D4/S1', 'S2', 'S3'
+
         // Mengambil posisi yang statusnya 'Active' DAN batch terkaitnya juga 'Active'
-        $positions = Position::withCount('applicants')
-            ->where('status', 'Active') // 1. Filter status di tabel 'positions'
-            ->whereHas('batch', function ($query) { // 2. Tambahkan filter berdasarkan relasi 'batch'
-                $query->where('status', 'Active'); // 3. Pastikan status di tabel 'batches' adalah 'Active'
+        $positions = Position::query()
+            ->withCount('applicants')
+            ->where('status', 'Active')
+            ->whereHas('batch', function ($q) {
+                $q->where('status', 'Active');
+            })
+            // search simple by title (opsional: tambahin kolom lain)
+            ->when($q, function ($query) use ($q) {
+                $query->where(function ($qq) use ($q) {
+                    $qq->where('name', 'like', "%{$q}%")
+                        ->orWhere('slug', 'like', "%{$q}%");
+                });
+            })
+            // filter pendidikan (opsional: sesuaikan ke kolom lo, misal 'min_education' / 'pendidikan')
+            ->when($edu, function ($query) use ($edu) {
+                $query->where('min_edu', $edu);
+                // kalau nyimpennya array/enum lain, sesuaikan logicnya
             })
             ->orderBy('id', 'asc')
-            ->get();
+            ->paginate(9)
+            ->withQueryString(); // biar query ?q=&edu= ikut di pagination
 
-        // Bagian ini tetap sama untuk mengecek riwayat lamaran user
-        $appliedBatchIds = Applicant::where('user_id', auth()->id())
-            ->pluck('batch_id')
-            ->toArray();
-
-        return view('lowongan', compact('positions', 'appliedBatchIds'));
+        return view('joblist', compact('positions', 'q', 'edu'));
     }
 
-    public function store(Request $request, $positionSlug)
+    public function store(Request $request, Position $position)
     {
         // Ambil posisi berdasarkan slug
-        $position = Position::where('slug', $positionSlug)->firstOrFail();
-
+        //$position = Position::where('slug', $positionSlug)->firstOrFail();
         // Ambil ID user & batch
         $userId = auth()->id();
         $batchId = $position->batch_id;
@@ -65,42 +77,63 @@ class LowonganController extends Controller
             'tpt_lahir'         => 'required|string|max:255',
             'tgl_lahir'         => 'required|date',
             'alamat'            => 'required|string',
-            'pendidikan'        => 'required',
+            'pendidikan'        => 'required|in:D3,D4/S1,S2,S3',
             'universitas'       => 'required|string',
             'jurusan'           => 'required|string',
-            'thn_lulus'         => 'required|string|max:4',
-            'ekspektasi_gaji'   => 'required|numeric|min:0|max:100000000',
+            'thn_lulus'         => 'required|string|digits:4',
             'skills'            => 'array',
+            'ekspektasi_gaji'    => 'required|numeric|min:0|max:100000000',
             'cv_document'       => 'required|file|mimes:pdf|max:3072',
+            'doc_tambahan'      => 'nullable|file|mimes:pdf|max:5120',
+            'agreed'            => 'accepted',
+        ],  [
+            'agreed.accepted' => 'Harap centang kotak persetujuan syarat & ketentuan',
         ]);
 
         // Handle input gaji
         $validated['ekspektasi_gaji'] = (int) str_replace(['.', ',', ' '], '', $request->ekspektasi_gaji);
 
         // Handle file upload
-        $validated['cv_document'] = $request->file('cv_document')->store('cv-applicant', 'public');
+        $validated['cv_document'] = $request->file('cv_document')->store('cv-applicant/' . $userId, 'public');
+        if ($request->hasFile('doc_tambahan')) {
+            $validated['additional_doc'] = $request->file('doc_tambahan')
+                ->store('doc-applicant/' . $userId, 'public');
+        }
 
-        // Tambahkan kolom tambahan
+        // Tangani skill
+        $skills = $request->input('skills');
+        $skills = is_array($skills) ? $skills : [];
+        // Jika "Lainnya" dicentang dan ada input teksnya
+        if (in_array('Lainnya', $skills, true) && $request->filled('other_skill')) {
+            $skills[array_search('Lainnya', $skills, true)] = $request->input('other_skill');
+        }
+        $validated['skills'] = !empty($skills) ? implode(', ', $skills) : null;
+
+        $validated['ekspektasi_gaji'] = (int) str_replace(['.', ',', ' '], '', $request->ekspektasi_gaji);
+
+        // Simpan ke database
         $validated['user_id']     = $userId;
         $validated['position_id'] = $position->id;
         $validated['batch_id']    = $batchId;
 
-        // Tangani skill
-        $skills = $request->input('skills', []);
-
-        // Jika "Lainnya" dicentang dan ada input teksnya
-        if (in_array('Lainnya', $skills) && $request->filled('other_skill')) {
-            $key = array_search('Lainnya', $skills);
-            $skills[$key] = $request->input('other_skill');
-        }
-
-        $validated['skills'] = implode(', ', $skills);
-
-        // Simpan ke database
         Applicant::create($validated);
 
-        return redirect()->route('lowongan.index')
+        return redirect()->route('history.index')
             ->with('success', 'Selamat, lamaran anda telah berhasil dikirim!');
+    }
+
+    public function show(Position $position)
+    {
+        $position->load('batch');
+
+        // Bagian ini tetap sama untuk mengecek riwayat lamaran user
+        $appliedBatchIds = Applicant::where('user_id', auth()->id())
+            ->pluck('batch_id')
+            ->toArray();
+
+        $user = User::where('id', auth()->id())->first();
+
+        return view('jobdetail', compact('position', 'appliedBatchIds', 'user'));
     }
 
     // public function index()

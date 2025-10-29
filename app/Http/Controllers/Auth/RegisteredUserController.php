@@ -30,22 +30,39 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+        $validated = $request->validate([
+            'no_identitas'  => ['required', 'string', 'max:20', 'unique:users,identity_num'],
+            'name'          => ['required', 'string', 'max:255'],
+            'email'         => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
+            'no_telp'       => [
+                'required',
+                'string',
+                'max:20',
+            ],
+            'tpt_lahir'  => ['required', 'string', 'max:100'],
+            'tgl_lahir'  => ['required', 'date', 'before:today', 'after:1900-01-01'],
+            'alamat_ktp' => ['required', 'string', 'max:1000'],
+            'password'   => ['required', 'confirmed', Rules\Password::defaults()],
+            'terms'      => ['accepted'],
+        ], [
+            'terms.accepted' => 'Kamu harus menyetujui Syarat & Ketentuan terlebih dahulu.',
         ]);
 
         $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
+            'name'          => $validated['name'],
+            'email'         => $validated['email'],
+            'phone_number'  => '62'.$validated['no_telp'],
+            'birthplace'    => $validated['tpt_lahir'],
+            'birthdate'     => $validated['tgl_lahir'],   // akan di-cast ke date kalau diset di model
+            'address'       => $validated['alamat_ktp'],
+            'identity_num'  => $validated['no_identitas'],
+            'password'      => Hash::make($validated['password']),
         ]);
 
         event(new Registered($user));
 
-        Auth::login($user);
+        //Auth::login($user);
 
-        return redirect(RouteServiceProvider::HOME);
+        return redirect()->route('login')->with('status', 'Registrasi berhasil! Silakan login');
     }
 }
