@@ -44,10 +44,10 @@ class LowonganController extends Controller
         return view('joblist', compact('positions', 'q', 'edu'));
     }
 
-    public function store(Request $request, $positionSlug)
+    public function store(Request $request, Position $position)
     {
         // Ambil posisi berdasarkan slug
-        $position = Position::where('slug', $positionSlug)->firstOrFail();
+        //$position = Position::where('slug', $positionSlug)->firstOrFail();
         // Ambil ID user & batch
         $userId = auth()->id();
         $batchId = $position->batch_id;
@@ -70,14 +70,22 @@ class LowonganController extends Controller
 
         // Validasi input form
         $validated = $request->validate([
-            'pendidikan'    => 'required|in:D3,D4/S1,S2,S3',
-            'universitas'   => 'required|string',
-            'jurusan'       => 'required|string',
-            'thn_lulus'     => 'required|string|digits:4',
-            'skills'        => 'array',
-            'cv_document'   => 'required|file|mimes:pdf|max:3072',
-            'doc_tambahan'  => 'nullable|file|mimes:pdf|max:5120',
-            'agreed'        => 'accepted',
+            'name'              => 'required|string|max:255',
+            'email'             => 'required|email|max:255',
+            'nik'               => 'required|digits:16',
+            'no_telp'           => 'required|string|max:14',
+            'tpt_lahir'         => 'required|string|max:255',
+            'tgl_lahir'         => 'required|date',
+            'alamat'            => 'required|string',
+            'pendidikan'        => 'required|in:D3,D4/S1,S2,S3',
+            'universitas'       => 'required|string',
+            'jurusan'           => 'required|string',
+            'thn_lulus'         => 'required|string|digits:4',
+            'skills'            => 'array',
+            'ekspektasi_gaji'    => 'required|numeric|min:0|max:100000000',
+            'cv_document'       => 'required|file|mimes:pdf|max:3072',
+            'doc_tambahan'      => 'nullable|file|mimes:pdf|max:5120',
+            'agreed'            => 'accepted',
         ],  [
             'agreed.accepted' => 'Harap centang kotak persetujuan syarat & ketentuan',
         ]);
@@ -97,6 +105,8 @@ class LowonganController extends Controller
             $skills[array_search('Lainnya', $skills, true)] = $request->input('other_skill');
         }
         $validated['skills'] = !empty($skills) ? implode(', ', $skills) : null;
+
+        $validated['ekspektasi_gaji'] = (int) str_replace(['.', ',', ' '], '', $request->ekspektasi_gaji);
 
         // Simpan ke database
         $validated['user_id']     = $userId;

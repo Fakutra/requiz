@@ -123,9 +123,11 @@
             <div class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
 
             {{-- panel --}}
-            <form method="POST"
-                action="{{ route('apply.store', ['position' => $position->slug]) }}"
+            <form 
+                x-ref="applyForm" 
+                method="POST" 
                 enctype="multipart/form-data"
+                action="{{ route('apply.store', $position) }}"
                 @submit.prevent="submit($event)"
                 class="relative w-full max-w-3xl mx-4 bg-white rounded-2xl shadow-xl border border-gray-200
                     flex flex-col max-h-[80vh] focus:outline-none">
@@ -148,52 +150,42 @@
                         </div>
                     </template>
 
-                    <div class="flex items-center gap-2 mb-2">
+                    <div class="flex items-center gap-2 mb-2 mb-4">
                         <h3 class="text-base font-semibold text-gray-800 whitespace-nowrap">
                             Data Pribadi
                         </h3>
                         <div class="flex-1 border-t border-gray-300"></div>
                     </div>
                     {{-- Info badge --}}
-                    <div class="mb-4 w-100">
-                        <span class="flex items-center gap-2 rounded-md bg-blue-50 px-3 py-2 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-200">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
-                            </svg>
-                            <span>
-                                Apabila terdapat perbedaan data, silahkan untuk melakukan edit pada menu profil.
-                            </span>
-                        </span>
-                    </div>
                     @auth
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Nama Lengkap</label>
-                            <input type="text" name="name" class="mt-1 w-full rounded-lg border-gray-300 focus:border-[#009DA9] focus:ring-[#009DA9] disabled:border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 disabled:shadow-none" placeholder="Nama lengkap" value="{{ $user->name }}" disabled />
+                            <input type="text" name="name" class="mt-1 w-full rounded-lg border-gray-300 focus:border-[#009DA9] focus:ring-[#009DA9]" placeholder="Nama lengkap" value="{{ $user->name }}" />
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Email</label>
-                            <input type="email" name="email" class="mt-1 w-full rounded-lg border-gray-300 focus:border-[#009DA9] focus:ring-[#009DA9] disabled:border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 disabled:shadow-none" placeholder="email@example.com" value="{{ $user->email }}" disabled />
+                            <input type="email" name="email" class="mt-1 w-full rounded-lg border-gray-300 focus:border-[#009DA9] focus:ring-[#009DA9]" placeholder="email@example.com" value="{{ $user->email }}" />
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700">NIK</label>
-                            <input type="text" name="nik" inputmode="numeric" class="mt-1 w-full rounded-lg border-gray-300 focus:border-[#009DA9] focus:ring-[#009DA9] disabled:border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 disabled:shadow-none" placeholder="16 digit" value="{{ $user->identity_num }}" disabled />
+                            <input type="text" name="nik" inputmode="numeric" class="mt-1 w-full rounded-lg border-gray-300 focus:border-[#009DA9] focus:ring-[#009DA9]" placeholder="16 digit" value="{{ $user->identity_num }}" />
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Nomor Telepon</label>
-                            <input type="tel" name="no_telp" inputmode="numeric" class="mt-1 w-full rounded-lg border-gray-300 focus:border-[#009DA9] focus:ring-[#009DA9] disabled:border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 disabled:shadow-none" placeholder="62xxxxxxxxxx" value="{{ $user->phone_number }}" disabled />
+                            <input type="tel" name="no_telp" inputmode="numeric" class="mt-1 w-full rounded-lg border-gray-300 focus:border-[#009DA9] focus:ring-[#009DA9]" placeholder="62xxxxxxxxxx" value="{{ $user->phone_number }}" />
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Tempat Lahir</label>
-                            <input type="text" name="tpt_lahir" class="mt-1 w-full rounded-lg border-gray-300 focus:border-[#009DA9] focus:ring-[#009DA9] disabled:border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 disabled:shadow-none" placeholder="Tempat Lahir" value="{{ $user->birthplace }}" disabled />
+                            <input type="text" name="tpt_lahir" class="mt-1 w-full rounded-lg border-gray-300 focus:border-[#009DA9] focus:ring-[#009DA9] disabled:border-gray-200" placeholder="Tempat Lahir" value="{{ $user->birthplace }}" />
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Tanggal Lahir</label>
-                            <input type="date" name="tgl_lahir" class="mt-1 w-full rounded-lg border-gray-300 focus:border-[#009DA9] focus:ring-[#009DA9] disabled:border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 disabled:shadow-none" value="{{ $user->birthdate }}" disabled />
+                            <input type="date" name="tgl_lahir" class="mt-1 w-full rounded-lg border-gray-300 focus:border-[#009DA9] focus:ring-[#009DA9] disabled:border-gray-200" value="{{ $user->birthdate }}" />
                         </div>
                         <div class="md:col-span-2">
                             <label class="block text-sm font-medium text-gray-700">Alamat KTP</label>
-                            <textarea rows="2" name="alamat" class="mt-1 w-full rounded-lg border-gray-300 focus:border-[#009DA9] focus:ring-[#009DA9] disabled:border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 disabled:shadow-none" placeholder="Alamat KTP" disabled>{{ $user->address }}</textarea>
+                            <textarea rows="2" name="alamat" class="mt-1 w-full rounded-lg border-gray-300 focus:border-[#009DA9] focus:ring-[#009DA9] disabled:border-gray-200" placeholder="Alamat KTP">{{ $user->address }}</textarea>
                         </div>
                     </div>
                     @endauth
@@ -208,7 +200,7 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         @php
-                        $skillOptions = ['Microsoft Office', 'Public Speaking', 'Teamwork', 'Problem Solving', 'Leadership', 'Lainnya'];
+                        $skillOptions = ['Microsoft Office', 'Public Speaking', 'Teamwork', 'Problem Solving', 'Leadership'];
                         @endphp
 
                         @foreach ($skillOptions as $skill)
@@ -297,32 +289,45 @@
                         </h3>
                         <div class="flex-1 border-t border-gray-300"></div>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label for="cv" class="block text-sm font-medium text-gray-700">CV (PDF • Max 1 MB)</label>
-                            <input id="cv" name="cv_document" type="file" accept=".pdf"
-                                class="mt-1 block w-full text-sm rounded-lg
-                                focus:border-[#009DA9] focus:ring-[#009DA9]
-                                file:mr-4 file:py-2 file:px-3
-                                file:rounded-lg file:border file:border-[#009DA9]
-                                file:text-[#009DA9] file:bg-white
-                                hover:file:bg-[#009DA9]/10 hover:file:text-[#007C85]" />
-                            @error('cv')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
+                    <div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium">Ekspetasi Gaji</label>
+                            <div class="mt-1 flex rounded-lg shadow-sm">
+                                <span class="inline-flex items-center px-3 rounded-l-lg border border-r-0 bg-gray-50 text-gray-500">Rp</span>
+                                <input type="number" name="ekspektasi_gaji"
+                                    class="flex-1 rounded-r-lg border border-gray-300 focus:ring-2 focus:ring-cyan-500"
+                                    placeholder="Ekspetasi Gaji" inputmode="numeric" autocomplete="number" id="ekspetasi_gaji" :value="old('ekspetasi_gaji')" required>
+                            </div>
+                            <p class="text-sm text-red-600 mt-1" x-text="errors.ekspetasi_gaji?.[0]" x-show="errors.ekspetasi_gaji"></p>
                         </div>
-                        <div>
-                            <label for="doc_tambahan" class="block text-sm font-medium text-gray-700">Dokumen Tambahan (PDF • Max 5 MB)</label>
-                            <input id="doc_tambahan" name="doc_tambahan" type="file" accept=".pdf"
-                                class="mt-1 block w-full text-sm rounded-lg
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="cv" class="block text-sm font-medium text-gray-700">CV (PDF • Max 1 MB)</label>
+                                <input id="cv" name="cv_document" type="file" accept=".pdf"
+                                    class="mt-1 block w-full text-sm rounded-lg
                                 focus:border-[#009DA9] focus:ring-[#009DA9]
                                 file:mr-4 file:py-2 file:px-3
                                 file:rounded-lg file:border file:border-[#009DA9]
                                 file:text-[#009DA9] file:bg-white
                                 hover:file:bg-[#009DA9]/10 hover:file:text-[#007C85]" />
-                            @error('doc_tambahan')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
+                                @error('cv')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div>
+                                <label for="doc_tambahan" class="block text-sm font-medium text-gray-700">Dokumen Tambahan (PDF • Max 5 MB)</label>
+                                <input id="doc_tambahan" name="doc_tambahan" type="file" accept=".pdf"
+                                    class="mt-1 block w-full text-sm rounded-lg
+                                focus:border-[#009DA9] focus:ring-[#009DA9]
+                                file:mr-4 file:py-2 file:px-3
+                                file:rounded-lg file:border file:border-[#009DA9]
+                                file:text-[#009DA9] file:bg-white
+                                hover:file:bg-[#009DA9]/10 hover:file:text-[#007C85]" />
+                                @error('doc_tambahan')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
                         </div>
                     </div>
                 </div>

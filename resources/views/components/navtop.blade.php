@@ -10,7 +10,7 @@
 
             <!-- Main Nav -->
             <div class="hidden sm:flex space-x-6 items-center">
-                <x-nav-link class="text-xl font-medium" href="{{ route('dashboard') }}" :active="request()->routeIs('dashboard')">Home</x-nav-link>
+                <x-nav-link class="text-xl font-medium" href="{{ route('welcome') }}" :active="request()->routeIs('welcome')">Home</x-nav-link>
                 <x-nav-link class="text-xl font-medium" href="{{ route('joblist') }}" :active="request()->routeIs('joblist') || request()->routeIs('jobdetail')">Job</x-nav-link>
                 @auth
                 @if(Auth::user()->role === 'user')

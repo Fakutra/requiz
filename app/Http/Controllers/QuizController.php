@@ -17,6 +17,20 @@ use Carbon\Carbon;
 
 class QuizController extends Controller
 {
+    public function intro(Request $request, string $slug)
+    {
+        if (! $request->hasValidSignature()) {
+            abort(403, 'Invalid signature.');
+        }
+
+        $test = Test::with('position')->where('slug', $slug)->firstOrFail();
+
+        // nomor pertama (atau logic kamu sendiri)
+        $startUrl = URL::signedRoute('quiz.start', ['slug' => $test->slug, 'no' => 1]);
+
+        return view('quiz-intro', compact('test'));
+    }
+
     // GET /quiz/{slug}
     public function start(Request $request, $slug)
     {
@@ -126,14 +140,14 @@ class QuizController extends Controller
             $optionMaps = $shuffle['option_maps'] ?? [];
             foreach ($questions as $q) {
                 if (!isset($optionMaps[$q->id])) {
-                    $letters = ['A','B','C','D','E'];
+                    $letters = ['A', 'B', 'C', 'D', 'E'];
                     // hanya huruf yang ada teksnya
-                    $present = array_values(array_filter($letters, fn($L) => !empty($q->{'option_'.strtolower($L)})));
+                    $present = array_values(array_filter($letters, fn($L) => !empty($q->{'option_' . strtolower($L)})));
                     $shuffled = $present;
                     shuffle($shuffled);
                     // tampil A..E berisi huruf asli sesuai hasil shuffle
                     $map = [];
-                    foreach (['A','B','C','D','E'] as $i => $slot) {
+                    foreach (['A', 'B', 'C', 'D', 'E'] as $i => $slot) {
                         $map[$slot] = $shuffled[$i] ?? null; // bisa null kalau opsi tidak sampai E
                     }
                     $optionMaps[$q->id] = $map; // contoh: ["A"=>"C","B"=>"A","C"=>"E","D"=>"B","E"=>"D"]
@@ -146,8 +160,8 @@ class QuizController extends Controller
             foreach ($questions as $q) {
                 if (!isset($optionMaps[$q->id])) {
                     $map = [];
-                    foreach (['A','B','C','D','E'] as $L) {
-                        $map[$L] = !empty($q->{'option_'.strtolower($L)}) ? $L : null;
+                    foreach (['A', 'B', 'C', 'D', 'E'] as $L) {
+                        $map[$L] = !empty($q->{'option_' . strtolower($L)}) ? $L : null;
                     }
                     $optionMaps[$q->id] = $map;
                 }
@@ -173,16 +187,16 @@ class QuizController extends Controller
 
         // Jawaban tersimpan (huruf **asli**)
         $savedRaw = Answer::where('test_section_result_id', $sectionResult->id)
-            ->get()->mapWithKeys(fn ($a) => [$a->question_id => (string) $a->answer]);
+            ->get()->mapWithKeys(fn($a) => [$a->question_id => (string) $a->answer]);
 
         // Siapkan data untuk view: opsi ditata A..E tapi teks diambil dari huruf asli via map
         $prepared = $questions->map(function ($q) use ($shuffle, $savedRaw) {
             $map = $shuffle['option_maps'][$q->id] ?? [];
             $displayOptions = [];
-            foreach (['A','B','C','D','E'] as $L) {
+            foreach (['A', 'B', 'C', 'D', 'E'] as $L) {
                 $orig = $map[$L] ?? null;
                 if ($orig) {
-                    $key = 'option_'.strtolower($orig);
+                    $key = 'option_' . strtolower($orig);
                     $txt = $q->$key;
                     if (!empty($txt)) $displayOptions[$L] = $txt;
                 }
@@ -191,15 +205,18 @@ class QuizController extends Controller
             // tentukan checked untuk tipe objektif (konversi dari huruf asli -> huruf tampil)
             $checked = [];
             $saved = $savedRaw[$q->id] ?? null;
-            if (in_array($q->type, ['PG','Poin'])) {
+            if (in_array($q->type, ['PG', 'Poin'])) {
                 if ($saved) {
-                    foreach (['A','B','C','D','E'] as $L) {
-                        if (($map[$L] ?? null) === $saved) { $checked[] = $L; break; }
+                    foreach (['A', 'B', 'C', 'D', 'E'] as $L) {
+                        if (($map[$L] ?? null) === $saved) {
+                            $checked[] = $L;
+                            break;
+                        }
                     }
                 }
             } elseif ($q->type === 'Multiple') {
-                $origin = collect(explode(',', (string)$saved))->map(fn($x)=>strtoupper(trim($x)))->filter()->all();
-                foreach (['A','B','C','D','E'] as $L) {
+                $origin = collect(explode(',', (string)$saved))->map(fn($x) => strtoupper(trim($x)))->filter()->all();
+                foreach (['A', 'B', 'C', 'D', 'E'] as $L) {
                     if (in_array($map[$L] ?? '', $origin, true)) $checked[] = $L;
                 }
             } elseif ($q->type === 'Essay') {
@@ -217,16 +234,120 @@ class QuizController extends Controller
             ];
         });
 
+        $preparedArray = $prepared->values()->all(); // 0..N-1 numerik
+        $answeredNos = [];
+        foreach ($preparedArray as $i => $row) {
+            $answeredNos[$i + 1] = !empty($row['checked']);
+        }
+
+        session([
+            "quiz.{$test->id}.prepared_questions" => $preparedArray,
+            "quiz.{$test->id}.answered_nos"       => $answeredNos,
+            "quiz.{$test->id}.current_section_id" => $currentSection->id,
+            "quiz.{$test->id}.deadline"           => $deadline,
+        ]);
+
+        // === Single-question helpers ===
+        $totalQuestions = $prepared->count();
+        $currentNo = max(1, min($totalQuestions, (int) request('no', 1)));
+        $currentIdx = $currentNo - 1;
+        $currentQ = $prepared[$currentIdx] ?? null;
+
+        $answeredMap = $prepared->mapWithKeys(
+            fn($q) => [$q['id'] => !empty($q['checked'])]
+        );
+
+        $prevNo = max(1, $currentNo - 1);
+        $nextNo = min($totalQuestions, $currentNo + 1);
+
+        $prevUrl = URL::signedRoute('quiz.start', ['slug' => $test->slug, 'no' => $prevNo]);
+        $nextUrl = URL::signedRoute('quiz.start', ['slug' => $test->slug, 'no' => $nextNo]);
+
+
         return response()->view('quiz', [
             'test'           => $test,
             'sections'       => $sections,
             'currentSection' => $currentSection,
             'questions'      => $prepared,
+            'currentQ'       => $currentQ,
+            'currentNo'      => $currentNo,
+            'totalQuestions' => $totalQuestions,
+            'answeredMap'    => $answeredMap,
+            'prevUrl'        => $prevUrl,
+            'nextUrl'        => $nextUrl,
             'testResult'     => $testResult,
             'sectionResult'  => $sectionResult,
             'deadline'       => $deadline,
-        ])->header('Cache-Control','no-store, no-cache, must-revalidate, max-age=0')
-          ->header('Pragma','no-cache');
+        ])->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache');
+    }
+
+    public function question(Request $request, $slug)
+    {
+        // param no (1-based)
+        $no = (int) $request->query('no', 1);
+
+        // Ambil data sama kayak di start() tapi fokus ke 1 soal aktif
+        $test = Test::with('position')->where('slug', $slug)->firstOrFail();
+
+        $prepared = session("quiz.{$test->id}.prepared_questions");
+        if (empty($prepared) || !is_array($prepared)) {
+            return response()->json([
+                'error' => 'QUIZ_SESSION_MISSING',
+                'message' => 'Sesi quiz tidak ditemukan (buka dari halaman start).'
+            ], 403);
+        }
+
+        $currentSectionId = (int) session("quiz.{$test->id}.current_section_id");
+
+        [$currentQ, $currentNo, $totalQuestions, $answeredMap, $prevUrl, $nextUrl, $prevNo, $nextNo] =
+            $this->buildQuestionPayload($test, $no);
+
+        // Render partial Blade jadi string
+        $html = view('_question', [
+            'currentQ'         => $currentQ,
+            'currentNo'        => $currentNo,
+            'totalQuestions'   => $totalQuestions,
+        ])->render();
+
+        return response()->json([
+            'html'        => $html,
+            'currentNo'   => $currentNo,
+            'total'       => $totalQuestions,
+            'prevUrl'     => $prevUrl,  // balikin URL yang SUDAH di-generate server (boleh signed)
+            'nextUrl'     => $nextUrl,
+            'answeredMap' => $answeredMap,
+            'prevNo'      => $prevNo,
+            'nextNo'      => $nextNo,
+            'section_id'   => $currentSectionId, 
+            // opsional: id soal biar js gampang
+            'qid'         => $currentQ['id'] ?? null,
+            'qtype'       => $currentQ['type'] ?? null,
+            'optionMap'   => $currentQ['option_map'] ?? [],
+        ]);
+    }
+
+    private function buildQuestionPayload(Test $test, int $no)
+    {
+        // …ambil $sections, $currentSection, $questions (array prepared) seperti di start()
+        // di sini disederhanakan:
+        $questions = session("quiz.{$test->id}.prepared_questions"); // atau rebuild sesuai start()
+
+        $total = count($questions);
+        $no = max(1, min($no, $total));
+        $q = $questions[$no - 1];
+
+        $prevNo = $no > 1 ? $no - 1 : null;
+        $nextNo = $no < $total ? $no + 1 : null;
+
+        // generate URL next/prev (boleh pakai signedRoute kalau mau)
+        $prevUrl = $no > 1 ? URL::signedRoute('quiz.q', ['slug' => $test->slug, 'no' => $no - 1]) : null;
+        $nextUrl = $no < $total ? URL::signedRoute('quiz.q', ['slug' => $test->slug, 'no' => $no + 1]) : null;
+
+        // map answered buat navigator (kalau masih dipakai)
+        $answeredMap = []; // isi sesuai jawaban tersimpan
+
+        return [$q, $no, $total, $answeredMap, $prevUrl, $nextUrl, $prevNo, $nextNo];
     }
 
     // POST /quiz/{slug}
@@ -265,7 +386,7 @@ class QuizController extends Controller
 
         // Validasi urutan: first unfinished
         $ordered = $test->sections()
-            ->when(Schema::hasColumn('test_sections', 'order'), fn($q)=>$q->orderBy('order'))
+            ->when(Schema::hasColumn('test_sections', 'order'), fn($q) => $q->orderBy('order'))
             ->orderBy('id')->get();
 
         $firstUnfinished = $ordered->first(function ($s) use ($testResult) {
@@ -358,7 +479,7 @@ class QuizController extends Controller
 
         // hanya boleh di section aktif
         $ordered = $test->sections()
-            ->when(Schema::hasColumn('test_sections', 'order'), fn($q)=>$q->orderBy('order'))
+            ->when(Schema::hasColumn('test_sections', 'order'), fn($q) => $q->orderBy('order'))
             ->orderBy('id')->get();
 
         $firstUnfinished = $ordered->first(function ($s) use ($testResult) {
@@ -431,16 +552,20 @@ class QuizController extends Controller
                 if ($withScore) {
                     switch ($q->type) {
                         case 'PG':
-                            $score = (strtoupper((string)$q->answer) === $normalized) ? 1 : 0; break;
+                            $score = (strtoupper((string)$q->answer) === $normalized) ? 1 : 0;
+                            break;
                         case 'Multiple':
-                            $correct = collect(explode(',', (string)$q->answer))->map(fn($x)=>strtoupper(trim($x)))->filter();
-                            $user    = collect(explode(',', $normalized))->map(fn($x)=>strtoupper(trim($x)))->filter();
-                            $score = $user->count() && $user->diff($correct)->isEmpty() && $correct->diff($user)->isEmpty() ? 1 : 0; break;
+                            $correct = collect(explode(',', (string)$q->answer))->map(fn($x) => strtoupper(trim($x)))->filter();
+                            $user    = collect(explode(',', $normalized))->map(fn($x) => strtoupper(trim($x)))->filter();
+                            $score = $user->count() && $user->diff($correct)->isEmpty() && $correct->diff($user)->isEmpty() ? 1 : 0;
+                            break;
                         case 'Poin':
-                            $map = ['A'=>$q->point_a,'B'=>$q->point_b,'C'=>$q->point_c,'D'=>$q->point_d,'E'=>$q->point_e];
-                            $score = $map[$normalized] ?? 0; break;
+                            $map = ['A' => $q->point_a, 'B' => $q->point_b, 'C' => $q->point_c, 'D' => $q->point_d, 'E' => $q->point_e];
+                            $score = $map[$normalized] ?? 0;
+                            break;
                         case 'Essay':
-                            $score = null; break;
+                            $score = null;
+                            break;
                     }
                 }
 
@@ -468,7 +593,7 @@ class QuizController extends Controller
         foreach ($questions as $q) {
             if (!in_array($q->id, $existingQids, true)) {
                 $blankScore = match ($q->type) {
-                    'PG','Multiple','Poin' => 0,
+                    'PG', 'Multiple', 'Poin' => 0,
                     default => null,
                 };
 
@@ -517,7 +642,7 @@ class QuizController extends Controller
         if (!$testResult) return;
 
         $sections = $test->sections()
-            ->when(Schema::hasColumn('test_sections', 'order'), fn($q)=>$q->orderBy('order'))
+            ->when(Schema::hasColumn('test_sections', 'order'), fn($q) => $q->orderBy('order'))
             ->orderBy('id')->get();
 
         foreach ($sections as $section) {

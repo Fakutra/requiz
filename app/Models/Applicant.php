@@ -9,23 +9,25 @@ use Carbon\Carbon;
 class Applicant extends Model
 {
     protected $fillable = [
-<<<<<<< HEAD
         'user_id',
         'batch_id',
         'position_id',
+        'name',
+        'email',
+        'nik',
+        'no_telp',
+        'tpt_lahir',
+        'tgl_lahir',
+        'alamat',
         'pendidikan',
         'universitas',
         'jurusan',
         'thn_lulus',
         'skills',
         'cv_document',
+        'ekspektasi_gaji',
         'status',
         'additional_doc',
-=======
-        'name','email','nik','no_telp','tpt_lahir','tgl_lahir','alamat',
-        'pendidikan','universitas','jurusan','thn_lulus','status',
-        'cv_document','position_id','batch_id',
->>>>>>> origin/main
     ];
 
     protected $dates = ['tgl_lahir'];
@@ -41,7 +43,6 @@ class Applicant extends Model
         if (!$this->tgl_lahir) return null;
         return Carbon::parse($this->tgl_lahir)->age;
     }
-<<<<<<< HEAD
 
     public function getCurrentStageAttribute()
     {
@@ -58,6 +59,4 @@ class Applicant extends Model
         return $this->hasMany(\App\Models\EmailLog::class);
     }
     
-=======
->>>>>>> origin/main
 }

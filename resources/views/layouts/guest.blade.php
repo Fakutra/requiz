@@ -1,3 +1,9 @@
+@props([
+'showNav' => true,
+'showFooter' => true,
+'title' => config('app.name', 'ReQuiz - All in One Recruitment Platform'),
+])
+
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 
@@ -24,13 +30,27 @@
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-    <style>[x-cloak] { display: none !important; }</style>
+    <style>
+        [x-cloak] {
+            display: none !important;
+        }
+    </style>
 
 </head>
 
 <body class="bg-gray-100">
     <div class="min-h-screen flex flex-col">
+        @php
+        $hideNavRoutes = ['quiz.intro', 'quiz.start']; // daftar halaman quiz yang mau disembunyiin navnya
+        @endphp
+
+        @if (!in_array(Route::currentRouteName(), $hideNavRoutes))
         @include('components.navtop')
+        @else
+        <div class="bg-white border-b border-gray-100 sticky top-0 z-50 shadow text-sm flex items-center justify-center">
+            <x-application-logo class="h-10 w-10 text-gray-800" />
+        </div>
+        @endif
 
         <!-- Page Heading -->
         @if (isset($header))

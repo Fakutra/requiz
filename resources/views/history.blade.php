@@ -1,9 +1,8 @@
 <x-guest-layout>
     <div class="py-12">
         <div class="max-w-7xl mx-auto px-6 sm:px-6 lg:px-8">
-            <div>
-                <h1 class="mb-4 font-bold sm:text-4xl text-3xl">Riwayat Lamaran</h1>
-            </div>
+
+            <h1 class="mb-4 font-bold sm:text-4xl text-3xl">Riwayat Lamaran</h1>
 
             {{-- BANNER: Status --}}
             @if (session('status'))
@@ -26,8 +25,9 @@
 
             <div class="space-y-6 mt-6">
                 @forelse ($applicants as $applicant)
-                {{-- CARD --}}
-                <article class="rounded-2xl border border-zinc-200 bg-white shadow-sm p-6 mb-6">
+
+                {{-- ===== CARD ===== --}}
+                <article class="rounded-2xl border border-zinc-200 bg-white shadow-sm p-6">
                     {{-- HEADER --}}
                     <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4 border-b border-zinc-100">
                         <div>
@@ -63,28 +63,33 @@
                     </header>
 
                     {{-- PROGRESS TRACKER --}}
-                    <section>
-                        <h4 class="text-sm font-semibold text-zinc-700 mb-4 tracking-wide">PROSES SELEKSI</h4>
+                    @php
+                    $stageMapping = [
+                    'Seleksi Administrasi' => ['index' => 0, 'result' => 'pending'],
+                    'Tidak Lolos Seleksi Administrasi' => ['index' => 0, 'result' => 'failed'],
 
-                        @php
-                        $stageMapping = [
-                        'Seleksi Administrasi' => ['index' => 0, 'result' => 'pending'],
-                        'Tidak Lolos Seleksi Administrasi' => ['index' => 0, 'result' => 'failed'],
-                        'Tes Tulis' => ['index' => 1, 'result' => 'pending'],
-                        'Tidak Lolos Tes Tulis' => ['index' => 1, 'result' => 'failed'],
-                        'Seleksi Tes Praktek' => ['index' => 2, 'result' => 'pending'],
-                        'Tidak Lolos Technical Test' => ['index' => 2, 'result' => 'failed'],
-                        'Interview' => ['index' => 3, 'result' => 'pending'],
-                        'Tidak Lolos Interview' => ['index' => 3, 'result' => 'failed'],
-                        'Offering' => ['index' => 4, 'result' => 'pending'],
-                        'Menolak Offering' => ['index' => 4, 'result' => 'failed'],
-                        'Menerima Offering' => ['index' => 4, 'result' => 'passed'],
-                        ];
-                        $info = $stageMapping[$applicant->status] ?? ['index' => -1, 'result' => 'unknown'];
-                        $currentIndex = $info['index'];
-                        $currentResult = $info['result'];
-                        $stages = ['Seleksi Administrasi','Tes Tulis','Technical Test','Interview','Offering'];
-                        @endphp
+                    'Tes Tulis' => ['index' => 1, 'result' => 'pending'],
+                    'Tidak Lolos Tes Tulis' => ['index' => 1, 'result' => 'failed'],
+
+                    'Technical Test' => ['index' => 2, 'result' => 'pending'],
+                    'Seleksi Tes Praktek' => ['index' => 2, 'result' => 'pending'],
+                    'Tidak Lolos Technical Test' => ['index' => 2, 'result' => 'failed'],
+
+                    'Interview' => ['index' => 3, 'result' => 'pending'],
+                    'Tidak Lolos Interview' => ['index' => 3, 'result' => 'failed'],
+
+                    'Offering' => ['index' => 4, 'result' => 'pending'],
+                    'Menolak Offering' => ['index' => 4, 'result' => 'failed'],
+                    'Menerima Offering' => ['index' => 4, 'result' => 'passed'],
+                    ];
+                    $info = $stageMapping[$applicant->status] ?? ['index' => -1, 'result' => 'unknown'];
+                    $currentIndex = $info['index'];
+                    $currentResult = $info['result'];
+                    $stages = ['Seleksi Administrasi','Tes Tulis','Technical Test','Interview','Offering'];
+                    @endphp
+
+                    <section class="mb-5">
+                        <h4 class="text-sm font-semibold text-zinc-700 mb-4 tracking-wide">PROSES SELEKSI</h4>
 
                         <div class="flex sm:items-center sm:flex-row flex-col gap-3 sm:gap-4">
                             @foreach ($stages as $i => $name)
@@ -93,15 +98,19 @@
                                 $isCurrent=$i===$currentIndex && $currentResult==='pending' ;
                                 $isFailed=$i===$currentIndex && $currentResult==='failed' ;
                                 $active=$isPassed || $isCurrent;
+
+                                $highlight=$isCurrent ? 'shadow-[0_0_0_6px_rgba(2,132,199,.12)] animate-pulse' : '' ;
                                 @endphp
 
                                 {{-- Node --}}
                                 <div class="flex min-w-0 flex-col items-center">
-                                <div class="grid place-items-center w-10 h-10 rounded-full
-                @if($isFailed) bg-rose-500 text-white
-                @elseif($isPassed) bg-emerald-500 text-white
-                @elseif($isCurrent) bg-[#009DA9] text-white ring-4 ring-[#009DA9]/15
-                @else bg-zinc-200 text-zinc-500 @endif">
+                                <div class="grid place-items-center w-10 h-10 rounded-full transition-all duration-300 {{ $highlight }}
+                                        @if($isFailed) bg-rose-500 text-white
+                                        @elseif($isPassed) bg-emerald-500 text-white
+                                        @elseif($isCurrent) bg-[#009DA9] text-white ring-4 ring-[#009DA9]/15
+                                        @else bg-zinc-200 text-zinc-500 @endif"
+                                    @if($isCurrent) aria-current="step" @endif
+                                    aria-label="{{ $name }}: {{ $isFailed ? 'gagal' : ($isPassed ? 'selesai' : ($isCurrent ? 'berjalan' : 'belum')) }}">
                                     @if ($isFailed)
                                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -115,10 +124,10 @@
                                     @endif
                                 </div>
                                 <p class="mt-2 w-24 text-center text-xs leading-snug
-                @if($isFailed) text-rose-600 font-semibold
-                @elseif($isPassed) text-zinc-600
-                @elseif($isCurrent) text-[#009DA9] font-semibold
-                @else text-zinc-400 @endif">
+                                        @if($isFailed) text-rose-600 font-semibold
+                                        @elseif($isPassed) text-zinc-600
+                                        @elseif($isCurrent) text-[#009DA9] font-bold
+                                        @else text-zinc-400 @endif">
                                     {{ $name }}
                                 </p>
                         </div>
@@ -131,627 +140,360 @@
             </div>
             </section>
 
-            {{-- TES TULIS --}}
-            @if ($applicant->status === 'Tes Tulis' && $applicant->position && $applicant->position->test)
             @php
-            $t = $applicant->position->test;
-            $now = now();
-            $open = $t->test_date;
-            $close = $t->test_closed;
-            $end = $t->test_end;
-
-            $tr = \App\Models\TestResult::where('applicant_id', $applicant->id)->where('test_id', $t->id)->first();
-            $hasStarted = $tr && ($tr->started_at ||
-            \App\Models\TestSectionResult::where('test_result_id', $tr->id)->whereNotNull('started_at')->exists());
-
-            $inWindow = $open && $close ? $now->between($open, $close, true) : false;
-            $beforeEnd = $end ? $now->lt($end) : true;
-            $canEnter = $inWindow || ($hasStarted && $beforeEnd);
-
-                                @if ($sched)
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                                        <div>
-                                            <div class="text-gray-600">Jadwal</div>
-                                            <div class="font-medium text-gray-900">
-                                                {{ optional($sched->schedule_date)?->translatedFormat('l, d F Y, H:i') }}
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <div class="text-gray-600">Zoom</div>
-                                            <div class="font-medium">
-                                                <a href="{{ $sched->zoom_link }}" target="_blank" class="text-blue-600 hover:underline">
-                                                    Buka Link Zoom
-                                                </a>
-                                                @if ($sched->zoom_id)
-                                                    <div class="text-gray-500">ID: {{ $sched->zoom_id }}</div>
-                                                @endif
-                                                @if ($sched->zoom_passcode)
-                                                    <div class="text-gray-500">Passcode: {{ $sched->zoom_passcode }}</div>
-                                                @endif
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <div class="text-gray-600">Batas Upload</div>
-                                            <div class="font-medium {{ $sched->upload_deadline && $now->gt($sched->upload_deadline) ? 'text-red-600' : 'text-gray-900' }}">
-                                                {{ optional($sched->upload_deadline)?->translatedFormat('l, d F Y, H:i') ?? '—' }}
-                                            </div>
-                                        </div>
-                                    </div>
-
-            <div class="mt-6 pt-4 border-t border-zinc-100 text-center space-y-3">
-                <p class="text-sm text-zinc-600">
-                    Tes akan dimulai dari
-                    <span class="font-semibold text-sky-700">{{ optional($open)?->translatedFormat('l, d F Y, H:i') ?? '—' }}</span>
-                    sampai
-                    <span class="font-semibold text-sky-700">{{ optional($close)?->translatedFormat('l, d F Y, H:i') ?? '—' }}</span><br>
-                    Batas akhir pengerjaan tes dapat dilakukan sampai:
-                    <span class="font-semibold text-rose-600">{{ optional($end)?->translatedFormat('l, d F Y, H:i') ?? '—' }}</span>
-                </p>
-
-                                    {{-- Ringkasan jawaban terbaru --}}
-                                    @if ($latest)
-                                        <div class="mt-5 text-sm text-gray-700">
-                                            <div class="font-medium">Upload Terbaru:</div>
-                                            <div>
-                                                PDF:
-                                                <a class="text-blue-600 hover:underline"
-                                                   href="{{ \Illuminate\Support\Facades\Storage::url($latest->answer_path) }}"
-                                                   target="_blank">Lihat berkas</a>
-                                            </div>
-                                            <div>
-                                                Rekaman Layar:
-                                                <a class="text-blue-600 hover:underline"
-                                                   href="{{ $latest->screen_record_url }}" target="_blank">Buka tautan</a>
-                                            </div>
-                                            <div class="text-gray-500">
-                                                Dikumpulkan: {{ $latest->submitted_at->translatedFormat('d F Y, H:i') }}
-                                            </div>
-                                        </div>
-                                    @endif
-
-                <p class="text-xs text-zinc-500">
-                    Tombol akan tersedia selama periode dibuka. Setelah pengerjaan dimulai, maka pengerjaan tetap bisa dilanjutkan sampai batas akhir periode.</p>
-            </div>
-            @endif
-
-                                    {{-- Modal Upload --}}
-                                    <div id="uploadModal-{{ $sched->id }}" class="fixed inset-0 z-50 hidden">
-                                        <div class="absolute inset-0 bg-black/50" data-close-upload="{{ $sched->id }}"></div>
-                                        <div class="relative mx-auto my-12 max-w-md bg-white rounded-2xl shadow-xl p-6">
-                                            <h3 class="text-lg font-semibold text-gray-800">Upload Jawaban Technical Test</h3>
-                                            <form class="mt-4" method="POST" action="{{ route('technical.answers.store', $sched) }}" enctype="multipart/form-data">
-                                                @csrf
-
-            <div class="mt-6 rounded-xl border border-indigo-200 bg-indigo-50 p-4">
-                <h4 class="text-sm font-semibold text-indigo-800 mb-3">Technical Test</h4>
-
-                                                <div class="space-y-4">
-                                                    <div>
-                                                        <label class="block text-sm font-medium text-gray-700">File Jawaban (PDF)</label>
-                                                        <input type="file" name="answer_pdf" accept="application/pdf" required class="mt-1 block w-full text-sm border rounded-lg p-2">
-                                                        <p class="text-xs text-gray-500 mt-1">Maks 10MB. Format PDF.</p>
-                                                    </div>
-                                                    <div>
-                                                        <label class="block text-sm font-medium text-gray-700">Link Rekaman Layar (Google Drive)</label>
-                                                        <input type="url" name="screen_record_url" required placeholder="https://drive.google.com/..."
-                                                               value="{{ old('screen_record_url', optional($latest)->screen_record_url) }}"
-                                                               class="mt-1 block w-full text-sm border rounded-lg p-2">
-                                                    </div>
-                                                </div>
-                                                <div class="mt-6 flex justify-end gap-2">
-                                                    <button type="button" class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50" data-close-upload="{{ $sched->id }}">Batal</button>
-                                                    <button type="submit" class="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700" {{ $withinDeadline ? '' : 'disabled' }}>Kirim</button>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </div>
-                                @else
-                                    <div class="text-sm text-gray-600">
-                                        Jadwal Technical Test belum ditentukan untuk posisi ini. Silahkan cek kembali secara berkala.
-                                    </div>
-                                @endif
-                            </div>
-                        @endif
-
-                        {{-- Aksi: Interview (jadwal per posisi - tampilan sama dengan Technical Test) --}}
-                        @if ($applicant->status === 'Interview' && $applicant->position)
-                            @php
-                                $iSch = ($applicant->position->interviewSchedules ?? collect())
-                                    ->sortByDesc('schedule_start')
-                                    ->first();
-
-                                $now = now();
-                                $start = $iSch?->schedule_start;
-                                $end = $iSch?->schedule_end;
-
-                                $earlyMinutes = 10;
-                                $canEarly = $start ? $now->gte($start->copy()->subMinutes($earlyMinutes)) : false;
-                                $inWindow = $start && $end ? $now->between($start, $end, true) : false;
-                                $canJoin = $iSch && $iSch->zoom_link ? $inWindow || $canEarly : false;
-                            @endphp
-
-                            <div class="mt-6 p-4 rounded-xl border border-indigo-200 bg-indigo-50">
-                                <h4 class="text-md font-semibold text-indigo-800 mb-3">Interview</h4>
-
-                                @if ($iSch)
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                                        <div>
-                                            <div class="text-gray-600">Jadwal</div>
-                                            <div class="font-medium text-gray-900">
-                                                {{ $start?->translatedFormat('l, d F Y, H:i') ?? '—' }}
-                                                —
-                                                {{ $end?->translatedFormat('H:i') ?? '—' }}
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <div class="text-gray-600">Meeting</div>
-                                            <div class="font-medium">
-                                                @if ($iSch->zoom_link)
-                                                    <a href="{{ $iSch->zoom_link }}" target="_blank" class="text-blue-600 hover:underline">
-                                                        Buka Link Zoom
-                                                    </a>
-                                                @else
-                                                    <span class="text-gray-500">Belum ada link</span>
-                                                @endif
-                                                @if ($iSch->zoom_id || $iSch->zoom_passcode)
-                                                    <div class="text-gray-500">ID: {{ $iSch->zoom_id ?? '—' }}</div>
-                                                    <div class="text-gray-500">Passcode: {{ $iSch->zoom_passcode ?? '—' }}</div>
-                                                @endif
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    @if ($iSch->keterangan)
-                                        <div class="mt-4 text-sm text-gray-700">
-                                            <div class="font-semibold text-gray-800">Keterangan:</div>
-                                            <div class="whitespace-pre-line">{{ $iSch->keterangan }}</div>
-                                        </div>
-                                    @endif
-                                @else
-                                    <div class="text-sm text-gray-600">
-                                        Jadwal Interview belum ditentukan untuk posisi ini.
-                                    </div>
-                                @endif
-                            </div>
-                        @endif
-                    </div>
-                @empty
-                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                        <div class="p-6 text-gray-900 text-center">
-                            <p>Anda belum pernah melamar pekerjaan apapun.</p>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="text-zinc-600">Zoom</div>
-                        <div class="font-medium">
-                            <a href="{{ $sched->zoom_link }}" target="_blank" class="text-sky-700 hover:underline">Buka Link Zoom</a>
-                            @if ($sched->zoom_id)
-                            <div class="text-zinc-500">ID: {{ $sched->zoom_id }}</div>
-                            @endif
-                            @if ($sched->zoom_passcode)
-                            <div class="text-zinc-500">Passcode: {{ $sched->zoom_passcode }}</div>
-                            @endif
-                        </div>
-                    </div>
-                    <div>
-                        <div class="text-zinc-600">Batas Upload</div>
-                        <div class="font-medium {{ $sched->upload_deadline && $now->gt($sched->upload_deadline) ? 'text-rose-600' : 'text-zinc-900' }}">
-                            {{ optional($sched->upload_deadline)?->translatedFormat('l, d F Y, H:i') ?? '—' }}
-                        </div>
-                    </div>
-                </div>
-
-                @if ($sched->keterangan)
-                <div class="mt-4 text-sm text-zinc-700">
-                    <div class="font-semibold text-zinc-800">Keterangan:</div>
-                    <div class="whitespace-pre-line">{{ $sched->keterangan }}</div>
-                </div>
-                @endif
-
-                @if ($latest)
-                <div class="mt-5 text-sm text-zinc-700 space-y-1">
-                    <div class="font-medium">Upload Terbaru:</div>
-                    <div>PDF:
-                        <a class="text-sky-700 hover:underline"
-                            href="{{ \Illuminate\Support\Facades\Storage::url($latest->answer_path) }}" target="_blank">
-                            Lihat berkas
-                        </a>
-                    </div>
-                    <div>Rekaman Layar:
-                        <a class="text-sky-700 hover:underline" href="{{ $latest->screen_record_url }}" target="_blank">
-                            Buka tautan
-                        </a>
-                    </div>
-                    <div class="text-zinc-500">
-                        Dikumpulkan: {{ $latest->submitted_at->translatedFormat('d F Y, H:i') }}
-                    </div>
-                </div>
-                @endif
-
-                <div class="mt-5">
-                    <button type="button"
-                        class="px-5 h-10 inline-flex items-center rounded-full bg-indigo-600 text-white text-sm font-medium
-                       hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                        data-open-upload="{{ $sched->id }}" {{ $withinDeadline ? '' : 'disabled' }}>
-                        {{ $latest ? 'Upload Ulang Jawaban' : 'Upload Jawaban Technical Test' }}
-                    </button>
-                    <p class="text-xs text-zinc-500 mt-2">Format PDF + link Google Drive rekaman layar.</p>
-                </div>
-
-                {{-- Modal Upload --}}
-                <div id="uploadModal-{{ $sched->id }}" class="fixed inset-0 z-50 hidden">
-                    <div class="absolute inset-0 bg-black/50" data-close-upload="{{ $sched->id }}"></div>
-                    <div class="relative mx-auto my-12 max-w-md rounded-2xl bg-white p-6 shadow-xl">
-                        <h3 class="text-lg font-semibold text-zinc-900">Upload Jawaban Technical Test</h3>
-
-                        <form class="mt-4 space-y-4" method="POST"
-                            action="{{ route('technical.answers.store', $sched) }}" enctype="multipart/form-data">
-                            @csrf
-                            <input type="hidden" name="applicant_id" value="{{ $applicant->id }}">
-
-                            <div>
-                                <label class="block text-sm font-medium text-zinc-700">File Jawaban (PDF)</label>
-                                <input type="file" name="answer_pdf" accept="application/pdf" required
-                                    class="mt-1 block w-full text-sm rounded-lg border border-zinc-300 p-2">
-                                <p class="mt-1 text-xs text-zinc-500">Maks 10MB. Format PDF.</p>
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium text-zinc-700">Link Rekaman Layar (Google Drive)</label>
-                                <input type="url" name="screen_record_url" required
-                                    placeholder="https://drive.google.com/..."
-                                    value="{{ old('screen_record_url', optional($latest)->screen_record_url) }}"
-                                    class="mt-1 block w-full text-sm rounded-lg border border-zinc-300 p-2">
-                            </div>
-
-                            <div class="mt-6 flex justify-end gap-2">
-                                <button type="button"
-                                    class="px-4 h-10 rounded-lg border border-zinc-300 text-zinc-700 hover:bg-zinc-50"
-                                    data-close-upload="{{ $sched->id }}">Batal</button>
-                                <button type="submit"
-                                    class="px-4 h-10 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700"
-                                    {{ $withinDeadline ? '' : 'disabled' }}>Kirim</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-                @else
-                <p class="text-sm text-zinc-600">Jadwal Technical Test belum ditentukan untuk posisi ini.</p>
-                @endif
-            </div>
-            @endif
-
-            {{-- INTERVIEW --}}
-            @if ($applicant->status === 'Interview' && $applicant->position)
-            @php
-            $iSch = ($applicant->position->interviewSchedules ?? collect())->sortByDesc('schedule_start')->first();
-            $now = now();
-            $start = $iSch?->schedule_start;
-            $end = $iSch?->schedule_end;
-            $earlyMinutes = 10;
-            $canEarly = $start ? $now->gte($start->copy()->subMinutes($earlyMinutes)) : false;
-            $inWindow = $start && $end ? $now->between($start, $end, true) : false;
-            $canJoin = $iSch && $iSch->zoom_link ? $inWindow || $canEarly : false;
+            // flags per section
+            $showQuiz = ($applicant->status === 'Tes Tulis') && optional($applicant->position)->test;
+            $showTech = in_array($applicant->status, ['Technical Test','Seleksi Tes Praktek']) && $applicant->position;
+            $showInterview = ($applicant->status === 'Interview') && $applicant->position;
             @endphp
 
-            <div class="mt-6 rounded-xl border border-indigo-200 bg-indigo-50 p-4">
-                <h4 class="text-sm font-semibold text-indigo-800 mb-3">Interview</h4>
+            @if ($showQuiz || $showTech || $showInterview)
+            <section class="mt-6 rounded-xl border border-[#009DA9] p-4" style="background-color:#EFFEFF;">
 
-                @if ($iSch)
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                    <div>
-                        <div class="text-zinc-600">Jadwal</div>
-                        <div class="font-medium text-zinc-900">
-                            {{ $start?->translatedFormat('l, d F Y, H:i') ?? '—' }} —
-                            {{ $end?->translatedFormat('H:i') ?? '—' }}
+                {{-- ===== QUIZ ===== --}}
+                @if ($showQuiz)
+                @php
+                $test = $applicant->position->test;
+                $now = now();
+                $open = $test->test_date;
+                $close = $test->test_closed;
+                $end = $test->test_end;
+
+                $tr = \App\Models\TestResult::where('applicant_id',$applicant->id)
+                ->where('test_id',$test->id)->first();
+
+                $hasStarted = $tr && ($tr->started_at ||
+                \App\Models\TestSectionResult::where('test_result_id',$tr->id)
+                ->whereNotNull('started_at')->exists());
+
+                $inWindow = ($open && $close) ? $now->between($open, $close, true) : false;
+                $beforeEnd = $end ? $now->lt($end) : true;
+                $canEnter = $inWindow || ($hasStarted && $beforeEnd);
+
+                $startUrl = URL::signedRoute('quiz.intro', ['slug' => $test->slug]);
+                @endphp
+
+                <div>
+                    <h4 class="text-sm font-semibold text-[#009DA9] mb-3">Tes Tulis (Online Quiz)</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+                        <div>
+                            <div class="text-zinc-600">Dibuka</div>
+                            <div class="font-medium text-zinc-900">{{ $open?->translatedFormat('l, d F Y, H:i') ?? '—' }}</div>
+                        </div>
+                        <div>
+                            <div class="text-zinc-600">Ditutup</div>
+                            <div class="font-medium text-zinc-900">{{ $close?->translatedFormat('l, d F Y, H:i') ?? '—' }}</div>
+                        </div>
+                        <div>
+                            <div class="text-zinc-600">Batas Akhir Pengerjaan</div>
+                            <div class="font-medium text-rose-600">{{ $end?->translatedFormat('l, d F Y, H:i') ?? '—' }}</div>
                         </div>
                     </div>
-                    <div>
-                        <div class="text-zinc-600">Meeting</div>
-                        <div class="font-medium">
-                            @if ($iSch->zoom_link)
-                            <a href="{{ $iSch->zoom_link }}" target="_blank" class="text-sky-700 hover:underline">Buka Link Zoom</a>
-                            @else
-                            <span class="text-zinc-500">Belum ada link</span>
+
+                    <div class="mt-4 flex items-center gap-3">
+                        <a href="{{ $startUrl }}"
+                            @if(!$canEnter) aria-disabled="true" @endif
+                            class="px-5 h-10 inline-flex items-center rounded-lg bg-[#009DA9] text-white text-sm font-medium hover:bg-sky-700 {{ $canEnter ? '' : 'pointer-events-none opacity-50' }}">
+                            {{ $hasStarted ? 'Lanjutkan Tes' : 'Mulai Tes' }}
+                        </a>
+                        @unless($canEnter)
+                        <span class="text-xs text-zinc-500">Tombol aktif saat periode dibuka.</span>
+                        @endunless
+                    </div>
+                </div>
+                @endif
+
+                {{-- divider --}}
+                @if (($showQuiz && $showTech) || ($showQuiz && $showInterview))
+                <div class="border-t border-[#009DA9]/20 my-4"></div>
+                @endif
+
+                {{-- ===== TECHNICAL TEST ===== --}}
+                @if ($showTech)
+                @php
+                $now = now();
+                $techSched = $techSched
+                ?? optional($applicant->position->technicalSchedules ?? collect())
+                ->sortByDesc('schedule_date')->first();
+
+                $withinDeadline = isset($techSched->upload_deadline) ? $now->lte($techSched->upload_deadline) : true;
+                $latestTech = $latestTech
+                ?? \App\Models\TechnicalTestAnswer::where('applicant_id',$applicant->id)
+                ->latest('submitted_at')->first();
+
+                $modalKey = $techSched?->id ? $techSched->id . '-' . $applicant->id : 'x-' . $applicant->id;
+                @endphp
+
+                @if ($techSched)
+                <div>
+                    <h4 class="text-md font-semibold text-[#009DA9] mb-3">Technical Test</h4>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                        <div>
+                            <div class="text-zinc-600">Dijadwalkan pada</div>
+                            <div class="font-medium text-zinc-900">
+                                {{ $techSched->schedule_date?->translatedFormat('l, d F Y, H:i') ?? '—' }}
+                            </div>
+
+                            @if (!empty($techSched->zoom_id) || !empty($techSched->zoom_passcode))
+                            <div class="mt-2 text-gray-500 text-sm">
+                                <div>ID: {{ $techSched->zoom_id ?? '—' }}</div>
+                                <div>Passcode: {{ $techSched->zoom_passcode ?? '—' }}</div>
+                            </div>
                             @endif
-                            @if ($iSch->zoom_id || $iSch->zoom_passcode)
-                            <div class="text-zinc-500">ID: {{ $iSch->zoom_id ?? '—' }}</div>
-                            <div class="text-zinc-500">Passcode: {{ $iSch->zoom_passcode ?? '—' }}</div>
-                            @endif
+                        </div>
+
+                        <div>
+                            <div class="text-zinc-600">Batas Upload</div>
+                            <div class="font-medium {{ ($techSched->upload_deadline && $now->gt($techSched->upload_deadline)) ? 'text-rose-600' : 'text-zinc-900' }}">
+                                {{ $techSched->upload_deadline?->translatedFormat('l, d F Y, H:i') ?? '—' }}
+                            </div>
+                        </div>
+
+                        @if (!empty($techSched->module_url) || !empty($techSched->module_path))
+                        <div>
+                            <div class="text-zinc-600">Modul / Brief</div>
+                            <div class="font-medium">
+                                @if (!empty($techSched->module_url))
+                                <a href="{{ $techSched->module_url }}" class="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">Buka Modul</a>
+                                @else
+                                <a href="{{ \Illuminate\Support\Facades\Storage::url($techSched->module_path) }}" class="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">Unduh Modul</a>
+                                @endif
+                            </div>
+                        </div>
+                        @endif
+                    </div>
+
+                    @if ($latestTech)
+                    <div class="mt-5 text-sm text-gray-700">
+                        <div class="font-medium">Upload Terbaru:</div>
+                        <div>PDF:
+                            <a class="text-blue-600 hover:underline"
+                                href="{{ \Illuminate\Support\Facades\Storage::url($latestTech->answer_path) }}"
+                                target="_blank" rel="noopener noreferrer">Lihat berkas</a>
+                        </div>
+                        @if (!empty($latestTech->screen_record_url))
+                        <div>Rekaman Layar:
+                            <a class="text-blue-600 hover:underline" href="{{ $latestTech->screen_record_url }}" target="_blank" rel="noopener noreferrer">Buka tautan</a>
+                        </div>
+                        @endif
+                        <div class="text-gray-500">
+                            Dikumpulkan: {{ $latestTech->submitted_at?->translatedFormat('d F Y, H:i') ?? '—' }}
+                        </div>
+                    </div>
+                    @endif
+
+                    <div class="mt-6 flex flex-wrap items-center gap-2">
+                        @if (!empty($techSched->zoom_link))
+                        <button type="button"
+                            onclick="window.open('{{ $techSched->zoom_link }}', '_blank', 'noopener,noreferrer')"
+                            class="px-4 h-10 rounded-lg border border-[#009DA9] text-[#009DA9] text-sm font-medium hover:bg-[#009DA9]/10 inline-flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                            </svg>
+                            Buka Link Zoom
+                        </button>
+                        @else
+                        <span class="text-gray-500">Belum ada link</span>
+                        @endif
+
+                        <button type="button"
+                            class="px-4 h-10 inline-flex items-center rounded-lg bg-[#009DA9] text-white text-sm font-medium hover:bg-[#008a95] disabled:opacity-50 disabled:cursor-not-allowed"
+                            data-open-upload="upload-{{ $techSched->id }}-{{ $applicant->id }}" {{ $withinDeadline ? '' : 'disabled' }}>
+                            {{ $latestTech ? 'Upload Ulang Jawaban' : 'Upload Jawaban Technical Test' }}
+                        </button>
+                    </div>
+
+                    {{-- Modal Upload tetap sama --}}
+                    <div data-modal="upload-{{ $techSched->id }}-{{ $applicant->id }}" class="fixed inset-0 z-50 hidden">
+                        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" data-close-upload="upload-{{ $techSched->id }}-{{ $applicant->id }}"></div>
+                        <div class="relative mx-auto my-12 max-w-md rounded-2xl bg-white p-6 shadow-xl">
+                            <h3 class="text-lg font-semibold text-zinc-900">Upload Jawaban Technical Test</h3>
+                            <form class="mt-4 space-y-4" method="POST"
+                                action="{{ route('technical.answers.store', $techSched) }}" enctype="multipart/form-data">
+                                @csrf
+                                <input type="hidden" name="applicant_id" value="{{ $applicant->id }}">
+                                <div>
+                                    <label class="block text-sm font-medium text-zinc-700">File Jawaban (PDF)</label>
+                                    <input type="file" name="answer_pdf" accept="application/pdf" required
+                                        class="mt-1 block w-full text-sm rounded-lg border border-zinc-300 p-2">
+                                    <p class="mt-1 text-xs text-zinc-500">Maks 10MB. Format PDF.</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-zinc-700">Link Rekaman Layar (Google Drive)</label>
+                                    <input type="url" name="screen_record_url" required placeholder="https://drive.google.com/..."
+                                        value="{{ old('screen_record_url', optional($latestTech)->screen_record_url) }}"
+                                        class="mt-1 block w-full text-sm rounded-lg border border-zinc-300 p-2">
+                                </div>
+                                <div class="mt-6 flex justify-end gap-2">
+                                    <button type="button"
+                                        class="px-4 h-10 rounded-lg border border-zinc-300 text-zinc-700 hover:bg-zinc-50"
+                                        data-close-upload="upload-{{ $techSched->id }}-{{ $applicant->id }}">Batal</button>
+                                    <button type="submit" class="px-4 h-10 rounded-lg bg-[#009DA9] text-white hover:bg-[#008a95]"
+                                        {{ $withinDeadline ? '' : 'disabled' }}>Kirim</button>
+                                </div>
+                            </form>
                         </div>
                     </div>
                 </div>
                 @else
-                <p class="text-sm text-zinc-600">Jadwal Interview belum ditentukan untuk posisi ini.</p>
+                <div class="text-yellow-700 bg-yellow-50 border border-yellow-300 rounded-md p-3 flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                    </svg>
+                    <span>Jadwal Technical Test belum ditentukan.</span>
+                </div>
                 @endif
-            </div>
+                @endif
+
+
+                {{-- divider --}}
+                @if (($showTech && $showInterview) || (!$showTech && $showQuiz && $showInterview))
+                <div class="border-t border-[#009DA9]/20 my-4"></div>
+                @endif
+
+                {{-- ===== INTERVIEW ===== --}}
+                @if ($showInterview)
+                @php
+                $iSch = optional($applicant->position->interviewSchedules ?? collect())
+                ->sortByDesc('schedule_start')->first();
+                $now = now();
+                $start = $iSch?->schedule_start;
+                $end = $iSch?->schedule_end;
+                $earlyMinutes = 10;
+                $canEarly = $start ? $now->gte($start->copy()->subMinutes($earlyMinutes)) : false;
+                $inWindow = $start && $end ? $now->between($start, $end, true) : false;
+                $canJoin = $iSch && $iSch->zoom_link ? ($inWindow || $canEarly) : false;
+                @endphp
+
+                @if ($iSch)
+                <div class="text-md">
+                    <h4 class="font-semibold text-[#009DA9] mb-3">Interview</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                        <div>
+                            <div class="text-gray-600">Dijadwalkan pada</div>
+                            <div class="font-medium text-gray-900">
+                                {{ $start?->translatedFormat('l, d F Y, H:i') ?? '—' }} — {{ $end?->translatedFormat('H:i') ?? '—' }}
+                            </div>
+                        </div>
+
+                        @if (!empty($iSch->keterangan))
+                        <div class="text-gray-700">
+                            <div class="font-semibold text-gray-800">Keterangan:</div>
+                            <div class="whitespace-pre-line">{{ $iSch->keterangan }}</div>
+                        </div>
+                        @endif
+
+                    </div>
+
+                    <div class="mt-6">
+                        @if ($iSch->zoom_id || $iSch->zoom_passcode)
+                        <div class="text-gray-500 mt-2">ID: {{ $iSch->zoom_id ?? '—' }}</div>
+                        <div class="text-gray-500">Passcode: {{ $iSch->zoom_passcode ?? '—' }}</div>
+                        @endif
+                        @if ($iSch->zoom_link)
+                        <button type="button"
+                            onclick="window.open('{{ $iSch->zoom_link }}', '_blank', 'noopener,noreferrer')"
+                            class="px-5 h-10 mt-4 inline-flex items-center rounded-lg bg-[#009DA9] text-white text-sm font-medium hover:bg-[#008a95] hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                            </svg>
+                            Buka Link Zoom
+                        </button>
+                        @else
+                        <span class="text-gray-500">Belum ada link</span>
+                        @endif
+                    </div>
+
+                </div>
+                @else
+                <div
+                    class="text-yellow-700 bg-yellow-50 border border-yellow-300 rounded-md p-3 flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                            d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                    </svg>
+                    <h4>Jadwal Interview belum ditentukan.</h4>
+                </div>
+                @endif
+                @endif
+            </section>
             @endif
+
+            {{-- ===== OFFERING ===== --}}
+            @if ($applicant->status === 'Offering' || $applicant->status === 'Menerima Offering')
+            <section class="mt-6 rounded-xl border border-[#009DA9] p-4" style="background-color:#EFFEFF;">
+                <h4 class="text-md font-semibold text-[#009DA9] mb-2">Offering</h4>
+                <p class="text-zinc-800 text-md">Selamat anda lolos, silahkan untuk memeriksa email.</p>
+            </section>
+            @endif
+
             </article>
+
             @empty
-            <div class="text-zinc-700">Anda belum pernah melamar pekerjaan apapun.</div>
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6 text-gray-900 text-center">
+                    <p>Anda belum pernah melamar pekerjaan apapun.</p>
+                </div>
+            </div>
             @endforelse
         </div>
-
-        {{-- SweetAlert sukses kirim lamaran --}}
-        @push('scripts')
-        @if (session('success'))
-        <script>
-            window.addEventListener('load', () => {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Berhasil!',
-                    text: 'Selamat, lamaran anda telah berhasil dikirim!',
-                    confirmButtonColor: '#009DA9'
-                });
-            });
-        </script>
-        @endif
-
-        {{-- Modal handlers (upload & start test) --}}
-        <script>
-            document.addEventListener('click', (e) => {
-                const openU = e.target.closest('[data-open-upload]');
-                const closeU = e.target.closest('[data-close-upload]');
-                if (openU) {
-                    const id = openU.getAttribute('data-open-upload');
-                    document.getElementById(`uploadModal-${id}`)?.classList.remove('hidden');
-                }
-                if (closeU) {
-                    const id = closeU.getAttribute('data-close-upload');
-                    document.getElementById(`uploadModal-${id}`)?.classList.add('hidden');
-                }
-
-                const startBtn = e.target.closest('.start-test-btn');
-                if (startBtn) {
-                    const url = startBtn.dataset.url;
-                    const title = startBtn.dataset.title || 'Mulai Tes?';
-                    const m = document.getElementById('startTestModal');
-                    document.getElementById('startTestTitle').textContent = title;
-                    m.classList.remove('hidden');
-                    const confirm = document.getElementById('confirmStartBtn');
-                    const handler = () => {
-                        window.location.href = url;
-                    };
-                    confirm.addEventListener('click', handler, {
-                        once: true
-                    });
-                    m.querySelector('[data-close-start-modal]').addEventListener('click', () => m.classList.add('hidden'), {
-                        once: true
-                    });
-                }
-            });
-        </script>
-        @endpush
-
-        {{-- MODAL: Konfirmasi Mulai Tes --}}
-        <div id="startTestModal" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true" aria-labelledby="startTestTitle">
-            <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" data-close-start-modal></div>
-            <div class="relative mx-auto my-12 max-w-md bg-white rounded-2xl shadow-xl p-6">
-                <h3 class="text-lg font-semibold text-zinc-900" id="startTestTitle">Mulai Tes?</h3>
-                <p class="text-sm text-zinc-600 mt-2">
-                    Anda hanya dapat mengerjakan tes ini <span class="font-semibold">SATU KALI</span>. Setelah dimulai, waktu akan berjalan.
-                </p>
-                <div class="mt-6 flex justify-end gap-2">
-                    <button type="button" class="px-4 h-10 rounded-lg border border-zinc-300 text-zinc-700 hover:bg-zinc-50" data-close-start-modal>Batal</button>
-                    <button type="button" class="px-4 h-10 rounded-lg bg-sky-600 text-white hover:bg-sky-700" id="confirmStartBtn">Mulai</button>
-                </div>
-            </div>
-        </div>
-
-    {{-- MODAL: Konfirmasi Mulai Tes Tulis --}}
-    <div id="startTestModal" class="fixed inset-0 z-50 hidden">
-        <div class="absolute inset-0 bg-black/50" data-close-start-modal></div>
-        <div class="relative mx-auto my-12 max-w-md bg-white rounded-2xl shadow-xl p-6">
-            <h3 class="text-lg font-semibold text-gray-800" id="startTestTitle">Mulai Tes?</h3>
-            <p class="text-sm text-gray-600 mt-2">
-                Anda hanya dapat mengerjakan tes ini <span class="font-semibold">SATU KALI</span>. Setelah dimulai,
-                waktu akan berjalan.
-            </p>
-            <div class="mt-6 flex justify-end gap-2">
-                <button type="button" class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50" data-close-start-modal>
-                    Batal
-                </button>
-                <button type="button" class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700" id="confirmStartBtn">
-                    Mulai
-                </button>
-            </div>
-        </div>
     </div>
 
-    {{-- MODAL: Sukses Upload Jawaban (otomatis tampil jika session('success')) --}}
-    @if (session('success'))
-        <div id="successUploadModal" class="fixed inset-0 z-50">
-            <div class="absolute inset-0 bg-black/50" data-close-success></div>
-            <div class="relative mx-auto my-12 max-w-md bg-white rounded-2xl shadow-xl p-6">
-                <div class="flex items-start gap-3">
-                    <svg class="w-6 h-6 flex-shrink-0 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                    <div>
-                        <h3 class="text-lg font-semibold text-zinc-900">Berhasil</h3>
-                        <p class="text-sm text-zinc-700 mt-1">{{ session('success') }}</p>
-                    </div>
-                </div>
-                <div class="mt-6 text-right">
-                    <button type="button" class="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700" data-close-success>
-                        OK
-                    </button>
-                </div>
-            </div>
-        </div>
-        @endif
-    </div>
-
+    {{-- Scripts --}}
     <script>
-        // ===== Modal "Mulai Tes" (Tes Tulis)
-        (() => {
-            // ===== helpers
-            const lockScroll = () => document.body.classList.add('overflow-hidden');
-            const unlockScroll = () => document.body.classList.remove('overflow-hidden');
+        const lockScroll = () => document.body.classList.add('overflow-hidden');
+        const unlockScroll = () => document.body.classList.remove('overflow-hidden');
 
-            // ===== START TEST MODAL
-            const startModal = document.getElementById('startTestModal');
-            const startTitleEl = document.getElementById('startTestTitle');
-            const startConfirm = document.getElementById('confirmStartBtn');
-            let targetUrl = null,
-                lastFocus = null;
+        document.addEventListener('click', (e) => {
+            const openBtn = e.target.closest('[data-open-upload]');
+            if (openBtn && !openBtn.hasAttribute('disabled')) {
+                const key = openBtn.getAttribute('data-open-upload');
 
-            function openStart(url, title) {
-                targetUrl = url;
-                startTitleEl.textContent = title ? `Mulai Tes: ${title}?` : 'Mulai Tes?';
-                lastFocus = document.activeElement;
-                startModal.classList.remove('hidden');
+                // cari modal secara global, bukan cuma di dalam article
+                const modal = document.querySelector(`[data-modal="${key}"]`);
+                if (!modal) return;
+
+                modal.classList.remove('hidden');
                 lockScroll();
-                // fokus-in tombol konfirmasi
-                startConfirm?.focus();
 
-            function closeModal() {
-                modal.classList.add('hidden');
-                document.body.classList.remove('overflow-hidden');
-                targetUrl = null;
-            }
+                const firstInput = modal.querySelector('input, button, textarea, select, a[href]');
+                if (firstInput) firstInput.focus();
 
-            document.querySelectorAll('.start-test-btn').forEach(btn => {
-                if (!btn.hasAttribute('disabled')) {
-                    btn.addEventListener('click', () => openModal(btn.dataset.url, btn.dataset.title));
-                }
-            });
-
-            confirmBtn.addEventListener('click', () => {
-                if (targetUrl) window.location.href = targetUrl;
-            });
-
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal || e.target.hasAttribute('data-close-start-modal')) {
-                    closeModal();
-                }
-            });
-
-            document.addEventListener('keydown', (e) => {
-                if (!modal.classList.contains('hidden') && e.key === 'Escape') {
-                    closeModal();
-                }
-            });
-        })();
-
-        // ===== Modal Upload Technical Test (generic handler)
-        (function() {
-            document.querySelectorAll('[data-open-upload]').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    if (btn.hasAttribute('disabled')) return;
-                    const id = btn.getAttribute('data-open-upload');
-                    const modal = document.getElementById('uploadModal-' + id);
-                    if (!modal) return;
-
-                    modal.classList.remove('hidden');
-                    document.body.classList.add('overflow-hidden');
-
-                    // close via overlay or button with data-close-upload
-                    modal.addEventListener('click', (e) => {
-                        if (e.target === modal || e.target.matches(`[data-close-upload="${id}"]`)) {
-                            modal.classList.add('hidden');
-                            document.body.classList.remove('overflow-hidden');
-                        }
-                    });
-
-                    // close via ESC
-                    const escHandler = (e) => {
-                        if (!modal.classList.contains('hidden') && e.key === 'Escape') {
-                            modal.classList.add('hidden');
-                            document.body.classList.remove('overflow-hidden');
-                            document.removeEventListener('keydown', escHandler);
-                        }
-                    };
-                    document.addEventListener('keydown', escHandler);
-                });
-
-                // click overlay / tombol close (auto lepas)
-                const clickHandler = (e) => {
-                    if (e.target === startModal || e.target.hasAttribute('data-close-start-modal')) {
-                        closeStart();
+                const onClose = (evt) => {
+                    if (evt.target.matches(`[data-close-upload="${key}"]`) || evt.target === modal) {
+                        modal.classList.add('hidden');
+                        unlockScroll();
+                        modal.removeEventListener('click', onClose);
+                        document.removeEventListener('keydown', onEsc);
                     }
                 };
-                startModal.addEventListener('click', clickHandler, {
-                    once: true
-                });
-            }
-
-            function closeStart() {
-                startModal.classList.add('hidden');
-                unlockScroll();
-                targetUrl = null;
-                lastFocus?.focus?.();
-            }
-
-            startConfirm?.addEventListener('click', () => {
-                if (targetUrl) location.href = targetUrl;
-            });
-
-            // ===== UPLOAD MODAL (generic)
-            function openUpload(id) {
-                const m = document.getElementById('uploadModal-' + id);
-                if (!m) return;
-                m.classList.remove('hidden');
-                lockScroll();
-
-                const escHandler = (e) => {
-                    if (e.key === 'Escape') closeUpload(m, id);
-                };
-                document.addEventListener('keydown', escHandler, {
-                    once: true
-                });
-
-                const clickHandler = (e) => {
-                    if (e.target === m || e.target.matches(`[data-close-upload="${id}"]`)) {
-                        closeUpload(m, id);
+                const onEsc = (evt) => {
+                    if (evt.key === 'Escape') {
+                        modal.classList.add('hidden');
+                        unlockScroll();
+                        modal.removeEventListener('click', onClose);
+                        document.removeEventListener('keydown', onEsc);
                     }
                 };
-                m.addEventListener('click', clickHandler, {
-                    once: true
-                });
+                modal.addEventListener('click', onClose);
+                document.addEventListener('keydown', onEsc);
             }
-
-            function closeUpload(m) {
-                m.classList.add('hidden');
-                unlockScroll();
-            }
-
-            // ===== SUCCESS MODAL (auto show if exists)
-            const successModal = document.getElementById('successUploadModal');
-            if (successModal) {
-                lockScroll();
-                const close = () => {
-                    successModal.remove();
-                    unlockScroll();
-                };
-                successModal.addEventListener('click', (e) => {
-                    if (e.target === successModal || e.target.hasAttribute('data-close-success')) close();
-                }, {
-                    once: true
-                });
-                document.addEventListener('keydown', (e) => {
-                    if (e.key === 'Escape') close();
-                }, {
-                    once: true
-                });
-            }
-
-            // ===== EVENT DELEGATION (1 listener untuk semuanya)
-            document.addEventListener('click', (e) => {
-                const startBtn = e.target.closest('.start-test-btn');
-                if (startBtn && !startBtn.hasAttribute('disabled')) {
-                    openStart(startBtn.dataset.url, startBtn.dataset.title);
-                    return;
-                }
-                const upBtn = e.target.closest('[data-open-upload]');
-                if (upBtn && !upBtn.hasAttribute('disabled')) {
-                    openUpload(upBtn.getAttribute('data-open-upload'));
-                }
-            });
-
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') close();
-            }, { once: true });
-        })();
+        });
     </script>
+
+    @push('scripts')
+    @if (session('success'))
+    <script>
+        window.addEventListener('load', () => {
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil!',
+                text: 'Selamat, lamaran anda telah berhasil dikirim!',
+                confirmButtonColor: '#009DA9'
+            });
+        });
+    </script>
+    @endif
+    @endpush
 </x-guest-layout>
