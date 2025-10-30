@@ -26,9 +26,10 @@ class Applicant extends Model
         'jurusan',
         'thn_lulus',
         'skills',
-        'ekspektasi_gaji',
         'cv_document',
+        'ekspektasi_gaji',
         'status',
+        'additional_doc',
     ];
 
     // Biar tgl_lahir otomatis jadi Carbon instance

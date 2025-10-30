@@ -16,7 +16,11 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
-        'email_verified_at',
+        'phone_number',
+        'birthplace',
+        'birthdate',
+        'address',
+        'identity_num',
     ];
 
     protected $hidden = [
@@ -27,6 +31,7 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
+        'tgl_lahir' => 'date',
     ];
 
     // Relasi contoh (jika ada)

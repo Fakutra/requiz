@@ -10,9 +10,11 @@ export default {
     ],
 
     safelist: [
-        'backdrop-blur-sm', // tambahkan ini
+        'backdrop-blur-sm',
         'backdrop-blur-md',
-        'backdrop-blur-lg'
+        'backdrop-blur-lg',
+        'bg-[#EFFEFF]',
+        'border-[#009DA9]'
     ],
 
     theme: {
