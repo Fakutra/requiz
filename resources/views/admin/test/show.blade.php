@@ -42,7 +42,7 @@
                                                     <span class="badge bg-primary">Soal</span>
                                                 @endif
                                                 @if ($section->shuffle_options)
-                                                    <span class="badge bg-secondary">Opsi</span>
+                                                    <span class="badge bg-primary">Opsi</span>
                                                 @endif
                                             </td>
                                             <td class="text-center">
