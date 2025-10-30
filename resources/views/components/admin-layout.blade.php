@@ -152,7 +152,7 @@
             <h3 class="text-3xl font-bold mb-4">ReQuiz Admin</h3>
             <div>
                 <h4 class="text-lg font-semibold">Kontak</h4>
-                <p class="text-sm text-gray-400">Email: support@namabrand.com</p>
+                <p class="text-sm text-gray-400">Email: delanda.f@gmail.com</p>
                 <p class="text-sm text-gray-400">Telepon: +62 812 3456 7890</p>
                 <div class="flex space-x-4 mt-4">
                     <a href="#" class="hover:text-white"><i class="fab fa-facebook"></i></a>
