@@ -112,16 +112,18 @@
                         jobOpen: {{ request()->is('admin/batch') ? 'true' : 'false' }},
                         quizOpen: {{ request()->is('quiz') ? 'true' : 'false' }},
                         scheduleOpen: {{ request()->is('tech-answers*') || request()->is('interview-schedule*') ? 'true' : 'false' }},
-                        
+
                         toggleMenu(menu) {
-                            // Tutup semua menu dulu
+                            // Toggle menu diklik
+                            this[menu] = !this[menu];
+
+                            // Tutup yang lain, tapi beri jeda 50ms biar animasinya overlap halus
                             const menus = ['userOpen', 'jobOpen', 'quizOpen', 'scheduleOpen'];
                             menus.forEach(m => {
-                                if (m !== menu) this[m] = false;
+                                if (m !== menu && this[m]) {
+                                    setTimeout(() => this[m] = false, 50);
+                                }
                             });
-
-                            // Toggle menu yang diklik
-                            this[menu] = !this[menu];
                         }
                     }">
                     <div class="flex items-center justify-between mb-8">
@@ -169,13 +171,14 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                                 </svg>
                             </button>
-                            <div x-show="userOpen" x-transition:enter="transition ease-out duration-300"
-                                    x-transition:enter-start="opacity-0 scale-95 -translate-y-2"
-                                    x-transition:enter-end="opacity-100 scale-100 translate-y-0"
-                                    x-transition:leave="transition ease-in duration-200"
-                                    x-transition:leave-start="opacity-100 scale-100 translate-y-0"
-                                    x-transition:leave-end="opacity-0 scale-95 -translate-y-2"
-                                    class="mt-3 ml-10 space-y-4 text-sm text-gray-600">
+                            <div x-show="userOpen" 
+                                x-transition:enter="transition ease-out duration-300"
+                                x-transition:enter-start="opacity-0 -translate-y-2"
+                                x-transition:enter-end="opacity-100 translate-y-0"
+                                x-transition:leave="transition ease-in duration-300"
+                                x-transition:leave-start="opacity-100 translate-y-0"
+                                x-transition:leave-end="opacity-0 -translate-y-2"
+                                class="mt-3 ml-10 space-y-4 text-sm text-gray-600">
                                 <a href="{{ route('admin.user.index') }}"
                                     class="block hover:text-blue-600 no-underline {{ request()->is('admin/user') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
                                     Admin
@@ -207,12 +210,12 @@
                                 </svg>
                             </button>
                             <div x-show="jobOpen" x-transition:enter="transition ease-out duration-300"
-                                    x-transition:enter-start="opacity-0 scale-95 -translate-y-2"
-                                    x-transition:enter-end="opacity-100 scale-100 translate-y-0"
-                                    x-transition:leave="transition ease-in duration-200"
-                                    x-transition:leave-start="opacity-100 scale-100 translate-y-0"
-                                    x-transition:leave-end="opacity-0 scale-95 -translate-y-2"
-                                    class="mt-3 ml-10 space-y-4 text-sm text-gray-600">
+                                x-transition:enter-start="opacity-0 -translate-y-2"
+                                x-transition:enter-end="opacity-100 translate-y-0"
+                                x-transition:leave="transition ease-in duration-0"
+                                x-transition:leave-start="opacity-100 translate-y-0"
+                                x-transition:leave-end="opacity-0 -translate-y-2"
+                                class="mt-3 ml-10 space-y-4 text-sm text-gray-600">
                                 <a href="{{ route('batch.index') }}"
                                     class="block hover:text-blue-600 no-underline {{ request()->is('admin/batch') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
                                     Batch
@@ -236,14 +239,14 @@
                                 </svg>
                             </button>
                             <div x-show="quizOpen" x-transition:enter="transition ease-out duration-300"
-                                    x-transition:enter-start="opacity-0 scale-95 -translate-y-2"
-                                    x-transition:enter-end="opacity-100 scale-100 translate-y-0"
-                                    x-transition:leave="transition ease-in duration-200"
-                                    x-transition:leave-start="opacity-100 scale-100 translate-y-0"
-                                    x-transition:leave-end="opacity-0 scale-95 -translate-y-2"
-                                    class="mt-3 ml-10 space-y-4 text-sm text-gray-600">
+                                x-transition:enter-start="opacity-0 -translate-y-2"
+                                x-transition:enter-end="opacity-100 translate-y-0"
+                                x-transition:leave="transition ease-in duration-0"
+                                x-transition:leave-start="opacity-100 translate-y-0"
+                                x-transition:leave-end="opacity-0 -translate-y-2"
+                                class="mt-3 ml-10 space-y-4 text-sm text-gray-600">
                                 <a href="{{ route('test.index') }}"
-                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/quiz') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">Quiz</a>
+                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/test') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">Quiz</a>
                                 <a href="{{ route('question.index') }}"
                                     class="block hover:text-blue-600 no-underline {{ request()->is('admin/question') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">Question</a>
                                 <a href="{{ route('bundle.index') }}"
@@ -267,18 +270,18 @@
                                 </svg>
                             </button>
                             <div x-show="scheduleOpen" x-transition:enter="transition ease-out duration-300"
-                                    x-transition:enter-start="opacity-0 scale-95 -translate-y-2"
-                                    x-transition:enter-end="opacity-100 scale-100 translate-y-0"
-                                    x-transition:leave="transition ease-in duration-200"
-                                    x-transition:leave-start="opacity-100 scale-100 translate-y-0"
-                                    x-transition:leave-end="opacity-0 scale-95 -translate-y-2"
-                                    class="mt-3 ml-10 space-y-4 text-sm text-gray-600">
+                                x-transition:enter-start="opacity-0 -translate-y-2"
+                                x-transition:enter-end="opacity-100 translate-y-0"
+                                x-transition:leave="transition ease-in duration-300"
+                                x-transition:leave-start="opacity-100 translate-y-0"
+                                x-transition:leave-end="opacity-0 -translate-y-2"
+                                class="mt-3 ml-10 space-y-4 text-sm text-gray-600">
                                 <a href="{{ route('tech-schedule.index') }}"
-                                    class="block hover:text-blue-600 no-underline {{ request()->is('tech-answers*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/tech-schedule') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
                                     Technical Test
                                 </a>
                                 <a href="{{ route('interview-schedule.index') }}"
-                                    class="block hover:text-blue-600 no-underline {{ request()->is('interview-schedule*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/interview-schedule*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
                                     Interview
                                 </a>
                             </div>

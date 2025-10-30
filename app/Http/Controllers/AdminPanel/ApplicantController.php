@@ -24,30 +24,72 @@ class ApplicantController extends Controller
         $positionId = $request->query('position');
         $batchId    = $request->query('batch');
 
+        // Tambahkan parameter sort dan direction
+        $sort      = $request->query('sort', 'name'); // default sort by name
+        $direction = $request->query('direction', 'asc'); // default ascending
+
+        // Kolom yang diizinkan untuk pengurutan
+        $allowedSorts = [
+            'name', 'email', 'position_id', 'ekspektasi_gaji', 'umur',
+            'pendidikan', 'jurusan', 'batch_id'
+        ];
+
+        if (!in_array($sort, $allowedSorts)) {
+            $sort = 'name';
+        }
+
         $q = Applicant::query()->with(['position','batch']);
 
+        // 🔍 Pencarian
         if ($search !== '') {
             $needle = '%'.mb_strtolower($search).'%';
             $q->where(function ($w) use ($needle) {
                 $w->whereRaw('LOWER(name) LIKE ?', [$needle])
-                  ->orWhereRaw('LOWER(email) LIKE ?', [$needle])
-                  ->orWhereRaw('LOWER(jurusan) LIKE ?', [$needle])
-                  ->orWhereHas('position', fn($p) =>
-                      $p->whereRaw('LOWER(name) LIKE ?', [$needle])
-                  );
+                ->orWhereRaw('LOWER(email) LIKE ?', [$needle])
+                ->orWhereRaw('LOWER(jurusan) LIKE ?', [$needle])
+                ->orWhereHas('position', fn($p) =>
+                    $p->whereRaw('LOWER(name) LIKE ?', [$needle])
+                );
             });
         }
 
         if (!empty($positionId)) $q->where('position_id', $positionId);
         if (!empty($batchId)) $q->where('batch_id', $batchId);
 
-        $applicants = $q->orderBy('name')->paginate(15)->withQueryString();
+        // 🔹 Jika kolomnya hasil perhitungan (umur), urut manual
+        if ($sort === 'umur') {
+            $applicants = $q->get()->map(function ($a) {
+                $a->umur = $a->birth_date ? \Carbon\Carbon::parse($a->birth_date)->age : null;
+                return $a;
+            });
+
+            $applicants = $applicants->sortBy($sort, SORT_REGULAR, $direction === 'desc');
+
+            // Pagination manual
+            $page = $request->input('page', 1);
+            $perPage = 15;
+            $applicants = new \Illuminate\Pagination\LengthAwarePaginator(
+                $applicants->forPage($page, $perPage),
+                $applicants->count(),
+                $perPage,
+                $page,
+                ['path' => $request->url(), 'query' => $request->query()]
+            );
+        } else {
+            // 🔹 Jika kolom normal, urut lewat query
+            $applicants = $q->orderBy($sort, $direction)
+                ->paginate(15)
+                ->appends($request->query());
+        }
 
         $positions = Position::orderBy('name')->get(['id','name']);
         $batches   = Batch::orderBy('id')->get(['id','name']);
 
-        return view('admin.applicant.index', compact('applicants','positions','batches'));
+        return view('admin.applicant.index', compact(
+            'applicants','positions','batches','sort','direction'
+        ));
     }
+
 
     /**
      * UPDATE: dipanggil dari modal Edit

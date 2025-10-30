@@ -2,17 +2,17 @@
 <x-app-admin>
   <div x-data="applicantPage()" x-init="init()" class="space-y-6">
 
-    <h1 class="text-2xl font-bold text-blue-950">Data Applicant</h1>
+    
 
     <div class="bg-white border rounded-lg shadow-sm p-4">
+      <h1 class="text-2xl font-bold text-blue-950 mb-4">Data Applicant</h1>
        {{-- Search selalu tampil --}}
       <div class="flex w-full mb-2 items-end gap-2">
         {{-- Search --}}
         <form method="GET" action="{{ route('admin.applicant.index') }}" class="flex-1 min-w-[220px]">
-          <label class="block text-xs text-gray-500 mb-1">Cari</label>
           <div class="relative flex items-center">
             <input type="text" name="search" value="{{ request('search') }}"
-              placeholder="Nama / Email / Jurusan / Posisi..."
+              placeholder="Cari Nama / Email / Jurusan / Posisi..."
               class="w-full h-10 pl-3 pr-9 rounded text-sm 
               border-[1px] border-[#8B8B8B] 
               focus:outline-none focus:border-[#A0A0A0] focus:ring-1 focus:ring-[#A0A0A0]">
@@ -25,9 +25,8 @@
         {{-- Tombol Filter --}}
         <button type="button"
                 @click="showFilter=true"
-                class="h-10 px-3 flex items-center gap-2 rounded text-white text-sm border-[1px] border-[#8B8B8B] 
-              focus:outline-none focus:border-[#A0A0A0] focus:ring-1 focus:ring-[#A0A0A0]">
-          <x-filter-button/>
+                class="h-10 px-3 py-2 border rounded bg-gray-600 text-white flex items-center justify-center">
+          <i class="fas fa-filter"></i>
         </button>
 
         {{-- Tombol Export --}}
@@ -43,15 +42,128 @@
           <table class="table-auto w-auto text-sm border-collapse">
             <thead class="bg-gray-50 text-left text-gray-700">
               <tr>
-                <th class="px-4 py-2">No.</th>
-                <th class="px-4 py-2">Nama</th>
-                <th class="px-4 py-2">Email</th>
-                <th class="px-4 py-2">Posisi</th>
-                <th class="px-4 py-2">Ekspektasi Gaji</th>
-                <th class="px-4 py-2">Umur</th>
-                <th class="px-4 py-2">Pendidikan</th>
-                <th class="px-4 py-2">Jurusan</th>
-                <th class="px-4 py-2">Batch</th>
+                <th class="px-4 py-2 text-left whitespace-nowrap">No.</th>
+
+                {{-- Nama --}}
+                <th class="px-4 py-2 text-left whitespace-nowrap">
+                    <a href="{{ request()->fullUrlWithQuery([
+                        'sort' => 'name',
+                        'direction' => (request('sort') === 'name' && request('direction') === 'asc') ? 'desc' : 'asc'
+                    ]) }}"
+                    class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
+                        Nama
+                        <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'name' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
+                            fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </a>
+                </th>
+
+                {{-- Email --}}
+                <th class="px-4 py-2 text-left whitespace-nowrap">
+                    <a href="{{ request()->fullUrlWithQuery([
+                        'sort' => 'email',
+                        'direction' => (request('sort') === 'email' && request('direction') === 'asc') ? 'desc' : 'asc'
+                    ]) }}"
+                    class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
+                        Email
+                        <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'email' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
+                            fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </a>
+                </th>
+
+                {{-- Posisi --}}
+                <th class="px-4 py-2 text-left whitespace-nowrap">
+                    <a href="{{ request()->fullUrlWithQuery([
+                        'sort' => 'position_id',
+                        'direction' => (request('sort') === 'position_id' && request('direction') === 'asc') ? 'desc' : 'asc'
+                    ]) }}"
+                    class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
+                        Posisi
+                        <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'position_id' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
+                            fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </a>
+                </th>
+
+                {{-- Ekspektasi Gaji --}}
+                <th class="px-4 py-2 text-left whitespace-nowrap">
+                    <a href="{{ request()->fullUrlWithQuery([
+                        'sort' => 'ekspektasi_gaji',
+                        'direction' => (request('sort') === 'ekspektasi_gaji' && request('direction') === 'asc') ? 'desc' : 'asc'
+                    ]) }}"
+                    class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
+                        Ekspektasi Gaji
+                        <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'ekspektasi_gaji' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
+                            fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </a>
+                </th>
+
+                {{-- Umur --}}
+                <th class="px-4 py-2 text-left whitespace-nowrap">
+                    <a href="{{ request()->fullUrlWithQuery([
+                        'sort' => 'umur',
+                        'direction' => (request('sort') === 'umur' && request('direction') === 'asc') ? 'desc' : 'asc'
+                    ]) }}"
+                    class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
+                        Umur
+                        <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'umur' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
+                            fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </a>
+                </th>
+
+                {{-- Pendidikan --}}
+                <th class="px-4 py-2 text-left whitespace-nowrap">
+                    <a href="{{ request()->fullUrlWithQuery([
+                        'sort' => 'pendidikan',
+                        'direction' => (request('sort') === 'pendidikan' && request('direction') === 'asc') ? 'desc' : 'asc'
+                    ]) }}"
+                    class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
+                        Pendidikan
+                        <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'pendidikan' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
+                            fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </a>
+                </th>
+
+                {{-- Jurusan --}}
+                <th class="px-4 py-2 text-left whitespace-nowrap">
+                    <a href="{{ request()->fullUrlWithQuery([
+                        'sort' => 'jurusan',
+                        'direction' => (request('sort') === 'jurusan' && request('direction') === 'asc') ? 'desc' : 'asc'
+                    ]) }}"
+                    class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
+                        Jurusan
+                        <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'jurusan' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
+                            fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </a>
+                </th>
+
+                {{-- Batch --}}
+                <th class="px-4 py-2 text-left whitespace-nowrap">
+                    <a href="{{ request()->fullUrlWithQuery([
+                        'sort' => 'batch_id',
+                        'direction' => (request('sort') === 'batch_id' && request('direction') === 'asc') ? 'desc' : 'asc'
+                    ]) }}"
+                    class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
+                        Batch
+                        <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'batch_id' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
+                            fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </a>
+                </th>
+
                 <th class="px-4 py-2 text-center">Aksi</th>
               </tr>
             </thead>
