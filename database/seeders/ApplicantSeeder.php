@@ -71,6 +71,7 @@ class ApplicantSeeder extends Seeder
                 ]),
                 'ekspektasi_gaji' => $faker->numberBetween(4_500_000, 8_000_000),
                 'cv_document'     => 'cv-applicant/sample.pdf',
+                'additional_doc'  => 'doc-applicant/sample.pdf',
                 'status'          => 'Seleksi Administrasi',
                 'created_at'      => $now,
                 'updated_at'      => $now,

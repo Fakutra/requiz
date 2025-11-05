@@ -347,6 +347,17 @@
             <span class="text-gray-400">Belum upload</span>
           @endif
         </div>
+        <div>
+          <p class="text-gray-500 font-medium">Dokumen Tambahan</p>
+          @if($a->additional_doc)
+            <a href="{{ asset('storage/'.$a->additional_doc) }}" target="_blank"
+              class="text-blue-600 hover:underline">
+              Lihat Dokumen Tambahan
+            </a>
+          @else
+            <span class="text-gray-400">Belum upload</span>
+          @endif
+        </div>
       </div>
 
       {{-- Footer --}}

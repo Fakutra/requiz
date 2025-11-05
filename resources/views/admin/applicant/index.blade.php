@@ -207,6 +207,7 @@
                                 'status'      => $a->status,
                                 'skills'      => $a->skills,
                                 'cv_document' => $a->cv_document,
+                                'additional_doc' => $a->additional_doc,
                                 'age'         => $a->age,
                                 'ekspektasi_gaji' => $a->ekspektasi_gaji,
                                 'ekspektasi_gaji_formatted' => $a->ekspektasi_gaji_formatted,
@@ -236,6 +237,7 @@
                                 'status'      => $a->status,
                                 'skills'      => $a->skills,
                                 'cv_document' => $a->cv_document,
+                                'additional_doc' => $a->additional_doc,
                                 'age'         => $a->age,
                                 'ekspektasi_gaji' => $a->ekspektasi_gaji,
                               ]))">
@@ -357,6 +359,19 @@
               <div class="font-medium">-</div>
             </template>
           </div>
+        </div>
+
+        <div class="md:col-span-2">
+          <div class="text-xs text-gray-500">Dokumen Tambahan</div>
+          <template x-if="view.additional_doc">
+            <a :href="storageUrl(view.additional_doc)" target="_blank"
+              class="inline-flex items-center gap-2 px-3 py-2 mt-1 rounded bg-gray-100 hover:bg-gray-200 text-sm">
+              Lihat Dokumen Tambahan (PDF)
+            </a>
+          </template>
+          <template x-if="!view.additional_doc">
+            <div class="font-medium">-</div>
+          </template>
         </div>
 
         <div class="mt-6 flex justify-end">
@@ -501,6 +516,18 @@
                 </p>
               </template>
             </div>
+
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium">Dokumen Tambahan (PDF, maks 3MB)</label>
+              <input type="file" name="additional_doc" accept="application/pdf"
+                    class="w-full mt-1 border rounded px-3 py-2 text-sm">
+              <template x-if="form.additional_doc">
+                <p class="mt-2 text-xs">
+                  Dokumen saat ini:
+                  <a :href="storageUrl(form.additional_doc)" target="_blank" class="text-blue-600 underline">Lihat</a>
+                </p>
+              </template>
+            </div>
           </div>
 
           <div class="mt-6 flex justify-end gap-2">
@@ -538,6 +565,7 @@
         position_id:'', batch_id:'',
         status:'', skills:'',
         cv_document:null,
+        additional_doc: null,
       };
 
       return {

@@ -122,6 +122,7 @@ class ApplicantController extends Controller
             'status'      => ['nullable', Rule::in($allowedStatus)],
             'skills'      => ['nullable','string','max:5000'],
             'cv_document' => ['nullable','file','mimes:pdf','max:3072'], // 3 MB
+            'additional_doc'      => 'nullable|file|mimes:pdf|max:5120',
         ]);
 
         // Simpan data lama (hanya field yang relevan untuk log)
@@ -136,6 +137,15 @@ class ApplicantController extends Controller
             }
             $data['cv_document'] = $request->file('cv_document')->store('cv_documents', 'public');
         }
+
+        // ✅ Tambahkan ini untuk file dokumen tambahan
+        if ($request->hasFile('additional_doc')) {
+            if ($applicant->additional_doc) {
+                Storage::disk('public')->delete($applicant->additional_doc);
+            }
+            $data['additional_doc'] = $request->file('additional_doc')->store('additional_doc', 'public');
+        }
+
 
         // Update data applicant
         $applicant->update($data);
