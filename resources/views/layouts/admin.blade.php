@@ -636,7 +636,31 @@
         integrity="sha384-j1CDi7MgGQ12Z7Qab0qlWQ/Qqz24Gc6BM0thvEMVjHnfYGF0rmFCozFSxQBxwHKO" crossorigin="anonymous">
     </script>
     <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('faqPage', () => ({
+            showCreate: false,
+            showEdit: false,
+            createForm: { question: '', answer: '' },
+            editForm:   { id: null, question: '', answer: '' },
+            editAction: '#',
+
+            openCreate() {
+                this.createForm = { question: '', answer: '' };
+                this.showCreate = true;
+            },
+            openEdit(faq) {
+                this.editForm = { id: faq.id, question: faq.question, answer: faq.answer };
+                this.editAction = `{{ url('admin/faq') }}/${faq.id}`;
+                this.showEdit = true;
+            },
+            }));
+        });
+    </script>
     @stack('scripts')
+
+
 </body>
 
 </html>
