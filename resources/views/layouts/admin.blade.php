@@ -227,10 +227,8 @@
                         <div class="py-1">
                             <button @click="toggleMenu('quizOpen')"
                                 class="flex items-center w-full text-gray-700 hover:text-blue-600 focus:outline-none">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                    stroke-width="1.5" stroke="currentColor" class="size-6 me-4">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 20 20" class="size-6 me-4">
+                                    <path fill="currentColor" d="M5.5 3A2.5 2.5 0 0 0 3 5.5v9A2.5 2.5 0 0 0 5.5 17h4.1a5.5 5.5 0 0 1-.393-1H5.5A1.5 1.5 0 0 1 4 14.5v-9A1.5 1.5 0 0 1 5.5 4h9A1.5 1.5 0 0 1 16 5.5v3.707q.524.149 1 .393V5.5A2.5 2.5 0 0 0 14.5 3zm3.707 10q.149-.524.393-1H5.5a.5.5 0 0 0 0 1zM8.5 15a.5.5 0 0 0 0-1h-3a.5.5 0 0 0 0 1zM8 5a.5.5 0 0 1 .457.297l2 4.5a.5.5 0 1 1-.914.406L9.008 9H6.992l-.535 1.203a.5.5 0 0 1-.914-.406l2-4.5A.5.5 0 0 1 8 5m.564 3L8 6.731L7.436 8zM13.5 5.5a.5.5 0 0 0-1 0v1h-1a.5.5 0 0 0 0 1h1v1a.5.5 0 0 0 1 0v-1h1a.5.5 0 0 0 0-1h-1zm5.5 9a4.5 4.5 0 1 1-9 0a4.5 4.5 0 0 1 9 0m-4-2a.5.5 0 0 0-1 0V14h-1.5a.5.5 0 0 0 0 1H14v1.5a.5.5 0 0 0 1 0V15h1.5a.5.5 0 0 0 0-1H15z"/>
                                 </svg>
                                 Quiz
                                 <svg class="w-4 h-4 ml-auto transform" :class="{ 'rotate-180': quizOpen }"
@@ -314,6 +312,16 @@
                                 <path fill="currentColor" d="M12 21q-3.45 0-6.012-2.287T3.05 13H5.1q.35 2.6 2.313 4.3T12 19q2.925 0 4.963-2.037T19 12t-2.037-4.962T12 5q-1.725 0-3.225.8T6.25 8H9v2H3V4h2v2.35q1.275-1.6 3.113-2.475T12 3q1.875 0 3.513.713t2.85 1.924t1.925 2.85T21 12t-.712 3.513t-1.925 2.85t-2.85 1.925T12 21m2.8-4.8L11 12.4V7h2v4.6l3.2 3.2z"/>
                             </svg>
                             Activity Logs
+                        </a>
+
+                        <a href="{{ route('admin.faq.index') }}"
+                            class="flex items-center no-underline hover:text-blue-600 focus:outline-none {{ request()->is('admin/faq') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-2' : 'text-gray-600' }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke-width="1.5" stroke="currentColor" class="size-6 me-4">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                </svg>
+                            FAQ
                         </a>
                         
                     </nav>
