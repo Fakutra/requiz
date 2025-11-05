@@ -30,7 +30,6 @@ use App\Http\Controllers\AdminPanel\ReportController;
 use App\Http\Controllers\AdminPanel\ActivityLogController;
 use App\Http\Controllers\AdminPanel\PersonalityRuleController;
 use App\Http\Controllers\AdminPanel\UserController;
-use App\Http\Controllers\AdminPanel\FaqController;
 
 
 // ====== Seleksi (baru, dipisah per tahap) ======
@@ -271,8 +270,5 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::post('/', [PersonalityRuleController::class, 'store'])->name('store');
         Route::match(['put', 'patch'], '/{id}', [PersonalityRuleController::class, 'update'])->name('update');
         Route::delete('/{id}', [PersonalityRuleController::class, 'destroy'])->name('destroy');
-        
-    Route::get('admin/faq', [FaqController::class, 'index'])
-    ->name('admin.faq.index');
     });
 });
