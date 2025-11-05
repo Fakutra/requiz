@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Applicant;
 use App\Models\Position;
+use App\Models\Faq;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -21,6 +22,10 @@ class DashboardController extends Controller
         $appliedBatchIds = Applicant::where('user_id', auth()->id())
             ->pluck('batch_id')
             ->toArray();
+
+        $faqs = Faq::where('is_active', true)
+            ->latest('id')
+            ->get();
 
         return view('welcome', compact('latestPositions', 'appliedBatchIds'));
     }
