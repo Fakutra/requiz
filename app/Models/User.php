@@ -5,9 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Laravel\Sanctum\HasApiTokens;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     use HasApiTokens, HasFactory, Notifiable;
 
@@ -16,11 +17,11 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
-        'phone_number',
-        'birthplace',
-        'birthdate',
-        'address',
-        'identity_num',
+        // 'phone_number',
+        // 'birthplace',
+        // 'birthdate',
+        // 'address',
+        // 'identity_num',
     ];
 
     protected $hidden = [
@@ -31,7 +32,7 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
-        'tgl_lahir' => 'date',
+        // 'tgl_lahir' => 'date',
     ];
 
     // Relasi contoh (jika ada)
@@ -43,5 +44,10 @@ class User extends Authenticatable
     public function applicant()
     {
         return $this->hasMany(Applicant::class);
+    }
+
+    public function profile()
+    {
+        return $this->hasOne(Profile::class);
     }
 }

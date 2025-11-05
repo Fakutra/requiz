@@ -29,7 +29,7 @@ class ApplicantSeeder extends Seeder
         $rows = [];
 
         // HANYA nilai yang lolos constraint
-        $pendidikanOptions = ['SMA/Sederajat', 'Diploma', 'S1', 'S2', 'S3'];
+        $pendidikanOptions = ['SMA/Sederajat', 'D1', 'D2', 'D3', 'D4', 'S1', 'S2', 'S3'];
 
         foreach ($users as $i => $user) {
             $position = $positions[$i % $positions->count()];

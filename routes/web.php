@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
+use Illuminate\Foundation\Auth\EmailVerificationRequest;
 
 // ====== Front / User area ======
 use App\Http\Controllers\QuizController;
@@ -58,7 +59,7 @@ Route::get('/dashboard', fn() => view('dashboard'))
     ->name('dashboard');
 
 // ---------- Auth required (user) ----------
-Route::middleware('auth')->group(function () {
+Route::middleware('auth', 'verified', 'role:user')->group(function () {
     // Profile
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

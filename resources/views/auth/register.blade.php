@@ -7,12 +7,7 @@
             </div>
             <form method="POST" action="{{ route('register') }}" x-data="{ loading: false, modal:false, agreed:false }" x-ref="form" @submit.prevent="modal = true" class="mt-6">
                 @csrf
-                <!-- ID Number -->
-                <div>
-                    <x-input-label for="no_identitas" :value="__('Nomor Identitas (NIK)')" />
-                    <x-text-input id="no_identitas" class="block mt-1 w-full" type="number" name="no_identitas" :value="old('no_identitas')" placeholder="Nomor Identitas" required autofocus autocomplete="no_identitas" />
-                    <x-input-error :messages="$errors->get('no_identitas')" class="mt-2" />
-                </div>
+                
 
                 <!-- Name -->
                 <div class="mt-4">
@@ -26,39 +21,6 @@
                     <x-input-label for="email" :value="__('Email')" />
                     <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" placeholder="Email Aktif" :value="old('email')" required autocomplete="email" />
                     <x-input-error :messages="$errors->get('email')" class="mt-2" />
-                </div>
-
-                <!-- Phone Number -->
-                <div class="mt-4">
-                    <x-input-label for="no_telp" :value="__('Nomor Telepon')" />
-                    <div class="mt-1 flex rounded-lg shadow-sm">
-                        <span class="inline-flex items-center px-3 rounded-l-lg border border-r-0 bg-gray-50 text-gray-500">+62</span>
-                        <input type="tel" name="no_telp"
-                            class="flex-1 rounded-r-lg border border-gray-300 focus:ring-2 focus:ring-cyan-500"
-                            placeholder="81234567890" inputmode="numeric" autocomplete="tel" id="no_telp" :value="old('no_telp')" required>
-                    </div>
-                    <x-input-error :messages="$errors->get('no_telp')" class="mt-2" />
-                </div>
-
-                <!-- Birthdate -->
-                <div class="flex flex-row mt-4 gap-3">
-                    <div>
-                        <x-input-label for="tpt_lahir" :value="__('Tempat Lahir')" />
-                        <x-text-input id="tpt_lahir" class="block mt-1 w-full" type="text" name="tpt_lahir" placeholder="Tempat Lahir" :value="old('tpt_lahir')" required autocomplete="tpt_lahir" />
-                        <x-input-error :messages="$errors->get('tpt_lahir')" class="mt-2" />
-                    </div>
-                    <div>
-                        <x-input-label for="tgl_lahir" :value="__('Tanggal Lahir')" />
-                        <x-text-input id="tgl_lahir" class="block mt-1 w-full" type="date" name="tgl_lahir" placeholder="Tanggal Lahir" :value="old('tgl_lahir')" required autocomplete="tgl_lahir" />
-                        <x-input-error :messages="$errors->get('tgl_lahir')" class="mt-2" />
-                    </div>
-                </div>
-
-                <!-- Address -->
-                <div class="mt-4">
-                    <x-input-label for="alamat_ktp" :value="__('Alamat sesuai KTP')" />
-                    <textarea rows="4" name="alamat_ktp" class="mt-1 w-full rounded-lg border-gray-300 focus:border-[#009DA9] focus:ring-[#009DA9]" placeholder="Alamat KTP">{{ old('alamat_ktp') }}</textarea>
-                    <x-input-error :messages="$errors->get('alamat_ktp')" class="mt-2" />
                 </div>
 
                 <!-- Password -->

@@ -18,7 +18,7 @@ return new class extends Migration
             $table->foreignId('test_section_id')->constrained()->onDelete('cascade');
             $table->foreignId('test_result_id')->nullable()->constrained()->onDelete('cascade');
             $table->foreignId('test_section_result_id')->nullable()->constrained()->onDelete('cascade');
-            $table->string('answer')->nullable(); // bisa "A", "B", atau "A,C" atau jawaban essay
+            $table->text('answer')->nullable(); // bisa "A", "B", atau "A,C" atau jawaban essay
             $table->unsignedTinyInteger('score')->nullable(); // nilai jawaban (isi setelah dinilai)
             $table->timestamps();
         });

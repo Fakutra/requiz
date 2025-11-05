@@ -7,6 +7,7 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Providers\RouteServiceProvider;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
@@ -29,9 +30,23 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        if($request->user()->role === 'admin') {
+        $user = $request->user();
+
+        // 🔒 Cegah login jika email belum diverifikasi
+        if (! $user->hasVerifiedEmail()) {
+            Auth::logout();
+
+            return redirect()->route('verification.notice')->withErrors([
+                'email' => 'Akun kamu belum diverifikasi. Silakan cek email kamu untuk verifikasi akun sebelum login.',
+            ]);
+        }
+
+        // ✅ Kalau sudah terverifikasi, arahkan sesuai role
+        if ($user->role === 'admin') {
             return redirect()->route('admin.dashboard');
-        } else if ($request->user()->role === 'user') {
+        }
+
+        if ($user->role === 'user') {
             return redirect()->route('welcome');
         }
 

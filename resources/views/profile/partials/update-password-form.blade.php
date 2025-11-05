@@ -33,16 +33,23 @@
 
         <div class="flex items-center gap-4">
             <x-primary-button>{{ __('Save') }}</x-primary-button>
-
-            @if (session('status') === 'password-updated')
-                <p
-                    x-data="{ show: true }"
-                    x-show="show"
-                    x-transition
-                    x-init="setTimeout(() => show = false, 2000)"
-                    class="text-sm text-gray-600"
-                >{{ __('Saved.') }}</p>
-            @endif
         </div>
     </form>
+
+    {{-- ✅ Modal sukses --}}
+    @if (session('status') === 'password-updated')
+        @push('scripts')
+            <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Password Berhasil Diperbarui!',
+                        text: 'Password akun Anda telah berhasil diubah.',
+                        confirmButtonColor: '#009DA9',
+                        confirmButtonText: 'OK',
+                    });
+                });
+            </script>
+        @endpush
+    @endif
 </section>

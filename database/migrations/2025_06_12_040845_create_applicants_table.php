@@ -16,20 +16,14 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('batch_id')->constrained()->onDelete('cascade');
             $table->foreignId('position_id')->constrained()->onDelete('cascade');
-            $table->string('name');
-            $table->string('email');
-            $table->string('nik');
-            $table->string('no_telp');
-            $table->string('tpt_lahir');
-            $table->date('tgl_lahir');
-            $table->text('alamat');
-            $table->enum('pendidikan', ['SMA/Sederajat', 'Diploma', 'S1', 'S2', 'S3']);
+            $table->enum('pendidikan', ['SMA/Sederajat', 'D1', 'D2', 'D3', 'D4', 'S1', 'S2', 'S3']);
             $table->string('universitas');
             $table->string('jurusan');
             $table->string('thn_lulus')->nullable();
             $table->text('skills')->nullable();
             $table->bigInteger('ekspektasi_gaji')->nullable();
             $table->string('cv_document');
+            $table->string('doc_tambahan')->nullable();
             $table->enum('status', [
                 'Seleksi Administrasi',
                 'Tes Tulis',

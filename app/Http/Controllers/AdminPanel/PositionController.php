@@ -20,12 +20,17 @@ class PositionController extends Controller
     public function store(Request $request, Batch $batch)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'quota' => 'required|integer|min:1',
-            'status' => 'required|string',
-            'description' => 'required|string',
+            'name'         => 'required|string|max:255',
+            'quota'        => 'required|integer|min:1',
+            'status'       => 'required|string|in:Active,Inactive',
+            'description'  => 'required|string',
+            'skills'       => 'nullable|string',
+            'requirements' => 'nullable|string',
+            'majors'       => 'nullable|string',
+            'deadline'     => 'nullable|date',
         ]);
 
+        // Buat posisi baru di batch terkait
         $position = $batch->position()->create($validated);
 
         // ✅ Log CREATE
@@ -36,27 +41,54 @@ class PositionController extends Controller
         ActivityLogger::log(
             'create',
             'Position',
-            auth()->user()->name." menambahkan posisi baru pada Batch '{$batch->name}' dengan data: {$details}",
+            auth()->user()->name . " menambahkan posisi baru pada Batch '{$batch->name}' dengan data: {$details}",
             "Posisi: {$position->name}"
         );
 
-        return redirect()->route('batch.show', $batch)->with('success', 'Posisi baru telah berhasil ditambahkan!');
+        return redirect()
+            ->route('batch.show', $batch)
+            ->with('success', 'Posisi baru telah berhasil ditambahkan!');
     }
 
     public function update(Request $request, Position $position)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'quota' => 'required|integer|min:1',
-            'status' => 'required|string',
-            'description' => 'required|string',
+            'name'         => 'required|string|max:255',
+            'quota'        => 'required|integer|min:1',
+            'status'       => 'required|string|in:Active,Inactive',
+            'description'  => 'required|string',
+            'skills'       => 'nullable|string',
+            'requirements' => 'nullable|string',
+            'majors'       => 'nullable|string',
+            'deadline'     => 'nullable|date',
         ]);
 
-        $oldData = $position->only(['name', 'quota', 'status', 'description']);
+        // Simpan data lama sebelum update
+        $oldData = $position->only([
+            'name',
+            'quota',
+            'status',
+            'description',
+            'skills',
+            'requirements',
+            'majors',
+            'deadline',
+        ]);
 
+        // Update posisi
         $position->update($validated);
 
-        $newData = $position->only(['name', 'quota', 'status', 'description']);
+        // Data baru setelah update
+        $newData = $position->only([
+            'name',
+            'quota',
+            'status',
+            'description',
+            'skills',
+            'requirements',
+            'majors',
+            'deadline',
+        ]);
 
         // ✅ Log UPDATE (diff)
         ActivityLogger::logUpdate(
@@ -66,7 +98,9 @@ class PositionController extends Controller
             $newData
         );
 
-        return redirect()->route('batch.show', $position->batch)->with('success', 'Posisi telah berhasil diperbarui!');
+        return redirect()
+            ->route('batch.show', $position->batch)
+            ->with('success', 'Posisi telah berhasil diperbarui!');
     }
 
     public function destroy($id)
@@ -81,11 +115,13 @@ class PositionController extends Controller
         ActivityLogger::log(
             'delete',
             'Position',
-            auth()->user()->name." menghapus posisi {$name} dari Batch '{$batch->name}'",
+            auth()->user()->name . " menghapus posisi {$name} dari Batch '{$batch->name}'",
             "Posisi: {$name}"
         );
 
-        return redirect()->route('batch.show', $batch)->with('success', 'Posisi telah berhasil dihapus!');
+        return redirect()
+            ->route('batch.show', $batch)
+            ->with('success', 'Posisi telah berhasil dihapus!');
     }
 
     public function checkSlug(Request $request)

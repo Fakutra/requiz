@@ -6,26 +6,30 @@
             isAuth: @js(auth()->check()),
             loading: false
         })">
-        <!-- Breadcrumb -->
+
+        {{-- ===== Breadcrumb ===== --}}
         <nav class="text-md text-gray-500">
             <a href="{{ route('joblist') }}" class="hover:text-[#009DA9]">
                 < Job List</a>
-                    <span class="mx-2">/</span>
-                    <span class="text-[#009DA9] font-semibold">Job Detail</span>
+            <span class="mx-2">/</span>
+            <span class="text-[#009DA9] font-semibold">Job Detail</span>
         </nav>
 
         <div class="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- LEFT: Job detail -->
+            {{-- ===== LEFT: Job detail ===== --}}
             <div class="lg:col-span-2">
                 <div class="bg-white rounded-xl border border-gray-300 shadow-sm">
                     <div class="p-6">
                         <div class="flex items-start gap-3">
-                            <svg class="w-5 h-5 text-[#009DA9] mt-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0 1 12 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 0 1-.673-.38m0 0A2.18 2.18 0 0 1 3 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 0 1 3.413-.387m7.5 0V5.25A2.25 2.25 0 0 0 13.5 3h-3a2.25 2.25 0 0 0-2.25 2.25v.894m7.5 0a48.667 48.667 0 0 0-7.5 0M12 12.75h.008v.008H12v-.008Z" />
+                            <svg class="w-5 h-5 text-[#009DA9] mt-1" xmlns="http://www.w3.org/2000/svg" fill="none"
+                                viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0 1 12 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 0 1-.673-.38m0 0A2.18 2.18 0 0 1 3 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 0 1 3.413-.387m7.5 0V5.25A2.25 2.25 0 0 0 13.5 3h-3a2.25 2.25 0 0 0-2.25 2.25v.894m7.5 0a48.667 48.667 0 0 0-7.5 0M12 12.75h.008v.008H12v-.008Z" />
                             </svg>
+
                             <div>
                                 <h1 class="text-xl font-semibold text-gray-900">
-                                    [{{ $position->batch?->name }}] - {{ $position->name }}
+                                    {{ $position->name }}
                                 </h1>
                                 <h5 class="text-sm text-[#009DA9] mt-1">
                                     {{ $job->company ?? 'PLN Icon Plus' }}
@@ -34,77 +38,114 @@
                         </div>
 
                         <div class="mt-6 space-y-6 text-md leading-6 text-gray-800">
+                            {{-- DESKRIPSI PEKERJAAN --}}
                             <div>
                                 <h3 class="font-semibold text-gray-900">Deskripsi Pekerjaan</h3>
-                                <p class="mt-1 text-gray-600">
-                                    {{ $position->description ?? 'Lorem ipsum dolor sit amet' }}
+                                <p class="mt-1 text-gray-600 whitespace-pre-line">
+                                    {{ $position->description ?? '-' }}
                                 </p>
                             </div>
 
-                            <div>
-                                <h3 class="font-semibold text-gray-900">Skill yang dibutuhkan</h3>
-                                <ul class="mt-1 list-disc list-inside space-y-1 text-gray-600">
-                                    <li>Master one of database</li>
-                                    <li>Master one of programming language</li>
-                                </ul>
-                            </div>
+                            {{-- SKILL YANG DIBUTUHKAN --}}
+                            @if (!empty($position->skills))
+                                <div>
+                                    <h3 class="font-semibold text-gray-900">Skill yang dibutuhkan</h3>
+                                    <ul class="mt-1 list-disc list-inside space-y-1 text-gray-600">
+                                        @foreach (explode(',', $position->skills) as $skill)
+                                            @if (trim($skill) != '')
+                                                <li>{{ trim($skill) }}</li>
+                                            @endif
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @endif
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- RIGHT: Sidebar -->
+            {{-- ===== RIGHT: Sidebar ===== --}}
             <aside class="lg:col-span-1">
                 <div class="bg-white rounded-xl border border-gray-200 text-md shadow-sm p-5 lg:sticky lg:top-24">
-                    <div class="flex items-center gap-2">
-                        <span class="inline-block w-2 h-2 rounded-full bg-[#009DA9] ring-4 ring-[#009DA9]/15"></span>
-                        <h3 class="font-semibold text-gray-900 ml-1">Persyaratan Umum</h3>
-                    </div>
-                    <ul class="mt-2 list-disc list-inside text-gray-600 space-y-1">
-                        <li>D3 – S1</li>
-                        <li>Min. GPA ≥ 3.00</li>
-                        <li>Age limit ≤ 35 years</li>
-                    </ul>
 
-                    <div class="mt-5">
-                        <div class="flex items-center gap-2">
-                            <span class="inline-block w-2 h-2 rounded-full bg-[#009DA9] ring-4 ring-[#009DA9]/15"></span>
-                            <h3 class="font-semibold text-gray-900 ml-1">Jurusan yang dapat melamar</h3>
+                    {{-- PENDIDIKAN MINIMUM --}}
+                    @if (!empty($position->pendidikan_minimum))
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="inline-block w-2 h-2 rounded-full bg-[#009DA9] ring-4 ring-[#009DA9]/15"></span>
+                                <h3 class="font-semibold text-gray-900 ml-1">Pendidikan Minimum</h3>
+                            </div>
+                            <span class="inline-block text-gray-600 ml-5 mt-1">
+                                {{ $position->pendidikan_minimum }}
+                            </span>
                         </div>
-                        <ul class="mt-2 list-disc list-inside text-gray-600 space-y-1">
-                            <li>Teknik Informatika</li>
-                            <li>Teknik Telekomunikasi</li>
-                            <li>Ilmu Komputer</li>
-                            <li>Sistem Informasi</li>
-                        </ul>
-                    </div>
+                    @endif
 
-                    <div class="mt-5">
-                        <div class="flex items-center gap-2">
-                            <span class="inline-block w-2 h-2 rounded-full bg-[#009DA9] ring-4 ring-[#009DA9]/15"></span>
-                            <h3 class="font-semibold text-gray-900 ml-1">Batas Lamaran</h3>
+                    {{-- PERSYARATAN UMUM --}}
+                    @if (!empty($position->requirements))
+                        <div class="mt-5">
+                            <div class="flex items-center gap-2">
+                                <span class="inline-block w-2 h-2 rounded-full bg-[#009DA9] ring-4 ring-[#009DA9]/15"></span>
+                                <h3 class="font-semibold text-gray-900 ml-1">Persyaratan Umum</h3>
+                            </div>
+                            <ul class="mt-2 list-disc list-inside text-gray-600 space-y-1">
+                                @foreach (explode("\n", $position->requirements) as $req)
+                                    @if (trim($req) != '')
+                                        <li>{{ trim($req) }}</li>
+                                    @endif
+                                @endforeach
+                            </ul>
                         </div>
-                        <span class="inline-block text-gray-600 ml-5 mt-1">{{ $position->batch?->end_date_formatted }}</span>
-                    </div>
+                    @endif
 
+                    {{-- JURUSAN YANG DAPAT MELAMAR --}}
+                    @if (!empty($position->majors))
+                        <div class="mt-5">
+                            <div class="flex items-center gap-2">
+                                <span class="inline-block w-2 h-2 rounded-full bg-[#009DA9] ring-4 ring-[#009DA9]/15"></span>
+                                <h3 class="font-semibold text-gray-900 ml-1">Jurusan yang dapat melamar</h3>
+                            </div>
+                            <ul class="mt-2 list-disc list-inside text-gray-600 space-y-1">
+                                @foreach (explode("\n", $position->majors) as $major)
+                                    @if (trim($major) != '')
+                                        <li>{{ trim($major) }}</li>
+                                    @endif
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
+                    {{-- BATAS LAMARAN --}}
+                    @if (!empty($position->deadline))
+                        <div class="mt-5">
+                            <div class="flex items-center gap-2">
+                                <span class="inline-block w-2 h-2 rounded-full bg-[#009DA9] ring-4 ring-[#009DA9]/15"></span>
+                                <h3 class="font-semibold text-gray-900 ml-1">Batas Lamaran</h3>
+                            </div>
+                            <span class="inline-block text-gray-600 ml-5 mt-1">
+                                {{ \Carbon\Carbon::parse($position->deadline)->translatedFormat('d F Y') }}
+                            </span>
+                        </div>
+                    @endif
+
+                    {{-- Tombol Lamar --}}
                     <div class="mt-5">
                         @php
-                        $alreadyApplied = in_array($position->batch_id, $appliedBatchIds, true);
+                            $alreadyApplied = in_array($position->batch_id, $appliedBatchIds, true);
                         @endphp
 
                         @if ($alreadyApplied)
-                        <button type="button"
-                            class="w-full rounded-lg bg-gray-200 text-gray-500 font-semibold px-4 py-3 cursor-not-allowed">
-                            Sudah melamar pada batch ini
-                        </button>
+                            <button type="button"
+                                class="w-full rounded-lg bg-gray-200 text-gray-500 font-semibold px-4 py-3 cursor-not-allowed">
+                                Sudah melamar pada batch ini
+                            </button>
                         @else
-                        <button
-                            type="button"
-                            @click="isAuth ? (showApply = true) : window.location.href='{{ route('login', ['redirectTo' => request()->fullUrl()]) }}'"
-                            class="w-full rounded-lg bg-[#009DA9] hover:bg-[#007C85] text-white font-semibold py-2.5 shadow-sm
-                            focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#007C85]">
-                            Lamar sekarang
-                        </button>
+                            <button type="button"
+                                @click="isAuth ? (showApply = true) : window.location.href='{{ route('login', ['redirectTo' => request()->fullUrl()]) }}'"
+                                class="w-full rounded-lg bg-[#009DA9] hover:bg-[#007C85] text-white font-semibold py-2.5 shadow-sm
+                                focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#007C85]">
+                                Lamar sekarang
+                            </button>
                         @endif
                     </div>
                 </div>
@@ -156,38 +197,64 @@
                         </h3>
                         <div class="flex-1 border-t border-gray-300"></div>
                     </div>
+
                     {{-- Info badge --}}
                     @auth
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Nama Lengkap</label>
-                            <input type="text" name="name" class="mt-1 w-full rounded-lg border-gray-300 focus:border-[#009DA9] focus:ring-[#009DA9]" placeholder="Nama lengkap" value="{{ $user->name }}" />
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Nama Lengkap</label>
+                                <input type="text" name="name" disabled
+                                    class="mt-1 w-full rounded-lg border-gray-300 bg-gray-100 cursor-not-allowed"
+                                    placeholder="Nama lengkap"
+                                    value="{{ old('name', $user->name) }}" />
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Email</label>
+                                <input type="email" name="email" disabled
+                                    class="mt-1 w-full rounded-lg border-gray-300 bg-gray-100 cursor-not-allowed"
+                                    placeholder="email@example.com"
+                                    value="{{ old('email', $user->email) }}" />
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">NIK</label>
+                                <input type="text" name="nik" inputmode="numeric" disabled
+                                    class="mt-1 w-full rounded-lg border-gray-300 bg-gray-100 cursor-not-allowed"
+                                    placeholder="16 digit"
+                                    value="{{ old('nik', $user->profile->identity_num ?? '') }}" />
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Nomor Telepon</label>
+                                <input type="tel" name="no_telp" inputmode="numeric" disabled
+                                    class="mt-1 w-full rounded-lg border-gray-300 bg-gray-100 cursor-not-allowed"
+                                    placeholder="62xxxxxxxxxx"
+                                    value="{{ old('no_telp', $user->profile->phone_number ?? '') }}" />
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Tempat Lahir</label>
+                                <input type="text" name="tpt_lahir" disabled
+                                    class="mt-1 w-full rounded-lg border-gray-300 bg-gray-100 cursor-not-allowed"
+                                    placeholder="Tempat Lahir"
+                                    value="{{ old('tpt_lahir', $user->profile->birthplace ?? '') }}" />
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Tanggal Lahir</label>
+                                <input type="date" name="tgl_lahir" disabled
+                                    class="mt-1 w-full rounded-lg border-gray-300 bg-gray-100 cursor-not-allowed"
+                                    value="{{ old('tgl_lahir', $user->profile->birthdate ?? '') }}" />
+                            </div>
+
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700">Alamat KTP</label>
+                                <textarea rows="2" name="alamat" disabled
+                                    class="mt-1 w-full rounded-lg border-gray-300 bg-gray-100 cursor-not-allowed"
+                                    placeholder="Alamat KTP">{{ old('alamat', $user->profile->address ?? '') }}</textarea>
+                            </div>
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Email</label>
-                            <input type="email" name="email" class="mt-1 w-full rounded-lg border-gray-300 focus:border-[#009DA9] focus:ring-[#009DA9]" placeholder="email@example.com" value="{{ $user->email }}" />
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">NIK</label>
-                            <input type="text" name="nik" inputmode="numeric" class="mt-1 w-full rounded-lg border-gray-300 focus:border-[#009DA9] focus:ring-[#009DA9]" placeholder="16 digit" value="{{ $user->identity_num }}" />
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Nomor Telepon</label>
-                            <input type="tel" name="no_telp" inputmode="numeric" class="mt-1 w-full rounded-lg border-gray-300 focus:border-[#009DA9] focus:ring-[#009DA9]" placeholder="62xxxxxxxxxx" value="{{ $user->phone_number }}" />
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Tempat Lahir</label>
-                            <input type="text" name="tpt_lahir" class="mt-1 w-full rounded-lg border-gray-300 focus:border-[#009DA9] focus:ring-[#009DA9] disabled:border-gray-200" placeholder="Tempat Lahir" value="{{ $user->birthplace }}" />
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Tanggal Lahir</label>
-                            <input type="date" name="tgl_lahir" class="mt-1 w-full rounded-lg border-gray-300 focus:border-[#009DA9] focus:ring-[#009DA9] disabled:border-gray-200" value="{{ $user->birthdate }}" />
-                        </div>
-                        <div class="md:col-span-2">
-                            <label class="block text-sm font-medium text-gray-700">Alamat KTP</label>
-                            <textarea rows="2" name="alamat" class="mt-1 w-full rounded-lg border-gray-300 focus:border-[#009DA9] focus:ring-[#009DA9] disabled:border-gray-200" placeholder="Alamat KTP">{{ $user->address }}</textarea>
-                        </div>
-                    </div>
                     @endauth
 
                     {{-- Subjudul dengan garis horizontal --}}
@@ -200,25 +267,30 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         @php
-                        $skillOptions = ['Microsoft Office', 'Public Speaking', 'Teamwork', 'Problem Solving', 'Leadership'];
+                            // ubah string skill jadi array (misal "PHP, Java, JS" -> ['PHP', 'Java', 'JS'])
+                            $skillOptions = $position->skills
+                                ? array_filter(array_map('trim', explode(',', $position->skills)))
+                                : [];
                         @endphp
 
-                        @foreach ($skillOptions as $skill)
-                        <label class="flex items-center space-x-2">
-                            <input type="checkbox"
-                                name="skills[]"
-                                value="{{ $skill }}"
-                                class="rounded border-gray-300 text-[#009DA9] focus:ring-[#009DA9]"
-                                @checked(is_array(old('skills')) && in_array($skill, old('skills')))>
-
-                            <span class="text-sm text-gray-700">{{ $skill }}</span>
-                        </label>
-                        @endforeach
+                        @if (count($skillOptions))
+                            @foreach ($skillOptions as $skill)
+                                <label class="flex items-center space-x-2">
+                                    <input type="checkbox"
+                                        name="skills[]"
+                                        value="{{ $skill }}"
+                                        class="rounded border-gray-300 text-[#009DA9] focus:ring-[#009DA9]"
+                                        @checked(is_array(old('skills')) && in_array($skill, old('skills')))>
+                                    <span class="text-sm text-gray-700">{{ $skill }}</span>
+                                </label>
+                            @endforeach
+                        @else
+                            <p class="text-gray-500 italic col-span-2">Tidak ada skill khusus yang ditentukan untuk posisi ini.</p>
+                        @endif
 
                         {{-- Input teks muncul kalau pilih "Lainnya" --}}
-                        <div x-data="{ showOther: false }" x-init="
-                            showOther = {{ Js::from(is_array(old('skills')) && in_array('Lainnya', old('skills'))) }}
-                        ">
+                        <div x-data="{ showOther: false }"
+                            x-init="showOther = {{ Js::from(is_array(old('skills')) && in_array('Lainnya', old('skills'))) }}">
                             <label class="flex items-center space-x-2 mb-2">
                                 <input type="checkbox"
                                     name="skills[]"
@@ -248,17 +320,24 @@
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label for="pendidikan" class="block text-sm font-medium text-gray-700">Jenjang Pendidikan</label>
+                            <label for="pendidikan" class="block text-sm font-medium text-gray-700">
+                                Jenjang Pendidikan
+                            </label>
                             <select id="pendidikan" name="pendidikan" required
                                 class="mt-1 w-full rounded-lg border-gray-300 bg-white focus:border-[#009DA9] focus:ring-[#009DA9]">
                                 <option value="">--- Pilih ---</option>
-                                <option value="D3" {{ old('pendidikan')=='D3' ? 'selected' : '' }}>Diploma 3</option>
-                                <option value="D4/S1" {{ old('pendidikan')=='D4/S1' ? 'selected' : '' }}>D4/S1</option>
-                                <option value="S2" {{ old('pendidikan')=='S2' ? 'selected' : '' }}>S2</option>
-                                <option value="S3" {{ old('pendidikan')=='S3' ? 'selected' : '' }}>S3</option>
+                                <option value="SMA/Sederajat" {{ old('pendidikan') == 'SMA/Sederajat' ? 'selected' : '' }}>SMA / Sederajat</option>
+                                <option value="D1" {{ old('pendidikan') == 'D1' ? 'selected' : '' }}>Diploma 1 (D1)</option>
+                                <option value="D2" {{ old('pendidikan') == 'D2' ? 'selected' : '' }}>Diploma 2 (D2)</option>
+                                <option value="D3" {{ old('pendidikan') == 'D3' ? 'selected' : '' }}>Diploma 3 (D3)</option>
+                                <option value="D4" {{ old('pendidikan') == 'D4' ? 'selected' : '' }}>Diploma 4 (D4)</option>
+                                <option value="S1" {{ old('pendidikan') == 'S1' ? 'selected' : '' }}>Sarjana (S1)</option>
+                                <option value="S2" {{ old('pendidikan') == 'S2' ? 'selected' : '' }}>Magister (S2)</option>
+                                <option value="S3" {{ old('pendidikan') == 'S3' ? 'selected' : '' }}>Doktor (S3)</option>
                             </select>
+
                             @error('pendidikan')
-                            <p class="text-sm text-red-600 mt-1" x-text="errors.name?.[0]" x-show="errors.pendidikan"></p>
+                                <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
                             @enderror
                         </div>
                         <div>
@@ -369,13 +448,9 @@
         {{-- ===== END MODAL APPLY ===== --}}
     </div>
 
-    {{-- Alpine helper --}}
+    {{-- ===== SCRIPT ALPINE ===== --}}
     <script>
-        function applyForm({
-            loginUrl,
-            initialShow = false,
-            isAuth = false
-        }) {
+        function applyForm({ loginUrl, initialShow = false, isAuth = false }) {
             return {
                 showApply: initialShow,
                 isAuth,
@@ -383,7 +458,6 @@
                 loading: false,
                 errors: {},
                 agreed: false,
-
                 async submit(e) {
                     this.loading = true;
                     this.errors = {};
@@ -394,7 +468,7 @@
                             method: 'POST',
                             headers: {
                                 'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                                'Accept': 'application/json' // penting biar Laravel kirim 422 JSON
+                                'Accept': 'application/json'
                             },
                             body: new FormData(form)
                         });
@@ -406,20 +480,17 @@
                                 await Swal.fire({
                                     icon: 'success',
                                     title: 'Berhasil!',
-                                    text: 'Selamat, lamaran anda telah berhasil dikirim!', // atau data.message
+                                    text: 'Selamat, lamaran anda telah berhasil dikirim!',
                                     confirmButtonColor: '#009DA9'
                                 });
                             }
-                            // success
                             form.reset();
                             this.showApply = false;
-
                             window.location.href = "{{ route('history.index') }}";
                             return;
                         }
 
                         if (res.status === 401) {
-                            // belum login
                             window.location.href = loginUrl;
                             return;
                         }
@@ -427,15 +498,10 @@
                         if (res.status === 422) {
                             const data = await res.json();
                             this.errors = data.errors || {};
-
-                            if (this.errors.agreed) {
-                                this.agreed = false
-                            }
-
+                            if (this.errors.agreed) this.agreed = false;
                             return;
                         }
 
-                        // error lain
                         alert('Oops, terjadi kesalahan (' + res.status + '). Coba lagi.');
                     } catch (err) {
                         this.loading = false;
@@ -445,5 +511,4 @@
             }
         }
     </script>
-
 </x-guest-layout>

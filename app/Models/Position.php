@@ -16,7 +16,12 @@ class Position extends Model
         'slug',
         'quota',
         'status',
+        'pendidikan_minimum',
         'description',
+        'skills',
+        'requirements',
+        'majors',
+        'deadline',
     ];
 
     public function user()

@@ -12,24 +12,17 @@ class Applicant extends Model
 
     protected $fillable = [
         'user_id',
-        'batch_id',
         'position_id',
-        'name',
-        'email',
-        'nik',
-        'no_telp',
-        'tpt_lahir',
-        'tgl_lahir',
-        'alamat',
+        'batch_id',
         'pendidikan',
         'universitas',
         'jurusan',
         'thn_lulus',
         'skills',
-        'cv_document',
         'ekspektasi_gaji',
+        'cv_document',
+        'doc_tambahan',
         'status',
-        'additional_doc',
     ];
 
     // Biar tgl_lahir otomatis jadi Carbon instance

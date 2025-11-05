@@ -41,17 +41,20 @@
         </div>
     </div>
 
+    {{-- Modal Sukses --}}
     @if (session('status') === 'profile-updated')
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            Swal.fire({
-                icon: 'success',
-                title: 'Berhasil!',
-                text: 'Profil Anda berhasil diperbarui.',
-                showConfirmButton: true,
-                timer: null
-            });
-        });
-    </script>
+        @push('scripts')
+            <script>
+                window.addEventListener('load', () => {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil!',
+                        text: 'Profil Anda berhasil diperbarui.',
+                        confirmButtonColor: '#009DA9',
+                        confirmButtonText: 'OK',
+                    });
+                });
+            </script>
+        @endpush
     @endif
 </x-guest-layout>
