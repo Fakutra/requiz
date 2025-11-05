@@ -78,42 +78,36 @@
                 @endif
             </div>
         </div>
-        <div class="w-full px-8" id="faq">
+        <div class="w-full px-8 mt-16" id="faq">
             <div class="max-w-7xl py-10 mx-auto">
                 <h1 class="font-bold text-3xl">Frequently Asked Question</h1>
-                <div class="max-w-7xl mx-auto mt-4 divide-y divide-gray-300">
-                    <!-- Item 1 -->
-                    <div class="py-4">
-                        <button
-                            class="w-full flex justify-between items-center text-left font-semibold text-gray-800 focus:outline-none"
-                            onclick="toggleAccordion(this)">
-                            <span class="text-2xl">Apa itu layanan kami?</span>
-                            <svg class="w-5 h-5 transform transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </button>
-                        <div class="mt-2 text-gray-600 hidden text-xl">
-                            Layanan kami adalah solusi digital untuk membantu bisnis Anda tumbuh secara online.
-                        </div>
-                    </div>
 
-                    <!-- Item 2 -->
-                    <div class="py-4">
-                        <button
-                            class="w-full flex justify-between items-center text-left font-semibold text-gray-800 focus:outline-none"
-                            onclick="toggleAccordion(this)">
-                            <span class="text-2xl">Bagaimana cara mendaftar?</span>
-                            <svg class="w-5 h-5 transform transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </button>
-                        <div class="mt-2 text-gray-600 hidden text-xl">
-                            Anda cukup mengisi form pendaftaran, lalu kami akan memandu prosesnya.
+                <div class="max-w-7xl mx-auto mt-4 divide-y divide-gray-300">
+                    @forelse ($faqs as $i => $faq)
+                        <div class="py-4" x-data="{ open: {{ $i === 0 ? 'true' : 'false' }} }">
+                            <button type="button"
+                                    class="w-full flex justify-between items-center text-left font-semibold text-gray-800 focus:outline-none"
+                                    @click="open = !open">
+                                <span class="text-2xl">{{ $faq->question }}</span>
+                                <svg class="w-5 h-5 transform transition-transform duration-300"
+                                    :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+
+                            <div class="mt-2 text-gray-600 text-xl" x-show="open" x-collapse x-cloak>
+                                {!! nl2br(e($faq->answer)) !!}
+                            </div>
                         </div>
-                    </div>
+                    @empty
+                        <div class="py-8 text-gray-500">Belum ada FAQ.</div>
+                    @endforelse
                 </div>
             </div>
         </div>
+
         <div class="w-full px-8" id="about">
             <div class="max-w-7xl py-10 mx-auto">
                 <h1 class="font-bold text-3xl">Tentang Kami</h1>
