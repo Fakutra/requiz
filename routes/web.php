@@ -30,6 +30,7 @@ use App\Http\Controllers\AdminPanel\ReportController;
 use App\Http\Controllers\AdminPanel\ActivityLogController;
 use App\Http\Controllers\AdminPanel\PersonalityRuleController;
 use App\Http\Controllers\AdminPanel\UserController;
+use App\Http\Controllers\AdminPanel\FaqController;
 
 
 // ====== Seleksi (baru, dipisah per tahap) ======
@@ -269,6 +270,12 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::get('/', [PersonalityRuleController::class, 'index'])->name('index');
         Route::post('/', [PersonalityRuleController::class, 'store'])->name('store');
         Route::match(['put', 'patch'], '/{id}', [PersonalityRuleController::class, 'update'])->name('update');
-        Route::delete('/{id}', [PersonalityRuleController::class, 'destroy'])->name('destroy');
+        Route::delete('/{id}', [PersonalityRuleController::class, 'destroy'])->name('destroy');      
     });
+
+    // ===== FAQ 
+    Route::get   ('admin/faq',           [FaqController::class, 'index'])->name('admin.faq.index');
+    Route::post  ('admin/faq',           [FaqController::class, 'store'])->name('admin.faq.store');
+    Route::put   ('admin/faq/{faq}',     [FaqController::class, 'update'])->name('admin.faq.update');
+    Route::delete('admin/faq/{faq}',     [FaqController::class, 'destroy'])->name('admin.faq.destroy');
 });

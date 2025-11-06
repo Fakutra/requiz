@@ -144,7 +144,7 @@ class ApplicantController extends Controller
             'ekspektasi_gaji' => ['required','numeric','min:0','max:100000000'],
             'status'          => ['nullable', Rule::in($allowedStatus)],
             'skills'          => ['nullable','string','max:5000'],
-            'cv_document'     => ['nullable','file','mimes:pdf','max:3072'],
+            'cv_document'     => ['nullable','file','mimes:pdf','max:1024'],
             'doc_tambahan'    => ['nullable','file','mimes:pdf','max:5120'], // 5MB
         ]);
 

@@ -520,7 +520,7 @@
             <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
               {{-- CV --}}
               <div>
-                <label class="block text-sm font-medium">CV (PDF, maks 3MB)</label>
+                <label class="block text-sm font-medium">CV (PDF, maks 1MB)</label>
                 <input type="file" name="cv_document" accept="application/pdf"
                       class="w-full mt-1 border rounded px-3 py-2 text-sm">
                 <template x-if="form.cv_document">
