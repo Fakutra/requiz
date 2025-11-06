@@ -14,7 +14,7 @@
             <th class="px-4 py-2 text-left whitespace-nowrap">No.</th>
             <th class="px-3 py-2 border text-left w-1/3">Pertanyaan</th>
             <th class="px-3 py-2 border text-left">Jawaban</th>
-            <th class="px-3 py-2 border text-center w-[120px]">Status</th>
+            <th class="px-3 py-2 border text-center w-[120px]">Tampil</th>
             <th class="px-3 py-2 border text-center w-[160px]">Aksi</th>
         </tr>
       </thead>
