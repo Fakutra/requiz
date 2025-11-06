@@ -14,6 +14,7 @@
             <th class="px-4 py-2 text-left whitespace-nowrap">No.</th>
             <th class="px-3 py-2 border text-left w-1/3">Pertanyaan</th>
             <th class="px-3 py-2 border text-left">Jawaban</th>
+            <th class="px-3 py-2 border text-center w-[120px]">Status</th>
             <th class="px-3 py-2 border text-center w-[160px]">Aksi</th>
         </tr>
       </thead>
@@ -23,14 +24,24 @@
             <td class="px-4 py-2 border w-auto">{{ ($faqs->currentPage()-1)*$faqs->perPage() + $loop->iteration }}</td>
             <td class="px-3 py-2 border align-top font-medium">{{ $faq->question }}</td>
             <td class="px-3 py-2 border text-gray-700 align-top">{{ $faq->answer }}</td>
+
+            {{-- ✅ Kolom Status Aktif/Tidak --}}
+            <td class="px-3 py-2 border text-center align-top">
+                @if ($faq->is_active)
+                    <i class="fas fa-check text-green-600"></i>
+                @else
+                    <span class="text-gray-400">—</span>
+                @endif
+            </td>
+
             <td class="px-3 py-2 border text-center align-top">
               <div class="flex items-center justify-center gap-2">
                 <button
-                  type="button"
-                  @click='openEdit(@json($faq->only(["id","question","answer"])))'
-                  class="text-yellow-600 hover:text-yellow-800"
-                  title="Edit">
-                  <i class="fas fa-edit"></i>
+                    type="button"
+                    x-on:click="openEdit(@js($faq->only(['id','question','answer','is_active'])))"
+                    class="text-yellow-600 hover:text-yellow-800"
+                    title="Edit">
+                    <i class="fas fa-edit"></i>
                 </button>
 
                 <form method="POST" action="{{ route('admin.faq.destroy', $faq) }}"
@@ -45,7 +56,7 @@
           </tr>
         @empty
           <tr>
-            <td colspan="3" class="text-center p-3 text-gray-500">Belum ada data FAQ</td>
+            <td colspan="5" class="text-center p-3 text-gray-500">Belum ada data FAQ</td>
           </tr>
         @endforelse
       </tbody>
@@ -65,10 +76,13 @@
             <label class="block text-sm mb-1">Jawaban <span class="text-red-500">*</span></label>
             <textarea name="answer" rows="4" x-model="createForm.answer" class="w-full border rounded px-3 py-2 text-sm" required></textarea>
           </div>
+
+          {{-- ✅ Checkbox aktif --}}
           <label class="inline-flex items-center gap-2 text-sm">
             <input type="checkbox" name="is_active" value="1" checked>
             Aktifkan
           </label>
+
           <div class="pt-2 flex justify-end gap-2">
             <button type="button" @click="showCreate=false" class="px-4 py-2 border rounded text-sm">Batal</button>
             <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm">Simpan</button>
@@ -91,10 +105,19 @@
             <label class="block text-sm mb-1">Jawaban <span class="text-red-500">*</span></label>
             <textarea name="answer" rows="4" x-model="editForm.answer" class="w-full border rounded px-3 py-2 text-sm" required></textarea>
           </div>
+
+          {{-- ✅ Checkbox aktif --}}
           <label class="inline-flex items-center gap-2 text-sm">
-            <input type="checkbox" name="is_active" value="1" {{ old('is_active', true) ? 'checked' : '' }}>
+            <input
+                type="checkbox"
+                name="is_active"
+                value="1"
+                x-bind:checked="editForm.is_active === true || editForm.is_active === 1 || editForm.is_active === '1'"
+                class="mr-2"
+                />
             Aktifkan
           </label>
+
           <div class="pt-2 flex justify-end gap-2">
             <button type="button" @click="showEdit=false" class="px-4 py-2 border rounded text-sm">Batal</button>
             <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm">Simpan</button>
@@ -105,3 +128,31 @@
 
   </div>
 </x-app-admin>
+
+<script>
+document.addEventListener('alpine:init', () => {
+  Alpine.data('faqPage', () => ({
+    showEdit: false,
+    editAction: '',
+    editForm: { id: null, question: '', answer: '', is_active: true },
+
+    openEdit(faq) {
+      // pastikan nilai boolean:
+      const isActive =
+        faq.is_active === true || faq.is_active === 1 || faq.is_active === '1';
+
+      this.editForm = {
+        id: faq.id,
+        question: faq.question ?? '',
+        answer: faq.answer ?? '',
+        is_active: isActive,
+      };
+
+      // set action form
+      this.editAction = "{{ route('admin.faq.update', ':id') }}".replace(':id', faq.id);
+
+      this.showEdit = true;
+    },
+  }));
+});
+</script>
