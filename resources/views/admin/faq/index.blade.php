@@ -11,14 +11,16 @@
     <table class="w-full border text-sm rounded-lg overflow-hidden">
       <thead class="bg-gray-100 text-gray-700">
         <tr>
-          <th class="px-3 py-2 border text-left w-1/3">Pertanyaan</th>
-          <th class="px-3 py-2 border text-left">Jawaban</th>
-          <th class="px-3 py-2 border text-center w-[160px]">Aksi</th>
+            <th class="px-4 py-2 text-left whitespace-nowrap">No.</th>
+            <th class="px-3 py-2 border text-left w-1/3">Pertanyaan</th>
+            <th class="px-3 py-2 border text-left">Jawaban</th>
+            <th class="px-3 py-2 border text-center w-[160px]">Aksi</th>
         </tr>
       </thead>
       <tbody>
         @forelse ($faqs as $faq)
           <tr>
+            <td class="px-4 py-2 border w-auto">{{ ($faqs->currentPage()-1)*$faqs->perPage() + $loop->iteration }}</td>
             <td class="px-3 py-2 border align-top font-medium">{{ $faq->question }}</td>
             <td class="px-3 py-2 border text-gray-700 align-top">{{ $faq->answer }}</td>
             <td class="px-3 py-2 border text-center align-top">

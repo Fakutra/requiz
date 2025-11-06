@@ -27,6 +27,6 @@ class DashboardController extends Controller
             ->latest('id')
             ->get();
 
-        return view('welcome', compact('latestPositions', 'appliedBatchIds'));
+        return view('welcome', compact('latestPositions', 'appliedBatchIds','faqs'));
     }
 }

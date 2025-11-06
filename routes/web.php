@@ -30,6 +30,8 @@ use App\Http\Controllers\AdminPanel\ReportController;
 use App\Http\Controllers\AdminPanel\ActivityLogController;
 use App\Http\Controllers\AdminPanel\PersonalityRuleController;
 use App\Http\Controllers\AdminPanel\UserController;
+use App\Http\Controllers\AdminPanel\FaqController;
+
 
 
 // ====== Seleksi (baru, dipisah per tahap) ======
