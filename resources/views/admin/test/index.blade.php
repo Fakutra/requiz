@@ -145,6 +145,16 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
+
+                        <div class="rounded w-full h-64 overflow-y-auto">
+                            <label class="block text-sm font-medium">Isi Intro</label>
+                            <div class="mb-3 flex items-center gap-2">
+                                <input type="checkbox" class="rounded">
+                                <label class="text-sm font-medium">Gunakan template</label>
+                            </div>
+                            <input id="messageLolos" type="hidden" name="message">
+                            <trix-editor input="messageLolos" class="trix-content border rounded w-full h-full"></trix-editor>
+                        </div>
                     </div>
 
                     <div class="modal-footer">
