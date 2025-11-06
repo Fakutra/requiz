@@ -181,7 +181,7 @@
                 <td class="px-3 py-2">
                   <input type="checkbox" name="ids[]" value="{{ $a->id }}">
                 </td>
-                <td class="px-3 py-2 whitespace-nowrap">{{ $a->name }}</td>
+                <td class="px-3 py-2 whitespace-nowrap">{{ $a->user->name ?? '-' }}</td>
 
                 {{-- Loop 5 section + tampilkan RAW / MAX atau RAW / MAX → FINAL --}}
                 @for ($i = 1; $i <= 5; $i++)
@@ -353,12 +353,15 @@
       </div>
 
       <div class="grid grid-cols-2 gap-x-6 gap-y-4 text-sm">
-        <div><p class="text-gray-500 font-medium">Nama</p><p class="text-gray-900">{{ $a->name }}</p></div>
-        <div><p class="text-gray-500 font-medium">Email</p><p class="text-gray-900">{{ $a->email }}</p></div>
+        <div><p class="text-gray-500 font-medium">Nama</p>
+          <p class="text-gray-900">{{ $a->user->name ?? '-' }}</p></div>
+        <div><p class="text-gray-500 font-medium">Email</p>
+          <p class="text-gray-900">{{ $a->user->email ?? '-' }}</p></div>
         <div><p class="text-gray-500 font-medium">Jurusan</p><p class="text-gray-900">{{ $a->jurusan }}</p></div>
         <div><p class="text-gray-500 font-medium">Posisi</p><p class="text-gray-900">{{ $a->position->name ?? '-' }}</p></div>
         <div><p class="text-gray-500 font-medium">Batch</p><p class="text-gray-900">{{ $a->batch->name ?? '-' }}</p></div>
-        <div><p class="text-gray-500 font-medium">Umur</p><p class="text-gray-900">{{ $a->age ?? '-' }}</p></div>
+        <div><p class="text-gray-500 font-medium">Umur</p>
+          <p class="text-gray-900">{{ $a->age ?? '-' }}</p></div>
         <div><p class="text-gray-500 font-medium">Nilai Tes</p><p class="text-gray-900">{{ $a->test_score ?? '-' }}</p></div>
         <div>
           <p class="text-gray-500 font-medium">Status Seleksi</p>
@@ -476,8 +479,10 @@
         {{-- Bagian detail pengerjaan --}}
         @if($testResult)
           <div class="grid grid-cols-2 gap-4 text-sm mb-6">
-            <div><span class="text-gray-500">Nama Peserta:</span> <span class="font-medium">{{ $a->name }}</span></div>
-            <div><span class="text-gray-500">Email:</span> <span class="font-medium">{{ $a->email }}</span></div>
+            <div><span class="text-gray-500">Nama Peserta:</span>
+              <span class="font-medium">{{ $a->user->name ?? '-' }}</span></div>
+            <div><span class="text-gray-500">Email:</span>
+              <span class="font-medium">{{ $a->user->email ?? '-' }}</span></div>
             <div><span class="text-gray-500">Mulai Tes:</span> <span class="font-medium">{{ $testResult->started_at ?? '-' }}</span></div>
             <div><span class="text-gray-500">Selesai Tes:</span> <span class="font-medium">{{ $testResult->finished_at ?? '-' }}</span></div>
             <div><span class="text-gray-500">Total Skor:</span> 

@@ -4,9 +4,9 @@ namespace App\Exports;
 
 use App\Models\Applicant;
 use App\Models\TechnicalTestAnswer;
-use App\Services\ActivityLogger; // ✅ tambahkan
+use App\Services\ActivityLogger;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log; // ✅ tambahkan
+use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 
@@ -35,8 +35,12 @@ class TechnicalTestApplicantsExport implements FromCollection, WithHeadings
             'Menolak Offering',
         ];
 
-        $q = Applicant::with(['position', 'batch'])
-            ->whereIn('status', $relevantStatuses);
+        // ✅ eager-load user biar nggak N+1
+        $q = Applicant::with([
+            'user:id,name,email',
+            'position',
+            'batch',
+        ])->whereIn('status', $relevantStatuses);
 
         if (!empty($this->batchId)) {
             $q->where('batch_id', $this->batchId);
@@ -44,23 +48,35 @@ class TechnicalTestApplicantsExport implements FromCollection, WithHeadings
         if (!empty($this->positionId)) {
             $q->where('position_id', $this->positionId);
         }
+
+        // ✅ search juga ke users.name & users.email
         if (!empty($this->search)) {
             $needle = '%'.mb_strtolower(trim($this->search)).'%';
             $q->where(function ($w) use ($needle) {
-                $w->whereRaw('LOWER(name) LIKE ?', [$needle])
+                // kalau masih ada kolom name/email di applicants, ini tetap aman;
+                // kalau tidak ada, 2 baris ini nggak ngefek.
+                $w->whereRaw('LOWER(jurusan) LIKE ?', [$needle])
+                  ->orWhereRaw('LOWER(name) LIKE ?', [$needle])
                   ->orWhereRaw('LOWER(email) LIKE ?', [$needle])
-                  ->orWhereRaw('LOWER(jurusan) LIKE ?', [$needle]);
+                  ->orWhereHas('user', function ($u) use ($needle) {
+                      $u->whereRaw('LOWER(name) LIKE ?', [$needle])
+                        ->orWhereRaw('LOWER(email) LIKE ?', [$needle]);
+                  });
             });
         }
 
-        $apps = $q->orderBy('name')->get();
+        // ⚠️ jangan orderBy('name') di DB (kolomnya di users),
+        // sort di collection pakai accessor $a->name
+        $apps = $q->get()
+            ->sortBy(fn($a) => mb_strtolower($a->name ?? ''), SORT_NATURAL)
+            ->values();
 
         // ✅ Log aktivitas export
         try {
-            $userName = Auth::user()?->name ?? 'System';
-            $batchInfo = $this->batchId ? "Batch ID {$this->batchId}" : "Semua Batch";
-            $positionInfo = $this->positionId ? "Posisi ID {$this->positionId}" : "Semua Posisi";
-            $count = $apps->count();
+            $userName    = Auth::user()?->name ?? 'System';
+            $batchInfo   = $this->batchId ? "Batch ID {$this->batchId}" : "Semua Batch";
+            $positionInfo= $this->positionId ? "Posisi ID {$this->positionId}" : "Semua Posisi";
+            $count       = $apps->count();
 
             ActivityLogger::log(
                 'export',
@@ -83,29 +99,33 @@ class TechnicalTestApplicantsExport implements FromCollection, WithHeadings
         return $apps->map(function ($a) use ($answers) {
             $ans = $answers[$a->id] ?? null;
 
-            // ✅ Logika konversi status
-            $statusAsli = $a->status;
+            // ✅ konversi status buat tampilan
+            $statusAsli   = (string) $a->status;
             $statusTampil = match (true) {
                 str_contains($statusAsli, 'Tidak Lolos Technical Test') => 'Tidak Lolos Technical Test',
                 str_contains($statusAsli, 'Interview'),
                 str_contains($statusAsli, 'Offering'),
                 str_contains($statusAsli, 'Menerima Offering'),
                 str_contains($statusAsli, 'Tidak Lolos Interview'),
-                str_contains($statusAsli, 'Menolak Offering') => 'Lolos Technical Test',
-                $statusAsli === 'Technical Test' => 'Sedang Technical Test',
-                default => $statusAsli,
+                str_contains($statusAsli, 'Menolak Offering')           => 'Lolos Technical Test',
+                $statusAsli === 'Technical Test'                        => 'Sedang Technical Test',
+                default                                                 => $statusAsli,
             };
 
+            // 👇 name/email pakai accessor Applicant (fallback ke relasi user)
+            $nama  = $a->name  ?? ($a->user?->name  ?? '-');
+            $email = $a->email ?? ($a->user?->email ?? '-');
+
             return [
-                'Nama'        => $a->name,
-                'Email'       => $a->email,
+                'Nama'        => $nama,
+                'Email'       => $email,
                 'Jurusan'     => $a->jurusan,
                 'Posisi'      => $a->position->name ?? '-',
                 'Batch'       => $a->batch->name ?? '-',
                 'Nilai'       => is_null($ans?->score) ? '-' : $ans->score,
                 'Keterangan'  => $ans?->keterangan ?? '-',
                 'Status'      => $statusTampil,
-                'Dikirim'     => optional($ans?->submitted_at)->format('d-m-Y H:i:s') ?? '-',
+                'Dikirim'     => $ans?->submitted_at?->format('d-m-Y H:i:s') ?? '-',
                 'Jawaban PDF' => $ans?->answer_path ? url('storage/'.$ans->answer_path) : '-',
             ];
         });
@@ -123,7 +143,7 @@ class TechnicalTestApplicantsExport implements FromCollection, WithHeadings
             'Keterangan',
             'Status',
             'Dikirim',
-            'Jawaban PDF'
+            'Jawaban PDF',
         ];
     }
 }

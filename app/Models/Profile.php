@@ -18,6 +18,10 @@ class Profile extends Model
         'address',
     ];
 
+    protected $casts = [
+        'birthdate' => 'date', // <= penting
+    ];
+
     public function user()
     {
         return $this->belongsTo(User::class);

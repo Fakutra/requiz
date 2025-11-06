@@ -159,11 +159,15 @@
             @forelse($applicants as $a)
               <tr>
                 <td class="px-3 py-2"><input type="checkbox" name="ids[]" value="{{ $a->id }}"></td>
-                <td class="px-3 py-2 whitespace-nowrap">{{ $a->name }}</td>
-                <td class="px-3 py-2 whitespace-nowrap">{{ $a->email }}</td>
-                <td class="px-3 py-2 whitespace-nowrap">{{ $a->jurusan }}</td>
+
+                <td class="px-3 py-2 whitespace-nowrap">{{ $a->user->name ?? '-' }}</td>
+                <td class="px-3 py-2 whitespace-nowrap">{{ $a->user->email ?? '-' }}</td>
+                <td class="px-3 py-2 whitespace-nowrap">{{ $a->jurusan ?? '-' }}</td>
                 <td class="px-3 py-2 whitespace-nowrap">{{ $a->position->name ?? '-' }}</td>
-                <td class="px-3 py-2 whitespace-nowrap">{{ $a->age ?? '-' }}</td>
+
+                <td class="px-3 py-2 whitespace-nowrap">
+                  {{ $a->age ? $a->age.' tahun' : '-' }}
+                </td>
 
                 {{-- Status --}}
                 <td class="px-3 py-2 whitespace-nowrap">
@@ -259,34 +263,36 @@
       <div class="grid grid-cols-2 gap-x-6 gap-y-4 text-sm">
         <div>
           <p class="text-gray-500 font-medium">Nama</p>
-          <p class="text-gray-900">{{ $a->name }}</p>
+          <p class="text-gray-900">{{ $a->user->name ?? '-' }}</p>
         </div>
         <div>
           <p class="text-gray-500 font-medium">Email</p>
-          <p class="text-gray-900">{{ $a->email }}</p>
+          <p class="text-gray-900">{{ $a->user->email ?? '-' }}</p>
         </div>
 
         <div>
           <p class="text-gray-500 font-medium">NIK</p>
-          <p class="text-gray-900">{{ $a->nik }}</p>
+          <p class="text-gray-900">{{ $a->user->profile->identity_num ?? '-' }}</p>
         </div>
         <div>
           <p class="text-gray-500 font-medium">No. Telepon</p>
-          <p class="text-gray-900">{{ $a->no_telp }}</p>
+          <p class="text-gray-900">{{ $a->user->profile->phone_number ?? '-' }}</p>
         </div>
 
         <div>
           <p class="text-gray-500 font-medium">Tempat Lahir</p>
-          <p class="text-gray-900">{{ $a->tpt_lahir }}</p>
+          <p class="text-gray-900">{{ $a->user->profile->birthplace ?? '-' }}</p>
         </div>
         <div>
           <p class="text-gray-500 font-medium">Tanggal Lahir</p>
-          <p class="text-gray-900">{{ \Carbon\Carbon::parse($a->tgl_lahir)->format('d-m-Y') }}</p>
+          <p class="text-gray-900">
+            {{ optional($a->user->profile->birthdate)->translatedFormat('j F Y') ?? '-' }}
+          </p>
         </div>
 
         <div class="col-span-2">
           <p class="text-gray-500 font-medium">Alamat</p>
-          <p class="text-gray-900">{{ $a->alamat }}</p>
+          <p class="text-gray-900">{{ $a->user->profile->address ?? '-' }}</p>
         </div>
 
         <div>
@@ -336,16 +342,33 @@
             {{ $a->status }}
           </span>
         </div>
-        <div>
-          <p class="text-gray-500 font-medium">CV</p>
-          @if($a->cv_document)
-            <a href="{{ asset('storage/'.$a->cv_document) }}" target="_blank"
-              class="text-blue-600 hover:underline">
-              Lihat CV
-            </a>
-          @else
-            <span class="text-gray-400">Belum upload</span>
-          @endif
+        {{-- Dokumen (CV + Dokumen Tambahan) satu baris --}}
+        <div class="col-span-2">
+          <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
+            <span class="text-gray-500 font-medium">Dokumen:</span>
+
+            {{-- CV --}}
+            <div class="flex items-center gap-1">
+              <span class="text-gray-500">CV</span>
+              @if($a->cv_document)
+                <a href="{{ asset('storage/'.$a->cv_document) }}" target="_blank" class="text-blue-600 hover:underline">Lihat</a>
+              @else
+                <span class="text-gray-400">Belum upload</span>
+              @endif
+            </div>
+
+            <span class="text-gray-300">|</span>
+
+            {{-- Dokumen Tambahan --}}
+            <div class="flex items-center gap-1">
+              <span class="text-gray-500">Dokumen Tambahan</span>
+              @if($a->doc_tambahan)
+                <a href="{{ asset('storage/'.$a->doc_tambahan) }}" target="_blank" class="text-blue-600 hover:underline">Lihat</a>
+              @else
+                <span class="text-gray-400">Belum upload</span>
+              @endif
+            </div>
+          </div>
         </div>
       </div>
 

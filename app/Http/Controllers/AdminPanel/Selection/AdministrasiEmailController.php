@@ -22,25 +22,27 @@ class AdministrasiEmailController extends Controller
             'batch'         => 'nullable|exists:batches,id',
             'position'      => 'nullable|exists:positions,id',
             'type'          => 'required|in:lolos,tidak_lolos,selected',
-            'ids'           => 'nullable|string', // untuk selected
+            'ids'           => 'nullable|string', // untuk tab "Terpilih"
             'subject'       => 'required|string',
-            'message'       => 'required|string', // CKEditor / Trix output (HTML)
+            'message'       => 'required|string', // HTML dari Trix
             'attachments'   => 'nullable|array',
-            'attachments.*' => 'file|max:5120', // maksimal 5 MB
+            'attachments.*' => 'file|max:5120',   // 5 MB
         ]);
 
-        // 🧩 Tentukan target applicants
+        // ========= Target applicant =========
         if ($data['type'] === 'selected') {
             $ids = array_filter(explode(',', $data['ids'] ?? ''));
-            $applicants = Applicant::whereIn('id', $ids)->get();
+            $applicants = Applicant::with(['user:id,name,email'])
+                ->whereIn('id', $ids)
+                ->get();
         } else {
-            $query = Applicant::where('batch_id', $data['batch']);
-            if ($data['position']) {
-                $query->where('position_id', $data['position']);
-            }
+            $query = Applicant::query()
+                ->with(['user:id,name,email'])
+                ->when($data['batch'] ?? null, fn($q, $b) => $q->where('batch_id', $b))
+                ->when($data['position'] ?? null, fn($q, $p) => $q->where('position_id', $p));
 
             if ($data['type'] === 'lolos') {
-                // ✅ Semua status yang dianggap Lolos Seleksi Administrasi
+                // dianggap “Lolos Administrasi” (sudah lanjut min. Tes Tulis)
                 $lolosAdminStatuses = [
                     'Tes Tulis',
                     'Technical Test',
@@ -61,11 +63,28 @@ class AdministrasiEmailController extends Controller
         }
 
         $successCount = 0;
-        $failCount = 0;
+        $failCount    = 0;
 
         foreach ($applicants as $a) {
+            // email ambil dari relasi user
+            $targetEmail = $a->user->email ?? null;
+
             try {
-                // ✉️ Buat mail object
+                if (!$targetEmail) {
+                    // kalo gak ada email, catet gagal
+                    EmailLog::create([
+                        'applicant_id' => $a->id,
+                        'email'        => null,
+                        'stage'        => $this->stage,
+                        'subject'      => $data['subject'],
+                        'success'      => false,
+                        'error'        => 'User email is empty',
+                    ]);
+                    $failCount++;
+                    continue;
+                }
+
+                // ✉️ compose mail
                 $mail = new SelectionResultMail(
                     $data['subject'],
                     $data['message'],
@@ -74,7 +93,7 @@ class AdministrasiEmailController extends Controller
                     $a
                 );
 
-                // Lampirkan file jika ada
+                // attachments (opsional)
                 if ($request->hasFile('attachments')) {
                     foreach ($request->file('attachments') as $file) {
                         $mail->attach($file->getRealPath(), [
@@ -84,13 +103,13 @@ class AdministrasiEmailController extends Controller
                     }
                 }
 
-                // Kirim email
-                Mail::to($a->email)->send($mail);
+                // kirim
+                Mail::to($targetEmail)->send($mail);
 
-                // Simpan log sukses
+                // log sukses
                 EmailLog::create([
                     'applicant_id' => $a->id,
-                    'email'        => $a->email,
+                    'email'        => $targetEmail,
                     'stage'        => $this->stage,
                     'subject'      => $data['subject'],
                     'success'      => true,
@@ -100,10 +119,10 @@ class AdministrasiEmailController extends Controller
                 $successCount++;
 
             } catch (Throwable $e) {
-                // Simpan log gagal
+                // log gagal
                 EmailLog::create([
                     'applicant_id' => $a->id,
-                    'email'        => $a->email,
+                    'email'        => $targetEmail,
                     'stage'        => $this->stage,
                     'subject'      => $data['subject'],
                     'success'      => false,
@@ -114,42 +133,28 @@ class AdministrasiEmailController extends Controller
             }
         }
 
-        // ============================
-        // ✅ Log Aktivitas Berdasarkan Tab Email
-        // ============================
-        $total = count($applicants);
-
-        // Tentukan jenis aksi berdasarkan tab
-        $action = match ($data['type']) {
-            'lolos'        => 'send_email_lolos',
-            'tidak_lolos'  => 'send_email_tidak_lolos',
-            'selected'     => 'send_email_terpilih',
-            default        => 'send_email',
+        // ===== Activity log per tab =====
+        $total   = count($applicants);
+        $action  = match ($data['type']) {
+            'lolos'       => 'send_email_lolos',
+            'tidak_lolos' => 'send_email_tidak_lolos',
+            'selected'    => 'send_email_terpilih',
         };
-
-        // Label tampilan untuk log
         $tabLabel = match ($data['type']) {
-            'lolos'        => 'Lolos Seleksi Administrasi',
-            'tidak_lolos'  => 'Tidak Lolos Seleksi Administrasi',
-            'selected'     => 'Peserta Terpilih',
-            default        => 'Seleksi Administrasi',
+            'lolos'       => 'Lolos Seleksi Administrasi',
+            'tidak_lolos' => 'Tidak Lolos Seleksi Administrasi',
+            'selected'    => 'Peserta Terpilih',
         };
 
-        // Simpan log ke ActivityLogger
         ActivityLogger::log(
             $action,
             'Seleksi Administrasi',
             Auth::user()->name." mengirim email hasil {$tabLabel} ke {$successCount} dari {$total} peserta (gagal: {$failCount})",
-            $data['type'] === 'selected'
-                ? 'Selected IDs: '.implode(',', $ids ?? [])
-                : 'Batch ID: '.$data['batch']
+            ($data['type'] === 'selected')
+                ? ('Selected IDs: '.implode(',', $ids ?? []))
+                : ('Batch ID: '.($data['batch'] ?? '-').', Position ID: '.($data['position'] ?? '-'))
         );
 
-        // ============================
-
-        return back()->with(
-            'success',
-            "Email berhasil dikirim ke {$successCount} peserta dari total {$total}"
-        );
+        return back()->with('success', "Email berhasil dikirim ke {$successCount} peserta dari total {$total}");
     }
 }

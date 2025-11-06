@@ -3,9 +3,9 @@
 namespace App\Exports;
 
 use App\Models\Applicant;
-use App\Services\ActivityLogger; // ✅ tambahkan
+use App\Services\ActivityLogger;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log; // ✅ tambahkan
+use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -23,7 +23,13 @@ class AdministrasiApplicantsExport implements FromQuery, WithHeadings, WithMappi
     public function query()
     {
         $q = Applicant::query()
-            ->with(['position','batch','latestEmailLog'])
+            ->with([
+                'position:id,name',
+                'batch:id,name',
+                'latestEmailLog',
+                'user:id,name,email',
+                'user.profile:id,user_id,birthdate', // biar accessor age jalan mulus
+            ])
             ->whereIn('status', [
                 'Seleksi Administrasi',
                 'Tes Tulis',
@@ -41,19 +47,18 @@ class AdministrasiApplicantsExport implements FromQuery, WithHeadings, WithMappi
         if (!empty($this->search)) {
             $needle = '%'.mb_strtolower(trim($this->search)).'%';
             $q->where(function ($w) use ($needle) {
-                $w->whereRaw('LOWER(name) LIKE ?', [$needle])
-                  ->orWhereRaw('LOWER(email) LIKE ?', [$needle])
-                  ->orWhereRaw('LOWER(jurusan) LIKE ?', [$needle])
+                $w->whereRaw('LOWER(applicants.jurusan) LIKE ?', [$needle])
                   ->orWhereHas('position', fn($p) =>
                       $p->whereRaw('LOWER(name) LIKE ?', [$needle])
-                  );
+                  )
+                  ->orWhereHas('user', function ($u) use ($needle) {
+                      $u->whereRaw('LOWER(name) LIKE ?', [$needle])
+                        ->orWhereRaw('LOWER(email) LIKE ?', [$needle]);
+                  });
             });
         }
 
-        /**
-         * ✅ Setelah query siap, catat log export di sini.
-         * Kita hitung jumlah data sementara untuk keperluan log.
-         */
+        // 📝 log export
         try {
             $count = $q->count();
             $userName = Auth::user()?->name ?? 'System';
@@ -70,7 +75,10 @@ class AdministrasiApplicantsExport implements FromQuery, WithHeadings, WithMappi
             Log::warning('Gagal mencatat log export AdministrasiApplicants: '.$e->getMessage());
         }
 
-        return $q->orderBy('name');
+        // 🧭 urutkan by users.name (join buat ordering doang)
+        return $q->leftJoin('users', 'users.id', '=', 'applicants.user_id')
+                 ->select('applicants.*')
+                 ->orderBy('users.name');
     }
 
     public function headings(): array
@@ -87,44 +95,36 @@ class AdministrasiApplicantsExport implements FromQuery, WithHeadings, WithMappi
         ];
     }
 
-    /**
-     * @param \App\Models\Applicant $a
-     */
     public function map($a): array
     {
-        // Tentukan status seleksi untuk tampilan
-        $status = $a->status;
-        if ($status === 'Tes Tulis') {
-            $status = 'Lolos Seleksi Administrasi';
-        }
+        // Map status tampilan (Tes Tulis = Lolos Admin)
+        $displayStatus = $a->status === 'Tes Tulis'
+            ? 'Lolos Seleksi Administrasi'
+            : $a->status;
 
-        // Tentukan status email terakhir khusus tahap "Seleksi Administrasi"
+        // Ambil status email terakhir khusus stage ini
         $log = $a->latestEmailLog;
         if ($log && $log->stage !== 'Seleksi Administrasi') {
             $log = null;
         }
-
-        $emailStatus = 'Belum Dikirim';
-        if ($log) {
-            $emailStatus = $log->success ? 'Terkirim' : 'Gagal';
-        }
+        $emailStatus = $log ? ($log->success ? 'Terkirim' : 'Gagal') : 'Belum Dikirim';
 
         return [
-            $a->name,
-            $a->email,
-            $a->jurusan,
-            $a->position->name ?? '-',
-            $a->age ?? '-',
-            $a->batch->name ?? $a->batch_id,
-            $status,
-            $emailStatus,
+            $a->user->name ?? '-',                 // NAMA
+            $a->user->email ?? '-',                // EMAIL
+            $a->jurusan ?? '-',                    // JURUSAN
+            $a->position->name ?? '-',             // POSISI
+            $a->age ?? '-',                        // UMUR (accessor)
+            $a->batch->name ?? $a->batch_id,       // BATCH
+            $displayStatus,                        // STATUS SELEKSI
+            $emailStatus,                          // STATUS EMAIL
         ];
     }
 
     public function styles(Worksheet $sheet)
     {
         return [
-            1 => ['font' => ['bold' => true]], // heading bold
+            1 => ['font' => ['bold' => true]],
         ];
     }
 }

@@ -1,9 +1,6 @@
 {{-- resources/views/admin/applicant/index.blade.php --}}
 <x-app-admin>
   <div x-data="applicantPage()" x-init="init()" class="space-y-6">
-
-    
-
     <div class="bg-white border rounded-lg shadow-sm p-4">
       <h1 class="text-2xl font-bold text-blue-950 mb-4">Data Applicant</h1>
        {{-- Search selalu tampil --}}
@@ -171,11 +168,13 @@
               @forelse($applicants as $a)
                 <tr class="hover:bg-gray-50">
                   <td class="px-4 py-2 w-auto">{{ ($applicants->currentPage()-1)*$applicants->perPage() + $loop->iteration }}</td>
-                  <td class="px-4 py-2 w-auto">{{ $a->name }}</td>
-                  <td class="px-4 py-2 w-auto">{{ $a->email }}</td>
+                  <td class="px-4 py-2 w-auto">{{ $a->user->name ?? '-' }}</td>
+                  <td class="px-4 py-2 w-auto">{{ $a->user->email ?? '-' }}</td>
                   <td class="px-4 py-2 w-auto">{{ $a->position->name ?? '-' }}</td>
                   <td class="px-4 py-2 w-auto">{{ $a->ekspektasi_gaji_formatted ?? '-' }}</td>
-                  <td class="px-4 py-2 w-auto">{{ $a->age }} tahun</td>
+                  <td class="px-4 py-2 w-auto">
+                    {{ $a->age ? $a->age.' tahun' : '-' }}
+                  </td>
                   <td class="px-4 py-2 w-auto">{{ $a->pendidikan }} - {{ $a->universitas }}</td>
                   <td class="px-4 py-2 w-auto">{{ $a->jurusan }}</td>
                   <td class="px-4 py-2 w-auto">{{ $a->batch->name ?? $a->batch_id ?? '-' }}</td>
@@ -185,71 +184,78 @@
 
                       {{-- Lihat (eye) --}}
                       <button type="button"
-                              class="p-2 rounded hover:bg-gray-100"
-                              title="Lihat Detail"
-                              @click="openDetail(@js([
-                                'id'          => $a->id,
-                                'name'        => $a->name,
-                                'email'       => $a->email,
-                                'nik'         => $a->nik,
-                                'no_telp'     => $a->no_telp,
-                                'tpt_lahir'   => $a->tpt_lahir,
-                                'tgl_lahir'   => optional($a->tgl_lahir)->format('Y-m-d'),
-                                'alamat'      => $a->alamat,
-                                'pendidikan'  => $a->pendidikan,
-                                'universitas' => $a->universitas,
-                                'jurusan'     => $a->jurusan,
-                                'thn_lulus'   => $a->thn_lulus,
-                                'position_id' => $a->position_id,
-                                'position'    => $a->position->name ?? null,
-                                'batch_id'    => $a->batch_id,
-                                'batch'       => $a->batch->name ?? null,
-                                'status'      => $a->status,
-                                'skills'      => $a->skills,
-                                'cv_document' => $a->cv_document,
-                                'age'         => $a->age,
-                                'ekspektasi_gaji' => $a->ekspektasi_gaji,
-                                'ekspektasi_gaji_formatted' => $a->ekspektasi_gaji_formatted,
-                              ]))">
+                        class="p-2 rounded hover:bg-gray-100"
+                        title="Lihat Detail"
+                        @click="openDetail(@js([
+                          'id'          => $a->id,
+
+                          // from users
+                          'name'        => $a->user->name ?? null,
+                          'email'       => $a->user->email ?? null,
+
+                          // from profiles
+                          'nik'         => $a->user->profile->identity_num ?? null,
+                          'no_telp'     => $a->user->profile->phone_number ?? null,
+                          'tpt_lahir'   => $a->user->profile->birthplace ?? null,
+                          'tgl_lahir' => optional($a->user->profile->birthdate)->translatedFormat('j F Y'),
+                          'alamat'      => $a->user->profile->address ?? null,
+
+                          // from applicants
+                          'pendidikan'  => $a->pendidikan,
+                          'universitas' => $a->universitas,
+                          'jurusan'     => $a->jurusan,
+                          'thn_lulus'   => $a->thn_lulus,
+                          'position_id' => $a->position_id,
+                          'position'    => $a->position->name ?? null,
+                          'batch_id'    => $a->batch_id,
+                          'batch'       => $a->batch->name ?? null,
+                          'status'      => $a->status,
+                          'skills'      => $a->skills,
+                          'cv_document' => $a->cv_document,
+                          'doc_tambahan' => $a->doc_tambahan,
+                          'age'         => $a->age,
+                          'ekspektasi_gaji' => $a->ekspektasi_gaji,
+                          'ekspektasi_gaji_formatted' => $a->ekspektasi_gaji_formatted,
+                        ]))">
                         <x-view-button/>
                       </button>
 
                       {{-- Edit (pencil) --}}
                       <button type="button"
-                              class="p-2 rounded hover:bg-gray-100"
-                              title="Edit"
-                              @click="openEdit(@js([
-                                'id'          => $a->id,
-                                'name'        => $a->name,
-                                'email'       => $a->email,
-                                'nik'         => $a->nik,
-                                'no_telp'     => $a->no_telp,
-                                'tpt_lahir'   => $a->tpt_lahir,
-                                'tgl_lahir'   => optional($a->tgl_lahir)->format('Y-m-d'),
-                                'alamat'      => $a->alamat,
-                                'pendidikan'  => $a->pendidikan,
-                                'universitas' => $a->universitas,
-                                'jurusan'     => $a->jurusan,
-                                'thn_lulus'   => $a->thn_lulus,
-                                'position_id' => $a->position_id,
-                                'batch_id'    => $a->batch_id,
-                                'status'      => $a->status,
-                                'skills'      => $a->skills,
-                                'cv_document' => $a->cv_document,
-                                'age'         => $a->age,
-                                'ekspektasi_gaji' => $a->ekspektasi_gaji,
-                              ]))">
+                        class="p-2 rounded hover:bg-gray-100"
+                        title="Edit"
+                        @click="openEdit(@js([
+                          'id'          => $a->id,
+                          'name'        => $a->user->name ?? null,
+                          'email'       => $a->user->email ?? null,
+                          'nik'         => $a->user->profile->identity_num ?? null,
+                          'no_telp'     => $a->user->profile->phone_number ?? null,
+                          'tpt_lahir'   => $a->user->profile->birthplace ?? null,
+                          'tgl_lahir'   => optional($a->user->profile->birthdate)->format('Y-m-d'),
+                          'alamat'      => $a->user->profile->address ?? null,
+
+                          'pendidikan'  => $a->pendidikan,
+                          'universitas' => $a->universitas,
+                          'jurusan'     => $a->jurusan,
+                          'thn_lulus'   => $a->thn_lulus,
+                          'position_id' => $a->position_id,
+                          'batch_id'    => $a->batch_id,
+                          'status'      => $a->status,
+                          'skills'      => $a->skills,
+                          'cv_document' => $a->cv_document,
+                          'doc_tambahan' => $a->doc_tambahan,
+                          'ekspektasi_gaji' => $a->ekspektasi_gaji,
+                        ]))">
                         <x-edit-button/>
                       </button>
 
                       {{-- Hapus (trash) --}}
                       <button type="button"
-                              class="p-2 rounded hover:bg-gray-100"
-                              title="Hapus"
-                              @click="openDelete({ id: {{ $a->id }}, name: @js($a->name) })">
+                        class="p-2 rounded hover:bg-gray-100"
+                        title="Hapus"
+                        @click="openDelete({ id: {{ $a->id }}, name: @js($a->user->name ?? '-') })">
                         <x-delete-button/>
                       </button>
-
                     </div>
                   </td>
                 </tr>
@@ -343,19 +349,40 @@
           <div><div class="text-xs text-gray-500">Universitas</div><div class="font-medium" x-text="view.universitas ?? '-'"></div></div>
           <div><div class="text-xs text-gray-500">Jurusan</div><div class="font-medium" x-text="view.jurusan ?? '-'"></div></div>
           <div><div class="text-xs text-gray-500">Tahun Lulus</div><div class="font-medium" x-text="view.thn_lulus ?? '-'"></div></div>
-          
-
           <div class="md:col-span-2">
-            <div class="text-xs text-gray-500">CV</div>
-            <template x-if="view.cv_document">
-              <a :href="storageUrl(view.cv_document)" target="_blank"
-                 class="inline-flex items-center gap-2 px-3 py-2 mt-1 rounded bg-gray-100 hover:bg-gray-200 text-sm">
-                Lihat CV (PDF)
-              </a>
-            </template>
-            <template x-if="!view.cv_document">
-              <div class="font-medium">-</div>
-            </template>
+            <div class="text-xs text-gray-500">Skills</div>
+            <div class="font-medium whitespace-pre-line" x-text="view.skills ?? '-'"></div>
+          </div>
+
+          {{-- CV + Dokumen Tambahan (1 line, 2 kolom) --}}
+          <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+            {{-- CV --}}
+            <div>
+              <div class="text-xs text-gray-500">CV</div>
+              <template x-if="view.cv_document">
+                <a :href="storageUrl(view.cv_document)" target="_blank"
+                  class="inline-flex items-center gap-2 px-3 py-2 mt-1 rounded bg-gray-100 hover:bg-gray-200 text-sm">
+                  Lihat CV
+                </a>
+              </template>
+              <template x-if="!view.cv_document">
+                <div class="font-medium">-</div>
+              </template>
+            </div>
+
+            {{-- Dokumen Tambahan --}}
+            <div>
+              <div class="text-xs text-gray-500">Dokumen Tambahan</div>
+              <template x-if="view.doc_tambahan">
+                <a :href="storageUrl(view.doc_tambahan)" target="_blank"
+                  class="inline-flex items-center gap-2 px-3 py-2 mt-1 rounded bg-gray-100 hover:bg-gray-200 text-sm">
+                  Lihat Dokumen
+                </a>
+              </template>
+              <template x-if="!view.doc_tambahan">
+                <div class="font-medium">-</div>
+              </template>
+            </div>
           </div>
         </div>
 
@@ -413,7 +440,7 @@
               <label class="block text-sm font-medium">Pendidikan</label>
               <select name="pendidikan" x-model="form.pendidikan" class="w-full mt-1 border rounded px-3 py-2 text-sm">
                 <option value="">— Pilih —</option>
-                <template x-for="opt in ['SMA/Sederajat','Diploma','S1','S2','S3']" :key="opt">
+                <template x-for="opt in ['SMA/Sederajat','D1','D2','D3','D4','S1','S2','S3']" :key="opt">
                   <option :value="opt" x-text="opt"></option>
                 </template>
               </select>
@@ -490,16 +517,36 @@
               <textarea name="skills" x-model="form.skills" class="w-full mt-1 border rounded px-3 py-2 text-sm"></textarea>
             </div>
 
-            <div class="md:col-span-2">
-              <label class="block text-sm font-medium">CV (PDF, maks 3MB)</label>
-              <input type="file" name="cv_document" accept="application/pdf"
-                     class="w-full mt-1 border rounded px-3 py-2 text-sm">
-              <template x-if="form.cv_document">
-                <p class="mt-2 text-xs">
-                  CV saat ini:
-                  <a :href="storageUrl(form.cv_document)" target="_blank" class="text-blue-600 underline">Lihat</a>
-                </p>
-              </template>
+            <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+              {{-- CV --}}
+              <div>
+                <label class="block text-sm font-medium">CV (PDF, maks 3MB)</label>
+                <input type="file" name="cv_document" accept="application/pdf"
+                      class="w-full mt-1 border rounded px-3 py-2 text-sm">
+                <template x-if="form.cv_document">
+                  <p class="mt-2 text-xs">
+                    CV saat ini:
+                    <a :href="storageUrl(form.cv_document)" target="_blank" class="text-blue-600 underline">
+                      Lihat
+                    </a>
+                  </p>
+                </template>
+              </div>
+
+              {{-- Dokumen Tambahan --}}
+              <div>
+                <label class="block text-sm font-medium">Dokumen Tambahan (PDF, maks 5MB)</label>
+                <input type="file" name="doc_tambahan" accept="application/pdf,image/jpeg,image/png"
+                      class="w-full mt-1 border rounded px-3 py-2 text-sm">
+                <template x-if="form.doc_tambahan">
+                  <p class="mt-2 text-xs">
+                    Dokumen saat ini:
+                    <a :href="storageUrl(form.doc_tambahan)" target="_blank" class="text-blue-600 underline">
+                      Lihat
+                    </a>
+                  </p>
+                </template>
+              </div>
             </div>
           </div>
 
@@ -538,6 +585,7 @@
         position_id:'', batch_id:'',
         status:'', skills:'',
         cv_document:null,
+        doc_tambahan:null,
       };
 
       return {

@@ -27,72 +27,100 @@ class AdministrasiController extends Controller
         $positionId = $request->query('position');
         $search     = trim((string) $request->query('search'));
         $jurusan    = trim((string) $request->query('jurusan'));
+        $status     = trim((string) $request->query('status'));
 
-        // 🔹 ambil parameter sort & direction dari query
-        $sort      = $request->query('sort', 'name');       // default sort by name
-        $direction = $request->query('direction', 'asc');   // default asc
+        // sort yg nyentuh relasi: name/email (users), age (profiles.birthdate)
+        $sort      = $request->query('sort', 'name');
+        $direction = $request->query('direction', 'asc');
 
-        // whitelist kolom yang boleh di-sort
         $allowedSorts = ['name', 'email', 'jurusan', 'position_id', 'age'];
-        if (!in_array($sort, $allowedSorts)) {
-            $sort = 'name'; // fallback
-        }
+        if (!in_array($sort, $allowedSorts, true)) $sort = 'name';
 
-        $allJurusan = Applicant::select('jurusan')
-            ->distinct()
-            ->orderBy('jurusan')
-            ->pluck('jurusan');
+        $allJurusan = Applicant::select('jurusan')->distinct()->orderBy('jurusan')->pluck('jurusan');
 
         $batches   = Batch::orderBy('id')->get();
         $positions = $batchId ? Position::where('batch_id', $batchId)->get() : Position::all();
 
-        // 🔹 ambil semua peserta di batch
-        $q = Applicant::with(['position', 'batch', 'latestEmailLog']);
+        $q = Applicant::query()
+            ->with([
+                'position:id,name',
+                'batch:id,name',
+                'latestEmailLog',
+                'user:id,name,email',
+                'user.profile:id,user_id,identity_num,phone_number,birthplace,birthdate,address',
+            ]);
 
-        if ($batchId) {
-            $q->where('batch_id', $batchId);
-        }
-
-        if ($positionId) {
-            $q->where('position_id', $positionId);
-        }
+        if ($batchId)    $q->where('batch_id', $batchId);
+        if ($positionId) $q->where('position_id', $positionId);
 
         if ($search !== '') {
-            $needle = "%".mb_strtolower($search)."%";
+            $needle = '%'.mb_strtolower($search).'%';
             $q->where(function ($w) use ($needle) {
-                $w->whereRaw('LOWER(name) LIKE ?', [$needle])
-                  ->orWhereRaw('LOWER(email) LIKE ?', [$needle])
-                  ->orWhereRaw('LOWER(jurusan) LIKE ?', [$needle]);
+                $w->whereRaw('LOWER(applicants.jurusan) LIKE ?', [$needle])
+                ->orWhereHas('position', fn($p) =>
+                    $p->whereRaw('LOWER(name) LIKE ?', [$needle])
+                )
+                ->orWhereHas('user', function ($u) use ($needle) {
+                    $u->whereRaw('LOWER(name) LIKE ?', [$needle])
+                        ->orWhereRaw('LOWER(email) LIKE ?', [$needle]);
+                });
             });
         }
 
         if ($jurusan !== '') {
-            $q->whereRaw('LOWER(jurusan) LIKE ?', ['%'.mb_strtolower($jurusan).'%']);
+            $q->whereRaw('LOWER(applicants.jurusan) LIKE ?', ['%'.mb_strtolower($jurusan).'%']);
         }
 
-        // 🔹 tambahkan orderBy dinamis
-        $applicants = $q->get()->map(function ($a) {
-                $a->age = $a->birth_date ? \Carbon\Carbon::parse($a->birth_date)->age : null;
-                return $a;
-            });
+        // filter status opsional
+        if ($status !== '') {
+            if ($status === 'Seleksi Administrasi') {
+                $q->where('status', 'Seleksi Administrasi');
+            } elseif ($status === 'Tes Tulis') {
+                // interpretasi "Lolos Seleksi Administrasi" = sudah lanjut min. Tes Tulis
+                $q->whereIn('status', [
+                    'Tes Tulis','Technical Test','Interview','Offering',
+                    'Menerima Offering','Tidak Lolos Tes Tulis',
+                    'Tidak Lolos Technical Test','Tidak Lolos Interview','Menolak Offering'
+                ]);
+            } elseif ($status === 'Tidak Lolos Seleksi Administrasi') {
+                $q->where('status', 'Tidak Lolos Seleksi Administrasi');
+            }
+        }
 
-        if ($sort === 'age') {
-            $applicants = $applicants->sortBy('age', SORT_REGULAR, $direction === 'desc');
+        // ===== Sorting =====
+        $sortUsingCollection = in_array($sort, ['name','email','age'], true);
+
+        if ($sortUsingCollection) {
+            $collection = $q->get();
+
+            $collection = $collection->sortBy(function ($a) use ($sort) {
+                return match ($sort) {
+                    'name'  => mb_strtolower($a->user->name  ?? ''),
+                    'email' => mb_strtolower($a->user->email ?? ''),
+                    'age'   => $a->age ?? -1, // accessor dari model
+                    default => null,
+                };
+            }, SORT_NATURAL, $direction === 'desc');
+
+            // paginate manual
+            $page    = (int) $request->input('page', 1);
+            $perPage = 20;
+            $applicants = new \Illuminate\Pagination\LengthAwarePaginator(
+                $collection->forPage($page, $perPage)->values(),
+                $collection->count(),
+                $perPage,
+                $page,
+                ['path' => $request->url(), 'query' => $request->query()]
+            );
         } else {
-            $applicants = $applicants->sortBy($sort, SORT_REGULAR, $direction === 'desc');
+            // yang kolom di applicants bisa orderBy langsung
+            $orderCol = $sort === 'jurusan' ? 'applicants.jurusan'
+                    : ($sort === 'position_id' ? 'applicants.position_id' : 'applicants.id');
+
+            $applicants = $q->orderBy($orderCol, $direction)
+                ->paginate(20)
+                ->appends($request->query());
         }
-
-        // Pagination manual (opsional)
-        $page = request('page', 1);
-        $perPage = 20;
-        $applicants = new \Illuminate\Pagination\LengthAwarePaginator(
-            $applicants->forPage($page, $perPage),
-            $applicants->count(),
-            $perPage,
-            $page,
-            ['path' => request()->url(), 'query' => request()->query()]
-        );
-
 
         return view('admin.applicant.seleksi.administrasi.index', compact(
             'batches', 'positions', 'batchId', 'positionId',
@@ -132,10 +160,10 @@ class AdministrasiController extends Controller
 
             // 4️⃣ catat log aktivitas admin (ActivityLogger)
             ActivityLogger::log(
-                $data['bulk_action'],                  // action (lolos / tidak_lolos)
-                'Seleksi Administrasi',                // module
-                Auth::user()->name." menandai peserta {$a->name} sebagai '".strtoupper($data['bulk_action'])."'", // description
-                "Applicant ID: {$a->id}"               // target
+                $data['bulk_action'],
+                'Seleksi Administrasi',
+                Auth::user()->name." menandai peserta {$a->user->name} sebagai '".strtoupper($data['bulk_action'])."'",
+                "Applicant ID: {$a->id}"
             );
         }
 

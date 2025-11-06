@@ -8,9 +8,9 @@ use App\Models\Applicant;
 use App\Models\EmailLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
-use Throwable;
 use Illuminate\Support\Facades\Auth;
-use App\Services\ActivityLogger; // ✅ tambahkan ini
+use Throwable;
+use App\Services\ActivityLogger;
 
 class TesTulisEmailController extends Controller
 {
@@ -23,41 +23,76 @@ class TesTulisEmailController extends Controller
             'position'      => 'nullable|exists:positions,id',
             'type'          => 'required|in:lolos,tidak_lolos,selected',
             'subject'       => 'required|string',
-            'message'       => 'required|string',
+            'message'       => 'required|string', // HTML (Trix/CKEditor)
             'attachments'   => 'nullable|array',
             'attachments.*' => 'file|max:5120',
-            'ids'           => 'nullable|string',
+            'ids'           => 'nullable|string', // only for selected
         ]);
 
-        // 🔹 Tentukan target applicants
+        // =========================
+        // Tentukan target applicants
+        // =========================
+        $selectedIds = [];
         if ($data['type'] === 'selected') {
-            $ids = array_filter(explode(',', $data['ids'] ?? ''));
-            $applicants = Applicant::whereIn('id', $ids)->get();
+            $selectedIds = array_values(array_filter(explode(',', $data['ids'] ?? '')));
+            $applicants = Applicant::with('user')->whereIn('id', $selectedIds)->get();
         } else {
-            $query = Applicant::where('batch_id', $data['batch']);
-            if ($data['position']) $query->where('position_id', $data['position']);
+            $query = Applicant::with('user')->where('batch_id', $data['batch']);
+
+            if (!empty($data['position'])) {
+                $query->where('position_id', $data['position']);
+            }
 
             if ($data['type'] === 'lolos') {
+                // yang dianggap "Lolos Tes Tulis" (konsisten dengan UI)
                 $query->whereIn('status', [
-                    'Technical Test', 'Interview', 'Offering',
-                    'Menerima Offering', 'Tidak Lolos Technical Test',
-                    'Tidak Lolos Interview', 'Menolak Offering'
+                    'Technical Test',
+                    'Interview',
+                    'Offering',
+                    'Menerima Offering',
+                    'Tidak Lolos Technical Test',
+                    'Tidak Lolos Interview',
+                    'Menolak Offering',
                 ]);
             } else {
+                // tab "Tidak Lolos"
                 $query->where('status', 'Tidak Lolos Tes Tulis');
             }
 
             $applicants = $query->get();
         }
 
+        // =========================
+        // Kirim email + catat log
+        // =========================
         $successCount = 0;
-        $failCount = 0;
+        $failCount    = 0;
 
         foreach ($applicants as $a) {
+            // fallback aman: ambil dari applicant.email, kalau kosong ambil dari relasi user
+            $recipient = trim((string) ($a->email ?? $a->user?->email ?? ''));
+
+            // kalau tetep kosong → skip kirim, tapi log gagal (hindari NULL ke DB)
+            if ($recipient === '') {
+                EmailLog::create([
+                    'applicant_id' => $a->id,
+                    'email'        => '(missing)',
+                    'stage'        => $this->stage,
+                    'subject'      => $data['subject'],
+                    'success'      => false,
+                    'error'        => 'Missing recipient email',
+                ]);
+                $failCount++;
+                continue;
+            }
+
             try {
                 $mail = new SelectionResultMail(
-                    $data['subject'], $data['message'],
-                    $this->stage, $data['type'], $a
+                    $data['subject'],
+                    $data['message'],
+                    $this->stage,
+                    $data['type'],
+                    $a
                 );
 
                 if ($request->hasFile('attachments')) {
@@ -69,11 +104,11 @@ class TesTulisEmailController extends Controller
                     }
                 }
 
-                Mail::to($a->email)->send($mail);
+                Mail::to($recipient)->send($mail);
 
                 EmailLog::create([
                     'applicant_id' => $a->id,
-                    'email'        => $a->email,
+                    'email'        => $recipient,
                     'stage'        => $this->stage,
                     'subject'      => $data['subject'],
                     'success'      => true,
@@ -84,7 +119,7 @@ class TesTulisEmailController extends Controller
             } catch (Throwable $e) {
                 EmailLog::create([
                     'applicant_id' => $a->id,
-                    'email'        => $a->email,
+                    'email'        => $recipient, // tetap string valid
                     'stage'        => $this->stage,
                     'subject'      => $data['subject'],
                     'success'      => false,
@@ -94,34 +129,34 @@ class TesTulisEmailController extends Controller
             }
         }
 
-        // 🧩 Log aktivitas admin
-        $total = count($applicants);
-        $action = match ($data['type']) {
-            'lolos'        => 'send_email_lolos',
-            'tidak_lolos'  => 'send_email_tidak_lolos',
-            'selected'     => 'send_email_terpilih',
-            default        => 'send_email',
+        // =========================
+        // Activity Logger
+        // =========================
+        $total    = $applicants->count();
+        $action   = match ($data['type']) {
+            'lolos'       => 'send_email_lolos',
+            'tidak_lolos' => 'send_email_tidak_lolos',
+            'selected'    => 'send_email_terpilih',
+            default       => 'send_email',
+        };
+        $tabLabel = match ($data['type']) {
+            'lolos'       => 'Lolos Tes Tulis',
+            'tidak_lolos' => 'Tidak Lolos Tes Tulis',
+            'selected'    => 'Peserta Terpilih Tes Tulis',
+            default       => 'Tes Tulis',
         };
 
-        $tabLabel = match ($data['type']) {
-            'lolos'        => 'Lolos Tes Tulis',
-            'tidak_lolos'  => 'Tidak Lolos Tes Tulis',
-            'selected'     => 'Peserta Terpilih Tes Tulis',
-            default        => 'Tes Tulis',
-        };
+        $targetInfo = $data['type'] === 'selected'
+            ? ('Selected IDs: ' . implode(',', $selectedIds))
+            : ('Batch ID: ' . $data['batch'] . ', Position ID: ' . ($data['position'] ?? 'Semua Posisi'));
 
         ActivityLogger::log(
             $action,
             'Tes Tulis',
-            Auth::user()->name." mengirim email hasil {$tabLabel} ke {$successCount} dari {$total} peserta (gagal: {$failCount})",
-            $data['type'] === 'selected'
-                ? 'Selected IDs: '.implode(',', $ids ?? [])
-                : 'Batch ID: '.$data['batch']
+            Auth::user()->name . " mengirim email hasil {$tabLabel} ke {$successCount} dari {$total} peserta (gagal: {$failCount})",
+            $targetInfo
         );
 
-        return back()->with(
-            'success',
-            "Email berhasil dikirim ke {$successCount} peserta dari total {$total}"
-        );
+        return back()->with('success', "Email berhasil dikirim ke {$successCount} peserta dari total {$total}");
     }
 }

@@ -47,10 +47,10 @@ class LowonganController extends Controller
     public function store(Request $request, Position $position)
     {
         try {
-            $user = auth()->user();
+            $user    = auth()->user();
             $batchId = $position->batch_id;
 
-            // 🔍 Cek apakah user sudah pernah melamar di batch yang sama
+            // Cek 1x per batch
             $alreadyApplied = Applicant::where('user_id', $user->id)
                 ->where('batch_id', $batchId)
                 ->exists();
@@ -60,13 +60,13 @@ class LowonganController extends Controller
                     ->withErrors(['error' => 'Anda sudah melamar di batch ini. Anda hanya boleh melamar satu posisi per batch.']);
             }
 
-            // 🔍 Cek kuota posisi
+            // Cek kuota
             if ($position->applicants()->count() >= $position->quota) {
                 return redirect()->route('lowongan.index')
                     ->withErrors(['error' => 'Maaf, kuota untuk posisi ini sudah penuh.']);
             }
 
-            // ✅ Validasi form input
+            // Validasi
             $validated = $request->validate([
                 'pendidikan'      => 'required|in:SMA/Sederajat,D1,D2,D3,D4,S1,S2,S3',
                 'universitas'     => 'required|string|max:255',
@@ -75,36 +75,41 @@ class LowonganController extends Controller
                 'skills'          => 'array',
                 'ekspektasi_gaji' => 'required|numeric|min:0|max:100000000',
                 'cv_document'     => 'required|file|mimes:pdf|max:3072',
-                'doc_tambahan'    => 'nullable|file|mimes:pdf|max:5120',
+                'doc_tambahan'    => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
                 'agreed'          => 'accepted',
             ], [
                 'agreed.accepted' => 'Harap centang kotak persetujuan syarat & ketentuan.',
             ]);
 
-            // 💼 Bersihkan format angka gaji
+            // Normalisasi gaji
             $validated['ekspektasi_gaji'] = (int) str_replace(['.', ',', ' '], '', $validated['ekspektasi_gaji']);
 
-            // 📂 Upload file CV dan dokumen tambahan
-            $validated['cv_document'] = $request->file('cv_document')->store("cv-applicant/{$user->id}", 'public');
+            // Simpan file => path relatif ke disk 'public'
+            $validated['cv_document'] = $request->file('cv_document')
+                ->store("cv-applicant/{$user->id}", 'public');
 
             if ($request->hasFile('doc_tambahan')) {
-                $validated['additional_doc'] = $request->file('doc_tambahan')
+                // gunakan key yang SAMA dgn kolom DB
+                $validated['doc_tambahan'] = $request->file('doc_tambahan')
                     ->store("doc-applicant/{$user->id}", 'public');
+            } else {
+                // jangan biarkan UploadedFile kebawa ke create()
+                unset($validated['doc_tambahan']);
             }
 
-            // 🧠 Tangani daftar skill
+            // Skills array -> string (handle "Lainnya")
             $skills = $request->input('skills', []);
             if (in_array('Lainnya', $skills, true) && $request->filled('other_skill')) {
                 $skills[array_search('Lainnya', $skills, true)] = $request->input('other_skill');
             }
             $validated['skills'] = !empty($skills) ? implode(', ', $skills) : null;
 
-            // 🧾 Tambahkan relasi penting
+            // Relasi
             $validated['user_id']     = $user->id;
             $validated['position_id'] = $position->id;
             $validated['batch_id']    = $batchId;
 
-            // 🧩 Kolom 'status' otomatis 'Seleksi Administrasi' dari migration (default)
+            // Simpan
             Applicant::create($validated);
 
             return redirect()->route('history.index')->with('success', 'Selamat! Lamaran Anda telah berhasil dikirim.');

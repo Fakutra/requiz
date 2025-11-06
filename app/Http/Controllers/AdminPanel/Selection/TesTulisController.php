@@ -36,12 +36,12 @@ class TesTulisController extends Controller
         $direction = $request->query('direction', 'asc');
 
         $allowedSorts = ['name', 'section_1', 'section_2', 'section_3', 'section_4', 'section_5', 'total_nilai'];
-        if (!in_array($sort, $allowedSorts)) {
-            $sort = 'name';
-        }
+        if (!in_array($sort, $allowedSorts)) $sort = 'name';
 
-        // ⬇️ Query peserta
+        // ⬇️ Query peserta (tambahkan eager load ke user & profile)
         $q = Applicant::with([
+            'user:id,name,email',
+            'user.profile:id,user_id,birthdate',
             'position',
             'batch',
             'latestEmailLog',
@@ -59,12 +59,18 @@ class TesTulisController extends Controller
         if ($positionId) $q->where('position_id', $positionId);
         if ($status)     $q->where('status', $status);
 
+        // 🔎 Search pindah ke relasi user (name/email) + jurusan
         if ($search !== '') {
             $keyword = "%".mb_strtolower($search)."%";
             $q->where(function ($w) use ($keyword) {
-                $w->whereRaw('LOWER(name) LIKE ?', [$keyword])
-                ->orWhereRaw('LOWER(email) LIKE ?', [$keyword])
-                ->orWhereRaw('LOWER(jurusan) LIKE ?', [$keyword]);
+                $w->whereRaw('LOWER(jurusan) LIKE ?', [$keyword])
+                ->orWhereHas('user', function ($u) use ($keyword) {
+                    $u->whereRaw('LOWER(name) LIKE ?', [$keyword])
+                        ->orWhereRaw('LOWER(email) LIKE ?', [$keyword]);
+                })
+                ->orWhereHas('position', fn($p) =>
+                    $p->whereRaw('LOWER(name) LIKE ?', [$keyword])
+                );
             });
         }
 
@@ -72,17 +78,15 @@ class TesTulisController extends Controller
         $applicants = $q->get();
 
         // ⬇️ Ambil max personality score KHUSUS batch ini
-        $maxPersonalityFinal = (int) DB::table('personality_rules')
+        $maxPersonalityFinal = (int) \DB::table('personality_rules')
             ->where('batch_id', $batchId)
-            ->max('score_value');
+            ->max('score_value') ?: 0;
 
-        // Kalau batch belum punya rules → aman (nilai personality = 0)
-        if (!$maxPersonalityFinal) {
-            $maxPersonalityFinal = 0;
-        }
-
-        // ⬇️ Hitung final_total_score & max_total_score
+        // ⬇️ Hitung final_total_score & max_total_score + inject age dari profile
         foreach ($applicants as $a) {
+            // umur dari profile
+            $a->age = optional($a->user?->profile?->birthdate)->age;
+
             $testResult = $a->latestTestResult;
             if (!$testResult) {
                 $a->final_total_score = null;
@@ -99,36 +103,34 @@ class TesTulisController extends Controller
 
                 $rawScore = (float) ($sr->score ?? 0);
                 $questions = $section->questionBundle->questions ?? collect();
-                $isPersonality = $questions->contains(fn($q) => $q->type === 'Poin');
+                $isPersonality = $questions->contains(fn($qq) => $qq->type === 'Poin');
 
-                // 1️⃣ MAX
+                // MAX
                 if ($isPersonality) {
                     $maxTotal += $maxPersonalityFinal;
                 } else {
                     $pg    = $questions->where('type','PG')->count();
                     $multi = $questions->where('type','Multiple')->count();
                     $essay = $questions->where('type','Essay')->count();
-                    $maxSection = ($pg * 1) + ($multi * 1) + ($essay * 3);
-                    $maxTotal += $maxSection;
+                    $maxTotal += ($pg * 1) + ($multi * 1) + ($essay * 3);
                 }
 
-                // 2️⃣ FINAL SCORE
+                // FINAL
                 if ($isPersonality) {
                     $rawMaxSection = $questions->count() * 5;
                     $percent = $rawMaxSection > 0 ? ($rawScore / $rawMaxSection) * 100 : 0;
 
-                    $rule = DB::table('personality_rules')
+                    $rule = \DB::table('personality_rules')
                         ->where('batch_id', $batchId)
                         ->where('min_percentage', '<=', $percent)
-                        ->where(function ($q) use ($percent) {
-                            $q->where('max_percentage', '>=', $percent)
+                        ->where(function ($qq) use ($percent) {
+                            $qq->where('max_percentage', '>=', $percent)
                             ->orWhereNull('max_percentage');
                         })
                         ->orderByDesc('min_percentage')
                         ->first();
 
-                    $finalScore = $rule ? (int) $rule->score_value : 0;
-                    $finalTotal += $finalScore;
+                    $finalTotal += $rule ? (int) $rule->score_value : 0;
                 } else {
                     $finalTotal += $rawScore;
                 }
@@ -138,14 +140,25 @@ class TesTulisController extends Controller
             $a->max_total_score   = $maxTotal;
         }
 
-        // ⬇️ Sorting
-        $applicants = $applicants->sortBy($sort, SORT_REGULAR, $direction === 'desc');
+        // ⬇️ Sorting (name pakai user.name)
+        $applicants = $applicants->sortBy(function ($a) use ($sort) {
+            return match ($sort) {
+                'name'        => mb_strtolower($a->user->name ?? ''),
+                'section_1'   => null, // (opsional: isi kalau kamu simpan skor per-section sebagai field)
+                'section_2'   => null,
+                'section_3'   => null,
+                'section_4'   => null,
+                'section_5'   => null,
+                'total_nilai' => $a->final_total_score ?? -1,
+                default       => null,
+            };
+        }, SORT_NATURAL, $direction === 'desc');
 
         // ⬇️ Pagination
-        $page = request('page', 1);
+        $page = (int) request('page', 1);
         $perPage = 20;
         $applicants = new \Illuminate\Pagination\LengthAwarePaginator(
-            $applicants->forPage($page, $perPage),
+            $applicants->forPage($page, $perPage)->values(),
             $applicants->count(),
             $perPage,
             $page,
