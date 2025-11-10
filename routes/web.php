@@ -279,4 +279,8 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::post  ('admin/faq',           [FaqController::class, 'store'])->name('admin.faq.store');
     Route::put   ('admin/faq/{faq}',     [FaqController::class, 'update'])->name('admin.faq.update');
     Route::delete('admin/faq/{faq}',     [FaqController::class, 'destroy'])->name('admin.faq.destroy');
+
+    Route::get('admin/about',   fn() => view('admin.about.index'))->name('admin.about.index');
+    Route::get('admin/contact', fn() => view('admin.contact.index'))->name('admin.contact.index');
+    Route::get('admin/privacy', fn() => view('admin.privacy.index'))->name('admin.privacy.index');
 });
