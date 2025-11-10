@@ -33,6 +33,7 @@ use App\Http\Controllers\AdminPanel\UserController;
 use App\Http\Controllers\AdminPanel\FaqController;
 
 
+
 // ====== Seleksi (baru, dipisah per tahap) ======
 use App\Http\Controllers\AdminPanel\Selection\RekapController;
 use App\Http\Controllers\AdminPanel\Selection\ProcessController;
@@ -270,7 +271,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::get('/', [PersonalityRuleController::class, 'index'])->name('index');
         Route::post('/', [PersonalityRuleController::class, 'store'])->name('store');
         Route::match(['put', 'patch'], '/{id}', [PersonalityRuleController::class, 'update'])->name('update');
-        Route::delete('/{id}', [PersonalityRuleController::class, 'destroy'])->name('destroy');      
+        Route::delete('/{id}', [PersonalityRuleController::class, 'destroy'])->name('destroy');
     });
 
     // ===== FAQ 
