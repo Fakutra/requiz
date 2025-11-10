@@ -89,8 +89,14 @@
             </div>
             <div class="block w-full">
                 <x-input-label for="birthdate" :value="__('Tanggal Lahir')" />
-                <x-text-input id="birthdate" name="birthdate" type="date" class="mt-1 block w-full"
-                    :value="old('birthdate', $profile->birthdate ?? '')" required />
+                <x-text-input
+                    id="birthdate"
+                    name="birthdate"
+                    type="date"
+                    class="mt-1 block w-full"
+                    value="{{ old('birthdate', optional($profile?->birthdate)->format('Y-m-d')) }}"
+                    required
+                />
                 <x-input-error class="mt-2" :messages="$errors->get('birthdate')" />
             </div>
         </div>

@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Exports;
 
 use App\Models\Applicant;
@@ -25,25 +26,19 @@ class ApplicantsExport implements FromQuery, WithHeadings, WithMapping, WithStyl
             ->with([
                 'position:id,name',
                 'batch:id,name',
-                'user:id,name,email',
-                'user.profile:id,user_id,identity_num,phone_number,birthplace,birthdate,address',
             ])
-            // biar bisa orderBy nama user di DB-level
-            ->leftJoin('users', 'users.id', '=', 'applicants.user_id')
             ->select('applicants.*');
 
-        // 🔎 search: user.name, user.email, applicant.jurusan, position.name
+        // 🔎 search di kolom applicants sendiri + relasi position
         if (!empty($this->search)) {
             $needle = '%'.mb_strtolower(trim($this->search)).'%';
             $q->where(function ($w) use ($needle) {
-                $w->whereRaw('LOWER(applicants.jurusan) LIKE ?', [$needle])
+                $w->whereRaw('LOWER(applicants.name) LIKE ?', [$needle])
+                  ->orWhereRaw('LOWER(applicants.email) LIKE ?', [$needle])
+                  ->orWhereRaw('LOWER(applicants.jurusan) LIKE ?', [$needle])
                   ->orWhereHas('position', fn($p) =>
                       $p->whereRaw('LOWER(name) LIKE ?', [$needle])
-                  )
-                  ->orWhereHas('user', function ($u) use ($needle) {
-                      $u->whereRaw('LOWER(name) LIKE ?', [$needle])
-                        ->orWhereRaw('LOWER(email) LIKE ?', [$needle]);
-                  });
+                  );
             });
         }
 
@@ -66,8 +61,8 @@ class ApplicantsExport implements FromQuery, WithHeadings, WithMapping, WithStyl
             Log::warning('Gagal log export pelamar: '.$e->getMessage());
         }
 
-        // urut by users.name (fallback: applicants.id)
-        return $q->orderBy('users.name')->orderBy('applicants.id');
+        // urut by applicants.name (fallback: applicants.id)
+        return $q->orderBy('applicants.name')->orderBy('applicants.id');
     }
 
     public function headings(): array
@@ -97,18 +92,18 @@ class ApplicantsExport implements FromQuery, WithHeadings, WithMapping, WithStyl
 
     public function map($a): array
     {
-        $profile = $a->user?->profile;
-        $birth   = $profile?->birthdate;
+        // $a->birthdate udah cast date di model Applicant (recommended)
+        $birth = $a->birthdate;
 
         return [
             $a->id,
-            $a->user?->name,
-            $a->user?->email,
-            $profile?->identity_num,
-            $profile?->phone_number,
-            $profile?->birthplace,
-            $birth ? $birth->translatedFormat('j F Y') : null, // contoh: 9 September 1999
-            $profile?->address,
+            $a->name,
+            $a->email,
+            $a->identity_num,
+            $a->phone_number,
+            $a->birthplace,
+            $birth ? $birth->translatedFormat('j F Y') : null,
+            $a->address,
             $a->pendidikan,
             $a->universitas,
             $a->jurusan,
@@ -117,7 +112,7 @@ class ApplicantsExport implements FromQuery, WithHeadings, WithMapping, WithStyl
             $a->batch?->name ?? $a->batch_id,
             $a->status,
             $a->skills,
-            $a->ekspektasi_gaji ? number_format($a->ekspektasi_gaji, 0, ',', '.') : null,
+            isset($a->ekspektasi_gaji) ? number_format((int)$a->ekspektasi_gaji, 0, ',', '.') : null,
             $a->cv_document,
             $a->doc_tambahan,
         ];

@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\TechnicalTestApplicantsExport;
 use App\Services\SelectionNotifier;
-use App\Services\ActivityLogger; // ✅ tambahkan ini
+use App\Services\ActivityLogger; // ✅
 
 class TechnicalTestController extends Controller
 {
@@ -29,16 +29,13 @@ class TechnicalTestController extends Controller
         $batches   = Batch::orderBy('id')->get();
         $positions = $batchId ? Position::where('batch_id', $batchId)->get() : collect();
 
-        // ambil parameter sort & direction
+        // sorting
         $sort      = $request->query('sort', 'name');
         $direction = $request->query('direction', 'asc');
-
-        // kolom yang boleh di-sort
         $allowedSorts = ['name', 'email', 'pdf', 'keterangan', 'score'];
-        if (!in_array($sort, $allowedSorts)) {
-            $sort = 'name';
-        }
+        if (!in_array($sort, $allowedSorts, true)) $sort = 'name';
 
+        // status yang relevan di tahap ini
         $relevantStatuses = [
             'Technical Test',
             'Interview',
@@ -49,25 +46,30 @@ class TechnicalTestController extends Controller
             'Menolak Offering',
         ];
 
+        // ⚙️ Query utama — langsung dari applicants (tanpa relasi user/profile)
         $q = Applicant::with(['position','batch','latestEmailLog'])
             ->whereIn('status', $relevantStatuses);
 
-        if ($batchId) $q->where('batch_id', $batchId);
+        if ($batchId)    $q->where('batch_id', $batchId);
         if ($positionId) $q->where('position_id', $positionId);
-        if ($status) $q->where('status', $status);
+        if ($status)     $q->where('status', $status);
+
         if ($search !== '') {
             $needle = "%".mb_strtolower($search)."%";
             $q->where(function ($w) use ($needle) {
                 $w->whereRaw('LOWER(name) LIKE ?', [$needle])
-                ->orWhereRaw('LOWER(email) LIKE ?', [$needle])
-                ->orWhereRaw('LOWER(jurusan) LIKE ?', [$needle]);
+                  ->orWhereRaw('LOWER(email) LIKE ?', [$needle])
+                  ->orWhereRaw('LOWER(jurusan) LIKE ?', [$needle])
+                  ->orWhereHas('position', fn($p) =>
+                      $p->whereRaw('LOWER(name) LIKE ?', [$needle])
+                  );
             });
         }
 
-        // ambil semua applicant dulu (tanpa orderBy)
+        // ambil applicants dulu
         $applicants = $q->get();
 
-        // ambil jawaban dan pairing ke applicant
+        // ambil jawaban terakhir per applicant
         $answerRows = TechnicalTestAnswer::whereIn('applicant_id', $applicants->pluck('id'))
             ->orderBy('applicant_id')
             ->orderByDesc('submitted_at')
@@ -75,31 +77,31 @@ class TechnicalTestController extends Controller
 
         $latestAnswers = $answerRows->unique('applicant_id')->keyBy('applicant_id');
 
-        // inject pdf, keterangan, score ke setiap applicant (virtual field)
+        // inject kolom virtual: pdf (1/0), keterangan, score
         $applicants = $applicants->map(function ($a) use ($latestAnswers) {
             $ans = $latestAnswers[$a->id] ?? null;
-            $a->pdf        = $ans && $ans->answer_url ? 1 : 0;
+            $a->pdf        = ($ans && $ans->answer_url) ? 1 : 0;
             $a->keterangan = $ans?->keterangan ?? null;
             $a->score      = $ans?->score ?? null;
             return $a;
         });
 
-        // sorting collection
+        // sorting di collection (name/email/pdf/keterangan/score tersedia di object)
         $applicants = $applicants->sortBy($sort, SORT_NATURAL, $direction === 'desc');
 
         // pagination manual
-        $page = request('page', 1);
+        $page    = (int) $request->query('page', 1);
         $perPage = 20;
         $applicants = new \Illuminate\Pagination\LengthAwarePaginator(
-            $applicants->forPage($page, $perPage),
+            $applicants->forPage($page, $perPage)->values(),
             $applicants->count(),
             $perPage,
             $page,
-            ['path' => request()->url(), 'query' => request()->query()]
+            ['path' => $request->url(), 'query' => $request->query()]
         );
 
         return view('admin.applicant.seleksi.technical-test.index', compact(
-            'batches','positions','batchId','positionId','applicants','latestAnswers'
+            'batches', 'positions', 'batchId', 'positionId', 'applicants', 'latestAnswers'
         ));
     }
 
@@ -109,8 +111,8 @@ class TechnicalTestController extends Controller
     public function bulkMark(Request $r)
     {
         $data = $r->validate([
-            'ids'   => 'required|array',
-            'ids.*' => 'exists:applicants,id',
+            'ids'         => 'required|array',
+            'ids.*'       => 'exists:applicants,id',
             'bulk_action' => 'required|in:lolos,tidak_lolos',
         ]);
 
@@ -121,16 +123,16 @@ class TechnicalTestController extends Controller
                 ? 'Interview'
                 : 'Tidak Lolos Technical Test';
 
-            // Log internal seleksi
+            // log internal
             SelectionLogger::write($a, $this->stage, $data['bulk_action'], Auth::id());
 
-            // Update status applicant
+            // update status
             $a->forceFill(['status' => $newStatus])->save();
 
-            // Kirim notifikasi
+            // notifikasi ke kandidat
             SelectionNotifier::notify($a, $this->stage, $data['bulk_action'], $newStatus);
 
-            // ✅ Catat aktivitas admin
+            // aktivitas admin
             ActivityLogger::log(
                 $data['bulk_action'],
                 'Technical Test',
@@ -152,20 +154,18 @@ class TechnicalTestController extends Controller
             'keterangan' => 'nullable|string',
         ]);
 
-        // Simpan data lama
+        // simpan before/after
         $oldData = $answer->only(['score', 'keterangan']);
 
-        // Update nilai baru
         $answer->update([
             'score'      => $data['score'],
             'keterangan' => $data['keterangan'] ?? null,
         ]);
 
-        // Simpan data baru
         $newData = $answer->only(['score', 'keterangan']);
 
-        // ✅ Catat perbedaan ke log aktivitas
-        \App\Services\ActivityLogger::logUpdate('Technical Test', $answer, $oldData, $newData);
+        // log diff
+        ActivityLogger::logUpdate('Technical Test', $answer, $oldData, $newData);
 
         return back()->with('success', 'Nilai Technical Test berhasil disimpan.');
     }
@@ -175,13 +175,6 @@ class TechnicalTestController extends Controller
      */
     public function export(Request $r)
     {
-        // ✅ Log aktivitas export
-        // ActivityLogger::log(
-        //     'export',
-        //     'Technical Test',
-        //     Auth::user()->name.' mengekspor data peserta tahap Technical Test'
-        // );
-
         return Excel::download(
             new TechnicalTestApplicantsExport(
                 $r->query('batch'),

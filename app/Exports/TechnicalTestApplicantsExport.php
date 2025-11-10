@@ -35,7 +35,7 @@ class TechnicalTestApplicantsExport implements FromCollection, WithHeadings
             'Menolak Offering',
         ];
 
-        // ✅ eager-load user biar nggak N+1
+        // ✅ eager load biar hemat query
         $q = Applicant::with([
             'user:id,name,email',
             'position',
@@ -49,12 +49,10 @@ class TechnicalTestApplicantsExport implements FromCollection, WithHeadings
             $q->where('position_id', $this->positionId);
         }
 
-        // ✅ search juga ke users.name & users.email
+        // ✅ search fleksibel (jurusan + applicants.name/email + users.name/email)
         if (!empty($this->search)) {
             $needle = '%'.mb_strtolower(trim($this->search)).'%';
             $q->where(function ($w) use ($needle) {
-                // kalau masih ada kolom name/email di applicants, ini tetap aman;
-                // kalau tidak ada, 2 baris ini nggak ngefek.
                 $w->whereRaw('LOWER(jurusan) LIKE ?', [$needle])
                   ->orWhereRaw('LOWER(name) LIKE ?', [$needle])
                   ->orWhereRaw('LOWER(email) LIKE ?', [$needle])
@@ -65,18 +63,17 @@ class TechnicalTestApplicantsExport implements FromCollection, WithHeadings
             });
         }
 
-        // ⚠️ jangan orderBy('name') di DB (kolomnya di users),
-        // sort di collection pakai accessor $a->name
+        // Sort di collection (akses $a->name yg mungkin dari relasi user)
         $apps = $q->get()
-            ->sortBy(fn($a) => mb_strtolower($a->name ?? ''), SORT_NATURAL)
+            ->sortBy(fn($a) => mb_strtolower(($a->name ?? $a->user?->name ?? '')), SORT_NATURAL)
             ->values();
 
-        // ✅ Log aktivitas export
+        // 🧾 Log aktivitas export
         try {
-            $userName    = Auth::user()?->name ?? 'System';
-            $batchInfo   = $this->batchId ? "Batch ID {$this->batchId}" : "Semua Batch";
-            $positionInfo= $this->positionId ? "Posisi ID {$this->positionId}" : "Semua Posisi";
-            $count       = $apps->count();
+            $userName     = Auth::user()?->name ?? 'System';
+            $batchInfo    = $this->batchId ? "Batch ID {$this->batchId}" : "Semua Batch";
+            $positionInfo = $this->positionId ? "Posisi ID {$this->positionId}" : "Semua Posisi";
+            $count        = $apps->count();
 
             ActivityLogger::log(
                 'export',
@@ -99,20 +96,22 @@ class TechnicalTestApplicantsExport implements FromCollection, WithHeadings
         return $apps->map(function ($a) use ($answers) {
             $ans = $answers[$a->id] ?? null;
 
-            // ✅ konversi status buat tampilan
+            // 🎯 Normalisasi status tampilan
+            $lolosTechStatuses = [
+                'Interview',
+                'Offering',
+                'Menerima Offering',
+                'Tidak Lolos Interview',
+                'Menolak Offering',
+            ];
             $statusAsli   = (string) $a->status;
-            $statusTampil = match (true) {
-                str_contains($statusAsli, 'Tidak Lolos Technical Test') => 'Tidak Lolos Technical Test',
-                str_contains($statusAsli, 'Interview'),
-                str_contains($statusAsli, 'Offering'),
-                str_contains($statusAsli, 'Menerima Offering'),
-                str_contains($statusAsli, 'Tidak Lolos Interview'),
-                str_contains($statusAsli, 'Menolak Offering')           => 'Lolos Technical Test',
-                $statusAsli === 'Technical Test'                        => 'Sedang Technical Test',
-                default                                                 => $statusAsli,
-            };
+            $statusTampil = in_array($statusAsli, $lolosTechStatuses, true)
+                ? 'Lolos Technical Test'
+                : ($statusAsli === 'Tidak Lolos Technical Test'
+                    ? 'Tidak Lolos Technical Test'
+                    : ($statusAsli === 'Technical Test' ? 'Sedang Technical Test' : $statusAsli));
 
-            // 👇 name/email pakai accessor Applicant (fallback ke relasi user)
+            // 👤 Fallback nama & email ke relasi user
             $nama  = $a->name  ?? ($a->user?->name  ?? '-');
             $email = $a->email ?? ($a->user?->email ?? '-');
 

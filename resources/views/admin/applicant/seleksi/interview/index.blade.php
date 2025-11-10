@@ -1,30 +1,30 @@
-  <x-app-admin>
-    <div class="bg-white rounded-lg shadow-sm p-4 mb-5">
-      <div class="relative flex items-center gap-2 mb-4">
-        <a href="{{ route('admin.applicant.seleksi.index') }}" 
-          class="text-gray-600 hover:text-gray-900 flex items-center">
-          <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-        </a>
+<x-app-admin>
+  <div class="bg-white rounded-lg shadow-sm p-4 mb-5">
+    <div class="relative flex items-center gap-2 mb-4">
+      <a href="{{ route('admin.applicant.seleksi.index') }}"
+         class="text-gray-600 hover:text-gray-900 flex items-center">
+        <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+      </a>
 
-        <h2 class="text-lg font-semibold leading-none m-0">Interview</h2>
-      </div>
+      <h2 class="text-lg font-semibold leading-none m-0">Interview</h2>
+    </div>
 
-      {{-- Toolbar --}}
-      <div class="flex w-full mb-2 items-end gap-2">
-        <form method="GET" class="flex-1 min-w-[220px]">
-          <input type="hidden" name="batch" value="{{ $batchId }}">
-          <input type="hidden" name="position" value="{{ $positionId }}">
-          <div class="relative flex items-center">
-            <input type="text" name="search" value="{{ request('search') }}"
-                  placeholder="Nama / Email / Jurusan / Posisi..."
-                  class="w-full h-10 pl-3 pr-9 border rounded text-sm focus:ring focus:border-blue-500">
-            <span class="absolute right-3 text-gray-500">
-              <x-search-button/>
-            </span>
-          </div>
-        </form>
+    {{-- Toolbar --}}
+    <div class="flex w-full mb-2 items-end gap-2">
+      <form method="GET" class="flex-1 min-w-[220px]">
+        <input type="hidden" name="batch" value="{{ $batchId }}">
+        <input type="hidden" name="position" value="{{ $positionId }}">
+        <div class="relative flex items-center">
+          <input type="text" name="search" value="{{ request('search') }}"
+                placeholder="Nama / Email / Jurusan / Posisi..."
+                class="w-full h-10 pl-3 pr-9 border rounded text-sm focus:ring focus:border-blue-500">
+          <span class="absolute right-3 text-gray-500">
+            <x-search-button/>
+          </span>
+        </div>
+      </form>
 
       <div class="flex gap-2">
         {{-- Filter --}}
@@ -51,7 +51,6 @@
         </a>
 
         {{-- Lolos --}}
-        {{-- Lolos --}}
         <button type="button"
                 onclick="openConfirmModal('lolos')"
                 class="px-3 py-2 rounded bg-blue-600 text-white">
@@ -75,6 +74,7 @@
           <thead class="bg-gray-100 text-gray-800">
             <tr>
               <th class="px-3 py-2"><input type="checkbox" id="checkAll"></th>
+
               {{-- Nama Peserta --}}
               <th class="px-3 py-2 text-left whitespace-nowrap">
                 <a href="{{ request()->fullUrlWithQuery([
@@ -82,7 +82,7 @@
                     'direction' => (request('sort') === 'name' && request('direction') === 'asc') ? 'desc' : 'asc'
                 ]) }}" class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
                   Nama Peserta
-                  <svg class="w-4 h-4 transform {{ request('sort') === 'name' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
+                  <svg class="w-4 h-4 transform {{ request('sort') === 'name' && request('direction') === 'desc' ? 'rotate-180' : '' }}"
                       fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
                 </a>
               </th>
@@ -94,7 +94,7 @@
                     'direction' => (request('sort') === 'universitas' && request('direction') === 'asc') ? 'desc' : 'asc'
                 ]) }}" class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
                   Universitas
-                  <svg class="w-4 h-4 transform {{ request('sort') === 'universitas' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
+                  <svg class="w-4 h-4 transform {{ request('sort') === 'universitas' && request('direction') === 'desc' ? 'rotate-180' : '' }}"
                       fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
                 </a>
               </th>
@@ -106,7 +106,7 @@
                     'direction' => (request('sort') === 'jurusan' && request('direction') === 'asc') ? 'desc' : 'asc'
                 ]) }}" class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
                   Jurusan
-                  <svg class="w-4 h-4 transform {{ request('sort') === 'jurusan' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
+                  <svg class="w-4 h-4 transform {{ request('sort') === 'jurusan' && request('direction') === 'desc' ? 'rotate-180' : '' }}"
                       fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
                 </a>
               </th>
@@ -118,7 +118,7 @@
                     'direction' => (request('sort') === 'posisi' && request('direction') === 'asc') ? 'desc' : 'asc'
                 ]) }}" class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
                   Posisi
-                  <svg class="w-4 h-4 transform {{ request('sort') === 'posisi' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
+                  <svg class="w-4 h-4 transform {{ request('sort') === 'posisi' && request('direction') === 'desc' ? 'rotate-180' : '' }}"
                       fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
                 </a>
               </th>
@@ -130,7 +130,7 @@
                     'direction' => (request('sort') === 'ekspektasi_gaji' && request('direction') === 'asc') ? 'desc' : 'asc'
                 ]) }}" class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
                   Ekspektasi Gaji
-                  <svg class="w-4 h-4 transform {{ request('sort') === 'ekspektasi_gaji' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
+                  <svg class="w-4 h-4 transform {{ request('sort') === 'ekspektasi_gaji' && request('direction') === 'desc' ? 'rotate-180' : '' }}"
                       fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
                 </a>
               </th>
@@ -142,43 +142,43 @@
                     'direction' => (request('sort') === 'dokumen' && request('direction') === 'asc') ? 'desc' : 'asc'
                 ]) }}" class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
                   Dokumen
-                  <svg class="w-4 h-4 transform {{ request('sort') === 'dokumen' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
+                  <svg class="w-4 h-4 transform {{ request('sort') === 'dokumen' && request('direction') === 'desc' ? 'rotate-180' : '' }}"
                       fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
                 </a>
               </th>
 
-              {{-- Score Quiz --}}
+              {{-- Score Quiz (use controller sort key: quiz_final) --}}
               <th class="px-3 py-2 text-left whitespace-nowrap">
                 <a href="{{ request()->fullUrlWithQuery([
-                    'sort' => 'score_quiz',
-                    'direction' => (request('sort') === 'score_quiz' && request('direction') === 'asc') ? 'desc' : 'asc'
+                    'sort' => 'quiz_final',
+                    'direction' => (request('sort') === 'quiz_final' && request('direction') === 'asc') ? 'desc' : 'asc'
                 ]) }}" class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
                   Score Quiz
-                  <svg class="w-4 h-4 transform {{ request('sort') === 'score_quiz' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
+                  <svg class="w-4 h-4 transform {{ request('sort') === 'quiz_final' && request('direction') === 'desc' ? 'rotate-180' : '' }}"
                       fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
                 </a>
               </th>
 
-              {{-- Score Praktik --}}
+              {{-- Score Praktik (controller key: praktik_final) --}}
               <th class="px-3 py-2 text-left whitespace-nowrap">
                 <a href="{{ request()->fullUrlWithQuery([
-                    'sort' => 'score_praktik',
-                    'direction' => (request('sort') === 'score_praktik' && request('direction') === 'asc') ? 'desc' : 'asc'
+                    'sort' => 'praktik_final',
+                    'direction' => (request('sort') === 'praktik_final' && request('direction') === 'asc') ? 'desc' : 'asc'
                 ]) }}" class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
                   Score Praktik
-                  <svg class="w-4 h-4 transform {{ request('sort') === 'score_praktik' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
+                  <svg class="w-4 h-4 transform {{ request('sort') === 'praktik_final' && request('direction') === 'desc' ? 'rotate-180' : '' }}"
                       fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
                 </a>
               </th>
 
-              {{-- Score Interview --}}
+              {{-- Score Interview (controller key: interview_final) --}}
               <th class="px-3 py-2 text-left whitespace-nowrap">
                 <a href="{{ request()->fullUrlWithQuery([
-                    'sort' => 'score_interview',
-                    'direction' => (request('sort') === 'score_interview' && request('direction','asc') === 'asc') ? 'desc' : 'asc'
+                    'sort' => 'interview_final',
+                    'direction' => (request('sort') === 'interview_final' && request('direction') === 'asc') ? 'desc' : 'asc'
                 ]) }}" class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
                   Score Interview
-                  <svg class="w-4 h-4 transform {{ request('sort') === 'score_interview' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
+                  <svg class="w-4 h-4 transform {{ request('sort') === 'interview_final' && request('direction') === 'desc' ? 'rotate-180' : '' }}"
                       fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
                 </a>
               </th>
@@ -193,6 +193,7 @@
           <tbody>
             @forelse($applicants as $a)
               @php
+                  // ambil hasil interviewer yg terkait sama user sekarang (safety: ini kecil, caching oke)
                   $myResult = \App\Models\InterviewResult::where('applicant_id', $a->id)
                                 ->where('user_id', auth()->id())
                                 ->first();
@@ -201,7 +202,7 @@
                 <td class="px-3 py-2 whitespace-nowrap"><input type="checkbox" name="ids[]" value="{{ $a->id }}"></td>
                 <td class="px-3 py-2 whitespace-nowrap">{{ $a->name }}</td>
                 <td class="px-3 py-2 whitespace-nowrap">{{ $a->universitas ?? '-' }}</td>
-                <td class="px-3 py-2 whitespace-nowrap">{{ $a->jurusan }}</td>
+                <td class="px-3 py-2 whitespace-nowrap">{{ $a->jurusan ?? '-' }}</td>
                 <td class="px-3 py-2 whitespace-nowrap">{{ $a->position->name ?? '-' }}</td>
                 <td class="px-3 py-2 text-left">
                   {{ $a->ekspektasi_gaji_formatted ?? '-' }}
@@ -246,9 +247,10 @@
                     <i class="fas fa-minus-circle text-gray-400" title="Belum dikirim"></i>
                   @endif
                 </td>
+
+                {{-- Status --}}
                 <td class="px-3 py-2 whitespace-nowrap">
                   @php
-                    // Mapping status untuk tampilan di Seleksi Interview
                     $lolosInterviewStatuses = [
                         'Offering',
                         'Menerima Offering',
@@ -265,27 +267,27 @@
                         $displayStatus = $a->status;
                     }
 
-                    // Tentukan warna badge
                     $isLolos = \Illuminate\Support\Str::startsWith($displayStatus, 'Lolos');
                     $isTidak = \Illuminate\Support\Str::startsWith($displayStatus, 'Tidak Lolos');
 
                     $badgeClass = $isLolos
                         ? 'bg-[#69FFA0] text-[#2C6C44]'
                         : ($isTidak ? 'bg-[#FFDDDD] text-[#FF2525]' : 'bg-yellow-100 text-yellow-700');
-                @endphp
+                  @endphp
 
-                <span class="px-2 py-1 text-xs rounded {{ $badgeClass }}">
+                  <span class="px-2 py-1 text-xs rounded {{ $badgeClass }}">
                     {{ $displayStatus }}
-                </span>
-
+                  </span>
                 </td>
+
+                {{-- Note --}}
                 <td class="px-3 py-2 whitespace-nowrap">
-                  @if($a->interviewResults && $a->interviewResults->count() > 0)
+                  @if(!empty($a->interviewResults) && $a->interviewResults->count() > 0)
                     @foreach($a->interviewResults as $r)
                       @if(!empty($r->note))
                         <div class="mb-1">
                           <span class="font-semibold text-sm text-gray-700">{{ $r->user->name ?? 'Tanpa Nama' }}:</span>
-                          <span class="text-sm text-gray-800">{{ $r->note }}</span>
+                          <span class="text-sm text-gray-800"> {{ $r->note }}</span>
                         </div>
                       @endif
                     @endforeach
@@ -303,7 +305,7 @@
               </tr>
             @empty
               <tr>
-                <td colspan="12" class="text-center text-gray-500 py-5">Tidak ada data</td>
+                <td colspan="15" class="text-center text-gray-500 py-5">Tidak ada data</td>
               </tr>
             @endforelse
           </tbody>
@@ -327,7 +329,7 @@
         <h3 class="text-lg font-semibold">Input Score Interview</h3>
         <button type="button"
                 onclick="document.getElementById('scoreModal-{{ $a->id }}').classList.add('hidden')"
-                class="text-gray-500 hover:text-gray-700">&times;</button>
+                class="text-gray-500 hover:text-gray-700 text-2xl leading-none">&times;</button>
       </div>
 
       <form method="POST" action="{{ route('admin.applicant.seleksi.interview.storeScore') }}">
@@ -338,8 +340,8 @@
           <label class="block text-sm">Poin Kepribadian</label>
           <input type="number" name="poin_kepribadian"
                 value="{{ $myResult->poin_kepribadian ?? '' }}"
-                class="border rounded w-full px-2 py-1" 
-                placeholder="1 - 100" 
+                class="border rounded w-full px-2 py-1"
+                placeholder="1 - 100"
                 min="1"
                 max="100"
                 required>
@@ -349,7 +351,7 @@
           <label class="block text-sm">Poin Wawasan</label>
           <input type="number" name="poin_wawasan"
                 value="{{ $myResult->poin_wawasan ?? '' }}"
-                class="border rounded w-full px-2 py-1" 
+                class="border rounded w-full px-2 py-1"
                 placeholder="1 - 100"
                 min="1"
                 max="100"
@@ -360,7 +362,7 @@
           <label class="block text-sm">Poin Gestur</label>
           <input type="number" name="poin_gestur"
                  value="{{ $myResult->poin_gestur ?? '' }}"
-                 class="border rounded w-full px-2 py-1" 
+                 class="border rounded w-full px-2 py-1"
                  placeholder="1 - 100"
                  min="1"
                  max="100"
@@ -371,7 +373,7 @@
           <label class="block text-sm">Poin Cara Bicara</label>
           <input type="number" name="poin_cara_bicara"
                  value="{{ $myResult->poin_cara_bicara ?? '' }}"
-                 class="border rounded w-full px-2 py-1" 
+                 class="border rounded w-full px-2 py-1"
                  placeholder="1 - 100"
                  min="1"
                  max="100"
@@ -391,7 +393,7 @@
         </div>
 
         <div class="flex justify-end gap-2">
-          <button type="button" 
+          <button type="button"
                   onclick="document.getElementById('scoreModal-{{ $a->id }}').classList.add('hidden')"
                   class="px-3 py-1 border rounded">Batal</button>
           <button type="submit" class="px-3 py-1 rounded bg-blue-600 text-white">Simpan</button>
@@ -401,10 +403,9 @@
   </div>
   @endforeach
 
-  {{-- ✅ Modal Filter Interview --}}
+  {{-- Modal Filter --}}
   <div id="filterModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
     <div class="bg-white rounded-lg shadow-lg w-full max-w-lg p-6">
-      {{-- Header --}}
       <div class="flex justify-between items-center border-b pb-3 mb-4">
         <h3 class="text-lg font-semibold">Filter Data Interview</h3>
         <button type="button"
@@ -412,9 +413,7 @@
                 class="text-gray-500 hover:text-gray-700 text-2xl leading-none">&times;</button>
       </div>
 
-      {{-- Content --}}
       <form method="GET" action="{{ route('admin.applicant.seleksi.interview.index') }}" class="space-y-4">
-        {{-- Batch --}}
         <div>
           <label class="block text-sm font-medium">Batch</label>
           <select name="batch" class="border rounded w-full px-2 py-1 text-sm">
@@ -427,7 +426,6 @@
           </select>
         </div>
 
-        {{-- Posisi --}}
         <div>
           <label class="block text-sm font-medium">Posisi</label>
           <select name="position" class="border rounded w-full px-2 py-1 text-sm">
@@ -440,7 +438,6 @@
           </select>
         </div>
 
-        {{-- Status Seleksi --}}
         <div>
           <label class="block text-sm font-medium">Status Seleksi</label>
           <select name="status" class="border rounded w-full px-2 py-1 text-sm">
@@ -451,7 +448,6 @@
           </select>
         </div>
 
-        {{-- Footer --}}
         <div class="flex justify-end gap-2">
           <button type="button"
                   onclick="document.getElementById('filterModal').classList.add('hidden')"
@@ -461,7 +457,6 @@
       </form>
     </div>
   </div>
-
 
   {{-- Modal Konfirmasi --}}
   <div id="confirmModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
@@ -483,7 +478,7 @@
     </div>
   </div>
 
-  {{-- ✅ Modal Email Interview --}}
+  {{-- Modal Email Interview --}}
   <div id="emailModalInterview" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
     <div class="bg-white rounded-lg shadow-lg w-full max-w-2xl p-5">
       <div class="flex justify-between items-center border-b pb-2 mb-4">
@@ -578,7 +573,7 @@
 
       {{-- Tab Terpilih --}}
       <div id="tabTerpilihInterview" class="tab-content-int hidden">
-        <form method="POST" action="{{ route('admin.applicant.seleksi.interview.sendEmail') }}" enctype="multipart/form-data">
+        <form id="selectedEmailFormInterview" method="POST" action="{{ route('admin.applicant.seleksi.interview.sendEmail') }}" enctype="multipart/form-data" onsubmit="return setSelectedIdsInterview(event);">
           @csrf
           <input type="hidden" name="type" value="selected">
           <input type="hidden" name="ids" id="selectedIdsInterview">
@@ -602,102 +597,130 @@
           <div class="flex justify-end gap-2">
             <button type="button" onclick="document.getElementById('emailModalInterview').classList.add('hidden')"
                     class="px-3 py-1 border rounded">Batal</button>
-            <button type="submit" onclick="setSelectedIdsInterview()" class="px-3 py-1 rounded bg-blue-600 text-white">Kirim</button>
+            <button type="submit" class="px-3 py-1 rounded bg-blue-600 text-white">Kirim</button>
           </div>
         </form>
       </div>
     </div>
   </div>
 
-
-  {{-- Script untuk Modal Email Interview --}}
+  {{-- Scripts --}}
   <script src="https://cdnjs.cloudflare.com/ajax/libs/trix/2.0.8/trix.umd.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/trix/2.0.8/trix.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
   <script>
-    // Template Lolos Interview
-    document.getElementById('useTemplateLolosInterview').addEventListener('change', function() {
-      if (this.checked) {
-        document.getElementById('subjectLolosInterview').value = "INFORMASI HASIL SELEKSI INTERVIEW - PLN ICON PLUS";
-        document.querySelector("trix-editor[input=messageLolosInterview]").editor.loadHTML(
-          `Selamat! Anda dinyatakan <strong>LOLOS</strong> pada tahap 'Interview' TAD/OUTSOURCING PLN ICON PLUS.<br><br>
-          Tahap selanjutnya akan diinformasikan melalui portal seleksi.<br><br>
-          Terima kasih atas partisipasi Anda.`
-        );
-      } else {
-        document.getElementById('subjectLolosInterview').value = "";
-        document.querySelector("trix-editor[input=messageLolosInterview]").editor.loadHTML("");
-      }
-    });
+    // helper untuk aman attach event
+    const $ = (id) => document.getElementById(id);
 
-    // Template Tidak Lolos Interview
-    document.getElementById('useTemplateTidakLolosInterview').addEventListener('change', function() {
-      if (this.checked) {
-        document.getElementById('subjectTidakLolosInterview').value = "INFORMASI HASIL SELEKSI INTERVIEW - PLN ICON PLUS";
-        document.querySelector("trix-editor[input=messageTidakLolosInterview]").editor.loadHTML(
-          `Mohon maaf, Anda dinyatakan <strong>TIDAK LOLOS</strong> pada tahap 'Interview' TAD/OUTSOURCING PLN ICON PLUS.<br><br>
-          Terima kasih telah berpartisipasi.<br><br>
-          Hormat Kami,<br>
-          Recruitment Team`
-        );
-      } else {
-        document.getElementById('subjectTidakLolosInterview').value = "";
-        document.querySelector("trix-editor[input=messageTidakLolosInterview]").editor.loadHTML("");
-      }
-    });
-
-    // Tab switcher
-    document.querySelectorAll('.tab-btn-int').forEach(btn => {
-      btn.addEventListener('click', function() {
-        document.querySelectorAll('.tab-btn-int').forEach(b => b.classList.remove('border-blue-600','text-blue-600'));
-        this.classList.add('border-blue-600','text-blue-600');
-        const target = this.dataset.tab;
-        document.querySelectorAll('.tab-content-int').forEach(c => c.classList.add('hidden'));
-        document.getElementById(target).classList.remove('hidden');
+    // Tab switcher (safe)
+    (function(){
+      const tabs = document.querySelectorAll('.tab-btn-int');
+      if (!tabs || tabs.length === 0) return;
+      tabs.forEach(btn => {
+        btn.addEventListener('click', function() {
+          tabs.forEach(b => b.classList.remove('border-blue-600','text-blue-600'));
+          this.classList.add('border-blue-600','text-blue-600');
+          const target = this.dataset.tab;
+          document.querySelectorAll('.tab-content-int').forEach(c => c.classList.add('hidden'));
+          const el = document.getElementById(target);
+          if (el) el.classList.remove('hidden');
+        });
       });
-    });
+      // init: show first tab if none visible
+      const first = tabs[0];
+      if (first) first.click();
+    })();
 
-    // Confirm Modal
+    // Confirm Modal (safe)
     let selectedAction = null;
     function openConfirmModal(action) {
       selectedAction = action;
       const msg = action === 'lolos'
         ? "Apakah Anda yakin ingin meloloskan peserta yang dipilih?"
         : "Apakah Anda yakin ingin menggagalkan peserta yang dipilih?";
-      document.getElementById('confirmMessage').innerText = msg;
-      document.getElementById('confirmModal').classList.remove('hidden');
+      const cm = $('confirmMessage');
+      if (cm) cm.innerText = msg;
+      const cmModal = $('confirmModal');
+      if (cmModal) cmModal.classList.remove('hidden');
     }
-    document.getElementById('confirmYesBtn').addEventListener('click', function() {
-      if (selectedAction) {
-        const form = document.getElementById('bulkActionForm');
-        let input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = 'bulk_action';
-        input.value = selectedAction;
-        form.appendChild(input);
-        form.submit();
-      }
-    });
+    const confirmYesBtn = $('confirmYesBtn');
+    if (confirmYesBtn) {
+      confirmYesBtn.addEventListener('click', function() {
+        if (selectedAction) {
+          const form = document.getElementById('bulkActionForm');
+          if (!form) return;
+          let input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = 'bulk_action';
+          input.value = selectedAction;
+          form.appendChild(input);
+          form.submit();
+        }
+      });
+    }
 
-    // Check All
-    document.getElementById('checkAll').addEventListener('change', function(e){
-      document.querySelectorAll('input[name="ids[]"]').forEach(cb => cb.checked = e.target.checked);
-    });
+    // Check All (safe)
+    const chkAll = $('checkAll');
+    if (chkAll) {
+      chkAll.addEventListener('change', function(e){
+        document.querySelectorAll('input[name="ids[]"]').forEach(cb => cb.checked = e.target.checked);
+      });
+    }
 
-    // Set selected IDs for "Terpilih"
-    function setSelectedIdsInterview() {
+    // Set selected IDs for "Terpilih" (safe)
+    function setSelectedIdsInterview(evt) {
       let ids = [];
       document.querySelectorAll('input[name="ids[]"]:checked').forEach(cb => ids.push(cb.value));
       if (ids.length === 0) {
         alert("Silakan pilih peserta terlebih dahulu.");
-        event.preventDefault();
+        if (evt && typeof evt.preventDefault === 'function') evt.preventDefault();
         return false;
       }
-      document.getElementById('selectedIdsInterview').value = ids.join(',');
+      const target = $('selectedIdsInterview');
+      if (target) target.value = ids.join(',');
+      return true;
+    }
+
+    // Template Lolos Interview (safe)
+    const tLolosChk = $('useTemplateLolosInterview');
+    if (tLolosChk) {
+      tLolosChk.addEventListener('change', function() {
+        const subj = $('subjectLolosInterview');
+        const editor = document.querySelector("trix-editor[input=messageLolosInterview]");
+        if (this.checked) {
+          if (subj) subj.value = "INFORMASI HASIL SELEKSI INTERVIEW - PLN ICON PLUS";
+          if (editor && editor.editor) editor.editor.loadHTML(
+            `Selamat! Anda dinyatakan <strong>LOLOS</strong> pada tahap 'Interview' TAD/OUTSOURCING PLN ICON PLUS.<br><br>
+            Tahap selanjutnya akan diinformasikan melalui portal seleksi.<br><br>
+            Terima kasih atas partisipasi Anda.`
+          );
+        } else {
+          if (subj) subj.value = "";
+          if (editor && editor.editor) editor.editor.loadHTML("");
+        }
+      });
+    }
+
+    // Template Tidak Lolos Interview (safe)
+    const tTidakChk = $('useTemplateTidakLolosInterview');
+    if (tTidakChk) {
+      tTidakChk.addEventListener('change', function() {
+        const subj = $('subjectTidakLolosInterview');
+        const editor = document.querySelector("trix-editor[input=messageTidakLolosInterview]");
+        if (this.checked) {
+          if (subj) subj.value = "INFORMASI HASIL SELEKSI INTERVIEW - PLN ICON PLUS";
+          if (editor && editor.editor) editor.editor.loadHTML(
+            `Mohon maaf, Anda dinyatakan <strong>TIDAK LOLOS</strong> pada tahap 'Interview' TAD/OUTSOURCING PLN ICON PLUS.<br><br>
+            Terima kasih telah berpartisipasi.<br><br>
+            Hormat Kami,<br>
+            Recruitment Team`
+          );
+        } else {
+          if (subj) subj.value = "";
+          if (editor && editor.editor) editor.editor.loadHTML("");
+        }
+      });
     }
   </script>
-
-
-  {{-- Font Awesome --}}
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </x-app-admin>

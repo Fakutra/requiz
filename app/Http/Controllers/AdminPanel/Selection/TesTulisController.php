@@ -13,7 +13,7 @@ use App\Exports\TesTulisApplicantsExport;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Services\SelectionNotifier;
 use App\Services\ActivityLogger;
-use Illuminate\Support\Facades\DB; // ⬅️ untuk query personality_rules
+use Illuminate\Support\Facades\DB; // untuk personality_rules
 
 class TesTulisController extends Controller
 {
@@ -36,12 +36,10 @@ class TesTulisController extends Controller
         $direction = $request->query('direction', 'asc');
 
         $allowedSorts = ['name', 'section_1', 'section_2', 'section_3', 'section_4', 'section_5', 'total_nilai'];
-        if (!in_array($sort, $allowedSorts)) $sort = 'name';
+        if (!in_array($sort, $allowedSorts, true)) $sort = 'name';
 
-        // ⬇️ Query peserta (tambahkan eager load ke user & profile)
+        // Query peserta (tanpa relasi user/profile)
         $q = Applicant::with([
-            'user:id,name,email',
-            'user.profile:id,user_id,birthdate',
             'position',
             'batch',
             'latestEmailLog',
@@ -59,34 +57,29 @@ class TesTulisController extends Controller
         if ($positionId) $q->where('position_id', $positionId);
         if ($status)     $q->where('status', $status);
 
-        // 🔎 Search pindah ke relasi user (name/email) + jurusan
+        // 🔎 Search ke kolom di applicants + relasi position
         if ($search !== '') {
-            $keyword = "%".mb_strtolower($search)."%";
+            $keyword = '%'.mb_strtolower($search).'%';
             $q->where(function ($w) use ($keyword) {
-                $w->whereRaw('LOWER(jurusan) LIKE ?', [$keyword])
-                ->orWhereHas('user', function ($u) use ($keyword) {
-                    $u->whereRaw('LOWER(name) LIKE ?', [$keyword])
-                        ->orWhereRaw('LOWER(email) LIKE ?', [$keyword]);
-                })
-                ->orWhereHas('position', fn($p) =>
-                    $p->whereRaw('LOWER(name) LIKE ?', [$keyword])
-                );
+                $w->whereRaw('LOWER(applicants.name) LIKE ?', [$keyword])
+                  ->orWhereRaw('LOWER(applicants.email) LIKE ?', [$keyword])
+                  ->orWhereRaw('LOWER(applicants.jurusan) LIKE ?', [$keyword])
+                  ->orWhereHas('position', fn($p) =>
+                      $p->whereRaw('LOWER(name) LIKE ?', [$keyword])
+                  );
             });
         }
 
-        // ⬇️ Ambil peserta
+        // Ambil peserta
         $applicants = $q->get();
 
-        // ⬇️ Ambil max personality score KHUSUS batch ini
-        $maxPersonalityFinal = (int) \DB::table('personality_rules')
+        // Max personality score KHUSUS batch ini
+        $maxPersonalityFinal = (int) DB::table('personality_rules')
             ->where('batch_id', $batchId)
             ->max('score_value') ?: 0;
 
-        // ⬇️ Hitung final_total_score & max_total_score + inject age dari profile
+        // Hitung final_total_score & max_total_score (umur pakai accessor $a->age)
         foreach ($applicants as $a) {
-            // umur dari profile
-            $a->age = optional($a->user?->profile?->birthdate)->age;
-
             $testResult = $a->latestTestResult;
             if (!$testResult) {
                 $a->final_total_score = null;
@@ -101,7 +94,7 @@ class TesTulisController extends Controller
                 $section = $sr->testSection;
                 if (!$section) continue;
 
-                $rawScore = (float) ($sr->score ?? 0);
+                $rawScore  = (float) ($sr->score ?? 0);
                 $questions = $section->questionBundle->questions ?? collect();
                 $isPersonality = $questions->contains(fn($qq) => $qq->type === 'Poin');
 
@@ -120,12 +113,12 @@ class TesTulisController extends Controller
                     $rawMaxSection = $questions->count() * 5;
                     $percent = $rawMaxSection > 0 ? ($rawScore / $rawMaxSection) * 100 : 0;
 
-                    $rule = \DB::table('personality_rules')
+                    $rule = DB::table('personality_rules')
                         ->where('batch_id', $batchId)
                         ->where('min_percentage', '<=', $percent)
                         ->where(function ($qq) use ($percent) {
                             $qq->where('max_percentage', '>=', $percent)
-                            ->orWhereNull('max_percentage');
+                               ->orWhereNull('max_percentage');
                         })
                         ->orderByDesc('min_percentage')
                         ->first();
@@ -140,11 +133,11 @@ class TesTulisController extends Controller
             $a->max_total_score   = $maxTotal;
         }
 
-        // ⬇️ Sorting (name pakai user.name)
+        // Sorting (name pakai applicants.name, total_nilai pakai final_total_score)
         $applicants = $applicants->sortBy(function ($a) use ($sort) {
             return match ($sort) {
-                'name'        => mb_strtolower($a->user->name ?? ''),
-                'section_1'   => null, // (opsional: isi kalau kamu simpan skor per-section sebagai field)
+                'name'        => mb_strtolower($a->name ?? ''),
+                'section_1'   => null, // isi kalau nyimpen skor per-section sebagai field
                 'section_2'   => null,
                 'section_3'   => null,
                 'section_4'   => null,
@@ -154,7 +147,7 @@ class TesTulisController extends Controller
             };
         }, SORT_NATURAL, $direction === 'desc');
 
-        // ⬇️ Pagination
+        // Pagination manual (karena sorting collection)
         $page = (int) request('page', 1);
         $perPage = 20;
         $applicants = new \Illuminate\Pagination\LengthAwarePaginator(
@@ -208,7 +201,6 @@ class TesTulisController extends Controller
             }
         }
 
-        // 🧩 catat aktivitas admin
         ActivityLogger::log(
             'update_score',
             'Tes Tulis',
@@ -239,7 +231,6 @@ class TesTulisController extends Controller
 
             SelectionNotifier::notify($a, $this->stage, $data['bulk_action'], $newStatus);
 
-            // 🧩 log aktivitas admin
             ActivityLogger::log(
                 $data['bulk_action'],
                 'Tes Tulis',
@@ -261,12 +252,6 @@ class TesTulisController extends Controller
      */
     public function export(Request $r)
     {
-        // ActivityLogger::log(
-        //     'export',
-        //     'Tes Tulis',
-        //     Auth::user()->name.' mengekspor data peserta Tes Tulis'
-        // );
-
         return Excel::download(
             new TesTulisApplicantsExport(
                 $r->query('batch'),

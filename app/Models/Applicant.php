@@ -14,6 +14,13 @@ class Applicant extends Model
         'user_id',
         'position_id',
         'batch_id',
+        'name',
+        'email',
+        'identity_num',
+        'phone_number',
+        'birthplace',
+        'birthdate',
+        'address',
         'pendidikan',
         'universitas',
         'jurusan',
@@ -30,11 +37,13 @@ class Applicant extends Model
         'user.profile',
         'position',
         'batch',
+        'offering.position',
     ];
 
     protected $casts = [
         // 'tgl_lahir' DIHAPUS karena tanggal lahir ada di profiles.birthdate
         'ekspektasi_gaji' => 'integer',
+        'birthdate' => 'date',
     ];
 
     // biar properti virtual kebaca di Blade/JSON & intelephense gak rewel

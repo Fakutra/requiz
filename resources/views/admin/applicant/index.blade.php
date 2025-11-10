@@ -168,8 +168,8 @@
               @forelse($applicants as $a)
                 <tr class="hover:bg-gray-50">
                   <td class="px-4 py-2 w-auto">{{ ($applicants->currentPage()-1)*$applicants->perPage() + $loop->iteration }}</td>
-                  <td class="px-4 py-2 w-auto">{{ $a->user->name ?? '-' }}</td>
-                  <td class="px-4 py-2 w-auto">{{ $a->user->email ?? '-' }}</td>
+                  <td class="px-4 py-2 w-auto">{{ $a->name ?? '-' }}</td>
+                  <td class="px-4 py-2 w-auto">{{ $a->email ?? '-' }}</td>
                   <td class="px-4 py-2 w-auto">{{ $a->position->name ?? '-' }}</td>
                   <td class="px-4 py-2 w-auto">{{ $a->ekspektasi_gaji_formatted ?? '-' }}</td>
                   <td class="px-4 py-2 w-auto">
@@ -190,15 +190,15 @@
                           'id'          => $a->id,
 
                           // from users
-                          'name'        => $a->user->name ?? null,
-                          'email'       => $a->user->email ?? null,
+                          'name'  => $a->name,
+                          'email'       => $a->email,
 
                           // from profiles
-                          'nik'         => $a->user->profile->identity_num ?? null,
-                          'no_telp'     => $a->user->profile->phone_number ?? null,
-                          'tpt_lahir'   => $a->user->profile->birthplace ?? null,
-                          'tgl_lahir' => optional($a->user->profile->birthdate)->translatedFormat('j F Y'),
-                          'alamat'      => $a->user->profile->address ?? null,
+                          'nik'   => $a->identity_num,
+                          'no_telp' => $a->phone_number,
+                          'tpt_lahir' => $a->birthplace,
+                          'tgl_lahir' => optional($a->birthdate)->translatedFormat('j F Y'),
+                          'alamat' => $a->address,
 
                           // from applicants
                           'pendidikan'  => $a->pendidikan,
@@ -226,13 +226,13 @@
                         title="Edit"
                         @click="openEdit(@js([
                           'id'          => $a->id,
-                          'name'        => $a->user->name ?? null,
-                          'email'       => $a->user->email ?? null,
-                          'nik'         => $a->user->profile->identity_num ?? null,
-                          'no_telp'     => $a->user->profile->phone_number ?? null,
-                          'tpt_lahir'   => $a->user->profile->birthplace ?? null,
-                          'tgl_lahir'   => optional($a->user->profile->birthdate)->format('Y-m-d'),
-                          'alamat'      => $a->user->profile->address ?? null,
+                          'name'  => $a->name,
+                          'email' => $a->email,
+                          'nik'   => $a->identity_num,
+                          'no_telp' => $a->phone_number,
+                          'tpt_lahir' => $a->birthplace,
+                          'tgl_lahir' => optional($a->birthdate)->format('Y-m-d'),
+                          'alamat' => $a->address,
 
                           'pendidikan'  => $a->pendidikan,
                           'universitas' => $a->universitas,

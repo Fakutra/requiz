@@ -33,6 +33,7 @@ class InterviewController extends Controller
         $sort      = $request->query('sort', 'name');
         $direction = $request->query('direction', 'asc');
 
+        // kolom yang boleh di-sort (harus sesuai properti yang nanti tersedia pada collection)
         $allowedSorts = [
             'name', 'universitas', 'jurusan', 'posisi',
             'ekspektasi_gaji', 'dokumen',
@@ -42,7 +43,14 @@ class InterviewController extends Controller
             $sort = 'name';
         }
 
-        $q = Applicant::with(['position', 'batch', 'latestEmailLog', 'myInterviewResult'])
+        // eager load relasi yg dibutuhkan supaya nggak N+1
+        $q = Applicant::with([
+                'position',
+                'batch',
+                'latestEmailLog',
+                'latestTestResult.sectionResults.testSection.questionBundle.questions',
+                'technicalTestAnswers', // untuk praktik_latest lookup (kita akan query latest per applicant tapi eager buat safety)
+            ])
             ->whereIn('status', [
                 'Interview',
                 'Offering',
@@ -57,21 +65,67 @@ class InterviewController extends Controller
             $needle = "%".mb_strtolower($search)."%";
             $q->where(function ($w) use ($needle) {
                 $w->whereRaw('LOWER(name) LIKE ?', [$needle])
-                ->orWhereRaw('LOWER(email) LIKE ?', [$needle])
-                ->orWhereRaw('LOWER(jurusan) LIKE ?', [$needle]);
+                  ->orWhereRaw('LOWER(email) LIKE ?', [$needle])
+                  ->orWhereRaw('LOWER(jurusan) LIKE ?', [$needle]);
             });
         }
 
-        // Ambil semua data dulu tanpa orderBy
+        // Ambil semua data dulu
         $applicants = $q->get();
 
-        // Ambil max personality rule (dari Tes Tulis)
-        $maxPersonalityFinal = (int) (DB::table('personality_rules')->max('score_value') ?? 0);
+        // ambil nilai-nilai agregat sekali saja (hindari loop DB)
+        $applicantIds = $applicants->pluck('id')->all();
 
+        // max personality final untuk batch tertentu (kalau batch diberikan, prioritas ke batch)
+        $maxPersonalityFinal = 0;
+        try {
+            $ruleQ = DB::table('personality_rules');
+            if ($batchId) $ruleQ->where('batch_id', $batchId);
+            $maxPersonalityFinal = (int) ($ruleQ->max('score_value') ?? 0);
+        } catch (\Throwable $e) {
+            Log::warning("Gagal baca personality_rules: ".$e->getMessage());
+        }
+
+        // avg interview per applicant (single query)
+        $avgInterviews = InterviewResult::whereIn('applicant_id', $applicantIds)
+            ->select('applicant_id', DB::raw('AVG(score) as avg_score'))
+            ->groupBy('applicant_id')
+            ->pluck('avg_score', 'applicant_id')
+            ->toArray();
+
+        // potential reviewers (grouped) untuk tiap applicant (single query)
+        $potentials = InterviewResult::whereIn('applicant_id', $applicantIds)
+            ->where('potencial', true)
+            ->with('user:id,name')
+            ->get()
+            ->groupBy('applicant_id')
+            ->map(fn($col) => $col->map(fn($r) => $r->user?->name)->filter()->values()->all())
+            ->toArray();
+
+        // latest interview note per applicant
+        $latestNotes = InterviewResult::whereIn('applicant_id', $applicantIds)
+            ->select('applicant_id', 'note', DB::raw('MAX(id) as mx'))
+            ->groupBy('applicant_id', 'note')
+            // simpler fallback: get latest by id per applicant via subquery
+            ->get()
+            ->groupBy('applicant_id')
+            ->map(fn($g) => last($g)->note ?? null)
+            ->toArray();
+
+        // latest technical test answer (latest submitted_at) per applicant
+        $latestTechAnswers = DB::table('technical_test_answers')
+            ->whereIn('applicant_id', $applicantIds)
+            ->select('applicant_id', 'score', 'submitted_at')
+            ->orderByDesc('submitted_at')
+            ->get()
+            ->unique('applicant_id')
+            ->keyBy('applicant_id')
+            ->toArray();
+
+        // sekarang process tiap applicant tanpa nambah query
         foreach ($applicants as $a) {
-
             // ========= TES TULIS =========
-            $testResult = $a->latestTestResult;
+            $testResult = $a->latestTestResult; // sudah eager loaded
             $finalTotal = 0;
             $maxTotal   = 0;
 
@@ -82,7 +136,7 @@ class InterviewController extends Controller
 
                     $rawScore  = (float) ($sr->score ?? 0);
                     $questions = $section->questionBundle->questions ?? collect();
-                    $isPersonality = $questions->contains(fn($q) => $q->type === 'Poin');
+                    $isPersonality = $questions->contains(fn($q) => ($q->type ?? null) === 'Poin');
 
                     if ($isPersonality) {
                         $maxTotal += $maxPersonalityFinal;
@@ -98,10 +152,11 @@ class InterviewController extends Controller
                         $percent = $rawMax > 0 ? ($rawScore / $rawMax) * 100 : 0;
 
                         $rule = DB::table('personality_rules')
+                            ->when($batchId, fn($q) => $q->where('batch_id', $batchId))
                             ->where('min_percentage', '<=', $percent)
                             ->where(function ($q) use ($percent) {
                                 $q->where('max_percentage', '>=', $percent)
-                                ->orWhereNull('max_percentage');
+                                  ->orWhereNull('max_percentage');
                             })
                             ->orderByDesc('min_percentage')
                             ->first();
@@ -117,12 +172,13 @@ class InterviewController extends Controller
             $a->quiz_max   = $maxTotal ?: null;
 
             // ========= INTERVIEW =========
-            $avgInterview = InterviewResult::where('applicant_id', $a->id)->avg('score');
+            $avgInterview = $avgInterviews[$a->id] ?? null;
             $a->interview_final = $avgInterview ? round($avgInterview, 2) : null;
             $a->interview_max   = 100;
 
             // ========= PRAKTIK =========
-            $a->praktik_final = $a->technicalTestAnswers()->latest()->value('score');
+            $latestAns = $latestTechAnswers[$a->id] ?? null;
+            $a->praktik_final = $latestAns->score ?? null;
             $a->praktik_max   = 100;
 
             // ========= DOKUMEN (ada/tidak) =========
@@ -132,21 +188,16 @@ class InterviewController extends Controller
             $a->posisi = $a->position?->name ?? null;
 
             // ========= DATA TAMBAHAN =========
-            $a->potential_by = InterviewResult::where('applicant_id', $a->id)
-                                ->where('potencial', true)
-                                ->with('user')
-                                ->get()
-                                ->map(fn($r) => $r->user?->name)
-                                ->filter()
-                                ->toArray();
-
-            $a->interview_note = InterviewResult::where('applicant_id', $a->id)
-                                ->orderByDesc('id')
-                                ->value('note');
+            $a->potential_by = $potentials[$a->id] ?? [];
+            $a->interview_note = $latestNotes[$a->id] ?? null;
         }
 
-        // Sorting collection berdasarkan request
-        $applicants = $applicants->sortBy($sort, SORT_NATURAL, $direction === 'desc');
+        // Sorting collection — pakai closure supaya properti dinamis (name/posisi/quiz_final dll) bisa di-handle
+        $applicants = $applicants->sortBy(function ($item) use ($sort) {
+            $val = $item->{$sort} ?? $item->posisi ?? $item->name ?? '';
+            if (is_array($val)) return strtolower(implode(',', $val));
+            return is_null($val) ? '' : strtolower((string)$val);
+        }, SORT_NATURAL, $direction === 'desc')->values();
 
         // Pagination manual
         $page = request('page', 1);
@@ -175,13 +226,17 @@ class InterviewController extends Controller
 
         $fileName = 'Interview_Applicants_' . now()->format('Ymd_His') . '.xlsx';
 
-        // ✅ Catat log aktivitas export
-        // ActivityLogger::log(
-        //     'export',
-        //     'Seleksi Interview',
-        //     Auth::user()->name." mengekspor data peserta Seleksi Interview ke file Excel.",
-        //     "File: {$fileName}"
-        // );
+        // Catat log aktivitas export
+        try {
+            ActivityLogger::log(
+                'export',
+                'Seleksi Interview',
+                Auth::user()->name." mengekspor data peserta Seleksi Interview ke file Excel.",
+                "File: {$fileName}"
+            );
+        } catch (\Throwable $e) {
+            Log::warning("Gagal mencatat activity log export Interview: ".$e->getMessage());
+        }
 
         return Excel::download(
             new InterviewApplicantsExport($batchId, $positionId, $search),
@@ -245,11 +300,11 @@ class InterviewController extends Controller
             'potencial' => $result->potencial ? 'Ya' : 'Tidak'
         ];
 
-        // ✅ Catat log perubahan
+        // Catat log perubahan
         if ($oldData) {
             $changes = [];
             foreach ($newData as $key => $value) {
-                if ($oldData[$key] != $value) {
+                if (($oldData[$key] ?? null) != $value) {
                     $changes[] = "{$key}: '{$oldData[$key]}' → '{$value}'";
                 }
             }
@@ -294,7 +349,7 @@ class InterviewController extends Controller
             $a->forceFill(['status' => $newStatus])->save();
             $count++;
 
-            // ✅ Catat log perubahan
+            // Catat log perubahan
             ActivityLogger::log(
                 $data['bulk_action'],
                 'Seleksi Interview',

@@ -27,13 +27,15 @@ class AdministrasiApplicantsExport implements FromQuery, WithHeadings, WithMappi
                 'position:id,name',
                 'batch:id,name',
                 'latestEmailLog',
-                'user:id,name,email',
-                'user.profile:id,user_id,birthdate', // biar accessor age jalan mulus
             ])
             ->whereIn('status', [
                 'Seleksi Administrasi',
                 'Tes Tulis',
                 'Tidak Lolos Seleksi Administrasi',
+                // biarin aman kalau udah lanjut
+                'Technical Test','Interview','Offering',
+                'Menerima Offering','Tidak Lolos Tes Tulis',
+                'Tidak Lolos Technical Test','Tidak Lolos Interview','Menolak Offering',
             ]);
 
         if (!empty($this->batchId)) {
@@ -47,23 +49,21 @@ class AdministrasiApplicantsExport implements FromQuery, WithHeadings, WithMappi
         if (!empty($this->search)) {
             $needle = '%'.mb_strtolower(trim($this->search)).'%';
             $q->where(function ($w) use ($needle) {
-                $w->whereRaw('LOWER(applicants.jurusan) LIKE ?', [$needle])
+                $w->whereRaw('LOWER(applicants.name) LIKE ?', [$needle])      // 🔎 by applicant.name
+                  ->orWhereRaw('LOWER(applicants.email) LIKE ?', [$needle])   // 🔎 by applicant.email
+                  ->orWhereRaw('LOWER(applicants.jurusan) LIKE ?', [$needle]) // 🔎 by jurusan
                   ->orWhereHas('position', fn($p) =>
                       $p->whereRaw('LOWER(name) LIKE ?', [$needle])
-                  )
-                  ->orWhereHas('user', function ($u) use ($needle) {
-                      $u->whereRaw('LOWER(name) LIKE ?', [$needle])
-                        ->orWhereRaw('LOWER(email) LIKE ?', [$needle]);
-                  });
+                  );
             });
         }
 
         // 📝 log export
         try {
-            $count = $q->count();
-            $userName = Auth::user()?->name ?? 'System';
-            $batchInfo = $this->batchId ? "Batch ID {$this->batchId}" : "Semua Batch";
-            $positionInfo = $this->positionId ? "Posisi ID {$this->positionId}" : "Semua Posisi";
+            $count = (clone $q)->count();
+            $userName    = Auth::user()?->name ?? 'System';
+            $batchInfo   = $this->batchId ? "Batch ID {$this->batchId}" : "Semua Batch";
+            $positionInfo= $this->positionId ? "Posisi ID {$this->positionId}" : "Semua Posisi";
 
             ActivityLogger::log(
                 'export',
@@ -75,10 +75,8 @@ class AdministrasiApplicantsExport implements FromQuery, WithHeadings, WithMappi
             Log::warning('Gagal mencatat log export AdministrasiApplicants: '.$e->getMessage());
         }
 
-        // 🧭 urutkan by users.name (join buat ordering doang)
-        return $q->leftJoin('users', 'users.id', '=', 'applicants.user_id')
-                 ->select('applicants.*')
-                 ->orderBy('users.name');
+        // 🧭 urutkan by applicants.name langsung
+        return $q->select('applicants.*')->orderBy('applicants.name');
     }
 
     public function headings(): array
@@ -97,10 +95,16 @@ class AdministrasiApplicantsExport implements FromQuery, WithHeadings, WithMappi
 
     public function map($a): array
     {
-        // Map status tampilan (Tes Tulis = Lolos Admin)
-        $displayStatus = $a->status === 'Tes Tulis'
+        // Map status tampilan: semua status >= Tes Tulis dianggap "Lolos Seleksi Administrasi"
+        $lolosAdminStatuses = [
+            'Tes Tulis','Technical Test','Interview','Offering',
+            'Menerima Offering','Tidak Lolos Tes Tulis',
+            'Tidak Lolos Technical Test','Tidak Lolos Interview','Menolak Offering',
+        ];
+
+        $displayStatus = in_array($a->status, $lolosAdminStatuses, true)
             ? 'Lolos Seleksi Administrasi'
-            : $a->status;
+            : ($a->status ?? '-');
 
         // Ambil status email terakhir khusus stage ini
         $log = $a->latestEmailLog;
@@ -109,15 +113,16 @@ class AdministrasiApplicantsExport implements FromQuery, WithHeadings, WithMappi
         }
         $emailStatus = $log ? ($log->success ? 'Terkirim' : 'Gagal') : 'Belum Dikirim';
 
+        // Umur: pake accessor $a->age (yang ngitung dari applicants.birthdate). Kalau ga ada, fallback '-'.
         return [
-            $a->user->name ?? '-',                 // NAMA
-            $a->user->email ?? '-',                // EMAIL
-            $a->jurusan ?? '-',                    // JURUSAN
-            $a->position->name ?? '-',             // POSISI
-            $a->age ?? '-',                        // UMUR (accessor)
-            $a->batch->name ?? $a->batch_id,       // BATCH
-            $displayStatus,                        // STATUS SELEKSI
-            $emailStatus,                          // STATUS EMAIL
+            $a->name ?? '-',                      // NAMA (dari applicants.name)
+            $a->email ?? '-',                     // EMAIL (dari applicants.email)
+            $a->jurusan ?? '-',                   // JURUSAN
+            $a->position->name ?? '-',            // POSISI
+            $a->age ?? '-',                       // UMUR
+            $a->batch->name ?? $a->batch_id,      // BATCH
+            $displayStatus,                       // STATUS SELEKSI (mapped)
+            $emailStatus,                         // STATUS EMAIL
         ];
     }
 

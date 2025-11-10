@@ -6,17 +6,17 @@ use App\Models\Applicant;
 use App\Services\ActivityLogger;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\DB; // ⬅️ perlu buat baca personality_rules
+use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 
 class TesTulisApplicantsExport implements FromCollection, WithHeadings
 {
-    protected $batchId;
-    protected $positionId;
-    protected $search;
+    protected ?string $batchId;
+    protected ?string $positionId;
+    protected ?string $search;
 
-    public function __construct($batchId, $positionId, $search)
+    public function __construct(?string $batchId, ?string $positionId, ?string $search)
     {
         $this->batchId    = $batchId;
         $this->positionId = $positionId;
@@ -34,7 +34,8 @@ class TesTulisApplicantsExport implements FromCollection, WithHeadings
             'latestTestResult.sectionResults.testSection.questionBundle.questions',
             'latestTestResult.sectionResults.answers.question',
         ])
-        ->where('batch_id', $this->batchId)
+        // batch optional biar fleksibel
+        ->when($this->batchId, fn($qq) => $qq->where('batch_id', $this->batchId))
         ->whereIn('status', [
             'Tes Tulis',
             'Technical Test',
@@ -51,23 +52,26 @@ class TesTulisApplicantsExport implements FromCollection, WithHeadings
             $q->where('position_id', $this->positionId);
         }
 
-        if ($this->search) {
-            $needle = "%".mb_strtolower($this->search)."%";
+        if (!empty($this->search)) {
+            $needle = '%'.mb_strtolower(trim($this->search)).'%';
             $q->where(function ($w) use ($needle) {
-                $w->whereRaw('LOWER(name) LIKE ?', [$needle])
-                  ->orWhereRaw('LOWER(email) LIKE ?', [$needle])
-                  ->orWhereRaw('LOWER(jurusan) LIKE ?', [$needle]);
+                $w->whereRaw('LOWER(applicants.name) LIKE ?', [$needle])
+                  ->orWhereRaw('LOWER(applicants.email) LIKE ?', [$needle])
+                  ->orWhereRaw('LOWER(applicants.jurusan) LIKE ?', [$needle])
+                  ->orWhereHas('position', fn($p) =>
+                      $p->whereRaw('LOWER(name) LIKE ?', [$needle])
+                  );
             });
         }
 
         $rows = $q->get();
 
-        // 🔎 ambil max personality final score utk batch ini (kalau ada rules)
+        // max skor FINAL personality per batch (dari rules)
         $maxPersonalityFinal = (int) DB::table('personality_rules')
-            ->where('batch_id', $this->batchId)
+            ->when($this->batchId, fn($qq) => $qq->where('batch_id', $this->batchId))
             ->max('score_value') ?: 0;
 
-        // 🧾 Log export
+        // log export
         try {
             $userName    = Auth::user()?->name ?? 'System';
             $batchInfo   = $this->batchId ? "Batch ID {$this->batchId}" : "Semua Batch";
@@ -84,19 +88,10 @@ class TesTulisApplicantsExport implements FromCollection, WithHeadings
             Log::warning('Gagal mencatat log export TesTulisApplicants: '.$e->getMessage());
         }
 
-        // 🎯 Mapping baris export
         return $rows->map(function ($a) use ($maxPersonalityFinal) {
             $latestTest = $a->latestTestResult;
 
-            // Default tampilan per-section
-            $secDisp = [
-                1 => '-',
-                2 => '-',
-                3 => '-',
-                4 => '-',
-                5 => '-',
-            ];
-
+            $secDisp = [1 => '-', 2 => '-', 3 => '-', 4 => '-', 5 => '-'];
             $finalTotal = null;
             $maxTotal   = null;
 
@@ -105,50 +100,45 @@ class TesTulisApplicantsExport implements FromCollection, WithHeadings
                 $maxSum   = 0;
 
                 foreach ($latestTest->sectionResults as $sr) {
-                    $section   = $sr->testSection;
+                    $section = $sr->testSection;
                     if (!$section) continue;
 
-                    $order     = (int) ($section->order ?? 0);
+                    $order = (int) ($section->order ?? 0);
                     if ($order < 1 || $order > 5) continue;
 
                     $questions = $section->questionBundle->questions ?? collect();
                     $raw       = (float) ($sr->score ?? 0);
 
-                    // deteksi section personality
                     $isPersonality = $questions->contains(fn($q) => $q->type === 'Poin');
 
-                    // hitung MAX
                     if ($isPersonality) {
-                        // max raw di soal personality = jml pertanyaan * 5 (tiap opsi 1-5)
                         $maxRaw = $questions->count() * 5;
-                        $maxSum += $maxPersonalityFinal; // max FINAL utk section personality = aturan tertinggi
+                        $maxSum += $maxPersonalityFinal;
                     } else {
-                        $pg     = $questions->where('type','PG')->count();
-                        $multi  = $questions->where('type','Multiple')->count();
-                        $essay  = $questions->where('type','Essay')->count();
+                        $pg    = $questions->where('type','PG')->count();
+                        $multi = $questions->where('type','Multiple')->count();
+                        $essay = $questions->where('type','Essay')->count();
                         $maxRaw = ($pg * 1) + ($multi * 1) + ($essay * 3);
                         $maxSum += $maxRaw;
                     }
 
-                    // hitung FINAL (khusus personality → konversi % ke skor final via rules)
                     if ($isPersonality) {
                         $percent = $maxRaw > 0 ? ($raw / $maxRaw) * 100 : 0;
+
                         $rule = DB::table('personality_rules')
-                            ->where('batch_id', $a->batch_id)
+                            ->when($a->batch_id, fn($qq) => $qq->where('batch_id', $a->batch_id))
                             ->where('min_percentage', '<=', $percent)
-                            ->where(function ($q) use ($percent) {
-                                $q->where('max_percentage', '>=', $percent)
-                                  ->orWhereNull('max_percentage');
+                            ->where(function ($qq) use ($percent) {
+                                $qq->where('max_percentage', '>=', $percent)
+                                   ->orWhereNull('max_percentage');
                             })
                             ->orderByDesc('min_percentage')
                             ->first();
-                        $final = $rule ? (int) $rule->score_value : 0;
 
-                        // tampilkan "raw/max → final"
+                        $final = $rule ? (int) $rule->score_value : 0;
                         $secDisp[$order] = sprintf('%s / %s → %s', $this->num($raw), $this->num($maxRaw), $this->num($final));
                         $finalSum += $final;
                     } else {
-                        // non-personality: final = raw biasa
                         $secDisp[$order] = sprintf('%s / %s', $this->num($raw), $this->num($maxRaw));
                         $finalSum += $raw;
                     }
@@ -158,7 +148,6 @@ class TesTulisApplicantsExport implements FromCollection, WithHeadings
                 $maxTotal   = $maxSum;
             }
 
-            // Status tampilan (konsisten dgn page)
             $statusTampil = (function ($s) {
                 $lolos = [
                     'Technical Test',
@@ -171,35 +160,33 @@ class TesTulisApplicantsExport implements FromCollection, WithHeadings
                 ];
                 if (in_array($s, $lolos, true)) return 'Lolos Tes Tulis';
                 if ($s === 'Tidak Lolos Tes Tulis') return 'Tidak Lolos Tes Tulis';
-                return $s; // 'Tes Tulis' dll
+                return $s;
             })($a->status);
 
-            // KKM (nilai minimum di Test)
             $kkm = $a->latestTestResult?->test?->nilai_minimum;
 
-            // Status email utk stage Tes Tulis
             $log = $a->latestEmailLog;
             if ($log && $log->stage !== 'Tes Tulis') $log = null;
             $emailStatus = $log ? ($log->success ? 'Terkirim' : 'Gagal') : 'Belum Dikirim';
 
             return [
-                'Nama'           => $a->name,
-                'Email'          => $a->email,
-                'Jurusan'        => $a->jurusan,
-                'Posisi'         => $a->position->name ?? '-',
-                'Batch'          => $a->batch->name ?? '-',
-                'Section 1'      => $secDisp[1],
-                'Section 2'      => $secDisp[2],
-                'Section 3'      => $secDisp[3],
-                'Section 4'      => $secDisp[4],
-                'Section 5'      => $secDisp[5],
+                'Nama'              => $a->name,
+                'Email'             => $a->email,
+                'Jurusan'           => $a->jurusan,
+                'Posisi'            => $a->position->name ?? '-',
+                'Batch'             => $a->batch->name ?? '-',
+                'Section 1'         => $secDisp[1],
+                'Section 2'         => $secDisp[2],
+                'Section 3'         => $secDisp[3],
+                'Section 4'         => $secDisp[4],
+                'Section 5'         => $secDisp[5],
                 'Total (Final/Max)' => ($finalTotal !== null && $maxTotal !== null)
-                    ? ($this->num($finalTotal).' / '.$this->num($maxTotal))
-                    : '-',
-                'KKM'            => $kkm ?? '-',
-                'Status'         => $statusTampil,
-                'Status Email'   => $emailStatus,
-                'Tanggal Daftar' => $a->created_at?->format('d-m-Y H:i:s') ?? '-',
+                                        ? ($this->num($finalTotal).' / '.$this->num($maxTotal))
+                                        : '-',
+                'KKM'               => $kkm ?? '-',
+                'Status'            => $statusTampil,
+                'Status Email'      => $emailStatus,
+                'Tanggal Daftar'    => $a->created_at?->format('d-m-Y H:i:s') ?? '-',
             ];
         });
     }
@@ -225,12 +212,12 @@ class TesTulisApplicantsExport implements FromCollection, WithHeadings
         ];
     }
 
-    // helper buat format angka tanpa ribet (biar gak tampil "0" jadi "0")
-    private function num($v)
+    private function num($v): string
     {
-        // angka integer tampil plain, desimal tetap sesuai float tanpa trailing .0 panjang
         if (is_numeric($v)) {
-            return (floor($v) == $v) ? (string) (int) $v : rtrim(rtrim(number_format((float)$v, 2, '.', ''), '0'), '.');
+            return (floor($v) == $v)
+                ? (string) (int) $v
+                : rtrim(rtrim(number_format((float)$v, 2, '.', ''), '0'), '.');
         }
         return (string) $v;
     }

@@ -187,7 +187,7 @@
                     {{-- error summary --}}
                     <template x-if="Object.keys(errors).length">
                         <div class="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700">
-                            Ada beberapa field yang belum valid. Cek tanda...
+                            Ada beberapa field yang belum valid. Silahkan diperiksa kembali.
                         </div>
                     </template>
 
@@ -245,7 +245,7 @@
                                 <label class="block text-sm font-medium text-gray-700">Tanggal Lahir</label>
                                 <input type="date" name="tgl_lahir" disabled
                                     class="mt-1 w-full rounded-lg border-gray-300 bg-gray-100 cursor-not-allowed"
-                                    value="{{ old('tgl_lahir', $user->profile->birthdate ?? '') }}" />
+                                    value="{{ old('tgl_lahir', optional($user->profile?->birthdate)->format('Y-m-d')) }}" />
                             </div>
 
                             <div class="md:col-span-2">
@@ -375,7 +375,7 @@
                                 <span class="inline-flex items-center px-3 rounded-l-lg border border-r-0 bg-gray-50 text-gray-500">Rp</span>
                                 <input type="number" name="ekspektasi_gaji"
                                     class="flex-1 rounded-r-lg border border-gray-300 focus:ring-2 focus:ring-cyan-500"
-                                    placeholder="Ekspetasi Gaji" inputmode="numeric" autocomplete="number" id="ekspetasi_gaji" :value="old('ekspetasi_gaji')" required>
+                                    placeholder="Contoh: 5000000" inputmode="numeric" autocomplete="number" id="ekspetasi_gaji" :value="old('ekspetasi_gaji')" required>
                             </div>
                             <p class="text-sm text-red-600 mt-1" x-text="errors.ekspetasi_gaji?.[0]" x-show="errors.ekspetasi_gaji"></p>
                         </div>
@@ -391,7 +391,7 @@
                                 file:text-[#009DA9] file:bg-white
                                 hover:file:bg-[#009DA9]/10 hover:file:text-[#007C85]" />
                                 @error('cv')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                <p class="mt-1 text-sm text-red-600" x-text="errors.cv_document?.[0]" x-show="errors.cv_document"></p>
                                 @enderror
                             </div>
                             <div>
@@ -404,7 +404,7 @@
                                 file:text-[#009DA9] file:bg-white
                                 hover:file:bg-[#009DA9]/10 hover:file:text-[#007C85]" />
                                 @error('doc_tambahan')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                <p class="mt-1 text-sm text-red-600" x-text="errors.doc_tambahan?.[0]" x-show="errors.doc_tambahan"></p>
                                 @enderror
                             </div>
                         </div>

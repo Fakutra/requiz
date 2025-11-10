@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Exports\AdministrasiApplicantsExport;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Services\SelectionNotifier;
-use App\Services\ActivityLogger; // ✅ tambahkan ini
+use App\Services\ActivityLogger;
 
 class AdministrasiController extends Controller
 {
@@ -29,10 +29,9 @@ class AdministrasiController extends Controller
         $jurusan    = trim((string) $request->query('jurusan'));
         $status     = trim((string) $request->query('status'));
 
-        // sort yg nyentuh relasi: name/email (users), age (profiles.birthdate)
+        // ✅ sort langsung via applicants.* atau via accessor age
         $sort      = $request->query('sort', 'name');
         $direction = $request->query('direction', 'asc');
-
         $allowedSorts = ['name', 'email', 'jurusan', 'position_id', 'age'];
         if (!in_array($sort, $allowedSorts, true)) $sort = 'name';
 
@@ -46,24 +45,21 @@ class AdministrasiController extends Controller
                 'position:id,name',
                 'batch:id,name',
                 'latestEmailLog',
-                'user:id,name,email',
-                'user.profile:id,user_id,identity_num,phone_number,birthplace,birthdate,address',
             ]);
 
         if ($batchId)    $q->where('batch_id', $batchId);
         if ($positionId) $q->where('position_id', $positionId);
 
+        // 🔎 search: applicants.name, applicants.email, applicants.jurusan, positions.name
         if ($search !== '') {
             $needle = '%'.mb_strtolower($search).'%';
             $q->where(function ($w) use ($needle) {
-                $w->whereRaw('LOWER(applicants.jurusan) LIKE ?', [$needle])
-                ->orWhereHas('position', fn($p) =>
-                    $p->whereRaw('LOWER(name) LIKE ?', [$needle])
-                )
-                ->orWhereHas('user', function ($u) use ($needle) {
-                    $u->whereRaw('LOWER(name) LIKE ?', [$needle])
-                        ->orWhereRaw('LOWER(email) LIKE ?', [$needle]);
-                });
+                $w->whereRaw('LOWER(applicants.name) LIKE ?', [$needle])
+                  ->orWhereRaw('LOWER(applicants.email) LIKE ?', [$needle])
+                  ->orWhereRaw('LOWER(applicants.jurusan) LIKE ?', [$needle])
+                  ->orWhereHas('position', fn($p) =>
+                      $p->whereRaw('LOWER(name) LIKE ?', [$needle])
+                  );
             });
         }
 
@@ -71,12 +67,11 @@ class AdministrasiController extends Controller
             $q->whereRaw('LOWER(applicants.jurusan) LIKE ?', ['%'.mb_strtolower($jurusan).'%']);
         }
 
-        // filter status opsional
+        // 🟨 filter status opsional (tetep sama)
         if ($status !== '') {
             if ($status === 'Seleksi Administrasi') {
                 $q->where('status', 'Seleksi Administrasi');
             } elseif ($status === 'Tes Tulis') {
-                // interpretasi "Lolos Seleksi Administrasi" = sudah lanjut min. Tes Tulis
                 $q->whereIn('status', [
                     'Tes Tulis','Technical Test','Interview','Offering',
                     'Menerima Offering','Tidak Lolos Tes Tulis',
@@ -88,21 +83,12 @@ class AdministrasiController extends Controller
         }
 
         // ===== Sorting =====
-        $sortUsingCollection = in_array($sort, ['name','email','age'], true);
+        // name/email: bisa order di DB
+        // jurusan/position_id: juga bisa di DB
+        // age: perlu accessor → sort di collection
+        if ($sort === 'age') {
+            $collection = $q->get()->sortBy(fn ($a) => $a->age ?? -1, SORT_NATURAL, $direction === 'desc');
 
-        if ($sortUsingCollection) {
-            $collection = $q->get();
-
-            $collection = $collection->sortBy(function ($a) use ($sort) {
-                return match ($sort) {
-                    'name'  => mb_strtolower($a->user->name  ?? ''),
-                    'email' => mb_strtolower($a->user->email ?? ''),
-                    'age'   => $a->age ?? -1, // accessor dari model
-                    default => null,
-                };
-            }, SORT_NATURAL, $direction === 'desc');
-
-            // paginate manual
             $page    = (int) $request->input('page', 1);
             $perPage = 20;
             $applicants = new \Illuminate\Pagination\LengthAwarePaginator(
@@ -113,9 +99,14 @@ class AdministrasiController extends Controller
                 ['path' => $request->url(), 'query' => $request->query()]
             );
         } else {
-            // yang kolom di applicants bisa orderBy langsung
-            $orderCol = $sort === 'jurusan' ? 'applicants.jurusan'
-                    : ($sort === 'position_id' ? 'applicants.position_id' : 'applicants.id');
+            // map kolom sort → kolom DB
+            $orderCol = match ($sort) {
+                'name'        => 'applicants.name',
+                'email'       => 'applicants.email',
+                'jurusan'     => 'applicants.jurusan',
+                'position_id' => 'applicants.position_id',
+                default       => 'applicants.id',
+            };
 
             $applicants = $q->orderBy($orderCol, $direction)
                 ->paginate(20)
@@ -135,8 +126,8 @@ class AdministrasiController extends Controller
     public function bulkMark(Request $r)
     {
         $data = $r->validate([
-            'ids'   => 'required|array',
-            'ids.*' => 'exists:applicants,id',
+            'ids'         => 'required|array',
+            'ids.*'       => 'exists:applicants,id',
             'bulk_action' => 'required|in:lolos,tidak_lolos',
         ]);
 
@@ -147,7 +138,7 @@ class AdministrasiController extends Controller
             SelectionLogger::write($a, $this->stage, $data['bulk_action'], Auth::id());
 
             // 2️⃣ update status pelamar
-            $newStatus = $this->newStatus($data['bulk_action'], $a->status);
+            $newStatus = $this->newStatus($data['bulk_action'], (string) $a->status);
             $a->forceFill(['status' => $newStatus])->save();
 
             // 3️⃣ kirim notifikasi ke peserta
@@ -158,11 +149,11 @@ class AdministrasiController extends Controller
                 $newStatus
             );
 
-            // 4️⃣ catat log aktivitas admin (ActivityLogger)
+            // 4️⃣ Activity log (pakai kolom applicants.name)
             ActivityLogger::log(
                 $data['bulk_action'],
                 'Seleksi Administrasi',
-                Auth::user()->name." menandai peserta {$a->user->name} sebagai '".strtoupper($data['bulk_action'])."'",
+                Auth::user()->name." menandai peserta {$a->name} sebagai '".strtoupper($data['bulk_action'])."'",
                 "Applicant ID: {$a->id}"
             );
         }
@@ -175,10 +166,9 @@ class AdministrasiController extends Controller
      */
     private function newStatus(string $result, string $current): string
     {
-        if ($result === 'lolos') {
-            return 'Tes Tulis';
-        }
-        return 'Tidak Lolos Seleksi Administrasi';
+        return $result === 'lolos'
+            ? 'Tes Tulis'
+            : 'Tidak Lolos Seleksi Administrasi';
     }
 
     /**
@@ -186,13 +176,6 @@ class AdministrasiController extends Controller
      */
     public function export(Request $r)
     {
-        // 🧩 log aktivitas export
-        // ActivityLogger::log(
-        //     'export',
-        //     'Seleksi Administrasi',
-        //     Auth::user()->name.' mengekspor data peserta seleksi administrasi'
-        // );
-
         return Excel::download(
             new AdministrasiApplicantsExport(
                 $r->query('batch'),
@@ -209,19 +192,23 @@ class AdministrasiController extends Controller
     public function setSelectedIds(Request $r)
     {
         $data = $r->validate([
-            'ids' => 'required|string', // daftar id dipisahkan koma
+            'ids'     => 'required|string', // daftar id dipisahkan koma
             'subject' => 'required|string',
             'message' => 'required|string',
         ]);
 
-        $ids = explode(',', $data['ids']);
+        $ids = array_filter(array_map('trim', explode(',', $data['ids'])));
         $applicants = Applicant::whereIn('id', $ids)->get();
 
-        foreach ($applicants as $a) {
-            // Mail::to($a->email)->send(new SeleksiEmail(...));
-        }
+        // Contoh kirim email (diaktifin sesuai implementation lu)
+        // foreach ($applicants as $a) {
+        //     Mail::to($a->email)->send(new SeleksiEmail(
+        //         subject: $data['subject'],
+        //         message: $data['message'],
+        //         applicant: $a
+        //     ));
+        // }
 
-        // 🧩 catat log aktivitas pengiriman email
         ActivityLogger::log(
             'send_email',
             'Seleksi Administrasi',

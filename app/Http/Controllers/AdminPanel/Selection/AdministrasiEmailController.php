@@ -29,17 +29,14 @@ class AdministrasiEmailController extends Controller
             'attachments.*' => 'file|max:5120',   // 5 MB
         ]);
 
-        // ========= Target applicant =========
+        // ========== Tentukan target applicants ==========
         if ($data['type'] === 'selected') {
             $ids = array_filter(explode(',', $data['ids'] ?? ''));
-            $applicants = Applicant::with(['user:id,name,email'])
-                ->whereIn('id', $ids)
-                ->get();
+            $applicants = Applicant::whereIn('id', $ids)->get();
         } else {
             $query = Applicant::query()
-                ->with(['user:id,name,email'])
-                ->when($data['batch'] ?? null, fn($q, $b) => $q->where('batch_id', $b))
-                ->when($data['position'] ?? null, fn($q, $p) => $q->where('position_id', $p));
+                ->when($data['batch'] ?? null, fn ($q, $b) => $q->where('batch_id', $b))
+                ->when($data['position'] ?? null, fn ($q, $p) => $q->where('position_id', $p));
 
             if ($data['type'] === 'lolos') {
                 // dianggap “Lolos Administrasi” (sudah lanjut min. Tes Tulis)
@@ -66,19 +63,18 @@ class AdministrasiEmailController extends Controller
         $failCount    = 0;
 
         foreach ($applicants as $a) {
-            // email ambil dari relasi user
-            $targetEmail = $a->user->email ?? null;
+            // Email langsung dari kolom applicants
+            $targetEmail = $a->email ?: null;
 
             try {
                 if (!$targetEmail) {
-                    // kalo gak ada email, catet gagal
                     EmailLog::create([
                         'applicant_id' => $a->id,
                         'email'        => null,
                         'stage'        => $this->stage,
                         'subject'      => $data['subject'],
                         'success'      => false,
-                        'error'        => 'User email is empty',
+                        'error'        => 'Applicant email is empty',
                     ]);
                     $failCount++;
                     continue;
@@ -90,10 +86,10 @@ class AdministrasiEmailController extends Controller
                     $data['message'],
                     $this->stage,
                     $data['type'],
-                    $a
+                    $a // mailable bisa pakai $a->name langsung
                 );
 
-                // attachments (opsional)
+                // attachments (opsional, multi-file)
                 if ($request->hasFile('attachments')) {
                     foreach ($request->file('attachments') as $file) {
                         $mail->attach($file->getRealPath(), [
@@ -117,7 +113,6 @@ class AdministrasiEmailController extends Controller
                 ]);
 
                 $successCount++;
-
             } catch (Throwable $e) {
                 // log gagal
                 EmailLog::create([
@@ -128,13 +123,12 @@ class AdministrasiEmailController extends Controller
                     'success'      => false,
                     'error'        => $e->getMessage(),
                 ]);
-
                 $failCount++;
             }
         }
 
         // ===== Activity log per tab =====
-        $total   = count($applicants);
+        $total   = $applicants->count();
         $action  = match ($data['type']) {
             'lolos'       => 'send_email_lolos',
             'tidak_lolos' => 'send_email_tidak_lolos',

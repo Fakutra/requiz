@@ -18,7 +18,7 @@
         <input type="hidden" name="position" value="{{ $positionId }}">
         <div class="relative flex items-center">
           <input type="text" name="search" value="{{ request('search') }}"
-                placeholder="Nama / Email / Jurusan..."
+                placeholder="Nama / Email / Jurusan / Posisi..."
                 class="w-full h-10 pl-3 pr-9 border rounded text-sm focus:ring focus:border-blue-500">
           <span class="absolute right-3 text-gray-500">
             <x-search-button/>
@@ -74,6 +74,7 @@
           <thead class="bg-gray-100">
             <tr>
               <th class="px-3 py-2"><input type="checkbox" id="checkAll"></th>
+
               {{-- Nama Peserta --}}
               <th class="px-3 py-2 text-left whitespace-nowrap">
                 <a href="{{ request()->fullUrlWithQuery([
@@ -81,7 +82,7 @@
                     'direction' => (request('sort') === 'name' && request('direction') === 'asc') ? 'desc' : 'asc'
                 ]) }}" class="flex items-center gap-1 font-semibold text-gray-800 hover:text-gray-900 no-underline">
                   Nama Peserta
-                  <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'name' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
+                  <svg class="w-4 h-4 ml-1 transform {{ request('sort','name') === 'name' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
                     fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
                   </svg>
@@ -143,6 +144,7 @@
                   </svg>
                 </a>
               </th>
+
               <th class="px-3 py-2 text-left whitespace-nowrap">Status</th>
               <th class="px-3 py-2 text-left whitespace-nowrap">Status Email</th>
               <th class="px-3 py-2 text-left whitespace-nowrap">Action</th>
@@ -163,14 +165,12 @@
                 <td class="px-3 py-2 whitespace-nowrap">
                   @if($ans && $ans->answer_url)
                     <div class="flex items-center gap-3">
-                      {{-- Icon PDF --}}
                       <a href="{{ $ans->answer_url }}" target="_blank"
                         class="text-red-600 hover:text-red-800"
                         title="Lihat Jawaban (PDF)">
                         <i class="fas fa-file-pdf fa-lg"></i>
                       </a>
 
-                      {{-- Icon Rekaman (opsional) --}}
                       @if($ans->screen_record_url)
                         <a href="{{ $ans->screen_record_url }}" target="_blank"
                           class="text-purple-600 hover:text-purple-800"
@@ -193,32 +193,21 @@
                 {{-- Status peserta --}}
                 <td class="px-3 py-2 whitespace-nowrap">
                   @php
-                    // Default ambil status asli
                     $displayStatus = $a->status;
-
-                    // Mapping untuk peserta yang sudah melewati tahap Technical Test
                     $lolosTechStatuses = [
-                        'Interview',
-                        'Offering',
-                        'Menerima Offering',
-                        'Tidak Lolos Interview',
-                        'Menolak Offering',
+                      'Interview','Offering','Menerima Offering','Tidak Lolos Interview','Menolak Offering',
                     ];
-
-                    if (in_array($a->status, $lolosTechStatuses)) {
-                        $displayStatus = 'Lolos Technical Test';
+                    if (in_array($a->status, $lolosTechStatuses, true)) {
+                      $displayStatus = 'Lolos Technical Test';
                     } elseif ($a->status === 'Tidak Lolos Technical Test') {
-                        $displayStatus = 'Tidak Lolos Technical Test';
+                      $displayStatus = 'Tidak Lolos Technical Test';
                     }
 
-                    // Tentukan warna badge
                     $isLolos = \Illuminate\Support\Str::startsWith($displayStatus, 'Lolos');
                     $isTidak = \Illuminate\Support\Str::startsWith($displayStatus, 'Tidak Lolos');
-
                     $badgeClass = $isLolos ? 'bg-[#69FFA0] text-[#2C6C44]'
                                   : ($isTidak ? 'bg-[#FFDDDD] text-[#FF2525]' : 'bg-yellow-100 text-yellow-700');
                   @endphp
-
                   <span class="px-2 py-1 text-xs rounded {{ $badgeClass }}">
                     {{ $displayStatus }}
                   </span>
@@ -350,7 +339,7 @@
             </button>
           </div>
         @else
-          {{-- ================== Layout Dua Kolom ================== --}}
+          {{-- Layout Dua Kolom --}}
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
             {{-- Kolom Kiri: PDF Preview --}}
@@ -389,7 +378,7 @@
                         value="{{ $ans->score ?? '' }}" 
                         min="0" max="100" step="0.01"
                         class="border rounded w-full px-3 py-2 focus:ring focus:ring-blue-200"
-                        placeholder = "0-100">
+                        placeholder="0-100">
                 </div>
 
                 <div class="mb-4 flex-grow">
@@ -442,7 +431,7 @@
           <select name="position" class="border rounded w-full px-2 py-1 text-sm">
             <option value="">Semua Posisi</option>
             @foreach($positions as $p)
-              <option value="{{ $p->id }}" {{ $positionId == $p->id ? 'selected' : '' }}>
+              <option value="{{ $p->id }}" {{ (string)$positionId === (string)$p->id ? 'selected' : '' }}>
                 {{ $p->name }}
               </option>
             @endforeach

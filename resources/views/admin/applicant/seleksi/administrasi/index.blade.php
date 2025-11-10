@@ -11,7 +11,6 @@
       <h2 class="text-lg font-semibold leading-none m-0">Seleksi Administrasi</h2>
     </div>
 
-
     {{-- Toolbar --}}
     <div class="flex w-full mb-2 items-end gap-2">
       <form method="GET" action="{{ route('admin.applicant.seleksi.administrasi.index') }}" class="flex-1 min-w-[220px]">
@@ -25,7 +24,6 @@
         </div>
       </form>
 
-      {{-- Tombol Aksi --}}
       <div class="flex gap-2">
         {{-- Filter --}}
         <button type="button"
@@ -77,7 +75,7 @@
                 <input type="checkbox" id="checkAll">
               </th>
 
-              {{-- Nama Peserta --}}
+              {{-- Nama --}}
               <th class="px-3 py-2 text-left whitespace-nowrap">
                 <a href="{{ request()->fullUrlWithQuery([
                     'sort' => 'name',
@@ -136,6 +134,8 @@
                   </svg>
                 </a>
               </th>
+
+              {{-- Umur --}}
               <th class="px-3 py-2 text-left whitespace-nowrap">
                 <a href="{{ request()->fullUrlWithQuery([
                     'sort' => 'age',
@@ -149,6 +149,7 @@
                   </svg>
                 </a>
               </th>
+
               <th class="px-3 py-2 text-left whitespace-nowrap font-semibold text-gray-800">Status</th>
               <th class="px-3 py-2 text-left whitespace-nowrap font-semibold text-gray-800">Status Email</th>
               <th class="px-3 py-2 text-left whitespace-nowrap font-semibold text-gray-800">Action</th>
@@ -160,8 +161,8 @@
               <tr>
                 <td class="px-3 py-2"><input type="checkbox" name="ids[]" value="{{ $a->id }}"></td>
 
-                <td class="px-3 py-2 whitespace-nowrap">{{ $a->user->name ?? '-' }}</td>
-                <td class="px-3 py-2 whitespace-nowrap">{{ $a->user->email ?? '-' }}</td>
+                <td class="px-3 py-2 whitespace-nowrap">{{ $a->name ?? '-' }}</td>
+                <td class="px-3 py-2 whitespace-nowrap">{{ $a->email ?? '-' }}</td>
                 <td class="px-3 py-2 whitespace-nowrap">{{ $a->jurusan ?? '-' }}</td>
                 <td class="px-3 py-2 whitespace-nowrap">{{ $a->position->name ?? '-' }}</td>
 
@@ -169,39 +170,28 @@
                   {{ $a->age ? $a->age.' tahun' : '-' }}
                 </td>
 
-                {{-- Status --}}
+                {{-- Status (dipetakan) --}}
                 <td class="px-3 py-2 whitespace-nowrap">
                   @php
-                      // Mapping status untuk tampilan di Seleksi Administrasi
                       $lolosAdminStatuses = [
-                          'Tes Tulis',
-                          'Technical Test',
-                          'Interview',
-                          'Offering',
-                          'Menerima Offering',
-                          'Tidak Lolos Tes Tulis',
-                          'Tidak Lolos Technical Test',
-                          'Tidak Lolos Interview',
-                          'Menolak Offering',
+                          'Tes Tulis','Technical Test','Interview','Offering',
+                          'Menerima Offering','Tidak Lolos Tes Tulis',
+                          'Tidak Lolos Technical Test','Tidak Lolos Interview','Menolak Offering',
                       ];
-
                       if (in_array($a->status, $lolosAdminStatuses)) {
                           $displayStatus = 'Lolos Seleksi Administrasi';
                       } elseif ($a->status === 'Tidak Lolos Seleksi Administrasi') {
                           $displayStatus = 'Tidak Lolos Seleksi Administrasi';
                       } else {
-                          $displayStatus = $a->status;
+                          $displayStatus = $a->status ?? '-';
                       }
 
-                      // Tentukan warna badge
                       $isLolos = \Illuminate\Support\Str::startsWith($displayStatus, 'Lolos');
                       $isTidak = \Illuminate\Support\Str::startsWith($displayStatus, 'Tidak Lolos');
-
                       $badgeClass = $isLolos
                           ? 'bg-[#69FFA0] text-[#2C6C44]'
                           : ($isTidak ? 'bg-[#FFDDDD] text-[#FF2525]' : 'bg-yellow-100 text-yellow-700');
                   @endphp
-
                   <span class="px-2 py-1 text-xs rounded {{ $badgeClass }}">
                       {{ $displayStatus }}
                   </span>
@@ -211,9 +201,7 @@
                 <td class="px-3 py-2 text-center">
                   @php
                     $log = $a->latestEmailLog;
-                    if ($log && $log->stage !== 'Seleksi Administrasi') {
-                        $log = null;
-                    }
+                    if ($log && $log->stage !== 'Seleksi Administrasi') $log = null;
                   @endphp
                   @if($log)
                     @if($log->success)
@@ -243,15 +231,13 @@
       </div>
     </form>
 
-    <div class="mt-3">{{ $applicants->links() }}</div>
+    <div class="mt-3">{{ $applicants->withQueryString()->links() }}</div>
   </div>
 
-  {{-- ✅ Modal Detail per applicant --}}
+  {{-- ✅ Modal Detail per applicant (pakai kolom applicants langsung) --}}
   @foreach($applicants as $a)
   <div id="detailModal-{{ $a->id }}" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
     <div class="bg-white rounded-xl shadow-lg w-full max-w-4xl p-6 overflow-y-auto max-h-[90vh]">
-      
-      {{-- Header --}}
       <div class="flex justify-between items-center border-b pb-3 mb-4">
         <h3 class="text-xl font-semibold text-gray-800">Detail Applicant</h3>
         <button type="button"
@@ -259,45 +245,42 @@
                 class="text-gray-500 hover:text-gray-700 text-2xl leading-none">&times;</button>
       </div>
 
-      {{-- Content --}}
       <div class="grid grid-cols-2 gap-x-6 gap-y-4 text-sm">
         <div>
           <p class="text-gray-500 font-medium">Nama</p>
-          <p class="text-gray-900">{{ $a->user->name ?? '-' }}</p>
+          <p class="text-gray-900">{{ $a->name ?? '-' }}</p>
         </div>
         <div>
           <p class="text-gray-500 font-medium">Email</p>
-          <p class="text-gray-900">{{ $a->user->email ?? '-' }}</p>
+          <p class="text-gray-900">{{ $a->email ?? '-' }}</p>
         </div>
 
         <div>
           <p class="text-gray-500 font-medium">NIK</p>
-          <p class="text-gray-900">{{ $a->user->profile->identity_num ?? '-' }}</p>
+          <p class="text-gray-900">{{ $a->identity_num ?? '-' }}</p>
         </div>
         <div>
           <p class="text-gray-500 font-medium">No. Telepon</p>
-          <p class="text-gray-900">{{ $a->user->profile->phone_number ?? '-' }}</p>
+          <p class="text-gray-900">{{ $a->phone_number ?? '-' }}</p>
         </div>
 
         <div>
           <p class="text-gray-500 font-medium">Tempat Lahir</p>
-          <p class="text-gray-900">{{ $a->user->profile->birthplace ?? '-' }}</p>
+          <p class="text-gray-900">{{ $a->birthplace ?? '-' }}</p>
         </div>
         <div>
           <p class="text-gray-500 font-medium">Tanggal Lahir</p>
-          <p class="text-gray-900">
-            {{ optional($a->user->profile->birthdate)->translatedFormat('j F Y') ?? '-' }}
-          </p>
+          <p class="text-gray-900">{{ optional($a->birthdate)->translatedFormat('j F Y') ?? '-' }}</p>
         </div>
 
         <div class="col-span-2">
           <p class="text-gray-500 font-medium">Alamat</p>
-          <p class="text-gray-900">{{ $a->user->profile->address ?? '-' }}</p>
+          <p class="text-gray-900">{{ $a->address ?? '-' }}</p>
         </div>
 
         <div>
           <p class="text-gray-500 font-medium">Pendidikan</p>
-          <p class="text-gray-900">{{ $a->pendidikan }}</p>
+          <p class="text-gray-900">{{ $a->pendidikan ?? '-' }}</p>
         </div>
         <div>
           <p class="text-gray-500 font-medium">Tahun Lulus</p>
@@ -306,11 +289,11 @@
 
         <div>
           <p class="text-gray-500 font-medium">Universitas</p>
-          <p class="text-gray-900">{{ $a->universitas }}</p>
+          <p class="text-gray-900">{{ $a->universitas ?? '-' }}</p>
         </div>
         <div>
           <p class="text-gray-500 font-medium">Jurusan</p>
-          <p class="text-gray-900">{{ $a->jurusan }}</p>
+          <p class="text-gray-900">{{ $a->jurusan ?? '-' }}</p>
         </div>
 
         <div>
@@ -318,7 +301,7 @@
           <p class="text-gray-900">{{ $a->skills ?? '-' }}</p>
         </div>
         <div>
-          <p class="text-gray-500 font-medium">Ekpektasi Gaji</p>
+          <p class="text-gray-500 font-medium">Ekspektasi Gaji</p>
           <p class="text-gray-900">{{ $a->ekspektasi_gaji_formatted ?? '-' }}</p>
         </div>
 
@@ -334,20 +317,22 @@
         <div>
           <p class="text-gray-500 font-medium">Status Seleksi</p>
           @php
-            $statusColor = str_contains($a->status, 'Tidak') ? 'bg-red-100 text-red-700' 
-                          : (str_contains($a->status, 'Lolos') || $a->status === 'Menerima Offering' ? 'bg-green-100 text-green-700' 
-                          : 'bg-yellow-100 text-yellow-700');
+            $statusColor = str_contains($a->status ?? '', 'Tidak') 
+                ? 'bg-red-100 text-red-700' 
+                : ((str_contains($a->status ?? '', 'Lolos') || $a->status === 'Menerima Offering') 
+                    ? 'bg-green-100 text-green-700' 
+                    : 'bg-yellow-100 text-yellow-700');
           @endphp
           <span class="px-2 py-1 rounded text-xs font-semibold {{ $statusColor }}">
-            {{ $a->status }}
+            {{ $a->status ?? '-' }}
           </span>
         </div>
-        {{-- Dokumen (CV + Dokumen Tambahan) satu baris --}}
+
+        {{-- Dokumen (CV + Dokumen Tambahan) --}}
         <div class="col-span-2">
           <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
             <span class="text-gray-500 font-medium">Dokumen:</span>
 
-            {{-- CV --}}
             <div class="flex items-center gap-1">
               <span class="text-gray-500">CV</span>
               @if($a->cv_document)
@@ -359,7 +344,6 @@
 
             <span class="text-gray-300">|</span>
 
-            {{-- Dokumen Tambahan --}}
             <div class="flex items-center gap-1">
               <span class="text-gray-500">Dokumen Tambahan</span>
               @if($a->doc_tambahan)
@@ -370,20 +354,8 @@
             </div>
           </div>
         </div>
-        <div>
-          <p class="text-gray-500 font-medium">Dokumen Tambahan</p>
-          @if($a->additional_doc)
-            <a href="{{ asset('storage/'.$a->additional_doc) }}" target="_blank"
-              class="text-blue-600 hover:underline">
-              Lihat Dokumen Tambahan
-            </a>
-          @else
-            <span class="text-gray-400">Belum upload</span>
-          @endif
-        </div>
       </div>
 
-      {{-- Footer --}}
       <div class="mt-6 text-right">
         <button type="button"
                 onclick="document.getElementById('detailModal-{{ $a->id }}').classList.add('hidden')"
@@ -398,7 +370,6 @@
   {{-- ✅ Modal Filter --}}
   <div id="filterModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
     <div class="bg-white rounded-lg shadow-lg w-full max-w-lg p-6">
-      {{-- Header --}}
       <div class="flex justify-between items-center border-b pb-3 mb-4">
         <h3 class="text-lg font-semibold">Filter Data</h3>
         <button type="button" 
@@ -406,7 +377,6 @@
                 class="text-gray-500 hover:text-gray-700 text-2xl leading-none">&times;</button>
       </div>
 
-      {{-- Content --}}
       <form method="GET" action="{{ route('admin.applicant.seleksi.administrasi.index') }}" class="space-y-4">
         {{-- Batch --}}
         <div>
@@ -415,7 +385,7 @@
             <option value="">Semua Batch</option>
             @foreach($batches as $b)
               <option value="{{ $b->id }}" {{ (string)$batchId === (string)$b->id ? 'selected' : '' }}>
-                {{ $b->name }}
+                {{ $b->name ?? $b->id }}
               </option>
             @endforeach
           </select>
@@ -427,7 +397,7 @@
           <select name="position" class="border rounded w-full px-2 py-1 text-sm">
             <option value="">Semua Posisi</option>
             @foreach($positions as $p)
-              <option value="{{ $p->id }}" {{ $positionId == $p->id ? 'selected' : '' }}>
+              <option value="{{ $p->id }}" {{ (string)$positionId === (string)$p->id ? 'selected' : '' }}>
                 {{ $p->name }}
               </option>
             @endforeach
@@ -451,7 +421,6 @@
           </select>
         </div>
 
-        {{-- Footer --}}
         <div class="flex justify-end gap-2">
           <button type="button" 
                   onclick="document.getElementById('filterModal').classList.add('hidden')"
@@ -617,7 +586,7 @@
 
   <script>
     // Template Lolos
-    document.getElementById('useTemplateLolos').addEventListener('change', function() {
+    document.getElementById('useTemplateLolos')?.addEventListener('change', function() {
       if (this.checked) {
         document.getElementById('subjectLolos').value = "INFORMASI HASIL SELEKSI TAD/OUTSOURCING - PLN ICON PLUS";
         document.querySelector("trix-editor[input=messageLolos]").editor.loadHTML(
@@ -635,7 +604,7 @@
     });
 
     // Template Tidak Lolos
-    document.getElementById('useTemplateTidakLolos').addEventListener('change', function() {
+    document.getElementById('useTemplateTidakLolos')?.addEventListener('change', function() {
       if (this.checked) {
         document.getElementById('subjectTidakLolos').value = "INFORMASI HASIL SELEKSI TAD/OUTSOURCING - PLN ICON PLUS";
         document.querySelector("trix-editor[input=messageTidakLolos]").editor.loadHTML(
@@ -651,7 +620,6 @@
       }
     });
 
-    // Set selected IDs for "Terpilih" tab
     function setSelectedIds() {
       let ids = [];
       document.querySelectorAll('input[name="ids[]"]:checked').forEach(cb => ids.push(cb.value));
@@ -663,13 +631,12 @@
       document.getElementById('selectedIds').value = ids.join(',');
     }
 
-
     // Check All
-    document.getElementById('checkAll').addEventListener('change', function(e){
+    document.getElementById('checkAll')?.addEventListener('change', function(e){
       document.querySelectorAll('input[name="ids[]"]').forEach(cb => cb.checked = e.target.checked);
     });
 
-    // Tab switcher
+    // Tabs
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', function() {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('border-blue-600','text-blue-600'));
@@ -682,7 +649,6 @@
 
     // Confirm Modal
     let selectedAction = null;
-
     function openConfirmModal(action) {
       selectedAction = action;
       const msg = action === 'lolos' 
@@ -691,11 +657,11 @@
       document.getElementById('confirmMessage').innerText = msg;
       document.getElementById('confirmModal').classList.remove('hidden');
     }
+    window.openConfirmModal = openConfirmModal;
 
-    document.getElementById('confirmYesBtn').addEventListener('click', function() {
+    document.getElementById('confirmYesBtn')?.addEventListener('click', function() {
       if (selectedAction) {
         const form = document.getElementById('bulkActionForm');
-        // buat input hidden bulk_action
         let input = document.createElement('input');
         input.type = 'hidden';
         input.name = 'bulk_action';
@@ -706,6 +672,5 @@
     });
   </script>
 
-  {{-- Font Awesome --}}
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </x-app-admin>

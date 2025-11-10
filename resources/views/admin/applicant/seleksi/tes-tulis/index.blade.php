@@ -101,6 +101,8 @@
                   </svg>
                 </a>
               </th>
+
+              {{-- Section 2 --}}
               <th class="px-3 py-2 text-left whitespace-nowrap">
                 <a href="{{ request()->fullUrlWithQuery([
                     'sort' => 'section_2',
@@ -113,29 +115,31 @@
                   </svg>
                 </a>
               </th>
+
+              {{-- Section 3 (Psikologi pindah ke sini) --}}
               <th class="px-3 py-2 text-left whitespace-nowrap">
                 <a href="{{ request()->fullUrlWithQuery([
                     'sort' => 'section_3',
                     'direction' => (request('sort') === 'section_3' && request('direction') === 'asc') ? 'desc' : 'asc'
                 ]) }}" class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
-                  Umum Essay
+                  Psikologi
                   <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'section_3' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
                       fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
                   </svg>
                 </a>
               </th>
+
               {{-- Section 4 --}}
               <th class="px-3 py-2 text-left whitespace-nowrap">
                 <a href="{{ request()->fullUrlWithQuery([
                     'sort' => 'section_4',
                     'direction' => (request('sort') === 'section_4' && request('direction') === 'asc') ? 'desc' : 'asc'
-                ]) }}" 
-                  class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
-                  Teknis Essay
-                  <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'section_4' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}" 
+                ]) }}" class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
+                  Umum Essay
+                  <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'section_4' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
                       fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
                   </svg>
                 </a>
               </th>
@@ -145,12 +149,11 @@
                 <a href="{{ request()->fullUrlWithQuery([
                     'sort' => 'section_5',
                     'direction' => (request('sort') === 'section_5' && request('direction') === 'asc') ? 'desc' : 'asc'
-                ]) }}" 
-                  class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
-                  Psikologi
-                  <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'section_5' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}" 
-                      fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                ]) }}" class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
+                  Teknis Essay
+                  <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'section_5' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
+                      fill="none" stroke="currentColor" stroke-width="2" viewBox="0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
                   </svg>
                 </a>
               </th>
@@ -181,13 +184,17 @@
                 <td class="px-3 py-2">
                   <input type="checkbox" name="ids[]" value="{{ $a->id }}">
                 </td>
-                <td class="px-3 py-2 whitespace-nowrap">{{ $a->user->name ?? '-' }}</td>
+
+                {{-- NAMA pakai kolom applicants --}}
+                <td class="px-3 py-2 whitespace-nowrap">{{ $a->name ?? '-' }}</td>
 
                 {{-- Loop 5 section + tampilkan RAW / MAX atau RAW / MAX → FINAL --}}
                 @for ($i = 1; $i <= 5; $i++)
                   @php
                     $sectionResult = $a->latestTestResult?->sectionResults
-                                  ->firstWhere(fn($s) => $s->testSection && $s->testSection->order == $i);
+                      ?->first(function ($s) use ($i) {
+                          return $s->testSection && $s->testSection->order == $i;
+                        });
 
                     $rawScore   = null;
                     $maxScore   = null;
@@ -211,10 +218,11 @@
                         $maxScore = ($pgCount * 1) + ($multiCount * 1) + ($essayCount * 3);
                       }
 
-                      // FINAL khusus personality
+                      // FINAL khusus personality (pakai rules batch terkait)
                       if ($isPersonality) {
                         $percent = $maxScore > 0 ? ($rawScore / $maxScore) * 100 : 0;
                         $rule = DB::table('personality_rules')
+                            ->where('batch_id', $batchId)
                             ->where('min_percentage', '<=', $percent)
                             ->where(function ($q) use ($percent) {
                                 $q->where('max_percentage', '>=', $percent)
@@ -354,15 +362,23 @@
 
       <div class="grid grid-cols-2 gap-x-6 gap-y-4 text-sm">
         <div><p class="text-gray-500 font-medium">Nama</p>
-          <p class="text-gray-900">{{ $a->user->name ?? '-' }}</p></div>
+          <p class="text-gray-900">{{ $a->name ?? '-' }}</p></div>
         <div><p class="text-gray-500 font-medium">Email</p>
-          <p class="text-gray-900">{{ $a->user->email ?? '-' }}</p></div>
+          <p class="text-gray-900">{{ $a->email ?? '-' }}</p></div>
         <div><p class="text-gray-500 font-medium">Jurusan</p><p class="text-gray-900">{{ $a->jurusan }}</p></div>
         <div><p class="text-gray-500 font-medium">Posisi</p><p class="text-gray-900">{{ $a->position->name ?? '-' }}</p></div>
         <div><p class="text-gray-500 font-medium">Batch</p><p class="text-gray-900">{{ $a->batch->name ?? '-' }}</p></div>
         <div><p class="text-gray-500 font-medium">Umur</p>
           <p class="text-gray-900">{{ $a->age ?? '-' }}</p></div>
-        <div><p class="text-gray-500 font-medium">Nilai Tes</p><p class="text-gray-900">{{ $a->test_score ?? '-' }}</p></div>
+        <div><p class="text-gray-500 font-medium">Nilai Tes</p>
+          <p class="text-gray-900">
+            @if(isset($a->final_total_score) && isset($a->max_total_score))
+              {{ $a->final_total_score }} / {{ $a->max_total_score }}
+            @else
+              {{ $a->latestTestResult->score ?? '-' }}
+            @endif
+          </p>
+        </div>
         <div>
           <p class="text-gray-500 font-medium">Status Seleksi</p>
           @php
@@ -480,12 +496,12 @@
         @if($testResult)
           <div class="grid grid-cols-2 gap-4 text-sm mb-6">
             <div><span class="text-gray-500">Nama Peserta:</span>
-              <span class="font-medium">{{ $a->user->name ?? '-' }}</span></div>
+              <span class="font-medium">{{ $a->name ?? '-' }}</span></div>
             <div><span class="text-gray-500">Email:</span>
-              <span class="font-medium">{{ $a->user->email ?? '-' }}</span></div>
+              <span class="font-medium">{{ $a->email ?? '-' }}</span></div>
             <div><span class="text-gray-500">Mulai Tes:</span> <span class="font-medium">{{ $testResult->started_at ?? '-' }}</span></div>
             <div><span class="text-gray-500">Selesai Tes:</span> <span class="font-medium">{{ $testResult->finished_at ?? '-' }}</span></div>
-            <div><span class="text-gray-500">Total Skor:</span> 
+            <div><span class="text-gray-500">Total Skor (raw):</span> 
               <span class="font-medium text-blue-600">{{ $testResult->score ?? '-' }}</span>
             </div>
           </div>
@@ -826,7 +842,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/trix/2.0.8/trix.umd.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/trix/2.0.8/trix.min.css"/>
 
-    <script>
+  <script>
     // Set selected IDs untuk tab "Terpilih"
     function setSelectedIds() {
       let ids = [];

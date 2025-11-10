@@ -27,64 +27,35 @@ class ApplicantController extends Controller
         $positionId = $request->query('position');
         $batchId    = $request->query('batch');
 
-        // sort: name/email(->users), umur(->profiles.birthdate), sisanya kolom applicants
+        // sort by applicants.* ; "umur" di-sort in-memory
         $sort      = $request->query('sort', 'name');
         $direction = $request->query('direction', 'asc');
-
-        $allowedSorts = [
-            'name', 'email', 'umur',            // via collection (relasi)
-            'position_id', 'ekspektasi_gaji',   // via DB
-            'pendidikan', 'jurusan', 'batch_id' // via DB
-        ];
+        $allowedSorts = ['name','email','umur','position_id','ekspektasi_gaji','pendidikan','jurusan','batch_id'];
         if (!in_array($sort, $allowedSorts, true)) $sort = 'name';
 
-        $q = Applicant::query()
-            ->with([
-                'position:id,name',
-                'batch:id,name',
-                'user:id,name,email',
-                'user.profile:id,user_id,identity_num,phone_number,birthplace,birthdate,address',
-            ]);
+        $q = Applicant::query()->with(['position:id,name','batch:id,name']);
 
-        // 🔎 Search: users.name, users.email, applicants.jurusan, positions.name
         if ($search !== '') {
             $needle = '%'.mb_strtolower($search).'%';
             $q->where(function ($w) use ($needle) {
-                $w->whereRaw('LOWER(applicants.jurusan) LIKE ?', [$needle])
-                ->orWhereHas('position', fn($p) =>
-                    $p->whereRaw('LOWER(name) LIKE ?', [$needle])
-                )
-                ->orWhereHas('user', function ($u) use ($needle) {
-                    $u->whereRaw('LOWER(name) LIKE ?', [$needle])
-                        ->orWhereRaw('LOWER(email) LIKE ?', [$needle]);
-                });
+                $w->whereRaw('LOWER(applicants.name) LIKE ?', [$needle])
+                ->orWhereRaw('LOWER(applicants.email) LIKE ?', [$needle])
+                ->orWhereRaw('LOWER(applicants.jurusan) LIKE ?', [$needle])
+                ->orWhereHas('position', fn($p) => $p->whereRaw('LOWER(name) LIKE ?', [$needle]));
             });
         }
 
         if (!empty($positionId)) $q->where('position_id', $positionId);
         if (!empty($batchId))    $q->where('batch_id', $batchId);
 
-        // ⚖️ Sorting
-        $sortUsingCollection = in_array($sort, ['name','email','umur'], true);
-
-        if ($sortUsingCollection) {
-            // ambil dulu semua sesuai filter
-            $collection = $q->get();
-
-            // sort in-memory pakai relasi & accessor age
-            $collection = $collection->sortBy(function ($a) use ($sort) {
-                return match ($sort) {
-                    'name'  => mb_strtolower($a->user->name  ?? ''),
-                    'email' => mb_strtolower($a->user->email ?? ''),
-                    'umur'  => $a->age ?? -1, // accessor dari model
-                    default => null,
-                };
-            }, SORT_NATURAL, $direction === 'desc');
-
-            // paginate manual
+        if ($sort === 'umur') {
+            $collection = $q->get()->sortBy(
+                fn($a) => $a->age ?? -1,
+                SORT_NATURAL,
+                $direction === 'desc'
+            );
             $page    = (int) $request->input('page', 1);
             $perPage = 15;
-
             $applicants = new \Illuminate\Pagination\LengthAwarePaginator(
                 $collection->forPage($page, $perPage)->values(),
                 $collection->count(),
@@ -93,11 +64,9 @@ class ApplicantController extends Controller
                 ['path' => $request->url(), 'query' => $request->query()]
             );
         } else {
-            // orderBy di DB (prefix table biar gak ambiguous)
             $applicants = $q->orderBy('applicants.'.$sort, $direction)
-                ->paginate(15)
-                ->appends($request->query());
-            // ❌ gak perlu inject age/gaji_formatted — sudah accessor di model
+                            ->paginate(15)
+                            ->appends($request->query());
         }
 
         $positions = Position::orderBy('name')->get(['id','name']);
@@ -121,20 +90,16 @@ class ApplicantController extends Controller
             'Menerima Offering','Menolak Offering',
         ];
 
-        // validasi gabungan (user + profile + applicant)
         $data = $request->validate([
-            // users
-            'name'  => ['required','string','max:255'],
-            'email' => ['required','email','max:255', Rule::unique('users','email')->ignore($applicant->user_id)],
+            // langsung ke applicants.*
+            'name'            => ['required','string','max:255'],
+            'email'           => ['required','email','max:255'], // kalau mau unique: Rule::unique('applicants','email')->ignore($applicant->id)
+            'nik'             => ['nullable','string','max:32'],
+            'no_telp'         => ['nullable','string','max:32'],
+            'tpt_lahir'       => ['nullable','string','max:255'],
+            'tgl_lahir'       => ['nullable','date'],
+            'alamat'          => ['nullable','string','max:500'],
 
-            // profiles
-            'nik'       => ['nullable','string','max:32'],
-            'no_telp'   => ['nullable','string','max:32'],
-            'tpt_lahir' => ['nullable','string','max:255'],
-            'tgl_lahir' => ['nullable','date'],
-            'alamat'    => ['nullable','string','max:500'],
-
-            // applicants
             'pendidikan'      => ['nullable', Rule::in($allowedPendidikan)],
             'universitas'     => ['nullable','string','max:255'],
             'jurusan'         => ['nullable','string','max:255'],
@@ -144,64 +109,54 @@ class ApplicantController extends Controller
             'ekspektasi_gaji' => ['required','numeric','min:0','max:100000000'],
             'status'          => ['nullable', Rule::in($allowedStatus)],
             'skills'          => ['nullable','string','max:5000'],
+
             'cv_document'     => ['nullable','file','mimes:pdf','max:1024'],
-            'doc_tambahan'    => ['nullable','file','mimes:pdf','max:5120'], // 5MB
+            'doc_tambahan'    => ['nullable','file','mimes:pdf','max:5120'], // atau tambah jpg,jpeg,png kalau dibutuhkan
         ]);
 
-        DB::transaction(function () use ($data, $request, $applicant) {
+        // normalisasi gaji
+        $data['ekspektasi_gaji'] = (int) str_replace(['.', ',', ' '], '', (string) $data['ekspektasi_gaji']);
 
-            // === Update Users ===
-            $user = $applicant->user;
-            $user->fill([
-                'name'  => $data['name'],
-                'email' => $data['email'],
-            ])->save();
+        // file: CV
+        if ($request->hasFile('cv_document')) {
+            if ($applicant->cv_document) Storage::disk('public')->delete($applicant->cv_document);
+            $data['cv_document'] = $request->file('cv_document')
+                ->store("cv-applicant/{$applicant->id}", 'public');
+        } else {
+            unset($data['cv_document']);
+        }
 
-            // === Update Profiles (make or update) ===
-            $profile = $user->profile ?: new Profile(['user_id' => $user->id]);
-            $profile->fill([
-                'identity_num' => $data['nik']       ?? null,
-                'phone_number' => $data['no_telp']   ?? null,
-                'birthplace'   => $data['tpt_lahir'] ?? null,
-                'birthdate'    => $data['tgl_lahir'] ?? null,
-                'address'      => $data['alamat']    ?? null,
-            ])->save();
+        // file: Dokumen tambahan
+        if ($request->hasFile('doc_tambahan')) {
+            if ($applicant->doc_tambahan) Storage::disk('public')->delete($applicant->doc_tambahan);
+            $data['doc_tambahan'] = $request->file('doc_tambahan')
+                ->store("doc-applicant/{$applicant->id}", 'public');
+        } else {
+            unset($data['doc_tambahan']);
+        }
 
-            // === Handle CV baru ===
-            if ($request->hasFile('cv_document')) {
-                if ($applicant->cv_document) {
-                    Storage::disk('public')->delete($applicant->cv_document);
-                }
-                $data['cv_document'] = $request->file('cv_document')->store('cv_documents', 'public');
-            } else {
-                unset($data['cv_document']);
-            }
+        // map ke kolom applicants
+        $applicant->update([
+            'name'          => $data['name'],
+            'email'         => $data['email'],
+            'identity_num'  => $data['nik']       ?? null,
+            'phone_number'  => $data['no_telp']   ?? null,
+            'birthplace'    => $data['tpt_lahir'] ?? null,
+            'birthdate'     => $data['tgl_lahir'] ?: null,
+            'address'       => $data['alamat']    ?? null,
 
-            // handle Dokumen Tambahan
-            if ($request->hasFile('doc_tambahan')) {
-                if ($applicant->doc_tambahan) {
-                    Storage::disk('public')->delete($applicant->doc_tambahan);
-                }
-                $data['doc_tambahan'] = $request->file('doc_tambahan')->store('applicant_docs', 'public');
-            } else {
-                unset($data['doc_tambahan']);
-            }
-
-            // === Update Applicants (hanya kolom applicant) ===
-            $applicant->update([
-                'pendidikan'      => $data['pendidikan']      ?? $applicant->pendidikan,
-                'universitas'     => $data['universitas']     ?? $applicant->universitas,
-                'jurusan'         => $data['jurusan']         ?? $applicant->jurusan,
-                'thn_lulus'       => $data['thn_lulus']       ?? $applicant->thn_lulus,
-                'position_id'     => $data['position_id'],
-                'batch_id'        => $data['batch_id']        ?? $applicant->batch_id,
-                'ekspektasi_gaji' => $data['ekspektasi_gaji'],
-                'status'          => $data['status']          ?? $applicant->status,
-                'skills'          => $data['skills']          ?? $applicant->skills,
-                'cv_document'     => $data['cv_document']     ?? $applicant->cv_document,
-                'doc_tambahan'    => $data['doc_tambahan']    ?? $applicant->doc_tambahan,
-            ]);
-        });
+            'pendidikan'      => $data['pendidikan']   ?? $applicant->pendidikan,
+            'universitas'     => $data['universitas']  ?? $applicant->universitas,
+            'jurusan'         => $data['jurusan']      ?? $applicant->jurusan,
+            'thn_lulus'       => $data['thn_lulus']    ?? $applicant->thn_lulus,
+            'position_id'     => $data['position_id'],
+            'batch_id'        => $data['batch_id']     ?? $applicant->batch_id,
+            'ekspektasi_gaji' => $data['ekspektasi_gaji'],
+            'status'          => $data['status']       ?? $applicant->status,
+            'skills'          => $data['skills']       ?? $applicant->skills,
+            'cv_document'     => $data['cv_document']  ?? $applicant->cv_document,
+            'doc_tambahan'    => $data['doc_tambahan'] ?? $applicant->doc_tambahan,
+        ]);
 
         return redirect()
             ->route('admin.applicant.index', $request->only('search','position','batch','page'))

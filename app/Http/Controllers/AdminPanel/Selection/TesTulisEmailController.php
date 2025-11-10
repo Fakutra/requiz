@@ -25,8 +25,8 @@ class TesTulisEmailController extends Controller
             'subject'       => 'required|string',
             'message'       => 'required|string', // HTML (Trix/CKEditor)
             'attachments'   => 'nullable|array',
-            'attachments.*' => 'file|max:5120',
-            'ids'           => 'nullable|string', // only for selected
+            'attachments.*' => 'file|max:5120',   // 5MB/file
+            'ids'           => 'nullable|string', // only for "selected"
         ]);
 
         // =========================
@@ -34,10 +34,13 @@ class TesTulisEmailController extends Controller
         // =========================
         $selectedIds = [];
         if ($data['type'] === 'selected') {
-            $selectedIds = array_values(array_filter(explode(',', $data['ids'] ?? '')));
-            $applicants = Applicant::with('user')->whereIn('id', $selectedIds)->get();
+            $selectedIds = array_values(array_filter(explode(',', (string)($data['ids'] ?? ''))));
+            $applicants = Applicant::with(['user:id,name,email'])
+                ->whereIn('id', $selectedIds)
+                ->get();
         } else {
-            $query = Applicant::with('user')->where('batch_id', $data['batch']);
+            $query = Applicant::with(['user:id,name,email'])
+                ->where('batch_id', $data['batch']);
 
             if (!empty($data['position'])) {
                 $query->where('position_id', $data['position']);
@@ -69,10 +72,9 @@ class TesTulisEmailController extends Controller
         $failCount    = 0;
 
         foreach ($applicants as $a) {
-            // fallback aman: ambil dari applicant.email, kalau kosong ambil dari relasi user
+            // prioritas email di tabel applicants; fallback ke relasi user
             $recipient = trim((string) ($a->email ?? $a->user?->email ?? ''));
 
-            // kalau tetep kosong → skip kirim, tapi log gagal (hindari NULL ke DB)
             if ($recipient === '') {
                 EmailLog::create([
                     'applicant_id' => $a->id,
@@ -87,6 +89,7 @@ class TesTulisEmailController extends Controller
             }
 
             try {
+                // compose mail
                 $mail = new SelectionResultMail(
                     $data['subject'],
                     $data['message'],
@@ -95,6 +98,7 @@ class TesTulisEmailController extends Controller
                     $a
                 );
 
+                // attachments (opsional)
                 if ($request->hasFile('attachments')) {
                     foreach ($request->file('attachments') as $file) {
                         $mail->attach($file->getRealPath(), [
@@ -104,8 +108,10 @@ class TesTulisEmailController extends Controller
                     }
                 }
 
+                // kirim
                 Mail::to($recipient)->send($mail);
 
+                // log sukses
                 EmailLog::create([
                     'applicant_id' => $a->id,
                     'email'        => $recipient,
@@ -117,9 +123,10 @@ class TesTulisEmailController extends Controller
 
                 $successCount++;
             } catch (Throwable $e) {
+                // log gagal
                 EmailLog::create([
                     'applicant_id' => $a->id,
-                    'email'        => $recipient, // tetap string valid
+                    'email'        => $recipient,
                     'stage'        => $this->stage,
                     'subject'      => $data['subject'],
                     'success'      => false,
@@ -153,7 +160,7 @@ class TesTulisEmailController extends Controller
         ActivityLogger::log(
             $action,
             'Tes Tulis',
-            Auth::user()->name . " mengirim email hasil {$tabLabel} ke {$successCount} dari {$total} peserta (gagal: {$failCount})",
+            (Auth::user()->name ?? 'System') . " mengirim email hasil {$tabLabel} ke {$successCount} dari {$total} peserta (gagal: {$failCount})",
             $targetInfo
         );
 
