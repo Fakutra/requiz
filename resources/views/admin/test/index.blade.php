@@ -1,6 +1,6 @@
 <x-app-admin>
     <div class="bg-white rounded-lg shadow-sm p-4 mb-5">
-        <div class="max-w-7xl mx-auto">             
+        <div class="max-w-7xl mx-auto">
             <div class="p-6 text-gray-900">
                 <div class="d-flex justify-content-between align-items-center mb-3 ">
                     <h2 class="font-semibold text-xl text-gray-800 leading-tight mb-0">
@@ -8,10 +8,16 @@
                     </h2>
                     <a href="#" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#tambahTest">Create New Quiz</a>
                 </div>
+
                 <div class="list-group">
                     @forelse ($tests as $test)
-                        <div
-                            class="list-group-item list-group-item-action d-flex flex-column flex-md-row justify-content-between align-items-center mb-2">
+                        @php
+                            $hasSection = ($test->sections_count ?? 0) > 0;
+                            // total soal via accessor di Model (akan query jika belum diload)
+                            $totalQuestions = $test->total_questions ?? 0;
+                        @endphp
+
+                        <div class="list-group-item list-group-item-action d-flex flex-column flex-md-row justify-content-between align-items-center mb-2">
                             <div class="me-md-3 mb-2 mb-md-0">
                                 <h5 class="mb-0 fw-bold d-inline-flex align-items-center">
                                     {{ $test->name }}
@@ -35,6 +41,18 @@
                                     <i class="bi bi-gear"></i> Kelola Section
                                 </a>
 
+                                {{-- ✅ Tombol Intro (modal) --}}
+                                <button
+                                    class="btn btn-warning btn-sm {{ $hasSection ? '' : 'disabled' }}"
+                                    @if($hasSection)
+                                        data-bs-toggle="modal" data-bs-target="#introModal{{ $test->id }}"
+                                    @else
+                                        aria-disabled="true" tabindex="-1" title="Tambah minimal 1 section dulu"
+                                    @endif
+                                >
+                                    <i class="bi bi-info-circle"></i> Intro
+                                </button>
+
                                 <button class="btn btn-info btn-sm text-white" data-bs-toggle="modal"
                                     data-bs-target="#editTest{{ $test->id }}">
                                     <i class="bi bi-pencil-square"></i> Edit
@@ -51,7 +69,67 @@
                             </div>
                         </div>
 
-                        {{-- Include modal edit --}}
+                        {{-- ✅ Modal Intro per Test --}}
+                        <div class="modal fade" id="introModal{{ $test->id }}" tabindex="-1" aria-labelledby="introLabel{{ $test->id }}" aria-hidden="true">
+                          <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                              <div class="modal-header">
+                                <h1 class="modal-title fs-6" id="introLabel{{ $test->id }}">Intro Quiz: {{ $test->name }}</h1>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                              </div>
+
+                              <form method="POST" action="{{ route('test.intro.store', $test) }}">
+                                @csrf
+                                <div class="modal-body">
+                                    <div class="mb-3">
+                                        <label class="form-label">Intro Text</label>
+                                        @php
+                                        $totalQuestions = $test->total_questions;
+                                        $totalMinutes   = $test->total_duration_minutes;
+                                        $totalHHMM      = $test->total_duration_hhmm;
+                                        @endphp
+
+                                        <div class="alert alert-info d-flex align-items-start" role="alert">
+                                            <i class="bi bi-list-check me-2 mt-1"></i>
+                                            <div>
+                                                <div>
+                                                Total Soal: <strong id="totalQ-{{ $test->id }}">{{ $totalQuestions }}</strong>
+                                                </div>
+                                                <div>
+                                                Total Durasi: 
+                                                <strong id="totalM-{{ $test->id }}">{{ $totalMinutes }}</strong> menit
+                                                (<strong id="totalH-{{ $test->id }}">{{ $totalHHMM }}</strong>)
+                                                </div>
+                                                <div class="small text-muted">
+                                                Token yang tersedia: <code>:total_questions</code>, <code>:total_duration_minutes</code>, <code>:total_duration_hhmm</code>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="mb-2 d-flex gap-2 flex-wrap">
+                                            <button type="button" class="btn btn-outline-secondary btn-sm"
+                                                onclick="setIntroTemplate({{ $test->id }})">
+                                                Pakai Template
+                                            </button>
+                                        </div>
+                                        <textarea class="form-control" name="intro" id="introText-{{ $test->id }}" rows="7"
+                                            placeholder="Tulis pengantar singkat untuk peserta. Kamu dapat menyertakan token :total_questions untuk menampilkan jumlah soal dinamis.">{{ old('intro', $test->intro) }}
+                                        </textarea>
+                                        <div class="form-text">
+                                            Contoh template akan menyertakan <code>:total_questions</code> agar otomatis terganti saat ditampilkan ke peserta.
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="modal-footer">
+                                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                                  <button type="submit" class="btn btn-primary">Simpan</button>
+                                </div>
+                              </form>
+                            </div>
+                          </div>
+                        </div>
+
+                        {{-- Include modal edit (existing) --}}
                         @include('admin.test.partials.modal-edit-test', [
                             'test' => $test,
                             'positions' => $positions,
@@ -63,11 +141,11 @@
                         </div>
                     @endforelse
                 </div>
-            </div>            
+            </div>
         </div>
     </div>
 
-    {{-- Modal Create Test --}}
+    {{-- Modal Create Test (existing) --}}
     <div class="modal fade" id="tambahTest" tabindex="-1" aria-labelledby="modalTambahTest" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -76,8 +154,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
 
-                <form method="post" id="formTambahTest" action="{{ route('test.store') }}"
-                    enctype="multipart/form-data">
+                <form method="post" id="formTambahTest" action="{{ route('test.store') }}" enctype="multipart/form-data">
                     @csrf
                     <div class="modal-body">
                         {{-- Nama Test --}}
@@ -127,7 +204,7 @@
 
                         {{-- Tutup Test --}}
                         <div class="mb-3 col-md-12">
-                            <label for="test_closed" class="form-label">Tutup Tombol (Opsional)</label>
+                            <label for="test_closed" class="form-label">Tutup Tombol</label>
                             <input type="datetime-local"
                                 class="form-control @error('test_closed') is-invalid @enderror" id="test_closed"
                                 name="test_closed" value="{{ old('test_closed') }}">
@@ -138,7 +215,7 @@
 
                         {{-- Hard End --}}
                         <div class="mb-3 col-md-12">
-                            <label for="test_end" class="form-label">Hard End (Opsional)</label>
+                            <label for="test_end" class="form-label">Hard End</label>
                             <input type="datetime-local" class="form-control @error('test_end') is-invalid @enderror"
                                 id="test_end" name="test_end" value="{{ old('test_end') }}">
                             @error('test_end')
@@ -146,15 +223,7 @@
                             @enderror
                         </div>
 
-                        <div class="rounded w-full h-64 overflow-y-auto">
-                            <label class="block text-sm font-medium">Isi Intro</label>
-                            <div class="mb-3 flex items-center gap-2">
-                                <input type="checkbox" class="rounded">
-                                <label class="text-sm font-medium">Gunakan template</label>
-                            </div>
-                            <input id="messageLolos" type="hidden" name="message">
-                            <trix-editor input="messageLolos" class="trix-content border rounded w-full h-full"></trix-editor>
-                        </div>
+                        {{-- (Intro editor saat create tidak ditampilkan; kelola via modal per test) --}}
                     </div>
 
                     <div class="modal-footer">
@@ -176,4 +245,38 @@
             });
         </script>
     @endif
+
+    {{-- ✅ Helper JS untuk Template/Copy/Email Intro --}}
+    <script>
+    function setIntroTemplate(testId) {
+        const tpl = `Selamat Datang di ReQuiz!
+
+    Terima kasih telah berpartisipasi dalam tahapan seleksi ini. Tes ini diselenggarakan untuk mengukur kompetensi dan kesesuaian Anda dengan standar yang telah ditetapkan oleh penyelenggara.
+
+    Struktur Tes
+    Dengan total soal :total_questions dan total waktu :total_duration_minutes menit (:total_duration_hhmm)
+    Tes ini terdiri dari beberapa bagian, yaitu:
+    - Tes Pengetahuan Umum
+    - Tes Pengetahuan Khusus
+    - Tes Kepribadian
+    Setiap bagian memiliki jumlah soal dan durasi yang berbeda. Harap membaca instruksi pada setiap bagian dengan cermat.
+
+    Ketentuan Pelaksanaan
+    - Pastikan perangkat Anda memiliki koneksi internet yang stabil.
+    - Tidak diperkenankan membuka tab lain, menggunakan alat bantu, atau menerima bantuan pihak ketiga.
+    - Setiap bagian memiliki batas waktu. Jika waktu habis, sistem akan otomatis melanjutkan ke bagian berikutnya.
+    - Nilai akan dihitung secara otomatis oleh sistem setelah seluruh tes selesai dikerjakan.
+
+    Petunjuk Teknis
+    - Klik "Mulai" untuk memulai tes.
+    - Gunakan tombol Selanjutnya dan Sebelumnya untuk navigasi soal.
+    - Setelah selesai, klik Submit untuk mengakhiri.
+
+    Dengan mengklik Mulai, Anda menyatakan telah membaca dan memahami seluruh ketentuan di atas.
+    Selamat mengerjakan dan semoga berhasil.`;
+
+        const ta = document.getElementById('introText-' + testId);
+        if (ta) ta.value = tpl.trim();
+    }
+    </script>
 </x-app-admin>

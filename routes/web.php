@@ -213,6 +213,8 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('admin/section/checkSlug',     [TestSectionController::class, 'checkSlug'])->name('section.checkSlug');
     Route::put('admin/section/{section}',     [TestSectionController::class, 'update'])->name('section.update');
     Route::delete('admin/test/section/{section}', [TestSectionController::class, 'destroy'])->name('section.destroy');
+    Route::post('/admin/tests/{test}/intro', [TestController::class, 'introStore'])
+    ->name('test.intro.store');
 
     // -------- Question ----------
     Route::get('admin/question',               [QuestionController::class, 'index'])->name('question.index');

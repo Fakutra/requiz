@@ -20,6 +20,7 @@ return new class extends Migration
             $table->dateTime('test_date')->nullable();
             $table->dateTime('test_closed')->nullable();
             $table->dateTime('test_end')->nullable();
+            $table->longText('intro')->nullable();
             $table->timestamps();
         });
     }

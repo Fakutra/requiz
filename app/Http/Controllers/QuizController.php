@@ -23,12 +23,18 @@ class QuizController extends Controller
             abort(403, 'Invalid signature.');
         }
 
-        $test = Test::with('position')->where('slug', $slug)->firstOrFail();
+        $test = Test::where('slug', $slug)
+            ->with(['sections' => fn($q) => $q->with('questionBundle')->orderBy('order')])
+            ->with('position')
+            ->firstOrFail();
 
         // nomor pertama (atau logic kamu sendiri)
         $startUrl = URL::signedRoute('quiz.start', ['slug' => $test->slug, 'no' => 1]);
 
-        return view('quiz-intro', compact('test'));
+        // optional: kalau mau siapin HTML intro di controller
+        $introHtml = $test->intro_rendered; // sudah replace token + nl2br
+
+        return view('quiz-intro', compact('test', 'startUrl', 'introHtml'));
     }
 
     // GET /quiz/{slug}
@@ -663,4 +669,5 @@ class QuizController extends Controller
             $testResult->save();
         }
     }
+    
 }
