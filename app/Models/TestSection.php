@@ -18,12 +18,13 @@ class TestSection extends Model
         'duration_minutes',
         'shuffle_questions',
         'shuffle_options',
-        'order', // Pastikan kolom ini ada di database Anda
+        'order',
     ];
 
     protected $casts = [
-        'shuffle_questions' => 'boolean',
-        'shuffle_options' => 'boolean',
+    'shuffle_questions' => 'boolean',
+    'shuffle_options'   => 'boolean',
+    'duration_minutes'  => 'integer',   // ✅ tambah ini
     ];
 
     public function test()
@@ -55,5 +56,17 @@ class TestSection extends Model
             ]
         ];
     }
-}
 
+    /**
+     * ✅ Hitung jumlah soal dalam bundle section ini.
+     */
+    public function getQuestionsCountAttribute(): int
+    {
+        if ($this->relationLoaded('questionBundle') && $this->questionBundle) {
+            return (int) $this->questionBundle->questions()->count();
+        }
+        return $this->questionBundle
+            ? (int) $this->questionBundle->questions()->count()
+            : 0;
+    }
+}
