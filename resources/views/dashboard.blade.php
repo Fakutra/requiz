@@ -24,7 +24,7 @@
             <ul class="list-disc list-inside text-gray-600 space-y-1">
                 <li>Data Anda digunakan untuk memproses lamaran kerja.</li>
                 <li>Profil lengkap membantu HR menilai kualifikasi Anda.</li>
-                <li>Pastikan informasi seperti pendidikan, pengalaman, dan kontak sudah benar.</li>
+                <li>Pastikan informasi data diri kamu sudah benar.</li>
             </ul>
         </div>
 

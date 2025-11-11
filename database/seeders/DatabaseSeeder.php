@@ -29,6 +29,7 @@ class DatabaseSeeder extends Seeder
             QuestionBundleSeeder::class,
             BundleQuestionSeeder::class,
             PersonalityRuleSeeder::class,
+            SkregisSeeder::class,
         ]);
 
     }
