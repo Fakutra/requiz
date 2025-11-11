@@ -20,6 +20,11 @@ class Offering extends Model
     ];
 
 
+    public function position()
+    {
+        return $this->belongsTo(Position::class, 'position_id');
+    }
+
     // relasi ke Applicant
     public function applicant()
     {
