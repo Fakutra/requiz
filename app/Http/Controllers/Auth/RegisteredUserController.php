@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 use Illuminate\View\View;
 use App\Models\Profile;
+use App\Models\Skregis;
 
 class RegisteredUserController extends Controller
 {
@@ -21,7 +22,8 @@ class RegisteredUserController extends Controller
      */
     public function create(): View
     {
-        return view('auth.register');
+        $sk = Skregis::orderBy('id', 'asc')->get();
+        return view('auth.register', compact('sk'));
     }
 
     /**

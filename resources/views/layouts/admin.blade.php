@@ -194,10 +194,10 @@
                             Informasi Kontak
                             </a>
 
-                            {{-- Privacy Policy --}}
-                            <a href="{{ route('admin.privacy.index', [], false) }}"
-                            class="block hover:text-blue-600 no-underline {{ request()->is('admin/privacy*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
-                            Privacy Policy
+                            {{-- S & K Registration --}}
+                            <a href="{{ route('admin.skregis.index', [], false) }}"
+                            class="block hover:text-blue-600 no-underline {{ request()->is('admin/skregis*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                            S & K Registration
                             </a>
                         </div>
                         </div>

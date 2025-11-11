@@ -76,40 +76,34 @@
                         <h3 class="text-lg font-semibold text-gray-900 mb-3">
                             Syarat & Ketentuan
                         </h3>
-                        <p class="font-regular">
-                            Dengan melakukan registrasi pada website ini, Anda setuju untuk terikat oleh Syarat dan Ketentuan yang berlaku.
-                            Harap membaca secara seksama sebelum melanjutkan proses registrasi. Ketentuan ini disusun untuk melindungi hak
-                            dan kewajiban pengguna serta pihak pengelola website.
+                        
+                        {{-- paragraf judul dari database --}}
+                        @foreach($sk->where('content', 'judul') as $j)
+                        <p class="font-regular mb-3">
+                            {{ $j->description }}
                         </p>
+                        @endforeach
+
 
                         <div class="overflow-y-auto mt-4 max-h-64">
-                            <ol class="list-decimal ml-5 font-regular">
-                                <li><strong>Pendaftaran Akun</strong><br>
-                                    Dengan melakukan registrasi, Anda menyatakan bahwa data yang diberikan adalah benar, lengkap, dan milik Anda sendiri.
-                                </li>
-                                <li><strong>Kerahasiaan Akun</strong><br>
-                                    Anda bertanggung jawab atas kerahasiaan kredensial (email dan kata sandi) serta seluruh aktivitas
-                                    yang terjadi melalui akun Anda.
-                                </li>
-                                <li><strong>Penggunaan yang Dilarang</strong><br>
-                                    Dilarang menggunakan layanan untuk tujuan yang melanggar hukum, menipu, merugikan pihak lain, atau melanggar
-                                    hak kekayaan intelektual.
-                                </li>
-                                <li><strong>Perubahan dan Ketersediaan Layanan</strong><br>
-                                    Pengelola berhak melakukan pembaruan, perubahan, penangguhan, atau penghentian layanan sewaktu-waktu.
-                                </li>
-                                <li><strong>Privasi dan Data Pribadi</strong><br>
-                                    Dengan mendaftar, Anda menyetujui pengumpulan dan pemrosesan data sesuai kebijakan privasi kami.
-                                </li>
-                                <li><strong>Pembatasan Tanggung Jawab</strong><br>
-                                    Pengelola tidak bertanggung jawab atas kerugian langsung maupun tidak langsung yang timbul dari penggunaan layanan.
-                                </li>
-                                <li><strong>Persetujuan</strong><br>
-                                    Dengan mencentang persetujuan dan menekan tombol “Registrasi Akun”, Anda dianggap telah membaca, memahami,
-                                    dan menyetujui seluruh Syarat &amp; Ketentuan ini.
-                                </li>
-                            </ol>
+                            @php
+                                $listItems = $sk->where('content', 'list')->sortBy('id');
+                            @endphp
+
+                            @if($listItems->isNotEmpty())
+                                <ol class="list-decimal ml-5 font-regular">
+                                @foreach($listItems as $item)
+                                    <li class="mb-3">
+                                    <strong>{{ $item->title }}</strong><br>
+                                    {{ $item->description }}
+                                    </li>
+                                @endforeach
+                                </ol>
+                            @else
+                                <p class="text-gray-500 text-sm text-center">Belum ada ketentuan yang ditambahkan.</p>
+                            @endif
                         </div>
+
 
                         {{-- Checkbox + hidden input buat server --}}
                         <div class="mt-4 flex items-start gap-3">

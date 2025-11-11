@@ -31,6 +31,7 @@ use App\Http\Controllers\AdminPanel\ActivityLogController;
 use App\Http\Controllers\AdminPanel\PersonalityRuleController;
 use App\Http\Controllers\AdminPanel\UserController;
 use App\Http\Controllers\AdminPanel\FaqController;
+use App\Http\Controllers\AdminPanel\SkregisController;
 
 
 
@@ -285,4 +286,10 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('admin/about',   fn() => view('admin.about.index'))->name('admin.about.index');
     Route::get('admin/contact', fn() => view('admin.contact.index'))->name('admin.contact.index');
     Route::get('admin/privacy', fn() => view('admin.privacy.index'))->name('admin.privacy.index');
+
+    // -------- SK Regis ----------
+    Route::get('admin/skregis',             [SkregisController::class, 'index'])->name('admin.skregis.index');
+    Route::post('admin/skregis',             [SkregisController::class, 'store'])->name('admin.skregis.store');
+    Route::put('admin/skregis/{skregis}',  [SkregisController::class, 'update'])->name('admin.skregis.update');
+    Route::delete('admin/skregis/{skregis}',  [SkregisController::class, 'destroy'])->name('admin.skregis.destroy');
 });
