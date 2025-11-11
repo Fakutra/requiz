@@ -16,7 +16,10 @@ class TestController extends Controller
     public function index()
     {
         $positions = Position::all();
-        $tests = Test::withCount('sections')->orderBy('id', 'asc')->get();
+        $tests = Test::withCount('sections')
+            ->with(['sections.questionBundle'])
+            ->orderBy('id', 'asc')
+            ->get();
         return view('admin.test.index', compact('tests', 'positions'));
     }
 
@@ -48,7 +51,7 @@ class TestController extends Controller
         ActivityLogger::log(
             'create',
             'Test',
-            auth()->user()->name . " membuat test baru: '{$test->name}'",
+            (auth()->user()->name ?? 'System') . " membuat test baru: '{$test->name}'",
             "Test ID: {$test->id}"
         );
 
@@ -117,7 +120,7 @@ class TestController extends Controller
             ActivityLogger::log(
                 'delete',
                 'Test',
-                auth()->user()->name . " menghapus test: '{$name}'",
+                (auth()->user()->name ?? 'System') . " menghapus test: '{$name}'",
                 "Test ID: {$test->id}"
             );
 
@@ -131,5 +134,56 @@ class TestController extends Controller
     {
         $slug = SlugService::createSlug(Test::class, 'slug', $request->name);
         return response()->json(['slug' => $slug]);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | ✅ Intro Admin
+    |--------------------------------------------------------------------------
+    | - intro(): tampilkan form Intro + total soal (sum dari questions per section)
+    | - introStore(): simpan intro ke kolom tests.intro
+    | Catatan: template intro (default) dikelola di Blade, bukan di sini.
+    */
+    public function intro(Test $test)
+    {
+        // Pastikan sudah ada minimal 1 section
+        $test->load(['sections' => fn ($q) => $q->withCount('questions')->orderBy('order', 'asc')]);
+        $test->loadCount(['sections']);
+
+        if ($test->sections_count === 0) {
+            return back()->with('error', 'Tambahkan minimal 1 section sebelum mengatur intro.');
+        }
+
+        // Hitung total soal dari semua section
+        $totalQuestions = $test->sections->sum('questions_count');
+
+        return view('admin.test.intro', compact('test', 'totalQuestions'));
+    }
+
+    public function introStore(Request $request, Test $test)
+    {
+        // Kunci jika belum ada section
+        if ($test->sections()->count() === 0) {
+            return back()->with('error', 'Belum ada section. Intro tidak bisa disimpan.');
+        }
+
+        $data = $request->validate([
+            'intro' => ['nullable', 'string'],
+        ]);
+
+        $oldIntro = $test->intro;
+        $test->intro = $data['intro'] ?? null;
+        $test->save();
+
+        // Log perubahan intro (singkat)
+        ActivityLogger::log(
+            'update',
+            'Test',
+            (auth()->user()->name ?? 'System') .
+                " memperbarui Intro Test '{$test->name}'",
+            "Test ID: {$test->id}"
+        );
+
+        return back()->with('success', 'Intro berhasil disimpan.');
     }
 }

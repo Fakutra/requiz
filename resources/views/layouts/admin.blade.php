@@ -108,24 +108,21 @@
                     class="w-64 bg-white p-6 absolute z-30 inset-y-0 left-0 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 -translate-x-full shadow-md"
                     :class="{ '-translate-x-full': !sidebarOpen, 'translate-x-0': sidebarOpen }"
                     x-data="{
+                        masterOpen: {{ request()->is('admin/faq') 
+                                        || request()->is('admin/about*') 
+                                        || request()->is('admin/contact*') 
+                                        || request()->is('admin/privacy*') ? 'true' : 'false' }},
                         userOpen: {{ request()->is('admin/applicant*') || request()->is('admin') || request()->is('selection') ? 'true' : 'false' }},
                         jobOpen: {{ request()->is('admin/batch') ? 'true' : 'false' }},
-                        quizOpen: {{ request()->is('quiz') ? 'true' : 'false' }},
-                        scheduleOpen: {{ request()->is('tech-answers*') || request()->is('interview-schedule*') ? 'true' : 'false' }},
+                        quizOpen: {{ request()->is('admin/test') || request()->is('admin/question') || request()->is('admin/bundle') ? 'true' : 'false' }},
+                        scheduleOpen: {{ request()->is('admin/tech-answers*') || request()->is('admin/interview-schedule*') ? 'true' : 'false' }},
 
                         toggleMenu(menu) {
-                            // Toggle menu diklik
                             this[menu] = !this[menu];
-
-                            // Tutup yang lain, tapi beri jeda 50ms biar animasinya overlap halus
-                            const menus = ['userOpen', 'jobOpen', 'quizOpen', 'scheduleOpen'];
-                            menus.forEach(m => {
-                                if (m !== menu && this[m]) {
-                                    setTimeout(() => this[m] = false, 50);
-                                }
-                            });
+                            const menus = ['masterOpen','userOpen','jobOpen','quizOpen','scheduleOpen'];
+                            menus.forEach(m => { if (m !== menu && this[m]) setTimeout(() => this[m] = false, 50); });
                         }
-                    }">
+                        }">
                     <div class="flex items-center justify-between mb-8">
                         <div class="flex gap-3">
                             <div
@@ -155,6 +152,56 @@
                             </svg>
                             Dashboard
                         </a>
+
+                        {{-- Master --}}
+                        <div class="py-1">
+                        <button @click="toggleMenu('masterOpen')"
+                            class="flex items-center w-full text-gray-700 hover:text-blue-600 focus:outline-none">
+                            {{-- Icon layers / folder master --}}
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" class="size-6 me-4">
+                                <path fill="none" stroke="currentColor" d="m17.3 10.453l1.927.315a.326.326 0 0 1 .273.322v1.793a.326.326 0 0 1-.27.321l-1.93.339q-.167.582-.459 1.111l1.141 1.584a.326.326 0 0 1-.034.422l-1.268 1.268a.326.326 0 0 1-.418.037l-1.6-1.123a5.5 5.5 0 0 1-1.118.468l-.34 1.921a.326.326 0 0 1-.322.269H11.09a.325.325 0 0 1-.321-.272l-.319-1.911a5.5 5.5 0 0 1-1.123-.465l-1.588 1.113a.326.326 0 0 1-.418-.037L6.052 16.66a.33.33 0 0 1-.035-.42l1.123-1.57a5.5 5.5 0 0 1-.47-1.129l-1.901-.337a.326.326 0 0 1-.269-.321V11.09c0-.16.115-.296.273-.322l1.901-.317q.173-.59.47-1.128l-1.11-1.586a.326.326 0 0 1 .037-.417L7.34 6.053a.326.326 0 0 1 .42-.035l1.575 1.125q.533-.292 1.121-.46l.312-1.91a.326.326 0 0 1 .322-.273h1.793c.159 0 .294.114.322.27l.336 1.92q.585.169 1.12.465l1.578-1.135a.326.326 0 0 1 .422.033l1.268 1.268a.326.326 0 0 1 .036.418L16.84 9.342q.29.53.46 1.11ZM9.716 12a2.283 2.283 0 1 0 4.566 0a2.283 2.283 0 0 0-4.566 0Z" clip-rule="evenodd" stroke-width="1"/>
+                            </svg>
+                            Master
+                            <svg class="w-4 h-4 ml-auto transform" :class="{ 'rotate-180': masterOpen }" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+
+                        <div x-show="masterOpen"
+                            x-transition:enter="transition ease-out duration-300"
+                            x-transition:enter-start="opacity-0 -translate-y-2"
+                            x-transition:enter-end="opacity-100 translate-y-0"
+                            x-transition:leave="transition ease-in duration-300"
+                            x-transition:leave-start="opacity-100 translate-y-0"
+                            x-transition:leave-end="opacity-0 -translate-y-2"
+                            class="mt-3 ml-10 space-y-4 text-sm text-gray-600">
+
+                            {{-- FAQ (sudah ada route) --}}
+                            <a href="{{ route('admin.faq.index') }}"
+                            class="block hover:text-blue-600 no-underline {{ request()->is('admin/faq') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                            FAQ
+                            </a>
+
+                            {{-- Tentang Kami --}}
+                            <a href="{{ route('admin.about.index', [], false) }}"
+                            class="block hover:text-blue-600 no-underline {{ request()->is('admin/about*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                            Tentang Kami
+                            </a>
+
+                            {{-- Informasi Kontak --}}
+                            <a href="{{ route('admin.contact.index', [], false) }}"
+                            class="block hover:text-blue-600 no-underline {{ request()->is('admin/contact*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                            Informasi Kontak
+                            </a>
+
+                            {{-- Privacy Policy --}}
+                            <a href="{{ route('admin.privacy.index', [], false) }}"
+                            class="block hover:text-blue-600 no-underline {{ request()->is('admin/privacy*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                            Privacy Policy
+                            </a>
+                        </div>
+                        </div>
+
 
                         {{-- Mengelola User --}}
                         <div class="py-1">
@@ -312,16 +359,6 @@
                                 <path fill="currentColor" d="M12 21q-3.45 0-6.012-2.287T3.05 13H5.1q.35 2.6 2.313 4.3T12 19q2.925 0 4.963-2.037T19 12t-2.037-4.962T12 5q-1.725 0-3.225.8T6.25 8H9v2H3V4h2v2.35q1.275-1.6 3.113-2.475T12 3q1.875 0 3.513.713t2.85 1.924t1.925 2.85T21 12t-.712 3.513t-1.925 2.85t-2.85 1.925T12 21m2.8-4.8L11 12.4V7h2v4.6l3.2 3.2z"/>
                             </svg>
                             Activity Logs
-                        </a>
-
-                        <a href="{{ route('admin.faq.index') }}"
-                            class="flex items-center no-underline hover:text-blue-600 focus:outline-none {{ request()->is('admin/faq') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-2' : 'text-gray-600' }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                    stroke-width="1.5" stroke="currentColor" class="size-6 me-4">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                                </svg>
-                            FAQ
                         </a>
                         
                     </nav>
