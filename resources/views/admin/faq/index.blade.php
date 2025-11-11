@@ -132,25 +132,29 @@
 <script>
 document.addEventListener('alpine:init', () => {
   Alpine.data('faqPage', () => ({
+    // ===== STATE =====
+    showCreate: false,
     showEdit: false,
+
+    createForm: { question: '', answer: '', is_active: true },
+    editForm:   { id: null, question: '', answer: '', is_active: true },
     editAction: '',
-    editForm: { id: null, question: '', answer: '', is_active: true },
+
+    // ===== ACTIONS =====
+    openCreate() {
+      this.createForm = { question: '', answer: '', is_active: true };
+      this.showCreate = true;
+    },
 
     openEdit(faq) {
-      // pastikan nilai boolean:
-      const isActive =
-        faq.is_active === true || faq.is_active === 1 || faq.is_active === '1';
-
+      const isActive = faq?.is_active === true || faq?.is_active === 1 || faq?.is_active === '1';
       this.editForm = {
-        id: faq.id,
-        question: faq.question ?? '',
-        answer: faq.answer ?? '',
+        id: faq?.id ?? null,
+        question: faq?.question ?? '',
+        answer: faq?.answer ?? '',
         is_active: isActive,
       };
-
-      // set action form
-      this.editAction = "{{ route('admin.faq.update', ':id') }}".replace(':id', faq.id);
-
+      this.editAction = "{{ route('admin.faq.update', ':id') }}".replace(':id', this.editForm.id);
       this.showEdit = true;
     },
   }));

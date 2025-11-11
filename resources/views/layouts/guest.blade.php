@@ -67,27 +67,42 @@
         </main>
 
         <footer class="bg-gray-900 text-gray-200 py-10 px-8">
-            <div class="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-4">
-                <!-- Brand -->
-                <div>
-                    <h3 class="text-3xl font-bold mb-4">ReQuiz</h3>
+            <div class="max-w-7xl mx-auto">
+                <h3 class="text-3xl font-bold mb-6">ReQuiz</h3>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                @forelse($footerContacts as $c)
                     <div>
-                        <h4 class="text-lg font-semibold">Kontak</h4>
-                        <p class="text-sm text-gray-400">Email: support@namabrand.com</p>
-                        <p class="text-sm text-gray-400">Telepon: +62 812 3456 7890</p>
-                        <div class="flex space-x-4 mt-4">
-                            <a href="#" class="hover:text-white"><i class="fab fa-facebook"></i></a>
-                            <a href="#" class="hover:text-white"><i class="fab fa-instagram"></i></a>
-                            <a href="#" class="hover:text-white"><i class="fab fa-twitter"></i></a>
-                        </div>
+                    <div class="text-lg font-semibold">{{ $c->narahubung ?? 'Kontak' }}</div>
+
+                    @if($c->email)
+                        <a href="mailto:{{ $c->email }}" class="block text-sm text-gray-300 hover:text-white mt-1 no-underline">
+                        ✉️ {{ $c->email }}
+                        </a>
+                    @endif
+
+                    @php $wa = $c->wa_number; @endphp
+                        @if($wa)
+                        <a href="https://wa.me/{{ $wa }}" target="_blank" class="block text-sm text-gray-300 hover:text-white no-underline">
+                            📱 {{ $c->phone }}
+                        </a>
+                    @endif
+
+                    @if($c->jam_operasional)
+                        <div class="text-xs text-gray-400 mt-1">{{ $c->jam_operasional }}</div>
+                    @endif
                     </div>
+                @empty
+                    <div class="text-gray-400">Kontak belum tersedia.</div>
+                @endforelse
+                </div>
+
+                <div class="mt-8 border-t border-gray-700 pt-6 text-center text-sm text-gray-500">
+                © {{ now()->year }} ReQuiz. All rights reserved.
                 </div>
             </div>
-
-            <div class="mt-10 border-t border-gray-700 pt-6 text-center text-sm text-gray-500">
-                © 2025 ReQuiz. All rights reserved.
-            </div>
         </footer>
+
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js" integrity="sha384-j1CDi7MgGQ12Z7Qab0qlWQ/Qqz24Gc6BM0thvEMVjHnfYGF0rmFCozFSxQBxwHKO" crossorigin="anonymous"></script>
     @stack('scripts')

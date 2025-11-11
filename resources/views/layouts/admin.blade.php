@@ -641,12 +641,35 @@
 
 
     <footer class="bg-gray-900 text-gray-200 py-10 px-8">
-        <div class="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-4">
-            <div>
-                <h3 class="text-3xl font-bold mb-4">ReQuiz Admin</h3>
-                <h4 class="text-lg font-semibold">Kontak</h4>
-                <p class="text-sm text-gray-400">Email: delanda.f@gmail.com</p>
-                <p class="text-sm text-gray-400">Telepon: +62 812 3456 7890</p>
+        <div class="max-w-7xl mx-auto">
+            <h3 class="text-3xl font-bold mb-6">ReQuiz</h3>
+            <h4 class=" font-bold mb-6">Contact Person</h4>
+
+            <div class="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-6">
+                @forelse($footerContacts as $c)
+                <div>
+                    <h4 class="text-lg font-semibold">{{ $c->narahubung ?? 'Kontak' }}</h4>
+
+                    @if($c->email)
+                    <a href="mailto:{{ $c->email }}" class="block text-sm text-gray-300 hover:text-white no-underline">
+                        ✉️ {{ $c->email }}
+                    </a>
+                    @endif
+
+                    @php $wa = $c->wa_number; @endphp
+                    @if($wa)
+                    <a href="https://wa.me/{{ $wa }}" target="_blank" class="block text-sm text-gray-300 hover:text-white no-underline">
+                        📱 {{ $c->phone }}
+                    </a>
+                    @endif
+
+                    @if($c->jam_operasional)
+                    <div class="text-xs text-gray-400 mt-1">{{ $c->jam_operasional }}</div>
+                    @endif
+                </div>
+                @empty
+                <div class="col-span-1 text-gray-400">Belum ada kontak aktif.</div>
+                @endforelse
             </div>
         </div>
         <div class="mt-10 border-t border-gray-700 pt-6 text-center text-sm text-gray-500">
@@ -654,19 +677,14 @@
         </div>
 
         @if (session('success'))
-        <script>
+            <script>
             document.addEventListener('DOMContentLoaded', () => {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Berhasil',
-                    text: 'sukses',
-                    confirmButtonColor: '#3085d6',
-                    confirmButtonText: 'OK'
-                });
+                Swal.fire({ icon:'success', title:'Berhasil', text:'sukses', confirmButtonColor:'#3085d6' });
             });
-        </script>
+            </script>
         @endif
-    </footer>
+        </footer>
+
 
     {{-- JS libs --}}
     <script defer src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"

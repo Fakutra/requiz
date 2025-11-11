@@ -32,6 +32,7 @@ use App\Http\Controllers\AdminPanel\PersonalityRuleController;
 use App\Http\Controllers\AdminPanel\UserController;
 use App\Http\Controllers\AdminPanel\FaqController;
 use App\Http\Controllers\AdminPanel\SkregisController;
+use App\Http\Controllers\AdminPanel\ContactController;
 
 
 
@@ -284,7 +285,14 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::delete('admin/faq/{faq}',     [FaqController::class, 'destroy'])->name('admin.faq.destroy');
 
     Route::get('admin/about',   fn() => view('admin.about.index'))->name('admin.about.index');
-    Route::get('admin/contact', fn() => view('admin.contact.index'))->name('admin.contact.index');
+
+    //Contact
+    Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () {
+        Route::resource('contact', ContactController::class)->except(['show']);
+        Route::post('contact/{contact}/set-active', [ContactController::class, 'setActive'])
+            ->name('contact.set-active');
+    });
+    
     Route::get('admin/privacy', fn() => view('admin.privacy.index'))->name('admin.privacy.index');
 
     // -------- SK Regis ----------
