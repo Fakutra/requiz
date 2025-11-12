@@ -11,18 +11,31 @@ class Position extends Model
     use HasFactory, Sluggable;
 
     protected $fillable = [
-        'batch_id',
-        'name',
-        'slug',
-        'quota',
-        'status',
-        'pendidikan_minimum',
-        'description',
-        'skills',
-        'requirements',
-        'majors',
-        'deadline',
+        'batch_id','name','slug','quota','pendidikan_minimum',
+        'skills','requirements','majors','deadline','status','description'
     ];
+
+    // cast agar Laravel otomatis simpan array sebagai JSON dan decode saat dibaca
+    protected $casts = [
+        'skills' => 'array',
+        'requirements' => 'array',
+        'majors' => 'array',
+        'description' => 'array', // note: column name is description (store array here)
+        'deadline' => 'date',
+    ];
+
+    // helper kecil (opsional) untuk get single-line preview
+    public function getDescriptionPreviewAttribute()
+    {
+        $arr = $this->description;
+        if (is_array($arr) && count($arr)) {
+            return implode(' — ', array_slice($arr, 0, 3)); // contoh preview
+        }
+        if (is_string($this->description)) {
+            return \Str::limit(strip_tags($this->description), 80);
+        }
+        return null;
+    }
 
     public function user()
     {

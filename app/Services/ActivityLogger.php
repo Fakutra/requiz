@@ -53,9 +53,13 @@ class ActivityLogger
                 $newValue = (float)$newValue;
             }
 
+            // ✅ Convert array ke string dulu biar ga error "Array to string conversion"
+            $oldValue = is_array($oldValue) ? json_encode($oldValue, JSON_UNESCAPED_UNICODE) : $oldValue;
+            $newValue = is_array($newValue) ? json_encode($newValue, JSON_UNESCAPED_UNICODE) : $newValue;
+
             // ✅ Normalisasi null & spasi
-            $oldValue = $oldValue === null ? '' : trim((string)$oldValue);
-            $newValue = $newValue === null ? '' : trim((string)$newValue);
+            $oldValue = $oldValue === null ? '' : trim((string) $oldValue);
+            $newValue = $newValue === null ? '' : trim((string) $newValue);
 
             // ✅ Bandingkan setelah normalisasi
             if ($oldValue !== $newValue) {
