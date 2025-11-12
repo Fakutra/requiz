@@ -10,11 +10,19 @@
       </div>
       <div class="flex items-center gap-2">
         <form method="GET" class="hidden md:block">
-          <input name="q" value="{{ request('q') }}" placeholder="Cari email / PIC…"
-                 class="w-64 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring" />
+          <input
+            name="q"
+            value="{{ request('q') }}"
+            placeholder="Cari email / PIC…"
+            class="w-64 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring"
+          />
         </form>
-        <button type="button" data-bs-toggle="modal" data-bs-target="#createContact"
-                class="inline-flex items-center rounded-lg px-3 py-2 text-sm bg-blue-600 text-white hover:bg-blue-700">
+        <button
+          type="button"
+          data-bs-toggle="modal"
+          data-bs-target="#createContact"
+          class="inline-flex items-center rounded-lg px-3 py-2 text-sm bg-blue-600 text-white hover:bg-blue-700"
+        >
           + Tambah Kontak
         </button>
       </div>
@@ -24,13 +32,17 @@
     @if(session('ok'))
       <div class="mb-3 p-3 rounded bg-green-50 text-green-700 text-sm">{{ session('ok') }}</div>
     @endif
+
     @if(session('err'))
       <div class="mb-3 p-3 rounded bg-red-50 text-red-700 text-sm">{{ session('err') }}</div>
     @endif
+
     @if($errors->any())
       <div class="mb-3 p-3 rounded bg-red-50 text-red-700 text-sm">
         <ul class="list-disc pl-5 space-y-1">
-          @foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach
+          @foreach($errors->all() as $e)
+            <li>{{ $e }}</li>
+          @endforeach
         </ul>
       </div>
     @endif
@@ -63,42 +75,63 @@
                     ✅ Aktif
                   </span>
                 @else
-                  <span class="inline-flex rounded-full bg-gray-100 text-gray-600 px-2 py-0.5">Nonaktif</span>
+                  <span class="inline-flex rounded-full bg-gray-100 text-gray-600 px-2 py-0.5">
+                    Nonaktif
+                  </span>
                 @endif
               </td>
               <td class="px-4 py-3">
                 <div class="flex items-center justify-end gap-2">
-                  {{-- Tombol toggle aktif/nonaktif --}}
+
+                  {{-- Toggle Aktif/Nonaktif pakai modal --}}
                   @if($c->is_active)
-                    {{-- Tombol Nonaktifkan --}}
-                    <form action="{{ route('admin.contact.update', $c) }}" method="POST"
-                          onsubmit="return confirm('Nonaktifkan kontak ini?')">
-                      @csrf @method('PUT')
-                      <input type="hidden" name="is_active" value="0">
-                      <button class="px-3 py-1.5 rounded-lg border hover:bg-gray-50">
-                        Nonaktifkan
-                      </button>
-                    </form>
+                    <button
+                      type="button"
+                      class="px-3 py-1.5 rounded-lg border hover:bg-gray-50"
+                      data-bs-toggle="modal"
+                      data-bs-target="#confirmToggleModal"
+                      data-title="Nonaktifkan Kontak?"
+                      data-message="Kontak {{ $c->narahubung ?: 'tanpa nama' }} akan dinonaktifkan."
+                      data-action="{{ route('admin.contact.update', $c) }}"
+                      data-method="PUT"
+                      data-payload='{"is_active":"0"}'
+                    >
+                      Nonaktifkan
+                    </button>
                   @else
-                    {{-- Tombol Jadikan Aktif --}}
-                    <form action="{{ route('admin.contact.set-active', $c) }}" method="POST">
-                      @csrf
-                      <button class="px-3 py-1.5 rounded-lg border text-gray-700 hover:bg-gray-50"
-                              onclick="return confirm('Aktifkan kontak ini? (Maksimal 3 aktif)')">
-                        Jadikan Aktif
-                      </button>
-                    </form>
+                    <button
+                      type="button"
+                      class="px-3 py-1.5 rounded-lg border hover:bg-gray-50"
+                      data-bs-toggle="modal"
+                      data-bs-target="#confirmToggleModal"
+                      data-title="Aktifkan Kontak?"
+                      data-message="Kontak {{ $c->narahubung ?: 'tanpa nama' }} akan diaktifkan (maks. 3 aktif)."
+                      data-action="{{ route('admin.contact.set-active', $c) }}"
+                      data-method="POST"
+                      data-payload="{}"
+                    >
+                      Jadikan Aktif
+                    </button>
                   @endif
 
                   {{-- Edit --}}
-                  <button type="button" data-bs-toggle="modal" data-bs-target="#editContact{{ $c->id }}"
-                          class="px-3 py-1.5 rounded-lg border hover:bg-gray-50">Edit</button>
+                  <button
+                    type="button"
+                    data-bs-toggle="modal"
+                    data-bs-target="#editContact{{ $c->id }}"
+                    class="px-3 py-1.5 rounded-lg border hover:bg-gray-50"
+                  >
+                    Edit
+                  </button>
 
-                  {{-- Hapus --}}
-                  <form action="{{ route('admin.contact.destroy', $c) }}" method="POST"
-                        onsubmit="return confirm('Hapus kontak ini?')">
-                    @csrf @method('DELETE')
-                    <button class="px-3 py-1.5 rounded-lg border text-red-600 hover:bg-red-50">
+                  {{-- Hapus (opsional bisa pakai modal yg sama juga) --}}
+                  <form action="{{ route('admin.contact.destroy', $c) }}" method="POST" class="inline">
+                    @csrf
+                    @method('DELETE')
+                    <button
+                      class="px-3 py-1.5 rounded-lg border text-red-600 hover:bg-red-50"
+                      onclick="return confirm('Hapus kontak ini?')"
+                    >
                       Hapus
                     </button>
                   </form>
@@ -115,31 +148,51 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                   </div>
                   <form action="{{ route('admin.contact.update', $c) }}" method="POST">
-                    @csrf @method('PUT')
+                    @csrf
+                    @method('PUT')
                     <div class="modal-body grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label class="text-sm">PIC / Narahubung</label>
-                        <input name="narahubung" value="{{ old('narahubung',$c->narahubung) }}"
-                               class="w-full border rounded-lg px-3 py-2">
+                        <input
+                          name="narahubung"
+                          value="{{ old('narahubung', $c->narahubung) }}"
+                          class="w-full border rounded-lg px-3 py-2"
+                        >
                       </div>
                       <div>
                         <label class="text-sm">Email</label>
-                        <input type="email" name="email" value="{{ old('email',$c->email) }}"
-                               class="w-full border rounded-lg px-3 py-2">
+                        <input
+                          type="email"
+                          name="email"
+                          value="{{ old('email', $c->email) }}"
+                          class="w-full border rounded-lg px-3 py-2"
+                        >
                       </div>
                       <div>
                         <label class="text-sm">Telepon / WA</label>
-                        <input name="phone" value="{{ old('phone',$c->phone) }}"
-                               class="w-full border rounded-lg px-3 py-2">
+                        <input
+                          name="phone"
+                          value="{{ old('phone', $c->phone) }}"
+                          class="w-full border rounded-lg px-3 py-2"
+                        >
                       </div>
                       <div>
                         <label class="text-sm">Jam Operasional</label>
-                        <input name="jam_operasional" value="{{ old('jam_operasional',$c->jam_operasional) }}"
-                               class="w-full border rounded-lg px-3 py-2" placeholder="Senin–Jumat, 09.00–17.00">
+                        <input
+                          name="jam_operasional"
+                          value="{{ old('jam_operasional', $c->jam_operasional) }}"
+                          class="w-full border rounded-lg px-3 py-2"
+                          placeholder="Senin–Jumat, 09.00–17.00"
+                        >
                       </div>
                       <div class="md:col-span-2">
                         <label class="inline-flex items-center gap-2">
-                          <input type="checkbox" name="is_active" value="1" {{ old('is_active',$c->is_active) ? 'checked' : '' }}>
+                          <input
+                            type="checkbox"
+                            name="is_active"
+                            value="1"
+                            {{ old('is_active', $c->is_active) ? 'checked' : '' }}
+                          >
                           <span>Aktifkan kontak ini</span>
                         </label>
                         <p class="text-xs text-gray-500 mt-1">Maksimal 3 kontak aktif diperbolehkan.</p>
@@ -163,7 +216,9 @@
     </div>
 
     {{-- Pagination --}}
-    <div class="mt-4">{{ $contacts->withQueryString()->links() }}</div>
+    <div class="mt-4">
+      {{ $contacts->withQueryString()->links() }}
+    </div>
   </div>
 
   {{-- === Create Modal === --}}
@@ -179,27 +234,46 @@
           <div class="modal-body grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label class="text-sm">PIC / Narahubung</label>
-              <input name="narahubung" value="{{ old('narahubung') }}"
-                     class="w-full border rounded-lg px-3 py-2">
+              <input
+                name="narahubung"
+                value="{{ old('narahubung') }}"
+                class="w-full border rounded-lg px-3 py-2"
+              >
             </div>
             <div>
               <label class="text-sm">Email</label>
-              <input type="email" name="email" value="{{ old('email') }}"
-                     class="w-full border rounded-lg px-3 py-2">
+              <input
+                type="email"
+                name="email"
+                value="{{ old('email') }}"
+                class="w-full border rounded-lg px-3 py-2"
+              >
             </div>
             <div>
               <label class="text-sm">Telepon / WA</label>
-              <input name="phone" value="{{ old('phone') }}"
-                     class="w-full border rounded-lg px-3 py-2">
+              <input
+                name="phone"
+                value="{{ old('phone') }}"
+                class="w-full border rounded-lg px-3 py-2"
+              >
             </div>
             <div>
               <label class="text-sm">Jam Operasional</label>
-              <input name="jam_operasional" value="{{ old('jam_operasional') }}"
-                     class="w-full border rounded-lg px-3 py-2" placeholder="Senin–Jumat, 09.00–17.00">
+              <input
+                name="jam_operasional"
+                value="{{ old('jam_operasional') }}"
+                class="w-full border rounded-lg px-3 py-2"
+                placeholder="Senin–Jumat, 09.00–17.00"
+              >
             </div>
             <div class="md:col-span-2">
               <label class="inline-flex items-center gap-2">
-                <input type="checkbox" name="is_active" value="1" {{ old('is_active') ? 'checked' : '' }}>
+                <input
+                  type="checkbox"
+                  name="is_active"
+                  value="1"
+                  {{ old('is_active') ? 'checked' : '' }}
+                >
                 <span>Jadikan aktif</span>
               </label>
               <p class="text-xs text-gray-500 mt-1">Maksimal 3 kontak aktif diperbolehkan.</p>
@@ -213,4 +287,80 @@
       </div>
     </div>
   </div>
+
+  {{-- Modal Konfirmasi Toggle --}}
+  <div class="modal fade" id="confirmToggleModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 id="confirmToggleTitle" class="modal-title">Konfirmasi</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+          <p id="confirmToggleMessage" class="text-sm text-gray-700"></p>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+
+          {{-- form dinamis yang akan di-submit --}}
+          <form id="confirmToggleForm" method="POST" class="m-0">
+            @csrf
+            <input type="hidden" name="_method" value="POST">
+            {{-- payload dinamis (mis. is_active=0) akan disuntik di sini --}}
+            <div id="confirmTogglePayload"></div>
+
+            <button class="btn btn-primary" id="confirmToggleSubmit">Ya, Lanjutkan</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  @push('scripts')
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const modalEl   = document.getElementById('confirmToggleModal');
+        const titleEl   = document.getElementById('confirmToggleTitle');
+        const msgEl     = document.getElementById('confirmToggleMessage');
+        const formEl    = document.getElementById('confirmToggleForm');
+        const payloadEl = document.getElementById('confirmTogglePayload');
+
+        modalEl.addEventListener('show.bs.modal', event => {
+          const btn = event.relatedTarget;
+
+          // ambil data dari tombol
+          const title   = btn.getAttribute('data-title')   || 'Konfirmasi';
+          const message = btn.getAttribute('data-message') || '';
+          const action  = btn.getAttribute('data-action');
+          const method  = btn.getAttribute('data-method') || 'POST';
+          const payload = btn.getAttribute('data-payload') || '{}';
+
+          // set judul + pesan
+          titleEl.textContent = title;
+          msgEl.textContent   = message;
+
+          // set action & method form
+          formEl.setAttribute('action', action);
+          formEl.querySelector('[name="_method"]').value = method;
+
+          // render payload hidden inputs
+          payloadEl.innerHTML = '';
+          try {
+            const data = JSON.parse(payload);
+            Object.entries(data).forEach(([key, val]) => {
+              const input = document.createElement('input');
+              input.type  = 'hidden';
+              input.name  = key;
+              input.value = val;
+              payloadEl.appendChild(input);
+            });
+          } catch (e) {
+            console.warn('payload JSON invalid', e);
+          }
+        });
+      });
+    </script>
+  @endpush
 </x-app-admin>
