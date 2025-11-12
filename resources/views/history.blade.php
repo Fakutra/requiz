@@ -61,7 +61,7 @@
                             {{ $status }}
                         </span>
                     </header>
-
+                    
                     {{-- PROGRESS TRACKER --}}
                     @php
                     $stageMapping = [
@@ -140,12 +140,39 @@
             </div>
             </section>
 
+            {{-- SELEKSI ADMINISTRASI: Sedang diproses --}}
+            @if ($applicant->status === 'Seleksi Administrasi')
+            <section class="mt-6 rounded-xl border border-[#009DA9] p-4" style="background-color:#EFFEFF;">
+
+                <h4 class="text-sm font-semibold text-[#009DA9] mb-3">Seleksi Administrasi</h4>
+
+                <div class="text-sm text-zinc-700 leading-relaxed">
+                        Lamaran Anda sedang dalam proses verifikasi berkas oleh tim rekrutmen. Hasil seleksi administrasi akan diumumkan melalui
+                        <strong>email resmi</strong> yang terdaftar pada akun Anda. Harap periksa kotak masuk secara berkala — termasuk folder <em>Spam/Promotions</em>.
+                    </div>
+
+            </section>
+            @endif
+
             @php
             // flags per section
             $showQuiz = ($applicant->status === 'Tes Tulis') && optional($applicant->position)->test;
             $showTech = in_array($applicant->status, ['Technical Test','Seleksi Tes Praktek']) && $applicant->position;
             $showInterview = ($applicant->status === 'Interview') && $applicant->position;
             @endphp
+
+            {{-- TES TULIS: Belum dibuat --}}
+            @if ($applicant->status === 'Tes Tulis' && ! optional($applicant->position)->test)
+            <section class="mt-6 rounded-xl border border-[#009DA9] p-4" style="background-color:#EFFEFF;">
+
+                <h4 class="text-sm font-semibold text-[#009DA9] mb-3">Tes Tulis (Belum Tersedia)</h4>
+
+                <div class="text-sm text-zinc-700 leading-relaxed">
+                    Anda telah masuk ke tahap <strong>Tes Tulis</strong>, namun saat ini tes belum disiapkan oleh tim rekrutmen.
+                    Informasi terkait jadwal, instruksi, dan akses pengerjaan akan ditampilkan pada halaman ini setelah tes tersedia.
+                </div>
+            </section>
+            @endif
 
             @if ($showQuiz || $showTech || $showInterview)
             <section class="mt-6 rounded-xl border border-[#009DA9] p-4" style="background-color:#EFFEFF;">

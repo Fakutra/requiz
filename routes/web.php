@@ -12,6 +12,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\LowonganController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AdminPanel\TechnicalTestAnswerController;
+use App\Http\Controllers\NotificationController;
 
 // ====== Admin area (lama) ======
 use App\Http\Controllers\AdminPanel\AdminController;
@@ -64,6 +65,9 @@ Route::get('/dashboard', fn() => view('dashboard'))
 
 // ---------- Auth required (user) ----------
 Route::middleware('auth', 'verified', 'role:user')->group(function () {
+
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.readAll');
+    
     // Profile
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
