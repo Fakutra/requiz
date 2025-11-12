@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Applicant;
 use App\Models\Position;
 use App\Models\Faq;
+use App\Models\AboutUs;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -27,6 +28,9 @@ class DashboardController extends Controller
             ->latest('id')
             ->get();
 
-        return view('welcome', compact('latestPositions', 'appliedBatchIds','faqs'));
+        $aboutBlocks = AboutUs::orderBy('id')->get();
+
+
+        return view('welcome', compact('latestPositions', 'appliedBatchIds','faqs','aboutBlocks'));
     }
 }

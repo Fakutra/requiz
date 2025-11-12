@@ -33,7 +33,7 @@ use App\Http\Controllers\AdminPanel\UserController;
 use App\Http\Controllers\AdminPanel\FaqController;
 use App\Http\Controllers\AdminPanel\SkregisController;
 use App\Http\Controllers\AdminPanel\ContactController;
-
+use App\Http\Controllers\AdminPanel\AboutController;
 
 
 // ====== Seleksi (baru, dipisah per tahap) ======
@@ -284,9 +284,20 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::put   ('admin/faq/{faq}',     [FaqController::class, 'update'])->name('admin.faq.update');
     Route::delete('admin/faq/{faq}',     [FaqController::class, 'destroy'])->name('admin.faq.destroy');
 
-    Route::get('admin/about',   fn() => view('admin.about.index'))->name('admin.about.index');
+    
+    // =======About Us=========
+    // Halaman publik
+    Route::get('/tentang-kami', [AboutController::class, 'show'])->name('about.show');
 
-    //Contact
+    // Admin (silakan bungkus pakai auth/middleware kamu)
+    Route::middleware(['auth'])->group(function () {
+        Route::get('/admin/about',          [AboutController::class, 'index'])->name('admin.about.index');
+        Route::post('/admin/about',         [AboutController::class, 'store'])->name('admin.about.store');
+        Route::put('/admin/about/{about}',  [AboutController::class, 'update'])->name('admin.about.update');
+        Route::delete('/admin/about/{about}', [AboutController::class,'destroy'])->name('admin.about.destroy');
+    });
+
+    // =======Contact=========
     Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () {
         Route::resource('contact', ContactController::class)->except(['show']);
         Route::post('contact/{contact}/set-active', [ContactController::class, 'setActive'])

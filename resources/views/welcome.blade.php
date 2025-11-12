@@ -111,16 +111,66 @@
         <div class="w-full px-8" id="about">
             <div class="max-w-7xl py-10 mx-auto">
                 <h1 class="font-bold text-3xl">Tentang Kami</h1>
-                <div class="flex flex-col sm:flex-row gap-2 sm:gap-5 mt-4">
-                    <div class="flex-1">
-                        <img src="{{ url('/img/icon.webp') }}" class="rounded-2xl w-full" />
-                    </div>
-                    <div class="flex-1">
-                        <div class="max-w-7xl mt-4 text-2xl">
-                            Sebagai salah satu supporting operasional dan pemeliharaannya PLN, PLN Iconplus bekerja sama dengan mitra dalam penyediaan tenaga kerja. Recruitment ini diselenggarakan untuk memenuhi kebutuhan tersebut.
+
+                @forelse($aboutBlocks as $block)
+                @php
+                    $layout = $block->layout ?? 'image_left';
+                    $img    = $block->image_path;
+                    $alt    = $block->image_alt ?? 'Tentang Kami';
+                @endphp
+
+                @switch($layout)
+                    @case('image_right')
+                    <div class="flex flex-col sm:flex-row gap-4 sm:gap-6 mt-6">
+                        <div class="flex-1 order-2 sm:order-2">
+                        @if($img)
+                            <img src="{{ Storage::url($img) }}" alt="{{ $alt }}" class="rounded-2xl w-full object-cover">
+                        @else
+                            <div class="aspect-video rounded-2xl w-full bg-gray-100 grid place-content-center text-gray-400">No Image</div>
+                        @endif
+                        </div>
+                        <div class="flex-1 order-1 sm:order-1">
+                        <div class="mt-2 text-[1.2rem] sm:text-2xl leading-relaxed text-gray-800">
+                            {{ $block->description }}
+                        </div>
                         </div>
                     </div>
+                    @break
+
+                    @case('full_image')
+                    <div class="mt-6">
+                        @if($img)
+                        <img src="{{ Storage::url($img) }}" alt="{{ $alt }}" class="rounded-2xl w-full object-cover mb-4">
+                        @else
+                        <div class="aspect-video rounded-2xl w-full bg-gray-100 grid place-content-center text-gray-400 mb-4">No Image</div>
+                        @endif
+                        <div class="text-[1.2rem] sm:text-2xl leading-relaxed text-gray-800">
+                        {{ $block->description }}
+                        </div>
+                    </div>
+                    @break
+
+                    @default {{-- image_left --}}
+                    <div class="flex flex-col sm:flex-row gap-4 sm:gap-6 mt-6">
+                        <div class="flex-1">
+                        @if($img)
+                            <img src="{{ Storage::url($img) }}" alt="{{ $alt }}" class="rounded-2xl w-full object-cover">
+                        @else
+                            <div class="aspect-video rounded-2xl w-full bg-gray-100 grid place-content-center text-gray-400">No Image</div>
+                        @endif
+                        </div>
+                        <div class="flex-1">
+                        <div class="mt-2 text-[1.2rem] sm:text-2xl leading-relaxed text-gray-800">
+                            {{ $block->description }}
+                        </div>
+                        </div>
+                    </div>
+                @endswitch
+                @empty
+                <div class="rounded-2xl border border-dashed p-8 mt-6 text-center text-gray-500">
+                    Belum ada konten “Tentang Kami”.
                 </div>
+                @endforelse
             </div>
         </div>
     </div>

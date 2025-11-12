@@ -13,7 +13,7 @@ class ContactSeeder extends Seeder
         Contact::create([
             'narahubung'       => 'ReQuiz Support Team',
             'email'            => 'support@requiz.site',
-            'phone'            => '08123456789',
+            'phone'            => '085852074500',
             'jam_operasional'  => 'Senin–Jumat, 09.00–17.00',
             'is_active'        => true, // jadi kontak utama
         ]);
