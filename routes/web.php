@@ -118,7 +118,10 @@ require __DIR__ . '/auth.php';
 
 // ================= ADMIN =================
 Route::middleware(['auth', 'role:admin'])->group(function () {
-    Route::get('/admin', fn() => view('admin/dashboard'));
+    // Pakai controller utk /admin
+    Route::get('/admin', [AdminController::class, 'index'])
+        ->name('admin.dashboard');
+        
     Route::get('admin/dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
 
 
