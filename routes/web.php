@@ -79,22 +79,32 @@ Route::middleware('auth', 'verified', 'role:user')->group(function () {
     Route::get('/history',  [HistoryController::class, 'index'])->name('history.index');
 
     // QUIZ
+
+    // 1) Intro: ini yang pakai signed URL
+    Route::get('/quiz/{slug}/intro', [QuizController::class, 'intro'])
+        ->name('quiz.intro')
+        ->middleware('signed');   // <-- pindahkan signed ke sini
+
+    // 2) Halaman kerjain quiz utama: TIDAK signed
     Route::get('/quiz/{slug}', [QuizController::class, 'start'])
         ->name('quiz.start')
-        ->middleware(['throttle:20,1', 'signed']);
+        ->middleware('throttle:20,1');   // boleh tetap throttle, tapi tanpa 'signed'
 
-    // routes/web.php
+    // 3) AJAX question (kalau masih dipakai) – ga perlu signed juga
     Route::get('/quiz/{slug}/q', [QuizController::class, 'question'])
-        ->name('quiz.q');       // plus guard lain kalau perlu
+        ->name('quiz.q');
 
-    Route::post('/quiz/{slug}', [QuizController::class, 'submitSection'])->name('quiz.submit');
+    // 4) Submit section (Selesai Tes)
+    Route::post('/quiz/{slug}', [QuizController::class, 'submitSection'])
+        ->name('quiz.submit');
 
+    // 5) Autosave jawaban
     Route::post('/quiz/{slug}/autosave', [QuizController::class, 'autosave'])
         ->name('quiz.autosave');
 
-    Route::get('/quiz/{slug}/intro', [QuizController::class, 'intro'])->name('quiz.intro');
-
-    Route::get('/quiz/{slug}/finish',   [QuizController::class, 'finish'])->name('quiz.finish');
+    // 6) Halaman finish
+    Route::get('/quiz/{slug}/finish', [QuizController::class, 'finish'])
+        ->name('quiz.finish');
 
     // (opsional) keep alive saat mengerjakan quiz
     Route::get('/keepalive', fn() => response()->noContent())->name('keepalive');

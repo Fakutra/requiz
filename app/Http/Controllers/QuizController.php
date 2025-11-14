@@ -28,8 +28,8 @@ class QuizController extends Controller
             ->with('position')
             ->firstOrFail();
 
-        // nomor pertama (atau logic kamu sendiri)
-        $startUrl = URL::signedRoute('quiz.start', ['slug' => $test->slug, 'no' => 1]);
+        // cukup route biasa, no signature
+        $startUrl = route('quiz.start', ['slug' => $test->slug, 'no' => 1]);
 
         // optional: kalau mau siapin HTML intro di controller
         $introHtml = $test->intro_rendered; // sudah replace token + nl2br

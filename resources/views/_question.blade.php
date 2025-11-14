@@ -1,10 +1,11 @@
 @php
-    $q = $currentQ;
-    $qid = $q['id'];
-    $type = $q['type'];
+    $q       = $currentQ;
+    $qid     = $q['id'];
+    $type    = $q['type'];
     $checked = $q['checked'] ?? [];
+
     if (!is_array($checked)) {
-        $checked = strlen((string)$checked) ? [$checked] : [];
+        $checked = strlen((string) $checked) ? [$checked] : [];
     }
 @endphp
 
@@ -16,7 +17,6 @@
     data-question-type="{{ strtolower($type) }}"
     data-option-map='@json($q["option_map"])'
 >
-
     <div class="mb-2 flex items-center justify-between">
         <p class="text-sm font-semibold text-gray-900">
             Nomor {{ $currentNo }} / {{ $totalQuestions ?? $total ?? '' }}
@@ -26,9 +26,22 @@
         </span>
     </div>
 
+    {{-- Gambar soal (opsional) --}}
+    @if (!empty($q['image_path']))
+        <div class="mt-2 mb-4">
+            <img
+                src="{{ asset('storage/' . ltrim($q['image_path'], '/')) }}"
+                alt="Gambar Soal {{ $currentNo }}"
+                class="max-w-full h-auto rounded-lg border border-gray-200"
+            >
+        </div>
+    @endif
+    
+    {{-- Teks soal --}}
     <div class="mb-3 text-gray-900">
         {!! nl2br(e($q['question'])) !!}
     </div>
+
 
     {{-- ==== Opsi PG, Poin, Pilihan Ganda ==== --}}
     @if (in_array($type, ['PG','Poin','Pilihan Ganda']))
@@ -40,7 +53,7 @@
                         name="answers[{{ $qid }}]"
                         value="{{ $L }}"
                         class="mt-1"
-                        @checked(in_array($L,$checked,true))
+                        @checked(in_array($L, $checked, true))
                     >
                     <span>{{ $L }}. {{ $q['options'][$L] }}</span>
                 </label>
@@ -57,7 +70,7 @@
                         name="answers[{{ $qid }}][]"
                         value="{{ $L }}"
                         class="mt-1"
-                        @checked(in_array($L,$checked,true))
+                        @checked(in_array($L, $checked, true))
                     >
                     <span>{{ $L }}. {{ $q['options'][$L] }}</span>
                 </label>
@@ -71,7 +84,5 @@
             rows="5"
             class="w-full border p-2 rounded-lg"
         >{{ is_string($q['checked'] ?? '') ? $q['checked'] : '' }}</textarea>
-
     @endif
-
 </article>
