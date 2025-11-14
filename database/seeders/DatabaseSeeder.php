@@ -20,7 +20,7 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             ProfileSeeder::class,
             BatchSeeder::class,
-            // ApplicantSeeder::class,
+            ApplicantSeeder::class,
             QuestionSeeder::class,
             DivisionSeeder::class,
             JobSeeder::class,
@@ -28,8 +28,8 @@ class DatabaseSeeder extends Seeder
             QuestionSeeder::class,
             QuestionBundleSeeder::class,
             BundleQuestionSeeder::class,
-            // PersonalityRuleSeeder::class,
-            // SkregisSeeder::class,
+            PersonalityRuleSeeder::class,
+            SkregisSeeder::class,
         ]);
 
     }
