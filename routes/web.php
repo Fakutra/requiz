@@ -122,14 +122,15 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin', [AdminController::class, 'index'])
         ->name('admin.dashboard');
         
-    Route::get('admin/dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
+    // Route::get('admin/dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
 
 
     // -------- User Admin Management ----------
-    Route::get   ('admin/user',             [UserController::class, 'index'])->name('admin.user.index');
-    Route::post  ('admin/user',             [UserController::class, 'store'])->name('admin.user.store');
-    Route::put   ('admin/user/{user}',      [UserController::class, 'update'])->name('admin.user.update');
-    Route::delete('admin/user/{user}',      [UserController::class, 'destroy'])->name('admin.user.destroy');
+    Route::get   ('admin/user',        [UserController::class, 'index'])->name('admin.user.index');
+    Route::post  ('admin/user',        [UserController::class, 'store'])->name('admin.user.store');
+    Route::put   ('admin/user/{user}', [UserController::class, 'update'])->name('admin.user.update');
+    Route::delete('admin/user/{user}', [UserController::class, 'destroy'])->name('admin.user.destroy');
+
     
     // -------- Batch & Position ----------
     Route::get('admin/batch',            [BatchController::class, 'index'])->name('batch.index');

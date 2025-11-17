@@ -97,7 +97,7 @@ class LowonganController extends Controller
             'thn_lulus'       => 'required|digits:4',
             'skills'          => 'array',
             'ekspektasi_gaji' => 'required|numeric|min:0|max:100000000',
-            'cv_document'     => 'required|file|mimes:pdf|max:1024',  // 1 MB
+            'cv_document'     => 'required|file|mimes:pdf|max:512',  // 500 KB
             'doc_tambahan'    => 'nullable|file|mimes:pdf|max:5120',  // 5 MB
             'agreed'          => 'accepted',
         ], [

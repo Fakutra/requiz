@@ -147,7 +147,7 @@
                 <h4 class="text-sm font-semibold text-[#009DA9] mb-3">Seleksi Administrasi</h4>
 
                 <div class="text-sm text-zinc-700 leading-relaxed">
-                        Lamaran Anda sedang dalam proses verifikasi berkas oleh tim rekrutmen. Hasil seleksi administrasi akan diumumkan melalui
+                        Lamaran Anda sedang dalam proses verifikasi berkas oleh tim rekrutmen. Hasil seleksi administrasi akan diperbarui pada halaman Riwayat Lamaran dan diumumkan melalui
                         <strong>email resmi</strong> yang terdaftar pada akun Anda. Harap periksa kotak masuk secara berkala — termasuk folder <em>Spam/Promotions</em>.
                     </div>
 

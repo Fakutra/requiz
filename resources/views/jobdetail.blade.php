@@ -429,7 +429,7 @@
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label for="cv" class="block text-sm font-medium text-gray-700">CV (PDF • Max 1 MB)</label>
+                                <label for="cv" class="block text-sm font-medium text-gray-700">CV (PDF • Max 500KB)</label>
                                 <input id="cv" name="cv_document" type="file" accept=".pdf"
                                     class="mt-1 block w-full text-sm rounded-lg
                                 focus:border-[#009DA9] focus:ring-[#009DA9]
