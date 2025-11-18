@@ -28,12 +28,14 @@
 
     {{-- Gambar soal (opsional) --}}
     @if (!empty($q['image_path']))
-        <div class="mt-2 mb-4">
-            <img
-                src="{{ asset('storage/' . ltrim($q['image_path'], '/')) }}"
-                alt="Gambar Soal {{ $currentNo }}"
-                class="max-w-full h-auto rounded-lg border border-gray-200"
-            >
+        <div class="mt-2 mb-4 w-full">
+            <div class="w-full h-56 md:h-64 bg-gray-50 border rounded-lg overflow-hidden flex items-center justify-center">
+                <img
+                    src="{{ asset('/' . ltrim($q['image_path'], '/')) }}"
+                    alt="Gambar Soal {{ $currentNo }}"
+                    class="w-full h-full object-contain"
+                >
+            </div>
         </div>
     @endif
     
