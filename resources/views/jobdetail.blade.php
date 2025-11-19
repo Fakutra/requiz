@@ -398,7 +398,7 @@
                         </div>
                         <div>
                             <label class="block text-sm font-medium">Jurusan</label>
-                            <input name="jurusan" type="text" class="mt-1 w-full rounded-lg border-gray-300 focus:border-[#009DA9] focus:ring-[#009DA9]" placeholder="S1 Sistem Informasi" />
+                            <input name="jurusan" type="text" class="mt-1 w-full rounded-lg border-gray-300 focus:border-[#009DA9] focus:ring-[#009DA9]" placeholder="Jurusan" />
                             <p class="text-sm text-red-600 mt-1" x-text="errors.jurusan?.[0]" x-show="errors.jurusan"></p>
                         </div>
                         <div>
