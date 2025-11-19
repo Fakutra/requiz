@@ -20,11 +20,11 @@ class TechnicalTestAnswerController extends Controller
     {
         $validated = $request->validate([
             'applicant_id'      => ['nullable','integer','exists:applicants,id'],
-            'answer_pdf'        => ['required','file','mimes:pdf','max:10240'], // 10MB
+            'answer_pdf'        => ['required','file','mimes:pdf','max:1024'], // 1MB
             'screen_record_url' => ['required','url'],
         ], [
             'answer_pdf.mimes'  => 'File jawaban harus berformat PDF.',
-            'answer_pdf.max'    => 'Ukuran file maksimal 10MB.',
+            'answer_pdf.max'    => 'Ukuran file maksimal 1MB.',
             'screen_record_url.required' => 'Link rekaman layar wajib diisi.',
         ]);
 

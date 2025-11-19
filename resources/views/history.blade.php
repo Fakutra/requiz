@@ -292,22 +292,30 @@
                     </div>
 
                     @if ($latestTech)
-                    <div class="mt-5 text-sm text-gray-700">
-                        <div class="font-medium">Upload Terbaru:</div>
-                        <div>PDF:
-                            <a class="text-blue-600 hover:underline"
-                                href="{{ \Illuminate\Support\Facades\Storage::url($latestTech->answer_path) }}"
-                                target="_blank" rel="noopener noreferrer">Lihat berkas</a>
+                        <div class="mt-5 text-sm text-gray-700">
+                            <div class="font-medium">Upload Terbaru:</div>
+                            <div>PDF:
+                                <a class="text-blue-600 hover:underline"
+                                    href="{{ '/storage/'.$latestTech->answer_path }}"
+                                    target="_blank" rel="noopener noreferrer">
+                                        Lihat berkas
+                                </a>
+                            </div>
+
+                            @if (!empty($latestTech->screen_record_url))
+                                <div>Rekaman Layar:
+                                    <a class="text-blue-600 hover:underline"
+                                    href="{{ $latestTech->screen_record_url }}"
+                                    target="_blank" rel="noopener noreferrer">
+                                        Buka tautan
+                                    </a>
+                                </div>
+                            @endif
+
+                            <div class="text-gray-500">
+                                Dikumpulkan: {{ $latestTech->submitted_at?->translatedFormat('d F Y, H:i') ?? '—' }}
+                            </div>
                         </div>
-                        @if (!empty($latestTech->screen_record_url))
-                        <div>Rekaman Layar:
-                            <a class="text-blue-600 hover:underline" href="{{ $latestTech->screen_record_url }}" target="_blank" rel="noopener noreferrer">Buka tautan</a>
-                        </div>
-                        @endif
-                        <div class="text-gray-500">
-                            Dikumpulkan: {{ $latestTech->submitted_at?->translatedFormat('d F Y, H:i') ?? '—' }}
-                        </div>
-                    </div>
                     @endif
 
                     <div class="mt-6 flex flex-wrap items-center gap-2">
@@ -344,7 +352,7 @@
                                     <label class="block text-sm font-medium text-zinc-700">File Jawaban (PDF)</label>
                                     <input type="file" name="answer_pdf" accept="application/pdf" required
                                         class="mt-1 block w-full text-sm rounded-lg border border-zinc-300 p-2">
-                                    <p class="mt-1 text-xs text-zinc-500">Maks 10MB. Format PDF.</p>
+                                    <p class="mt-1 text-xs text-zinc-500">Maks 1MB. Format PDF.</p>
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-zinc-700">Link Rekaman Layar (Google Drive)</label>
@@ -510,17 +518,17 @@
     </script>
 
     @push('scripts')
-    @if (session('success'))
-    <script>
-        window.addEventListener('load', () => {
-            Swal.fire({
-                icon: 'success',
-                title: 'Berhasil!',
-                text: 'Selamat, lamaran anda telah berhasil dikirim!',
-                confirmButtonColor: '#009DA9'
+        @if (session('success'))
+        <script>
+            window.addEventListener('load', () => {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil!',
+                    text: "{{ session('success') }}",
+                    confirmButtonColor: '#009DA9'
+                });
             });
-        });
-    </script>
-    @endif
+        </script>
+        @endif
     @endpush
 </x-guest-layout>

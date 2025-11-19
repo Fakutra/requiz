@@ -18,18 +18,18 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             UserSeeder::class,
-            ProfileSeeder::class,
-            // BatchSeeder::class,
+            // ProfileSeeder::class,
+            BatchSeeder::class,
             // ApplicantSeeder::class,
-            // QuestionSeeder::class,
+            QuestionSeeder::class,
             // DivisionSeeder::class,
             // JobSeeder::class,
             // PlacementSeeder::class,
             // QuestionSeeder::class,
-            // QuestionBundleSeeder::class,
-            // BundleQuestionSeeder::class,
+            QuestionBundleSeeder::class,
+            BundleQuestionSeeder::class,
             // PersonalityRuleSeeder::class,
-            SkregisSeeder::class,
+            // SkregisSeeder::class,
         ]);
 
     }

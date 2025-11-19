@@ -679,7 +679,7 @@
         @if (session('success'))
             <script>
             document.addEventListener('DOMContentLoaded', () => {
-                Swal.fire({ icon:'success', title:'Berhasil', text:'sukses', confirmButtonColor:'#3085d6' });
+                Swal.fire({ icon:'success', title:'Berhasil', text:"{{ session('success') }}", confirmButtonColor:'#3085d6' });
             });
             </script>
         @endif

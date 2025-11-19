@@ -17,11 +17,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'email',
         'password',
         'role',
-        // 'phone_number',
-        // 'birthplace',
-        // 'birthdate',
-        // 'address',
-        // 'identity_num',
+        'email_verified_at',
     ];
 
     protected $hidden = [
@@ -32,7 +28,6 @@ class User extends Authenticatable implements MustVerifyEmail
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
-        // 'tgl_lahir' => 'date',
     ];
 
     // Relasi contoh (jika ada)

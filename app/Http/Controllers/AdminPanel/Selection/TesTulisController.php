@@ -239,7 +239,7 @@ class TesTulisController extends Controller
             );
         }
 
-        return back()->with('success', count($data['ids']).' peserta diperbarui.');
+        return back()->with('success', 'Status '.count($data['ids']).' peserta diperbarui.');
     }
 
     private function newStatus(string $result, string $current): string
