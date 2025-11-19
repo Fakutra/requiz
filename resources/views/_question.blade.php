@@ -26,65 +26,74 @@
         </span>
     </div>
 
-    {{-- Gambar soal (opsional) --}}
-    @if (!empty($q['image_path']))
-        <div class="mt-2 mb-4 w-full">
-            <div class="w-full h-56 md:h-64 bg-gray-50 border rounded-lg overflow-hidden flex items-center justify-center">
-                <img
-                    src="{{ asset('/' . ltrim($q['image_path'], '/')) }}"
-                    alt="Gambar Soal {{ $currentNo }}"
-                    class="w-full h-full object-contain"
-                >
+    {{-- WRAPPER ANTI COPY UNTUK GAMBAR + TEKS SOAL + OPSI --}}
+    <div
+        class="quiz-no-copy select-none"
+        oncopy="return false"
+        oncut="return false"
+        oncontextmenu="return false"
+    >
+        {{-- Gambar soal (opsional) --}}
+        @if (!empty($q['image_path']))
+            <div class="mt-2 mb-4 w-full">
+                <div class="w-full h-56 md:h-64 bg-gray-50 border rounded-lg overflow-hidden flex items-center justify-center">
+                    <img
+                        src="{{ asset('/' . ltrim($q['image_path'], '/')) }}"
+                        alt="Gambar Soal {{ $currentNo }}"
+                        class="w-full h-full object-contain"
+                    >
+                </div>
             </div>
+        @endif
+        
+        {{-- Teks soal --}}
+        <div class="mb-3 text-gray-900">
+            {!! nl2br(e($q['question'])) !!}
         </div>
-    @endif
-    
-    {{-- Teks soal --}}
-    <div class="mb-3 text-gray-900">
-        {!! nl2br(e($q['question'])) !!}
+
+        {{-- ==== Opsi PG, Poin, Pilihan Ganda ==== --}}
+        @if (in_array($type, ['PG','Poin','Pilihan Ganda']))
+            @foreach (['A','B','C','D','E'] as $L)
+                @if (!empty($q['options'][$L] ?? null))
+                    <label class="flex items-start gap-2 mb-2 cursor-pointer">
+                        <input
+                            type="radio"
+                            name="answers[{{ $qid }}]"
+                            value="{{ $L }}"
+                            class="mt-1"
+                            @checked(in_array($L, $checked, true))
+                        >
+                        <span>{{ $L }}. {{ $q['options'][$L] }}</span>
+                    </label>
+                @endif
+            @endforeach
+
+        {{-- ==== Multiple choice ==== --}}
+        @elseif ($type === 'Multiple')
+            @foreach (['A','B','C','D','E'] as $L)
+                @if (!empty($q['options'][$L] ?? null))
+                    <label class="flex items-start gap-2 mb-2 cursor-pointer">
+                        <input
+                            type="checkbox"
+                            name="answers[{{ $qid }}][]"
+                            value="{{ $L }}"
+                            class="mt-1"
+                            @checked(in_array($L, $checked, true))
+                        >
+                        <span>{{ $L }}. {{ $q['options'][$L] }}</span>
+                    </label>
+                @endif
+            @endforeach
+        @endif
     </div>
 
-
-    {{-- ==== Opsi PG, Poin, Pilihan Ganda ==== --}}
-    @if (in_array($type, ['PG','Poin','Pilihan Ganda']))
-        @foreach (['A','B','C','D','E'] as $L)
-            @if (!empty($q['options'][$L] ?? null))
-                <label class="flex items-start gap-2 mb-2 cursor-pointer">
-                    <input
-                        type="radio"
-                        name="answers[{{ $qid }}]"
-                        value="{{ $L }}"
-                        class="mt-1"
-                        @checked(in_array($L, $checked, true))
-                    >
-                    <span>{{ $L }}. {{ $q['options'][$L] }}</span>
-                </label>
-            @endif
-        @endforeach
-
-    {{-- ==== Multiple choice ==== --}}
-    @elseif ($type === 'Multiple')
-        @foreach (['A','B','C','D','E'] as $L)
-            @if (!empty($q['options'][$L] ?? null))
-                <label class="flex items-start gap-2 mb-2 cursor-pointer">
-                    <input
-                        type="checkbox"
-                        name="answers[{{ $qid }}][]"
-                        value="{{ $L }}"
-                        class="mt-1"
-                        @checked(in_array($L, $checked, true))
-                    >
-                    <span>{{ $L }}. {{ $q['options'][$L] }}</span>
-                </label>
-            @endif
-        @endforeach
-
-    {{-- ==== Essay ==== --}}
-    @elseif ($type === 'Essay')
+    {{-- ==== Essay (textarea DI LUAR wrapper anti-copy, tapi blok paste) ==== --}}
+    @if ($type === 'Essay')
         <textarea
             name="answers[{{ $qid }}]"
             rows="5"
             class="w-full border p-2 rounded-lg"
+            onpaste="return false"
         >{{ is_string($q['checked'] ?? '') ? $q['checked'] : '' }}</textarea>
     @endif
 </article>

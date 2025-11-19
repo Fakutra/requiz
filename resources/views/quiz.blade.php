@@ -145,6 +145,43 @@
             const $  = (s, r = document) => r.querySelector(s);
             const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 
+            // ====== BLOKIR COPY / PASTE DI AREA QUIZ ======
+            if (questionRoot) {
+                // blok copy & cut di area quiz
+                questionRoot.addEventListener('copy', (e) => {
+                    e.preventDefault();
+                });
+
+                questionRoot.addEventListener('cut', (e) => {
+                    e.preventDefault();
+                });
+
+                // blok paste khusus textarea jawaban (essay)
+                questionRoot.addEventListener('paste', (e) => {
+                    const target = e.target;
+                    if (target && target.matches('textarea[name^="answers["]')) {
+                        e.preventDefault();
+                    }
+                });
+
+                // blok shortcut Ctrl/⌘ + C / V / X di dalam area quiz
+                questionRoot.addEventListener('keydown', (e) => {
+                    if (!e.ctrlKey && !e.metaKey) return;
+                    const key = e.key.toLowerCase();
+                    if (['c', 'v', 'x'].includes(key)) {
+                        e.preventDefault();
+                    }
+                });
+
+                // optional: matiin right–click di area soal (wrapper .quiz-no-copy)
+                questionRoot.addEventListener('contextmenu', (e) => {
+                    const wrapper = e.target.closest('.quiz-no-copy');
+                    if (wrapper) {
+                        e.preventDefault();
+                    }
+                });
+            }
+
             // ====== COUNTDOWN (side) ======
             (function countdown() {
                 const deadlineIso = @json($deadline ?? null);
@@ -178,7 +215,7 @@
             // ====== META SOAL AKTIF ======
             function getArticle() {
                 return questionRoot.querySelector('article[data-question-id]:not(.hidden)') ||
-                       questionRoot.querySelector('article[data-question-id]');
+                    questionRoot.querySelector('article[data-question-id]');
             }
 
             function getMeta() {
@@ -403,8 +440,8 @@
             }
 
             // ====== FINISH SECTION / SELESAI TES ======
-            const deadlineIso = @json($deadline ?? null);
-            const endMs       = deadlineIso ? new Date(deadlineIso).getTime() : null;
+            const deadlineIso2 = @json($deadline ?? null);
+            const endMs       = deadlineIso2 ? new Date(deadlineIso2).getTime() : null;
 
             const finishInput = document.getElementById('finish_section');
             const btnFinish   = document.getElementById('submit-btn');
