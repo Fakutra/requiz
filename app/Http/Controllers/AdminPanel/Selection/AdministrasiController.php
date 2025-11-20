@@ -158,7 +158,7 @@ class AdministrasiController extends Controller
             );
         }
 
-        return back()->with('success', count($data['ids']).' peserta diperbarui.');
+        return back()->with('success', 'Status '.count($data['ids']).' peserta diperbarui.');
     }
 
     /**

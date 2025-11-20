@@ -15,24 +15,42 @@ class RekapController extends Controller
         $batches = Batch::orderBy('id')->get();
         $currentBatchId = $request->query('batch') ?: ($batches->first()->id ?? null);
 
+        // 🔹 default kosong biar view nggak error
+        $totalApplicants = 0;
+
+        $emptyStage = [
+            'expected'  => 0,
+            'processed' => 0,
+            'lolos'     => 0,
+            'gagal'     => 0,
+        ];
+
+        $administrasi = $tesTulis = $technical = $interview = $offering = $emptyStage;
+
+        // Kalau BELUM ada batch sama sekali -> langsung lempar ke view dengan nilai default
         if (!$currentBatchId) {
-            return view('admin.applicant.seleksi.index', compact('batches','currentBatchId'));
+            return view('admin.applicant.seleksi.index', compact(
+                'batches',
+                'currentBatchId',
+                'totalApplicants',
+                'administrasi',
+                'tesTulis',
+                'technical',
+                'interview',
+                'offering',
+            ));
         }
 
-        // Total pelamar = SEMUA applicant di batch (tetap)
+        // =======================
+        // Mulai hitung beneran
+        // =======================
+
+        // Total pelamar = SEMUA applicant di batch
         $totalApplicants = Applicant::where('batch_id', $currentBatchId)->count();
 
-        // =======================
-        // Seleksi Administrasi
-        // =======================
-        $admin_expected_statuses = [
-            // semua yang pernah/masuk admin = total pelamar
-            // expected = $totalApplicants (langsung)
-        ];
+        // ---------- Seleksi Administrasi ----------
         $admin_lolos_statuses = [
-            // sudah lolos admin artinya sudah ke tahap berikutnya
             'Tes Tulis','Technical Test','Interview','Offering','Menerima Offering',
-            // atau gagal di tahap setelahnya
             'Tidak Lolos Tes Tulis','Tidak Lolos Technical Test','Tidak Lolos Interview','Menolak Offering',
         ];
         $admin_gagal_statuses = ['Tidak Lolos Seleksi Administrasi'];
@@ -43,27 +61,14 @@ class RekapController extends Controller
             'lolos'     => $this->countByStatuses($currentBatchId, $admin_lolos_statuses),
             'gagal'     => $this->countByStatuses($currentBatchId, $admin_gagal_statuses),
         ];
-        
-        // Tahap + variasi stage_key + route tujuan
-        $stages = [
-            ['label'=>'Seleksi Administrasi','keys'=>['seleksi-administrasi','administrasi'],'route'=>'admin.applicant.seleksi.administrasi.index'],
-            ['label'=>'Tes Tulis','keys'=>['tes-tulis','test-tulis','tulis'],'route'=>'admin.applicant.seleksi.tes_tulis.index'],
-            ['label'=>'Technical Test','keys'=>['technical-test','technical'],'route'=>'admin.applicant.seleksi.technical_test.index'],
-            ['label'=>'Interview','keys'=>['interview','wawancara'],'route'=>'admin.applicant.seleksi.interview.index'],
-            ['label'=>'Offering','keys'=>['offering','offer'],'route'=>'admin.applicant.seleksi.offering.index'],
-        ];
 
-        // =======================
-        // Tes Tulis
-        // =======================
+        // ---------- Tes Tulis ----------
         $tulis_expected_statuses = [
             'Tes Tulis','Technical Test','Interview','Offering','Menerima Offering',
             'Tidak Lolos Tes Tulis','Tidak Lolos Technical Test','Tidak Lolos Interview','Menolak Offering',
         ];
         $tulis_lolos_statuses = [
-            // sudah lolos tes tulis => minimal masuk Technical Test atau lebih
             'Technical Test','Interview','Offering','Menerima Offering',
-            // atau gagal di tahap setelahnya
             'Tidak Lolos Technical Test','Tidak Lolos Interview','Menolak Offering',
         ];
         $tulis_gagal_statuses = ['Tidak Lolos Tes Tulis'];
@@ -75,16 +80,13 @@ class RekapController extends Controller
             'gagal'     => $this->countByStatuses($currentBatchId, $tulis_gagal_statuses),
         ];
 
-        // =======================
-        // Technical Test
-        // =======================
+        // ---------- Technical Test ----------
         $tech_expected_statuses = [
             'Technical Test','Interview','Offering','Menerima Offering',
             'Tidak Lolos Technical Test','Tidak Lolos Interview','Menolak Offering',
         ];
         $tech_lolos_statuses = [
             'Interview','Offering','Menerima Offering',
-            // atau gagal di tahap setelahnya
             'Tidak Lolos Interview','Menolak Offering',
         ];
         $tech_gagal_statuses = ['Tidak Lolos Technical Test'];
@@ -96,9 +98,7 @@ class RekapController extends Controller
             'gagal'     => $this->countByStatuses($currentBatchId, $tech_gagal_statuses),
         ];
 
-        // =======================
-        // Interview
-        // =======================
+        // ---------- Interview ----------
         $iv_expected_statuses = [
             'Interview','Offering','Menerima Offering','Tidak Lolos Interview','Menolak Offering',
         ];
@@ -114,9 +114,7 @@ class RekapController extends Controller
             'gagal'     => $this->countByStatuses($currentBatchId, $iv_gagal_statuses),
         ];
 
-        // =======================
-        // Offering
-        // =======================
+        // ---------- Offering ----------
         $off_expected_statuses = ['Offering','Menerima Offering','Menolak Offering'];
         $off_lolos_statuses    = ['Menerima Offering'];
         $off_gagal_statuses    = ['Menolak Offering'];
@@ -129,8 +127,14 @@ class RekapController extends Controller
         ];
 
         return view('admin.applicant.seleksi.index', compact(
-            'batches','currentBatchId','totalApplicants',
-            'administrasi','tesTulis','technical','interview','offering'
+            'batches',
+            'currentBatchId',
+            'totalApplicants',
+            'administrasi',
+            'tesTulis',
+            'technical',
+            'interview',
+            'offering'
         ));
     }
 

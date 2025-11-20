@@ -39,22 +39,53 @@
 
                         <div class="mt-6 space-y-6 text-md leading-6 text-gray-800">
                             {{-- DESKRIPSI PEKERJAAN --}}
-                            <div>
-                                <h3 class="font-semibold text-gray-900">Deskripsi Pekerjaan</h3>
-                                <p class="mt-1 text-gray-600 whitespace-pre-line">
-                                    {{ $position->description ?? '-' }}
-                                </p>
-                            </div>
+                            @php
+                                // normalize description ke array
+                                if (is_array($position->description)) {
+                                    $descList = $position->description;
+                                } elseif ($position->description && @json_decode($position->description, true)) {
+                                    $descList = json_decode($position->description, true);
+                                } elseif ($position->description) {
+                                    $descList = preg_split('/\r\n|\r|\n/', $position->description);
+                                } else {
+                                    $descList = [];
+                                }
+                            @endphp
+
+                            @if(count($descList))
+                                <ul class="mt-1 list-disc list-inside space-y-1 text-gray-600">
+                                    @foreach($descList as $d)
+                                        @if(trim($d) !== '')
+                                            <li>{{ trim($d) }}</li>
+                                        @endif
+                                    @endforeach
+                                </ul>
+                            @else
+                                <p class="mt-1 text-gray-600">-</p>
+                            @endif
 
                             {{-- SKILL YANG DIBUTUHKAN --}}
-                            @if (!empty($position->skills))
+                            @php
+                                // skill bisa array / JSON / CSV
+                                if (is_array($position->skills)) {
+                                    $skillOptions = $position->skills;
+                                } elseif ($position->skills && @json_decode($position->skills, true)) {
+                                    $skillOptions = json_decode($position->skills, true);
+                                } elseif ($position->skills) {
+                                    // comma or newline separated
+                                    $skillOptions = preg_split('/\r\n|\r|\n|,/', $position->skills);
+                                } else {
+                                    $skillOptions = [];
+                                }
+                                $skillOptions = array_values(array_filter(array_map('trim', $skillOptions)));
+                            @endphp
+
+                            @if (count($skillOptions))
                                 <div>
                                     <h3 class="font-semibold text-gray-900">Skill yang dibutuhkan</h3>
                                     <ul class="mt-1 list-disc list-inside space-y-1 text-gray-600">
-                                        @foreach (explode(',', $position->skills) as $skill)
-                                            @if (trim($skill) != '')
-                                                <li>{{ trim($skill) }}</li>
-                                            @endif
+                                        @foreach ($skillOptions as $skill)
+                                            <li>{{ $skill }}</li>
                                         @endforeach
                                     </ul>
                                 </div>
@@ -82,34 +113,43 @@
                     @endif
 
                     {{-- PERSYARATAN UMUM --}}
-                    @if (!empty($position->requirements))
+                    @php
+                        // helper inline untuk parsing newline/JSON/array
+                        $toList = fn($value) => match(true) {
+                            empty($value) => [],
+                            is_array($value) => $value,
+                            @json_decode($value, true) => json_decode($value, true),
+                            default => preg_split('/\r\n|\r|\n|,/', $value),
+                        };
+                    @endphp
+
+                    {{-- Requirements --}}
+                    @php $reqList = array_values(array_filter(array_map('trim', (array) $toList($position->requirements)))); @endphp
+                    @if(count($reqList))
                         <div class="mt-5">
                             <div class="flex items-center gap-2">
                                 <span class="inline-block w-2 h-2 rounded-full bg-[#009DA9] ring-4 ring-[#009DA9]/15"></span>
                                 <h3 class="font-semibold text-gray-900 ml-1">Persyaratan Umum</h3>
                             </div>
                             <ul class="mt-2 list-disc list-inside text-gray-600 space-y-1">
-                                @foreach (explode("\n", $position->requirements) as $req)
-                                    @if (trim($req) != '')
-                                        <li>{{ trim($req) }}</li>
-                                    @endif
+                                @foreach($reqList as $req)
+                                    <li>{{ $req }}</li>
                                 @endforeach
                             </ul>
                         </div>
                     @endif
 
                     {{-- JURUSAN YANG DAPAT MELAMAR --}}
-                    @if (!empty($position->majors))
+                    @php $majorsList = array_values(array_filter(array_map('trim', (array) $toList($position->majors)))); @endphp
+                    @if(count($majorsList))
                         <div class="mt-5">
                             <div class="flex items-center gap-2">
                                 <span class="inline-block w-2 h-2 rounded-full bg-[#009DA9] ring-4 ring-[#009DA9]/15"></span>
                                 <h3 class="font-semibold text-gray-900 ml-1">Jurusan yang dapat melamar</h3>
                             </div>
                             <ul class="mt-2 list-disc list-inside text-gray-600 space-y-1">
-                                @foreach (explode("\n", $position->majors) as $major)
-                                    @if (trim($major) != '')
-                                        <li>{{ trim($major) }}</li>
-                                    @endif
+                                @foreach($majorsList as $major)
+                                    <li>{{ $major }}</li>
                                 @endforeach
                             </ul>
                         </div>
@@ -267,10 +307,17 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         @php
-                            // ubah string skill jadi array (misal "PHP, Java, JS" -> ['PHP', 'Java', 'JS'])
-                            $skillOptions = $position->skills
-                                ? array_filter(array_map('trim', explode(',', $position->skills)))
-                                : [];
+                            // normalize skills to array (same logic as above)
+                            if (is_array($position->skills)) {
+                                $skillOptions = $position->skills;
+                            } elseif ($position->skills && @json_decode($position->skills, true)) {
+                                $skillOptions = json_decode($position->skills, true);
+                            } elseif ($position->skills) {
+                                $skillOptions = preg_split('/\r\n|\r|\n|,/', $position->skills);
+                            } else {
+                                $skillOptions = [];
+                            }
+                            $skillOptions = array_values(array_filter(array_map('trim', $skillOptions)));
                         @endphp
 
                         @if (count($skillOptions))
@@ -351,7 +398,7 @@
                         </div>
                         <div>
                             <label class="block text-sm font-medium">Jurusan</label>
-                            <input name="jurusan" type="text" class="mt-1 w-full rounded-lg border-gray-300 focus:border-[#009DA9] focus:ring-[#009DA9]" placeholder="S1 Sistem Informasi" />
+                            <input name="jurusan" type="text" class="mt-1 w-full rounded-lg border-gray-300 focus:border-[#009DA9] focus:ring-[#009DA9]" placeholder="Jurusan" />
                             <p class="text-sm text-red-600 mt-1" x-text="errors.jurusan?.[0]" x-show="errors.jurusan"></p>
                         </div>
                         <div>
@@ -382,7 +429,7 @@
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label for="cv" class="block text-sm font-medium text-gray-700">CV (PDF • Max 1 MB)</label>
+                                <label for="cv" class="block text-sm font-medium text-gray-700">CV (PDF • Max 500KB)</label>
                                 <input id="cv" name="cv_document" type="file" accept=".pdf"
                                     class="mt-1 block w-full text-sm rounded-lg
                                 focus:border-[#009DA9] focus:ring-[#009DA9]

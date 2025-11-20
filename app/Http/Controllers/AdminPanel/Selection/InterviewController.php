@@ -358,7 +358,7 @@ class InterviewController extends Controller
             );
         }
 
-        return back()->with('success', "{$count} peserta diperbarui.");
+        return back()->with('success', 'Status '.count($data['ids']).' peserta diperbarui.');
     }
 
     private function newStatus(string $result, string $current): string

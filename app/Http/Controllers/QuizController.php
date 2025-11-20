@@ -28,8 +28,8 @@ class QuizController extends Controller
             ->with('position')
             ->firstOrFail();
 
-        // nomor pertama (atau logic kamu sendiri)
-        $startUrl = URL::signedRoute('quiz.start', ['slug' => $test->slug, 'no' => 1]);
+        // cukup route biasa, no signature
+        $startUrl = route('quiz.start', ['slug' => $test->slug, 'no' => 1]);
 
         // optional: kalau mau siapin HTML intro di controller
         $introHtml = $test->intro_rendered; // sudah replace token + nl2br
@@ -274,11 +274,12 @@ class QuizController extends Controller
             'test'           => $test,
             'sections'       => $sections,
             'currentSection' => $currentSection,
-            'questions'      => $prepared,
+            'questions'      => $preparedArray,
             'currentQ'       => $currentQ,
             'currentNo'      => $currentNo,
             'totalQuestions' => $totalQuestions,
             'answeredMap'    => $answeredMap,
+            'answeredNos'    => $answeredNos,
             'prevUrl'        => $prevUrl,
             'nextUrl'        => $nextUrl,
             'testResult'     => $testResult,
@@ -462,18 +463,24 @@ class QuizController extends Controller
 
         $test = Test::with('sections')->where('slug', $slug)->firstOrFail();
 
+        // Hard end: kalau tes sudah lewat test_end, stop
         if ($test->test_end && now()->greaterThanOrEqualTo($test->test_end)) {
             return response()->json(['ok' => false, 'message' => 'Tes telah berakhir'], 409);
         }
 
         $applicant = Applicant::where('user_id', Auth::id())
-            ->where('position_id', $test->position_id)->firstOrFail();
+            ->where('position_id', $test->position_id)
+            ->firstOrFail();
+
         $testResult = TestResult::where('applicant_id', $applicant->id)
-            ->where('test_id', $test->id)->firstOrFail()->load('sectionResults');
+            ->where('test_id', $test->id)
+            ->firstOrFail()
+            ->load('sectionResults');
 
         $section = TestSection::with('questionBundle.questions')
             ->where('id', $request->integer('section_id'))
-            ->where('test_id', $test->id)->firstOrFail();
+            ->where('test_id', $test->id)
+            ->firstOrFail();
 
         $sectionResult = TestSectionResult::firstOrCreate(
             ['test_result_id' => $testResult->id, 'test_section_id' => $section->id]
@@ -483,29 +490,43 @@ class QuizController extends Controller
             $sectionResult->save();
         }
 
-        // hanya boleh di section aktif
+        // hanya boleh autosave di section aktif (first unfinished)
         $ordered = $test->sections()
             ->when(Schema::hasColumn('test_sections', 'order'), fn($q) => $q->orderBy('order'))
-            ->orderBy('id')->get();
+            ->orderBy('id')
+            ->get();
 
         $firstUnfinished = $ordered->first(function ($s) use ($testResult) {
             $sr = $testResult->sectionResults->firstWhere('test_section_id', $s->id);
             return !$sr || !$sr->finished_at;
         });
+
         if ($firstUnfinished && $section->id !== $firstUnfinished->id) {
             return response()->json(['ok' => false, 'message' => 'Section bukan yang aktif'], 409);
         }
 
-        // Konversi display -> asli
+        // Konversi display -> huruf asli (unshuffle)
         $inputAnswers = $this->unshuffleIncomingAnswers(
             $request->input('answers', []),
             $sectionResult->shuffle_state['option_maps'] ?? []
         );
 
-        $this->saveAnswers($inputAnswers, $section, $testResult, $sectionResult, $applicant->id, true);
+        // ⬇️ HANYA SIMPAN JAWABAN, TANPA HITUNG SKOR
+        $this->saveAnswers(
+            $inputAnswers,
+            $section,
+            $testResult,
+            $sectionResult,
+            $applicant->id,
+            false // ✅ penting: jangan hitung skor di autosave
+        );
 
-        return response()->json(['ok' => true, 'saved_at' => now()->toDateTimeString()]);
+        return response()->json([
+            'ok'       => true,
+            'saved_at' => now()->toDateTimeString(),
+        ]);
     }
+
 
     public function finish(Request $request, $slug)
     {
@@ -543,32 +564,76 @@ class QuizController extends Controller
         return $out;
     }
 
-    private function saveAnswers(array $inputAnswers, TestSection $section, TestResult $testResult, TestSectionResult $sectionResult, int $applicantId, bool $withScore = true): void
-    {
+    private function saveAnswers(
+        array $inputAnswers,
+        TestSection $section,
+        TestResult $testResult,
+        TestSectionResult $sectionResult,
+        int $applicantId,
+        bool $withScore = true
+    ): void {
         $questions = optional($section->questionBundle)->questions ?? collect();
 
         DB::transaction(function () use ($inputAnswers, $questions, $applicantId, $section, $testResult, $sectionResult, $withScore) {
             foreach ($questions as $q) {
                 $qid = $q->id;
-                if (!array_key_exists($qid, $inputAnswers)) continue;
+                if (!array_key_exists($qid, $inputAnswers)) {
+                    continue;
+                }
 
-                $normalized = strtoupper(trim((string) $inputAnswers[$qid]));
+                $raw = (string) $inputAnswers[$qid];
+
+                // Essay: simpan apa adanya (trim), jangan di-uppercase
+                if ($q->type === 'Essay') {
+                    $normalized = trim($raw);
+
+                    // skip kalau essay kosong
+                    if ($normalized === '') {
+                        continue;
+                    }
+                } else {
+                    // PG / Multiple / Poin: uppercase dan trim
+                    $normalized = strtoupper(trim($raw));
+
+                    // skip kalau kosong
+                    if ($normalized === '') {
+                        continue;
+                    }
+                }
 
                 $score = null;
                 if ($withScore) {
                     switch ($q->type) {
                         case 'PG':
-                            $score = (strtoupper((string)$q->answer) === $normalized) ? 1 : 0;
+                            $score = (strtoupper((string) $q->answer) === $normalized) ? 1 : 0;
                             break;
+
                         case 'Multiple':
-                            $correct = collect(explode(',', (string)$q->answer))->map(fn($x) => strtoupper(trim($x)))->filter();
-                            $user    = collect(explode(',', $normalized))->map(fn($x) => strtoupper(trim($x)))->filter();
-                            $score = $user->count() && $user->diff($correct)->isEmpty() && $correct->diff($user)->isEmpty() ? 1 : 0;
+                            $correct = collect(explode(',', (string) $q->answer))
+                                ->map(fn($x) => strtoupper(trim($x)))
+                                ->filter();
+
+                            $user = collect(explode(',', $normalized))
+                                ->map(fn($x) => strtoupper(trim($x)))
+                                ->filter();
+
+                            $score = $user->count()
+                                && $user->diff($correct)->isEmpty()
+                                && $correct->diff($user)->isEmpty()
+                                ? 1 : 0;
                             break;
+
                         case 'Poin':
-                            $map = ['A' => $q->point_a, 'B' => $q->point_b, 'C' => $q->point_c, 'D' => $q->point_d, 'E' => $q->point_e];
+                            $map = [
+                                'A' => $q->point_a,
+                                'B' => $q->point_b,
+                                'C' => $q->point_c,
+                                'D' => $q->point_d,
+                                'E' => $q->point_e,
+                            ];
                             $score = $map[$normalized] ?? 0;
                             break;
+
                         case 'Essay':
                             $score = null;
                             break;
@@ -583,7 +648,10 @@ class QuizController extends Controller
                         'test_result_id'         => $testResult->id,
                         'test_section_result_id' => $sectionResult->id,
                     ],
-                    ['answer' => $normalized, 'score' => $score]
+                    [
+                        'answer' => $normalized,
+                        'score'  => $score,
+                    ]
                 );
             }
         });

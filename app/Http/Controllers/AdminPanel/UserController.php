@@ -12,27 +12,33 @@ use App\Services\ActivityLogger;
 class UserController extends Controller
 {
     /**
-     * Tampilkan daftar user admin.
+     * Tampilkan daftar user (dipisah via tab: admin / user).
      */
     public function index(Request $request)
     {
+        // tab: 'admin' atau 'user' (default: admin)
+        $tab  = $request->query('tab', 'admin');
+        $role = $tab === 'user' ? 'user' : 'admin';
+
         $search = trim((string) $request->query('search'));
 
-        $users = User::where('role', 'admin')
-            ->when($search, fn($q) =>
+        $users = User::where('role', $role)
+            ->when($search, fn ($q) =>
                 $q->where(function ($q) use ($search) {
-                    $q->where('name', 'ILIKE', "%$search%")
-                      ->orWhere('email', 'ILIKE', "%$search%");
+                    $q->where('name', 'ILIKE', "%{$search}%")
+                      ->orWhere('email', 'ILIKE', "%{$search}%");
                 })
             )
             ->orderBy('id', 'desc')
-            ->paginate(10);
+            ->paginate(10)
+            ->appends($request->query());
 
-        return view('admin.user.index', compact('users', 'search'));
+        return view('admin.user.index', compact('users', 'search', 'tab'));
     }
 
     /**
      * Tambah admin baru.
+     * (Hanya dipakai di TAB "Kelola Admin"; role dipaksa 'admin')
      */
     public function store(Request $request)
     {
@@ -46,15 +52,14 @@ class UserController extends Controller
             'name'              => $validated['name'],
             'email'             => $validated['email'],
             'password'          => Hash::make($validated['password']),
-            'role'              => 'admin',
+            'role'              => 'admin', // selalu admin dari halaman ini
             'email_verified_at' => now(),
         ]);
 
-        // ✅ Log CREATE
         ActivityLogger::log(
             'create',
             'User',
-            auth()->user()->name . " menambahkan admin baru '{$user->name}' (email: {$user->email})",
+            auth()->user()->name . " menambahkan user baru '{$user->name}' (role: {$user->role}, email: {$user->email})",
             "User ID: {$user->id}"
         );
 
@@ -62,12 +67,11 @@ class UserController extends Controller
     }
 
     /**
-     * Update admin.
+     * Update user (nama, email, password opsional).
+     * Dipakai dari kedua tab (admin & user).
      */
     public function update(Request $request, User $user)
     {
-        if ($user->role !== 'admin') abort(403);
-
         $validated = $request->validate([
             'name'     => 'required|string|max:255',
             'email'    => ['required', 'email', Rule::unique('users')->ignore($user->id)],
@@ -79,12 +83,12 @@ class UserController extends Controller
         $user->update([
             'name'     => $validated['name'],
             'email'    => $validated['email'],
+            // role TIDAK diubah di halaman ini
             'password' => $validated['password']
                 ? Hash::make($validated['password'])
                 : $user->password,
         ]);
 
-        // ✅ Log UPDATE
         ActivityLogger::logUpdate(
             'User',
             $user,
@@ -92,40 +96,42 @@ class UserController extends Controller
             $user->only(['name', 'email'])
         );
 
-        // ✅ Log khusus jika password diubah
         if (!empty($validated['password'])) {
             ActivityLogger::log(
                 'update',
                 'User',
-                auth()->user()->name . " mengubah password admin '{$user->name}'",
+                auth()->user()->name . " mengubah password user '{$user->name}'",
                 "User ID: {$user->id}"
             );
         }
 
-        return back()->with('success', 'Admin berhasil diperbarui.');
+        return back()->with('success', 'User berhasil diperbarui.');
     }
 
     /**
-     * Hapus admin.
+     * Hapus user (admin maupun user biasa).
      */
     public function destroy(User $user)
     {
-        if ($user->role !== 'admin') abort(403);
+        // optional: cegah user hapus dirinya sendiri
+        if ($user->id === auth()->id()) {
+            return back()->with('error', 'Anda tidak dapat menghapus akun Anda sendiri.');
+        }
 
-        $userName = $user->name;
+        $userName  = $user->name;
         $userEmail = $user->email;
-        $userId = $user->id;
+        $userRole  = $user->role;
+        $userId    = $user->id;
 
         $user->delete();
 
-        // ✅ Log DELETE
         ActivityLogger::log(
             'delete',
             'User',
-            auth()->user()->name . " menghapus admin '{$userName}' (email: {$userEmail})",
+            auth()->user()->name . " menghapus user '{$userName}' (role: {$userRole}, email: {$userEmail})",
             "User ID: {$userId}"
         );
 
-        return back()->with('success', 'Admin berhasil dihapus.');
+        return back()->with('success', 'User berhasil dihapus.');
     }
 }

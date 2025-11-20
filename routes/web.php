@@ -80,22 +80,32 @@ Route::middleware('auth', 'verified', 'role:user')->group(function () {
     Route::get('/history',  [HistoryController::class, 'index'])->name('history.index');
 
     // QUIZ
+
+    // 1) Intro: ini yang pakai signed URL
+    Route::get('/quiz/{slug}/intro', [QuizController::class, 'intro'])
+        ->name('quiz.intro')
+        ->middleware('signed');   // <-- pindahkan signed ke sini
+
+    // 2) Halaman kerjain quiz utama: TIDAK signed
     Route::get('/quiz/{slug}', [QuizController::class, 'start'])
         ->name('quiz.start')
-        ->middleware(['throttle:20,1', 'signed']);
+        ->middleware('throttle:20,1');   // boleh tetap throttle, tapi tanpa 'signed'
 
-    // routes/web.php
+    // 3) AJAX question (kalau masih dipakai) – ga perlu signed juga
     Route::get('/quiz/{slug}/q', [QuizController::class, 'question'])
-        ->name('quiz.q');       // plus guard lain kalau perlu
+        ->name('quiz.q');
 
-    Route::post('/quiz/{slug}', [QuizController::class, 'submitSection'])->name('quiz.submit');
+    // 4) Submit section (Selesai Tes)
+    Route::post('/quiz/{slug}', [QuizController::class, 'submitSection'])
+        ->name('quiz.submit');
 
+    // 5) Autosave jawaban
     Route::post('/quiz/{slug}/autosave', [QuizController::class, 'autosave'])
         ->name('quiz.autosave');
 
-    Route::get('/quiz/{slug}/intro', [QuizController::class, 'intro'])->name('quiz.intro');
-
-    Route::get('/quiz/{slug}/finish',   [QuizController::class, 'finish'])->name('quiz.finish');
+    // 6) Halaman finish
+    Route::get('/quiz/{slug}/finish', [QuizController::class, 'finish'])
+        ->name('quiz.finish');
 
     // (opsional) keep alive saat mengerjakan quiz
     Route::get('/keepalive', fn() => response()->noContent())->name('keepalive');
@@ -109,15 +119,19 @@ require __DIR__ . '/auth.php';
 
 // ================= ADMIN =================
 Route::middleware(['auth', 'role:admin'])->group(function () {
-    Route::get('/admin', fn() => view('admin/dashboard'));
-    Route::get('admin/dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
+    // Pakai controller utk /admin
+    Route::get('/admin', [AdminController::class, 'index'])
+        ->name('admin.dashboard');
+        
+    // Route::get('admin/dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
 
 
     // -------- User Admin Management ----------
-    Route::get   ('admin/user',             [UserController::class, 'index'])->name('admin.user.index');
-    Route::post  ('admin/user',             [UserController::class, 'store'])->name('admin.user.store');
-    Route::put   ('admin/user/{user}',      [UserController::class, 'update'])->name('admin.user.update');
-    Route::delete('admin/user/{user}',      [UserController::class, 'destroy'])->name('admin.user.destroy');
+    Route::get   ('admin/user',        [UserController::class, 'index'])->name('admin.user.index');
+    Route::post  ('admin/user',        [UserController::class, 'store'])->name('admin.user.store');
+    Route::put   ('admin/user/{user}', [UserController::class, 'update'])->name('admin.user.update');
+    Route::delete('admin/user/{user}', [UserController::class, 'destroy'])->name('admin.user.destroy');
+
     
     // -------- Batch & Position ----------
     Route::get('admin/batch',            [BatchController::class, 'index'])->name('batch.index');
