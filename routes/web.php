@@ -35,6 +35,7 @@ use App\Http\Controllers\AdminPanel\FaqController;
 use App\Http\Controllers\AdminPanel\SkregisController;
 use App\Http\Controllers\AdminPanel\ContactController;
 use App\Http\Controllers\AdminPanel\AboutController;
+use App\Http\Controllers\AdminPanel\VendorController;
 
 
 // ====== Seleksi (baru, dipisah per tahap) ======
@@ -315,4 +316,6 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::post('admin/skregis',             [SkregisController::class, 'store'])->name('admin.skregis.store');
     Route::put('admin/skregis/{skregis}',  [SkregisController::class, 'update'])->name('admin.skregis.update');
     Route::delete('admin/skregis/{skregis}',  [SkregisController::class, 'destroy'])->name('admin.skregis.destroy');
+
+    Route::get('admin/vendor', [VendorController::class, 'index'])->name('admin.vendor.index');
 });
