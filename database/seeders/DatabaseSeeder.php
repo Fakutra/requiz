@@ -18,14 +18,13 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             UserSeeder::class,
-            // ProfileSeeder::class,
+            ProfileSeeder::class,
             BatchSeeder::class,
-            // ApplicantSeeder::class,
+            ApplicantSeeder::class,
             QuestionSeeder::class,
             // DivisionSeeder::class,
             // JobSeeder::class,
             // PlacementSeeder::class,
-            // QuestionSeeder::class,
             QuestionBundleSeeder::class,
             BundleQuestionSeeder::class,
             // PersonalityRuleSeeder::class,

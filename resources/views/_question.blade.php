@@ -41,6 +41,7 @@
                         src="{{ asset('/' . ltrim($q['image_path'], '/')) }}"
                         alt="Gambar Soal {{ $currentNo }}"
                         class="w-full h-full object-contain"
+                        draggable="false"
                     >
                 </div>
             </div>

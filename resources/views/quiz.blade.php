@@ -1,7 +1,19 @@
 <x-guest-layout>
+    {{-- CSS khusus halaman quiz: blok select untuk semua elemen non-input --}}
+    <style>
+        .quiz-no-select,
+        .quiz-no-select *:not(textarea):not(input):not(select) {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+    </style>
+
     <div class="py-4">
         <div class="max-w-7xl mx-auto px-6 lg:px-8">
-            <div class="bg-white shadow-sm rounded-2xl p-6 border border-gray-200">
+            {{-- tambahin class quiz-no-select di container utama --}}
+            <div class="bg-white shadow-sm rounded-2xl p-6 border border-gray-200 quiz-no-select">
 
                 <div class="flex items-center justify-between mb-4">
                     <div>
@@ -145,35 +157,38 @@
             const $  = (s, r = document) => r.querySelector(s);
             const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 
-            // ====== BLOKIR COPY / PASTE DI AREA QUIZ ======
+            // ====== GLOBAL BLOKIR COPY / PASTE & PASTE ESSAY ======
+
+            // blokir copy & cut di seluruh halaman quiz
+            document.addEventListener('copy', (e) => {
+                e.preventDefault();
+            });
+            document.addEventListener('cut', (e) => {
+                e.preventDefault();
+            });
+
+            // blokir paste khusus textarea jawaban (essay)
+            document.addEventListener('paste', (e) => {
+                const target = e.target;
+                if (target && target.matches && target.matches('textarea[name^="answers["]')) {
+                    e.preventDefault();
+                }
+            });
+
+            // blok shortcut Ctrl/⌘ + C / V / X kalau lagi fokus di textarea jawaban
+            document.addEventListener('keydown', (e) => {
+                if (!e.ctrlKey && !e.metaKey) return;
+                const key = (e.key || '').toLowerCase();
+                if (!['c','v','x'].includes(key)) return;
+
+                const target = e.target;
+                if (target && target.matches && target.matches('textarea[name^="answers["]')) {
+                    e.preventDefault();
+                }
+            });
+
+            // matiin right–click di area soal (biar gak gampang "inspect → copy")
             if (questionRoot) {
-                // blok copy & cut di area quiz
-                questionRoot.addEventListener('copy', (e) => {
-                    e.preventDefault();
-                });
-
-                questionRoot.addEventListener('cut', (e) => {
-                    e.preventDefault();
-                });
-
-                // blok paste khusus textarea jawaban (essay)
-                questionRoot.addEventListener('paste', (e) => {
-                    const target = e.target;
-                    if (target && target.matches('textarea[name^="answers["]')) {
-                        e.preventDefault();
-                    }
-                });
-
-                // blok shortcut Ctrl/⌘ + C / V / X di dalam area quiz
-                questionRoot.addEventListener('keydown', (e) => {
-                    if (!e.ctrlKey && !e.metaKey) return;
-                    const key = e.key.toLowerCase();
-                    if (['c', 'v', 'x'].includes(key)) {
-                        e.preventDefault();
-                    }
-                });
-
-                // optional: matiin right–click di area soal (wrapper .quiz-no-copy)
                 questionRoot.addEventListener('contextmenu', (e) => {
                     const wrapper = e.target.closest('.quiz-no-copy');
                     if (wrapper) {
