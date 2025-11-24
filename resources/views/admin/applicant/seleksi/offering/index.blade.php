@@ -240,10 +240,9 @@
           <input type="hidden" name="applicant_id" value="{{ $a->id }}">
 
           <div>
-            <label class="block text-sm font-medium">Potential By</label>
-            <input type="text"
-                  class="border rounded w-full px-3 py-2 bg-gray-100 text-gray-700"
-                  value="{{ optional(optional($a->interviewResults->first())->user)->name ?? '-' }}"
+            <label class="block text-sm font-medium">Picked By</label>
+            <input type="text" class="border rounded w-full px-3 py-2 bg-gray-100 text-gray-700"
+                  value="{{ optional($a->pickedBy)->name ?? '-' }}"
                   readonly>
           </div>
 

@@ -194,6 +194,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
                 Route::get('/', [InterviewController::class, 'index'])->name('index');
                 Route::post('/score', [InterviewController::class, 'storeScore'])->name('storeScore');
                 Route::post('/bulk-mark', [InterviewController::class, 'bulkMark'])->name('bulkMark');
+                Route::post('/bulk-set-picked-by', [InterviewController::class, 'bulkSetPickedBy'])->name('bulkSetPickedBy'); // 👈 baru
                 Route::get('/export', [InterviewController::class, 'export'])->name('export');
                 Route::post('/send-email', [InterviewEmailController::class, 'send'])->name('sendEmail');
             });
@@ -331,5 +332,9 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::put('admin/skregis/{skregis}',  [SkregisController::class, 'update'])->name('admin.skregis.update');
     Route::delete('admin/skregis/{skregis}',  [SkregisController::class, 'destroy'])->name('admin.skregis.destroy');
 
+    // --------- Vendor -----------
     Route::get('admin/vendor', [VendorController::class, 'index'])->name('admin.vendor.index');
+    Route::post('admin/vendor', [VendorController::class, 'store'])->name('admin.vendor.store');
+    Route::delete('admin/vendor/{vendor}', [VendorController::class, 'destroy'])->name('admin.vendor.destroy');
+    Route::put('admin/vendor/{vendor}', [VendorController::class, 'update'])->name('admin.vendor.update');
 });
