@@ -8,7 +8,7 @@
                 </svg>
             </a>
             <h2 class="text-lg font-semibold leading-none m-0">
-                Kelola Bundle
+                Kelola Section
             </h2>
         </div>
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
@@ -21,12 +21,12 @@
                     <div class="card shadow-sm">
                         <div class="card-header d-flex align-items-center gap-2">
                             <i class="bi bi-info-circle-fill text-primary"></i>
-                            <h5 class="mb-0">Informasi Bundle</h5>
+                            <h5 class="mb-0">Informasi Section</h5>
                         </div>
                         <div class="card-body">
                             <h4 class="card-title">{{ $bundle->name }}</h4>
                             <p class="card-text text-muted">
-                                {{ $bundle->description ?? 'Tidak ada deskripsi untuk bundle ini.' }}
+                                {{ $bundle->description ?? 'Tidak ada deskripsi untuk section ini.' }}
                             </p>
                             <hr>
                             <ul class="list-unstyled">
@@ -94,7 +94,7 @@
                                                             <button type="submit"
                                                                 class="btn btn-light btn-sm text-danger"
                                                                 title="Hapus dari Bundle"
-                                                                onclick="return confirm('Yakin hapus soal ini dari bundle?')"><i
+                                                                onclick="return confirm('Yakin hapus soal ini dari section?')"><i
                                                                     class="bi bi-trash"></i></button>
                                                         </form>
                                                     </div>
@@ -104,7 +104,7 @@
                                             <tr>
                                                 <td colspan="4" class="text-center py-5">
                                                     <h5 class="text-muted">Belum ada soal</h5>
-                                                    <p>Tambahkan soal pertama ke dalam bundle ini.</p>
+                                                    <p>Tambahkan soal pertama ke dalam section ini.</p>
                                                 </td>
                                             </tr>
                                         @endforelse

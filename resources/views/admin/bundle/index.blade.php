@@ -5,11 +5,11 @@
                 <div class="p-4 p-md-5 text-gray-900">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h2 class="font-semibold text-xl text-gray-800 leading-tight mb-0">
-                            {{ __('Bundle') }}
+                            {{ __('Section') }}
                         </h2>
                         {{-- Tombol ini sekarang akan membuka modal --}}
                         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#tambahBundle">
-                            Create Bundle
+                            Create Section
                         </button>
                     </div>
 
@@ -52,7 +52,7 @@
                                                     </button>
                                                     <form action="{{ route('bundle.destroy', $bundle) }}" method="post"
                                                         class="d-inline"
-                                                        onsubmit="return confirm('Anda yakin ingin menghapus bundle ini?')">
+                                                        onsubmit="return confirm('Anda yakin ingin menghapus section ini?')">
                                                         @method('delete')
                                                         @csrf
                                                         <button type="submit" class="btn btn-danger btn-sm">
@@ -73,7 +73,7 @@
                                     <div class="modal-content">
                                         <div class="modal-header">
                                             <h1 class="modal-title fs-5" id="modalEditBundle{{ $bundle->id }}">Edit
-                                                Bundle</h1>
+                                                Section</h1>
                                             <button type="button" class="btn-close" data-bs-dismiss="modal"
                                                 aria-label="Close"></button>
                                         </div>
@@ -82,7 +82,7 @@
                                             @method('PUT') {{-- Gunakan method PUT untuk update --}}
                                             <div class="modal-body">
                                                 <div class="mb-3">
-                                                    <label for="name" class="form-label">Nama Bundle</label>
+                                                    <label for="name" class="form-label">Nama Section</label>
                                                     {{-- Isi value dengan data yang ada --}}
                                                     <input type="text" class="form-control" name="name"
                                                         value="{{ old('name', $bundle->name) }}" required>
@@ -107,8 +107,8 @@
 
                         @empty
                             <div class="col-12 text-center py-5">
-                                <p class="text-muted">Data bundle belum tersedia.</p>
-                                <p>Silakan buat bundle baru dengan menekan tombol "Create Bundle" di atas.</p>
+                                <p class="text-muted">Data section belum tersedia.</p>
+                                <p>Silakan buat section baru dengan menekan tombol "Create Bundle" di atas.</p>
                             </div>
                         @endforelse
                     </div>
@@ -132,7 +132,7 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h1 class="modal-title fs-5" id="modalTambahBundle">Buat Bundle Baru</h1>
+                    <h1 class="modal-title fs-5" id="modalTambahBundle">Buat Section Baru</h1>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -142,7 +142,7 @@
                         <div class="modal-body">
                             {{-- Input Nama Bundle --}}
                             <div class="mb-3">
-                                <label for="name" class="form-label">Nama Bundle</label>
+                                <label for="name" class="form-label">Nama Section</label>
                                 <input type="text" class="form-control @error('name') is-invalid @enderror"
                                     id="name" name="name" value="{{ old('name') }}" required autofocus>
                                 @error('name')

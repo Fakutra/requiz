@@ -158,7 +158,7 @@
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" class="size-6 me-4">
                                 <path fill="none" stroke="currentColor" d="m17.3 10.453l1.927.315a.326.326 0 0 1 .273.322v1.793a.326.326 0 0 1-.27.321l-1.93.339q-.167.582-.459 1.111l1.141 1.584a.326.326 0 0 1-.034.422l-1.268 1.268a.326.326 0 0 1-.418.037l-1.6-1.123a5.5 5.5 0 0 1-1.118.468l-.34 1.921a.326.326 0 0 1-.322.269H11.09a.325.325 0 0 1-.321-.272l-.319-1.911a5.5 5.5 0 0 1-1.123-.465l-1.588 1.113a.326.326 0 0 1-.418-.037L6.052 16.66a.33.33 0 0 1-.035-.42l1.123-1.57a5.5 5.5 0 0 1-.47-1.129l-1.901-.337a.326.326 0 0 1-.269-.321V11.09c0-.16.115-.296.273-.322l1.901-.317q.173-.59.47-1.128l-1.11-1.586a.326.326 0 0 1 .037-.417L7.34 6.053a.326.326 0 0 1 .42-.035l1.575 1.125q.533-.292 1.121-.46l.312-1.91a.326.326 0 0 1 .322-.273h1.793c.159 0 .294.114.322.27l.336 1.92q.585.169 1.12.465l1.578-1.135a.326.326 0 0 1 .422.033l1.268 1.268a.326.326 0 0 1 .036.418L16.84 9.342q.29.53.46 1.11ZM9.716 12a2.283 2.283 0 1 0 4.566 0a2.283 2.283 0 0 0-4.566 0Z" clip-rule="evenodd" stroke-width="1"/>
                             </svg>
-                            Master
+                            CMS
                             <svg class="w-4 h-4 ml-auto transform" :class="{ 'rotate-180': masterOpen }" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                             </svg>
@@ -243,34 +243,14 @@
                         </div>
 
                         {{-- Mengelola Batch --}}
-                        <div class="py-1">
-                            <button @click="toggleMenu('jobOpen')"
-                                class="flex items-center w-full text-gray-700 hover:text-blue-600 focus:outline-none">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 32 32"
-                                class="size-6 me-4">
-                                    <path fill="currentColor" d="M14 3c-1.094 0-2 .906-2 2v1H9V5H7v1H5c-1.094 0-2 .906-2 2v16c0 1.094.906 2 2 2h22c1.094 0 2-.906 2-2V8c0-1.094-.906-2-2-2h-2V5h-2v1h-3V5c0-1.094-.906-2-2-2zm0 2h4v1h-4zM5 8h22v16h-2V9h-2v15H9V9H7v15H5z"/>
-                                </svg>
-
-                                Jobs
-                                <svg class="w-4 h-4 ml-auto transform" :class="{ 'rotate-180': jobOpen }" fill="none"
-                                    stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </button>
-                            <div x-show="jobOpen" x-transition:enter="transition ease-out duration-300"
-                                x-transition:enter-start="opacity-0 -translate-y-2"
-                                x-transition:enter-end="opacity-100 translate-y-0"
-                                x-transition:leave="transition ease-in duration-0"
-                                x-transition:leave-start="opacity-100 translate-y-0"
-                                x-transition:leave-end="opacity-0 -translate-y-2"
-                                class="mt-3 ml-10 space-y-4 text-sm text-gray-600">
-                                <a href="{{ route('batch.index') }}"
-                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/batch') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
-                                    Batch
-                                </a>
-                            </div>
-                        </div>
-
+                        <a href="{{ route('batch.index') }}"
+                            class="flex items-center no-underline hover:text-blue-600 focus:outline-none {{ request()->is('admin/batch') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-2' : 'text-gray-600' }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 32 32"
+                            class="size-6 me-4">
+                                <path fill="currentColor" d="M14 3c-1.094 0-2 .906-2 2v1H9V5H7v1H5c-1.094 0-2 .906-2 2v16c0 1.094.906 2 2 2h22c1.094 0 2-.906 2-2V8c0-1.094-.906-2-2-2h-2V5h-2v1h-3V5c0-1.094-.906-2-2-2zm0 2h4v1h-4zM5 8h22v16h-2V9h-2v15H9V9H7v15H5z"/>
+                            </svg>
+                            Batch
+                        </a>
                         {{-- Mengelola Kuis --}}
                         <div class="py-1">
                             <button @click="toggleMenu('quizOpen')"
@@ -291,12 +271,12 @@
                                 x-transition:leave-start="opacity-100 translate-y-0"
                                 x-transition:leave-end="opacity-0 -translate-y-2"
                                 class="mt-3 ml-10 space-y-4 text-sm text-gray-600">
-                                <a href="{{ route('test.index') }}"
-                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/test') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">Quiz</a>
                                 <a href="{{ route('question.index') }}"
                                     class="block hover:text-blue-600 no-underline {{ request()->is('admin/question') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">Question</a>
                                 <a href="{{ route('bundle.index') }}"
-                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/bundle') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">Bundle</a>
+                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/bundle') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">Section</a>
+                                <a href="{{ route('test.index') }}"
+                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/test') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">Quiz</a>
                             </div>
                         </div>
 
