@@ -14,18 +14,18 @@ class UserSeeder extends Seeder
     {
         // === 5 Admins ===
         $admins = [
-            ['name' => 'Admin Utama', 'email' => 'admin@iconpln.co.id'],
-            ['name' => 'Admin HR',    'email' => 'admin2@iconpln.co.id'],
-            ['name' => 'Admin IT',    'email' => 'admin3@iconpln.co.id'],
-            ['name' => 'Admin Finance','email' => 'admin4@iconpln.co.id'],
-            ['name' => 'Admin Project','email' => 'admin5@iconpln.co.id'],
+            ['name' => 'Admin Utama',   'email' => 'admin@iconpln.co.id'],
+            ['name' => 'Admin HR',      'email' => 'admin2@iconpln.co.id'],
+            ['name' => 'Admin IT',      'email' => 'admin3@iconpln.co.id'],
+            ['name' => 'Admin Finance', 'email' => 'admin4@iconpln.co.id'],
+            ['name' => 'Admin Project', 'email' => 'admin5@iconpln.co.id'],
         ];
 
         foreach ($admins as $data) {
             User::factory()->create([
-                'name' => $data['name'],
-                'email' => $data['email'],
-                'role' => 'admin',
+                'name'     => $data['name'],
+                'email'    => $data['email'],
+                'role'     => 'admin',
                 'password' => bcrypt('password'),
             ]);
         }
@@ -56,11 +56,19 @@ class UserSeeder extends Seeder
 
         foreach ($users as $data) {
             User::factory()->create([
-                'name' => $data['name'],
-                'email' => $data['email'],
-                'role' => 'user',
+                'name'     => $data['name'],
+                'email'    => $data['email'],
+                'role'     => 'user',
                 'password' => bcrypt('password'),
             ]);
         }
+
+        // === 1 Vendor User ===
+        User::factory()->create([
+            'name'     => 'Listyo (Vendor DPP)',
+            'email'    => 'listyo@dpp.com',
+            'role'     => 'vendor',
+            'password' => bcrypt('password'),
+        ]);
     }
 }

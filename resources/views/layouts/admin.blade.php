@@ -100,8 +100,17 @@
             <div class="flex">
                 {{-- Sidebar --}}
                 @php
-                $name = Auth::user()->name ?? 'Admin';
-                $initials = collect(explode(' ', $name))->map(fn($w) => strtoupper(substr($w, 0, 1)))->join('');
+                    $user = Auth::user();
+                    $name = $user?->name ?? 'Admin';
+                    // kalau lo pakai kolom "role" di users
+                    $role = $user?->role ?? 'admin';
+
+                    $isAdmin  = $role === 'admin';
+                    $isVendor = $role === 'vendor';
+
+                    $initials = collect(explode(' ', $name))
+                        ->map(fn($w) => strtoupper(substr($w, 0, 1)))
+                        ->join('');
                 @endphp
 
                 <aside
@@ -109,26 +118,28 @@
                     :class="{ '-translate-x-full': !sidebarOpen, 'translate-x-0': sidebarOpen }"
                     x-data="{
                         masterOpen: {{ request()->is('admin/faq') || request()->is('admin/vendor') || request()->is('admin/contact*') || request()->is('admin/about*') || request()->is('admin/policy*') ? 'true' : 'false' }},
-                        userOpen: {{ request()->is('admin/applicant*') || request()->is('admin') || request()->is('selection') ? 'true' : 'false' }},
-                        jobOpen: {{ request()->is('admin/batch') ? 'true' : 'false' }},
-                        quizOpen: {{ request()->is('admin/test') || request()->is('admin/question') || request()->is('admin/bundle') ? 'true' : 'false' }},
-                        scheduleOpen: {{ request()->is('admin/tech-answers*') || request()->is('admin/interview-schedule*') ? 'true' : 'false' }},
+                        userOpen: {{ request()->is('admin/applicant*') || request()->is('admin/applicant/seleksi*') || request()->is('admin') ? 'true' : 'false' }},
+                        jobOpen: {{ request()->is('admin/batch*') ? 'true' : 'false' }},
+                        quizOpen: {{ request()->is('admin/test') || request()->is('admin/bundle*') || request()->is('admin/question*') ? 'true' : 'false' }},
+                        scheduleOpen: {{ request()->is('admin/tech-schedule*') || request()->is('admin/interview-schedule*') ? 'true' : 'false' }},
 
                         toggleMenu(menu) {
                             this[menu] = !this[menu];
                             const menus = ['masterOpen','userOpen','jobOpen','quizOpen','scheduleOpen'];
                             menus.forEach(m => { if (m !== menu && this[m]) setTimeout(() => this[m] = false, 50); });
                         }
-                        }">
+                    }"
+                >
                     <div class="flex items-center justify-between mb-8">
                         <div class="flex gap-3">
-                            <div
-                                class="bg-orange-500 w-12 h-12 flex items-center justify-center rounded-full text-white">
+                            <div class="bg-orange-500 w-12 h-12 flex items-center justify-center rounded-full text-white">
                                 <span>{{ $initials }}</span>
                             </div>
                             <div>
                                 <h4 class="font-bold text-lg">{{ $name }}</h4>
-                                <span class="text-sm text-slate-700">Administrator</span>
+                                <span class="text-sm text-slate-700">
+                                    {{ $isVendor ? 'Vendor' : 'Administrator' }}
+                                </span>
                             </div>
                         </div>
                         <button @click="sidebarOpen = false" class="lg:hidden">
@@ -140,8 +151,9 @@
                     </div>
 
                     <nav class="space-y-5">
+                        {{-- DASHBOARD (admin & vendor) --}}
                         <a href="{{ route('admin.dashboard') }}"
-                            class="flex items-center no-underline hover:text-blue-600 focus:outline-none {{ request()->is('admin/dashboard') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-2' : 'text-gray-600' }}">
+                            class="flex items-center no-underline hover:text-blue-600 focus:outline-none {{ request()->is('admin') || request()->is('admin/dashboard') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-2' : 'text-gray-600' }}">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                 stroke-width="1.5" stroke="currentColor" class="size-6 me-4">
                                 <path stroke-linecap="round" stroke-linejoin="round"
@@ -150,61 +162,51 @@
                             Dashboard
                         </a>
 
-                        {{-- Master --}}
+                        {{-- CMS (ADMIN ONLY) --}}
+                        @if($isAdmin)
                         <div class="py-1">
-                        <button @click="toggleMenu('masterOpen')"
-                            class="flex items-center w-full text-gray-700 hover:text-blue-600 focus:outline-none">
-                            {{-- Icon layers / folder master --}}
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" class="size-6 me-4">
-                                <path fill="none" stroke="currentColor" d="m17.3 10.453l1.927.315a.326.326 0 0 1 .273.322v1.793a.326.326 0 0 1-.27.321l-1.93.339q-.167.582-.459 1.111l1.141 1.584a.326.326 0 0 1-.034.422l-1.268 1.268a.326.326 0 0 1-.418.037l-1.6-1.123a5.5 5.5 0 0 1-1.118.468l-.34 1.921a.326.326 0 0 1-.322.269H11.09a.325.325 0 0 1-.321-.272l-.319-1.911a5.5 5.5 0 0 1-1.123-.465l-1.588 1.113a.326.326 0 0 1-.418-.037L6.052 16.66a.33.33 0 0 1-.035-.42l1.123-1.57a5.5 5.5 0 0 1-.47-1.129l-1.901-.337a.326.326 0 0 1-.269-.321V11.09c0-.16.115-.296.273-.322l1.901-.317q.173-.59.47-1.128l-1.11-1.586a.326.326 0 0 1 .037-.417L7.34 6.053a.326.326 0 0 1 .42-.035l1.575 1.125q.533-.292 1.121-.46l.312-1.91a.326.326 0 0 1 .322-.273h1.793c.159 0 .294.114.322.27l.336 1.92q.585.169 1.12.465l1.578-1.135a.326.326 0 0 1 .422.033l1.268 1.268a.326.326 0 0 1 .036.418L16.84 9.342q.29.53.46 1.11ZM9.716 12a2.283 2.283 0 1 0 4.566 0a2.283 2.283 0 0 0-4.566 0Z" clip-rule="evenodd" stroke-width="1"/>
-                            </svg>
-                            CMS
-                            <svg class="w-4 h-4 ml-auto transform" :class="{ 'rotate-180': masterOpen }" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </button>
+                            <button @click="toggleMenu('masterOpen')"
+                                class="flex items-center w-full text-gray-700 hover:text-blue-600 focus:outline-none">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                    viewBox="0 0 24 24" class="size-6 me-4">
+                                    <path fill="none" stroke="currentColor"
+                                        d="m17.3 10.453l1.927.315a.326.326 0 0 1 .273.322v1.793a.326.326 0 0 1-.27.321l-1.93.339q-.167.582-.459 1.111l1.141 1.584a.326.326 0 0 1-.034.422l-1.268 1.268a.326.326 0 0 1-.418.037l-1.6-1.123a5.5 5.5 0 0 1-1.118.468l-.34 1.921a.326.326 0 0 1-.322.269H11.09a.325.325 0 0 1-.321-.272l-.319-1.911a5.5 5.5 0 0 1-1.123-.465l-1.588 1.113a.326.326 0 0 1-.418-.037L6.052 16.66a.33.33 0 0 1-.035-.42l1.123-1.57a5.5 5.5 0 0 1-.47-1.129l-1.901-.337a.326.326 0 0 1-.269-.321V11.09c0-.16.115-.296.273-.322l1.901-.317q.173-.59.47-1.128l-1.11-1.586a.326.326 0 0 1 .037-.417L7.34 6.053a.326.326 0 0 1 .42-.035l1.575 1.125q.533-.292 1.121-.46l.312-1.91a.326.326 0 0 1 .322-.273h1.793c.159 0 .294.114.322.27l.336 1.92q.585.169 1.12.465l1.578-1.135a.326.326 0 0 1 .422.033l1.268 1.268a.326.326 0 0 1 .036.418L16.84 9.342q.29.53.46 1.11Z" />
+                                </svg>
+                                CMS
+                                <svg class="w-4 h-4 ml-auto transform" :class="{ 'rotate-180': masterOpen }"
+                                    fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
 
-                        <div x-show="masterOpen"
-                            x-transition:enter="transition ease-out duration-300"
-                            x-transition:enter-start="opacity-0 -translate-y-2"
-                            x-transition:enter-end="opacity-100 translate-y-0"
-                            x-transition:leave="transition ease-in duration-300"
-                            x-transition:leave-start="opacity-100 translate-y-0"
-                            x-transition:leave-end="opacity-0 -translate-y-2"
-                            class="mt-3 ml-10 space-y-4 text-sm text-gray-600">
-
-                            {{-- FAQ (sudah ada route) --}}
-                            <a href="{{ route('admin.faq.index') }}"
-                            class="block hover:text-blue-600 no-underline {{ request()->is('admin/faq') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
-                            FAQ
-                            </a>
-
-                            {{-- Tentang Kami --}}
-                            <a href="{{ route('admin.about.index', [], false) }}"
-                            class="block hover:text-blue-600 no-underline {{ request()->is('admin/about*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
-                            Tentang Kami
-                            </a>
-
-                            {{-- Informasi Kontak --}}
-                            <a href="{{ route('admin.contact.index', [], false) }}"
-                            class="block hover:text-blue-600 no-underline {{ request()->is('admin/contact*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
-                            Informasi Kontak
-                            </a>
-
-                            {{-- S & K Registration --}}
-                            <a href="{{ route('admin.skregis.index', [], false) }}"
-                            class="block hover:text-blue-600 no-underline {{ request()->is('admin/skregis*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
-                            S & K Registration
-                            </a>
-                            <a href="{{ route('admin.vendor.index') }}"
-                                class="block hover:text-blue-600 no-underline {{ request()->is('admin/vendor') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
-                                Vendor
-                            </a>
+                            <div x-show="masterOpen" x-transition
+                                class="mt-3 ml-10 space-y-4 text-sm text-gray-600">
+                                <a href="{{ route('admin.faq.index') }}"
+                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/faq') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                                    FAQ
+                                </a>
+                                <a href="{{ route('admin.about.index', [], false) }}"
+                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/about*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                                    Tentang Kami
+                                </a>
+                                <a href="{{ route('admin.contact.index', [], false) }}"
+                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/contact*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                                    Informasi Kontak
+                                </a>
+                                <a href="{{ route('admin.skregis.index', [], false) }}"
+                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/skregis*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                                    S & K Registration
+                                </a>
+                                <a href="{{ route('admin.vendor.index') }}"
+                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/vendor') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                                    Vendor
+                                </a>
+                            </div>
                         </div>
-                        </div>
+                        @endif
 
-
-                        {{-- Mengelola User --}}
+                        {{-- USER (Applicant & Selection untuk vendor, + Admin list untuk admin) --}}
                         <div class="py-1">
                             <button @click="toggleMenu('userOpen')"
                                 class="flex items-center w-full text-gray-700 hover:text-blue-600 focus:outline-none">
@@ -216,25 +218,29 @@
                                 User
                                 <svg class="w-4 h-4 ml-auto transform" :class="{ 'rotate-180': userOpen }"
                                     fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M19 9l-7 7-7-7" />
                                 </svg>
                             </button>
-                            <div x-show="userOpen" 
-                                x-transition:enter="transition ease-out duration-300"
-                                x-transition:enter-start="opacity-0 -translate-y-2"
-                                x-transition:enter-end="opacity-100 translate-y-0"
-                                x-transition:leave="transition ease-in duration-300"
-                                x-transition:leave-start="opacity-100 translate-y-0"
-                                x-transition:leave-end="opacity-0 -translate-y-2"
+
+                            <div x-show="userOpen" x-transition
                                 class="mt-3 ml-10 space-y-4 text-sm text-gray-600">
+
+                                {{-- Admin list hanya untuk admin --}}
+                                @if($isAdmin)
                                 <a href="{{ route('admin.user.index') }}"
                                     class="block hover:text-blue-600 no-underline {{ request()->is('admin/user') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
                                     Admin
                                 </a>
+                                @endif
+
+                                {{-- Applicant (admin & vendor) --}}
                                 <a href="{{ route('admin.applicant.index') }}"
                                     class="block hover:text-blue-600 no-underline {{ request()->is('admin/applicant') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
                                     Applicant
                                 </a>
+
+                                {{-- Selection (admin & vendor) --}}
                                 <a href="{{ route('admin.applicant.seleksi.index') }}"
                                     class="block hover:text-blue-600 no-underline {{ request()->is('admin/applicant/seleksi') || request()->is('admin/applicant/seleksi/*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
                                     Selection
@@ -242,45 +248,60 @@
                             </div>
                         </div>
 
-                        {{-- Mengelola Batch --}}
+                        {{-- BATCH (admin & vendor) – tetap pakai nama "Batch" --}}
                         <a href="{{ route('batch.index') }}"
-                            class="flex items-center no-underline hover:text-blue-600 focus:outline-none {{ request()->is('admin/batch') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-2' : 'text-gray-600' }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 32 32"
-                            class="size-6 me-4">
-                                <path fill="currentColor" d="M14 3c-1.094 0-2 .906-2 2v1H9V5H7v1H5c-1.094 0-2 .906-2 2v16c0 1.094.906 2 2 2h22c1.094 0 2-.906 2-2V8c0-1.094-.906-2-2-2h-2V5h-2v1h-3V5c0-1.094-.906-2-2-2zm0 2h4v1h-4zM5 8h22v16h-2V9h-2v15H9V9H7v15H5z"/>
+                            class="flex items-center no-underline hover:text-blue-600 focus:outline-none {{ request()->is('admin/batch*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-2' : 'text-gray-600' }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                viewBox="0 0 32 32" class="size-6 me-4">
+                                <path fill="currentColor"
+                                    d="M14 3c-1.094 0-2 .906-2 2v1H9V5H7v1H5c-1.094 0-2 .906-2 2v16c0 1.094.906 2 2 2h22c1.094 0 2-.906 2-2V8c0-1.094-.906-2-2-2h-2V5h-2v1h-3V5c0-1.094-.906-2-2-2zm0 2h4v1h-4zM5 8h22v16h-2V9h-2v15H9V9H7v15H5z" />
                             </svg>
                             Batch
                         </a>
-                        {{-- Mengelola Kuis --}}
+
+                        {{-- QUIZ (Admin: Question+Section+Quiz, Vendor: Section+Quiz) --}}
                         <div class="py-1">
                             <button @click="toggleMenu('quizOpen')"
                                 class="flex items-center w-full text-gray-700 hover:text-blue-600 focus:outline-none">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 20 20" class="size-6 me-4">
-                                    <path fill="currentColor" d="M5.5 3A2.5 2.5 0 0 0 3 5.5v9A2.5 2.5 0 0 0 5.5 17h4.1a5.5 5.5 0 0 1-.393-1H5.5A1.5 1.5 0 0 1 4 14.5v-9A1.5 1.5 0 0 1 5.5 4h9A1.5 1.5 0 0 1 16 5.5v3.707q.524.149 1 .393V5.5A2.5 2.5 0 0 0 14.5 3zm3.707 10q.149-.524.393-1H5.5a.5.5 0 0 0 0 1zM8.5 15a.5.5 0 0 0 0-1h-3a.5.5 0 0 0 0 1zM8 5a.5.5 0 0 1 .457.297l2 4.5a.5.5 0 1 1-.914.406L9.008 9H6.992l-.535 1.203a.5.5 0 0 1-.914-.406l2-4.5A.5.5 0 0 1 8 5m.564 3L8 6.731L7.436 8zM13.5 5.5a.5.5 0 0 0-1 0v1h-1a.5.5 0 0 0 0 1h1v1a.5.5 0 0 0 1 0v-1h1a.5.5 0 0 0 0-1h-1zm5.5 9a4.5 4.5 0 1 1-9 0a4.5 4.5 0 0 1 9 0m-4-2a.5.5 0 0 0-1 0V14h-1.5a.5.5 0 0 0 0 1H14v1.5a.5.5 0 0 0 1 0V15h1.5a.5.5 0 0 0 0-1H15z"/>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                    viewBox="0 0 20 20" class="size-6 me-4">
+                                    <path fill="currentColor"
+                                        d="M5.5 3A2.5 2.5 0 0 0 3 5.5v9A2.5 2.5 0 0 0 5.5 17h4.1a5.5 5.5 0 0 1-.393-1H5.5A1.5 1.5 0 0 1 4 14.5v-9A1.5 1.5 0 0 1 5.5 4h9A1.5 1.5 0 0 1 16 5.5v3.707q.524.149 1 .393V5.5A2.5 2.5 0 0 0 14.5 3zm3.707 10q.149-.524.393-1H5.5a.5.5 0 0 0 0 1zM8.5 15a.5.5 0 0 0 0-1h-3a.5.5 0 0 0 0 1zM8 5a.5.5 0 0 1 .457.297l2 4.5a.5.5 0 1 1-.914.406L9.008 9H6.992l-.535 1.203a.5.5 0 0 1-.914-.406l2-4.5A.5.5 0 0 1 8 5m.564 3L8 6.731L7.436 8zM13.5 5.5a.5.5 0 0 0-1 0v1h-1a.5.5 0 0 0 0 1h1v1a.5.5 0 0 0 1 0v-1h1a.5.5 0 0 0 0-1h-1zm5.5 9a4.5 4.5 0 1 1-9 0a4.5 4.5 0 0 1 9 0m-4-2a.5.5 0 0 0-1 0V14h-1.5a.5.5 0 0 0 0 1H14v1.5a.5.5 0 0 0 1 0V15h1.5a.5.5 0 0 0 0-1H15z"/>
                                 </svg>
                                 Quiz
                                 <svg class="w-4 h-4 ml-auto transform" :class="{ 'rotate-180': quizOpen }"
                                     fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M19 9l-7 7-7-7" />
                                 </svg>
                             </button>
-                            <div x-show="quizOpen" x-transition:enter="transition ease-out duration-300"
-                                x-transition:enter-start="opacity-0 -translate-y-2"
-                                x-transition:enter-end="opacity-100 translate-y-0"
-                                x-transition:leave="transition ease-in duration-0"
-                                x-transition:leave-start="opacity-100 translate-y-0"
-                                x-transition:leave-end="opacity-0 -translate-y-2"
+
+                            <div x-show="quizOpen" x-transition
                                 class="mt-3 ml-10 space-y-4 text-sm text-gray-600">
+
+                                {{-- Question hanya admin --}}
+                                @if($isAdmin)
                                 <a href="{{ route('question.index') }}"
-                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/question') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">Question</a>
+                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/question') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                                    Question
+                                </a>
+                                @endif
+
+                                {{-- Section = bundle.index (admin & vendor) --}}
                                 <a href="{{ route('bundle.index') }}"
-                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/bundle') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">Section</a>
+                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/bundle') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                                    Section
+                                </a>
+
+                                {{-- Quiz (test index) (admin & vendor) --}}
                                 <a href="{{ route('test.index') }}"
-                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/test') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">Quiz</a>
+                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/test') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                                    Quiz
+                                </a>
                             </div>
                         </div>
 
-                        {{-- Schedule --}}
+                        {{-- SCHEDULE (Technical Test & Interview) --}}
                         <div class="py-1">
                             <button @click="toggleMenu('scheduleOpen')"
                                 class="flex items-center w-full text-gray-700 hover:text-blue-600 focus:outline-none">
@@ -292,18 +313,15 @@
                                 Schedule
                                 <svg class="w-4 h-4 ml-auto transform" :class="{ 'rotate-180': scheduleOpen }"
                                     fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M19 9l-7 7-7-7" />
                                 </svg>
                             </button>
-                            <div x-show="scheduleOpen" x-transition:enter="transition ease-out duration-300"
-                                x-transition:enter-start="opacity-0 -translate-y-2"
-                                x-transition:enter-end="opacity-100 translate-y-0"
-                                x-transition:leave="transition ease-in duration-300"
-                                x-transition:leave-start="opacity-100 translate-y-0"
-                                x-transition:leave-end="opacity-0 -translate-y-2"
+
+                            <div x-show="scheduleOpen" x-transition
                                 class="mt-3 ml-10 space-y-4 text-sm text-gray-600">
                                 <a href="{{ route('tech-schedule.index') }}"
-                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/tech-schedule') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/tech-schedule*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
                                     Technical Test
                                 </a>
                                 <a href="{{ route('interview-schedule.index') }}"
@@ -313,48 +331,64 @@
                             </div>
                         </div>
 
-                        {{-- Personality Rules --}}
-                        <a href="{{ route('admin.personality-rules.index') }}"
-                            class="flex items-center no-underline hover:text-blue-600 focus:outline-none {{ request()->routeIs('admin.personality-rules.*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-2' : 'text-gray-600' }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 14 14" class ="size-6 me-4">
-                                <path fill="currentColor" fill-rule="evenodd" d="M2.5 1.25c-.103 0-.2.04-.27.108a.35.35 0 0 0-.105.248v10.788c0 .09.037.18.106.247a.38.38 0 0 0 .269.109h9c.103 0 .2-.04.27-.109a.35.35 0 0 0 .105-.247V4.968c0-.1-.04-.197-.112-.268L8.354 1.357a.38.38 0 0 0-.263-.107zM1.355.466C1.661.166 2.073 0 2.5 0h5.591c.426 0 .835.167 1.138.465l3.409 3.343c.311.305.487.724.487 1.16v7.426c0 .43-.174.84-.48 1.14S11.927 14 11.5 14h-9c-.427 0-.84-.166-1.145-.466s-.48-.71-.48-1.14V1.606c0-.43.174-.84.48-1.14m5.829 5.921c0-.345.28-.625.625-.625h2.25a.625.625 0 1 1 0 1.25h-2.25a.625.625 0 0 1-.625-.625m.625 3.022a.625.625 0 0 0 0 1.25h2.25a.625.625 0 1 0 0-1.25zM6.367 8.277a.75.75 0 0 1 .165 1.048l-1.396 1.917a.75.75 0 0 1-1.132.094l-.838-.822a.75.75 0 1 1 1.05-1.07l.218.213l.886-1.215a.75.75 0 0 1 1.047-.165m.165-2.661a.75.75 0 1 0-1.212-.883l-.886 1.215l-.217-.213a.75.75 0 1 0-1.05 1.07l.837.822a.75.75 0 0 0 1.132-.094z" clip-rule="evenodd"/>
-                            </svg>
-                            Personality Rules
-                        </a>
+                        {{-- Personality Rules, Report & Activity Logs khusus admin --}}
+                        @if($isAdmin)
 
-                        {{-- Report --}}
-                        <a href="{{ route('admin.report.index') }}"
-                            class="flex items-center no-underline hover:text-blue-600 focus:outline-none {{ request()->is('admin/report') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-2' : 'text-gray-600' }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" class ="size-6 me-4">
-                                <g fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10 9H6m9.5 2a2.5 2.5 0 1 1 0-5a2.5 2.5 0 0 1 0 5M6 6h3m9 12l-4.5-3l-2.5 2l-5-4"/>
-                                    <path d="M3 20.4V3.6a.6.6 0 0 1 .6-.6h16.8a.6.6 0 0 1 .6.6v16.8a.6.6 0 0 1-.6.6H3.6a.6.6 0 0 1-.6-.6Z"/>
-                                </g>
-                            </svg>
-                            Report
-                        </a>
+                            {{-- Personality Rules --}}
+                            <a href="{{ route('admin.personality-rules.index') }}"
+                                class="flex items-center no-underline hover:text-blue-600 focus:outline-none {{ request()->routeIs('admin.personality-rules.*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-2' : 'text-gray-600' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                    viewBox="0 0 14 14" class ="size-6 me-4">
+                                    <path fill="currentColor" fill-rule="evenodd"
+                                        d="M2.5 1.25c-.103 0-.2.04-.27.108a.35.35 0 0 0-.105.248v10.788c0 .09.037.18.106.247a.38.38 0 0 0 .269.109h9c.103 0 .2-.04.27-.109a.35.35 0 0 0 .105-.247V4.968c0-.1-.04-.197-.112-.268L8.354 1.357a.38.38 0 0 0-.263-.107zM1.355.466C1.661.166 2.073 0 2.5 0h5.591c.426 0 .835.167 1.138.465l3.409 3.343c.311.305.487.724.487 1.16v7.426c0 .43-.174.84-.48 1.14S11.927 14 11.5 14h-9c-.427 0-.84-.166-1.145-.466s-.48-.71-.48-1.14V1.606c0-.43.174-.84.48-1.14m5.829 5.921c0-.345.28-.625.625-.625h2.25a.625.625 0 1 1 0 1.25h-2.25a.625.625 0 0 1-.625-.625m.625 3.022a.625.625 0 0 0 0 1.25h2.25a.625.625 0 1 0 0-1.25zM6.367 8.277a.75.75 0 0 1 .165 1.048l-1.396 1.917a.75.75 0 0 1-1.132.094l-.838-.822a.75.75 0 1 1 1.05-1.07l.218.213l.886-1.215a.75.75 0 0 1 1.047-.165m.165-2.661a.75.75 0 1 0-1.212-.883l-.886 1.215l-.217-.213a.75.75 0 1 0-1.05 1.07l.837.822a.75.75 0 0 0 1.132-.094z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                                Personality Rules
+                            </a>
 
-                        {{-- Activity Logs --}}
-                        <a href="{{ route('admin.logs.index') }}"
-                            class="flex items-center no-underline hover:text-blue-600 focus:outline-none {{ request()->is('admin/logs') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-2' : 'text-gray-600' }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" class ="size-6 me-4">
-                                <path fill="currentColor" d="M12 21q-3.45 0-6.012-2.287T3.05 13H5.1q.35 2.6 2.313 4.3T12 19q2.925 0 4.963-2.037T19 12t-2.037-4.962T12 5q-1.725 0-3.225.8T6.25 8H9v2H3V4h2v2.35q1.275-1.6 3.113-2.475T12 3q1.875 0 3.513.713t2.85 1.924t1.925 2.85T21 12t-.712 3.513t-1.925 2.85t-2.85 1.925T12 21m2.8-4.8L11 12.4V7h2v4.6l3.2 3.2z"/>
-                            </svg>
-                            Activity Logs
-                        </a>
-                        
+                            {{-- Report (tetep sebelum Activity Logs seperti versi awal) --}}
+                            <a href="{{ route('admin.report.index') }}"
+                                class="flex items-center no-underline hover:text-blue-600 focus:outline-none {{ request()->is('admin/report') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-2' : 'text-gray-600' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                    viewBox="0 0 24 24" class ="size-6 me-4">
+                                    <g fill="none" stroke="currentColor" stroke-width="1.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                            d="M10 9H6m9.5 2a2.5 2.5 0 1 1 0-5a2.5 2.5 0 0 1 0 5M6 6h3m9 12l-4.5-3l-2.5 2l-5-4"/>
+                                        <path d="M3 20.4V3.6a.6.6 0 0 1 .6-.6h16.8a.6.6 0 0 1 .6.6v16.8a.6.6 0 0 1-.6.6H3.6a.6.6 0 0 1-.6-.6Z"/>
+                                    </g>
+                                </svg>
+                                Report
+                            </a>
+
+                            {{-- Activity Logs --}}
+                            <a href="{{ route('admin.logs.index') }}"
+                                class="flex items-center no-underline hover:text-blue-600 focus:outline-none {{ request()->is('admin/logs') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-2' : 'text-gray-600' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                    viewBox="0 0 24 24" class ="size-6 me-4">
+                                    <path fill="currentColor"
+                                        d="M12 21q-3.45 0-6.012-2.287T3.05 13H5.1q.35 2.6 2.313 4.3T12 19q2.925 0 4.963-2.037T19 12t-2.037-4.962T12 5q-1.725 0-3.225.8T6.25 8H9v2H3V4h2v2.35q1.275-1.6 3.113-2.475T12 3q1.875 0 3.513.713t2.85 1.924t1.925 2.85T21 12t-.712 3.513t-1.925 2.85t-2.85 1.925T12 21m2.8-4.8L11 12.4V7h2v4.6l3.2 3.2z" />
+                                </svg>
+                                Activity Logs
+                            </a>
+                        @endif
                     </nav>
 
+                    {{-- form logout dibiarkan sama seperti sebelumnya --}}
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
                         <button class="mt-6 w-full bg-blue-600 text-white py-2 rounded-full hover:bg-blue-700">
                             <div class="flex items-center justify-center">
-                                <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M14.75 8H10.75C9.64543 8 8.75 8.89543 8.75 10V22C8.75 23.1046 9.64543 24 10.75 24H14.75" stroke="white" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
-                                    <circle opacity="0.2" cx="13.6406" cy="16.4446" r="4" fill="#C2C7D5"/>
-                                    <path d="M11.75 16H22.75" stroke="white" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
-                                    <path d="M18.75 12L22.75 16L18.75 20" stroke="white" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
+                                <svg width="32" height="32" viewBox="0 0 32 32" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M14.75 8H10.75C9.64543 8 8.75 8.89543 8.75 10V22C8.75 23.1046 9.64543 24 10.75 24H14.75"
+                                        stroke="white" stroke-width="1.5" stroke-miterlimit="10"
+                                        stroke-linecap="round" stroke-linejoin="round" />
+                                    <circle opacity="0.2" cx="13.6406" cy="16.4446" r="4" fill="#C2C7D5" />
+                                    <path d="M11.75 16H22.75" stroke="white" stroke-width="1.5" stroke-miterlimit="10"
+                                        stroke-linecap="round" stroke-linejoin="round" />
+                                    <path d="M18.75 12L22.75 16L18.75 20" stroke="white" stroke-width="1.5"
+                                        stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round" />
                                 </svg>
-
                                 Logout
                             </div>
                         </button>
@@ -372,10 +406,10 @@
                             </div>
                         </header>
                     @endif
-                        
+
                     {{-- Page Content --}}
                     <main class="flex-1 p-8 md:p-8 max-w-7xl mx-auto overflow-x-auto md:overflow-x-visible">
-                            {{ $slot }}
+                        {{ $slot }}
                     </main>
                 </div>
             </div>
@@ -405,216 +439,207 @@
         editModalOpen: false,
         updateBase: '', // diisi dari #update_base => "admin/applicant/__ID__"
         form: {
-        id: null,
-        name: '', email: '',
-        nik: '', no_telp: '',
-        tpt_lahir: '', tgl_lahir: '',
-        alamat: '',
-        pendidikan: 'S1',
-        universitas: '', jurusan: '',
-        thn_lulus: '',
-        position_id: '',
-        status: 'Seleksi Administrasi',
+            id: null,
+            name: '', email: '',
+            nik: '', no_telp: '',
+            tpt_lahir: '', tgl_lahir: '',
+            alamat: '',
+            pendidikan: 'S1',
+            universitas: '', jurusan: '',
+            thn_lulus: '',
+            position_id: '',
+            status: 'Seleksi Administrasi',
         },
 
         /* ================= INIT ================ */
         init() {
-        // select all
-        const selectAll = document.getElementById('selectAll');
-        if (selectAll) {
-            selectAll.addEventListener('change', (e) => {
-            document.querySelectorAll('.applicant-checkbox').forEach(cb => cb.checked = e.target.checked);
-            });
-        }
-        // base URL edit
-        const ub = document.getElementById('update_base')?.value;
-        if (ub) this.updateBase = ub;
+            // select all
+            const selectAll = document.getElementById('selectAll');
+            if (selectAll) {
+                selectAll.addEventListener('change', (e) => {
+                    document.querySelectorAll('.applicant-checkbox').forEach(cb => cb.checked = e.target.checked);
+                });
+            }
+            // base URL edit
+            const ub = document.getElementById('update_base')?.value;
+            if (ub) this.updateBase = ub;
 
-        // stage untuk template
-        this.stage = document.querySelector('input[name="stage"]')?.value || this.stage;
+            // stage untuk template
+            this.stage = document.querySelector('input[name="stage"]')?.value || this.stage;
         },
 
         /* ============ MASS ACTION: LOLOS/GAGAL ============ */
         submitStatus(action, opts = {}) {
-        const form = document.getElementById('statusForm');
-        if (!form) return this._err('Form status (#statusForm) tidak ditemukan.');
+            const form = document.getElementById('statusForm');
+            if (!form) return this._err('Form status (#statusForm) tidak ditemukan.');
 
-        if (opts.autoSelectAll) {
-            document.querySelectorAll('.applicant-checkbox').forEach(cb => cb.checked = true);
-        }
+            if (opts.autoSelectAll) {
+                document.querySelectorAll('.applicant-checkbox').forEach(cb => cb.checked = true);
+            }
 
-        const checked = Array.from(document.querySelectorAll('.applicant-checkbox:checked'));
-        if (checked.length === 0) return this._err('Pilih minimal satu peserta.');
+            const checked = Array.from(document.querySelectorAll('.applicant-checkbox:checked'));
+            if (checked.length === 0) return this._err('Pilih minimal satu peserta.');
 
-        const box = document.getElementById('statusInputs');
-        if (!box) return this._err('Container hidden input (#statusInputs) tidak ditemukan.');
-        box.innerHTML = '';
+            const box = document.getElementById('statusInputs');
+            if (!box) return this._err('Container hidden input (#statusInputs) tidak ditemukan.');
+            box.innerHTML = '';
 
-        // isi selected_applicants[] + status[id]
-        checked.forEach(cb => {
-            const sel = document.createElement('input');
-            sel.type = 'hidden';
-            sel.name = 'selected_applicants[]';
-            sel.value = cb.value;
-            box.appendChild(sel);
+            // isi selected_applicants[] + status[id]
+            checked.forEach(cb => {
+                const sel = document.createElement('input');
+                sel.type = 'hidden';
+                sel.name = 'selected_applicants[]';
+                sel.value = cb.value;
+                box.appendChild(sel);
 
-            const st = document.createElement('input');
-            st.type = 'hidden';
-            st.name = `status[${cb.value}]`;
-            st.value = (action === 'lolos') ? 'lolos' : 'tidak_lolos';
-            box.appendChild(st);
-        });
+                const st = document.createElement('input');
+                st.type = 'hidden';
+                st.name = `status[${cb.value}]`;
+                st.value = (action === 'lolos') ? 'lolos' : 'tidak_lolos';
+                box.appendChild(st);
+            });
 
-        // pastikan ada 'stage'
-        if (!form.querySelector('input[name="stage"]')) {
-            const stageFromData = form.dataset?.stage;
-            if (!stageFromData) return this._err("Input 'stage' tidak ditemukan di form.");
-            const stageInput = document.createElement('input');
-            stageInput.type = 'hidden';
-            stageInput.name = 'stage';
-            stageInput.value = stageFromData;
-            box.appendChild(stageInput);
-        }
+            // pastikan ada 'stage'
+            if (!form.querySelector('input[name="stage"]')) {
+                const stageFromData = form.dataset?.stage;
+                if (!stageFromData) return this._err("Input 'stage' tidak ditemukan di form.");
+                const stageInput = document.createElement('input');
+                stageInput.type = 'hidden';
+                stageInput.name = 'stage';
+                stageInput.value = stageFromData;
+                box.appendChild(stageInput);
+            }
 
-        form.submit();
+            form.submit();
         },
 
         /* ================== EMAIL ================== */
-        // tombol "Email" serbaguna:
-        // - jika ada checkbox dicentang → pakai itu
-        // - kalau tidak ada → auto pilih yang data-stage-state="lolos"
         openEmailModal() {
-        const selected = Array.from(document.querySelectorAll('.applicant-checkbox:checked'));
-        let nodes = selected.length
-            ? selected
-            : Array.from(document.querySelectorAll('.applicant-checkbox[data-stage-state="lolos"]'));
+            const selected = Array.from(document.querySelectorAll('.applicant-checkbox:checked'));
+            let nodes = selected.length
+                ? selected
+                : Array.from(document.querySelectorAll('.applicant-checkbox[data-stage-state=\"lolos\"]'));
 
-        if (!nodes.length) return this._err('Belum ada peserta dipilih / berstatus LOLOS di halaman ini.');
+            if (!nodes.length) return this._err('Belum ada peserta dipilih / berstatus LOLOS di halaman ini.');
 
-        this.selectedEmails = [...new Set(nodes.map(cb => cb.dataset.email).filter(Boolean))];
-        this.selectedMeta = nodes.map(cb => ({
-            id: cb.value,
-            email: cb.dataset.email || '',
-            name: cb.dataset.name || 'Peserta',
-            position: cb.dataset.position || '-',
-        }));
+            this.selectedEmails = [...new Set(nodes.map(cb => cb.dataset.email).filter(Boolean))];
+            this.selectedMeta = nodes.map(cb => ({
+                id: cb.value,
+                email: cb.dataset.email || '',
+                name: cb.dataset.name || 'Peserta',
+                position: cb.dataset.position || '-',
+            }));
 
-        // isi hidden input di modal
-        document.getElementById('recipients')?.setAttribute('value', this.selectedEmails.join(','));
-        document.getElementById('recipient_ids')?.setAttribute('value', nodes.map(cb => cb.value).join(','));
+            // isi hidden input di modal
+            document.getElementById('recipients')?.setAttribute('value', this.selectedEmails.join(','));
+            document.getElementById('recipient_ids')?.setAttribute('value', nodes.map(cb => cb.value).join(','));
 
-        // default: pakai template → preview untuk penerima pertama
-        const useTpl = document.getElementById('use_template');
-        if (useTpl) useTpl.checked = true;
-        this.useTemplate = true;
-        this._syncTemplateInputs(true);
+            // default: pakai template → preview untuk penerima pertama
+            const useTpl = document.getElementById('use_template');
+            if (useTpl) useTpl.checked = true;
+            this.useTemplate = true;
+            this._syncTemplateInputs(true);
 
-        this.emailModalOpen = true;
+            this.emailModalOpen = true;
         },
 
-        // versi eksplisit auto-lolos (opsional, kalau kamu pakai @click="openEmailModalAuto()")
         openEmailModalAuto() {
-        document.querySelectorAll('.applicant-checkbox[data-stage-state="lolos"]').forEach(cb => cb.checked = true);
-        this.openEmailModal();
+            document.querySelectorAll('.applicant-checkbox[data-stage-state=\"lolos\"]').forEach(cb => cb.checked = true);
+            this.openEmailModal();
         },
 
-        // toggle dari checkbox "gunakan template"
         toggleTemplate() {
-        const on = document.getElementById('use_template')?.checked ?? true;
-        this.useTemplate = !!on;
-        this._syncTemplateInputs(this.useTemplate);
+            const on = document.getElementById('use_template')?.checked ?? true;
+            this.useTemplate = !!on;
+            this._syncTemplateInputs(this.useTemplate);
         },
-        // alias supaya kompatibel kalau markup lama memanggil toggleUseTemplate
         toggleUseTemplate(ev) { this.toggleTemplate(ev); },
 
-        // isi subject/message (preview) + readonly saat pakai template
         _syncTemplateInputs(useTpl) {
-        const subjectEl = document.querySelector('[name="subject"]');
-        const msgEl = document.querySelector('[name="message"]');
-        if (!subjectEl || !msgEl) return;
+            const subjectEl = document.querySelector('[name=\"subject\"]');
+            const msgEl = document.querySelector('[name=\"message\"]');
+            if (!subjectEl || !msgEl) return;
 
-        if (useTpl) {
-            const first = this.selectedMeta?.[0] || {};
-            const tplSubject =
-            document.getElementById('tpl_subject')?.value
-            || `INFORMASI HASIL SELEKSI ${this.stage || ''} TAD/OUTSOURCING - PLN ICON PLUS`;
+            if (useTpl) {
+                const first = this.selectedMeta?.[0] || {};
+                const tplSubject =
+                    document.getElementById('tpl_subject')?.value
+                    || `INFORMASI HASIL SELEKSI ${this.stage || ''} TAD/OUTSOURCING - PLN ICON PLUS`;
 
-            let tplMsg =
-            document.getElementById('tpl_message')?.value
-            || `Halo {NAMA_PESERTA}
+                let tplMsg =
+                    document.getElementById('tpl_message')?.value
+                    || `Halo {NAMA_PESERTA}
 
-    Terima kasih atas partisipasi Saudara/i dalam mengikuti proses seleksi TAD/OUTSOURCING PLN ICON PLUS pada posisi {POSISI}.
+Terima kasih atas partisipasi Saudara/i dalam mengikuti proses seleksi TAD/OUTSOURCING PLN ICON PLUS pada posisi {POSISI}.
 
-    Selamat Anda lolos pada tahap ${this.stage || ''}. Selanjutnya, silakan cek jadwal Anda untuk tahap berikutnya pada lampiran email ini.
+Selamat Anda lolos pada tahap ${this.stage || ''}. Selanjutnya, silakan cek jadwal Anda untuk tahap berikutnya pada lampiran email ini.
 
-    Demikian kami sampaikan.
-    Terima kasih atas partisipasinya dan semoga sukses.`;
+Demikian kami sampaikan.
+Terima kasih atas partisipasinya dan semoga sukses.`;
 
-            subjectEl.value = tplSubject;
-            msgEl.value = tplMsg
-            .replaceAll('{NAMA_PESERTA}', first.name || 'Peserta')
-            .replaceAll('{POSISI}', first.position || '-');
+                subjectEl.value = tplSubject;
+                msgEl.value = tplMsg
+                    .replaceAll('{NAMA_PESERTA}', first.name || 'Peserta')
+                    .replaceAll('{POSISI}', first.position || '-');
 
-            subjectEl.readOnly = true;
-            msgEl.readOnly = true;
-        } else {
-            subjectEl.readOnly = false;
-            msgEl.readOnly = false;
-        }
+                subjectEl.readOnly = true;
+                msgEl.readOnly = true;
+            } else {
+                subjectEl.readOnly = false;
+                msgEl.readOnly = false;
+            }
         },
 
-        // validasi kirim email
         validateAndSubmit(e) {
-        const form = e.target;
-        const file = form.querySelector('input[type="file"][name="attachment"]')?.files?.[0];
+            const form = e.target;
+            const file = form.querySelector('input[type=\"file\"][name=\"attachment\"]')?.files?.[0];
 
-        if (!file) { e.preventDefault(); return this._err('Wajib unggah lampiran PDF.'); }
-        const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-        if (!isPdf) { e.preventDefault(); return this._err('Lampiran harus PDF.'); }
-        if (file.size > 5 * 1024 * 1024) { e.preventDefault(); return this._err('Ukuran PDF maksimal 5 MB.'); }
+            if (!file) { e.preventDefault(); return this._err('Wajib unggah lampiran PDF.'); }
+            const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+            if (!isPdf) { e.preventDefault(); return this._err('Lampiran harus PDF.'); }
+            if (file.size > 5 * 1024 * 1024) { e.preventDefault(); return this._err('Ukuran PDF maksimal 5 MB.'); }
 
-        const useTpl = document.getElementById('use_template')?.checked ?? true;
-        if (!useTpl) {
-            const subject = (form.querySelector('[name="subject"]')?.value || '').trim();
-            const message = (form.querySelector('[name="message"]')?.value || '').trim();
-            if (!subject || !message) {
-            e.preventDefault();
-            return this._err('Subjek dan pesan wajib diisi bila template dimatikan.');
+            const useTpl = document.getElementById('use_template')?.checked ?? true;
+            if (!useTpl) {
+                const subject = (form.querySelector('[name=\"subject\"]')?.value || '').trim();
+                const message = (form.querySelector('[name=\"message\"]')?.value || '').trim();
+                if (!subject || !message) {
+                    e.preventDefault();
+                    return this._err('Subjek dan pesan wajib diisi bila template dimatikan.');
+                }
             }
-        }
-        // submit lanjut
         },
 
         /* ================== CV MODAL ================== */
         openCvModal(url, name) {
-        if (!url) return this._err('CV tidak tersedia.');
-        this.cvUrl = url;
-        this.cvName = name || 'CV';
-        this.cvModalOpen = true;
+            if (!url) return this._err('CV tidak tersedia.');
+            this.cvUrl = url;
+            this.cvName = name || 'CV';
+            this.cvModalOpen = true;
         },
         closeCvModal() {
-        this.cvModalOpen = false;
-        this.cvUrl = null;
-        this.cvName = '';
+            this.cvModalOpen = false;
+            this.cvUrl = null;
+            this.cvName = '';
         },
 
         /* ================== EDIT MODAL ================== */
         openEditModal(data) {
-        this.form = Object.assign({}, this.form, data || {});
-        this.editModalOpen = true;
+            this.form = Object.assign({}, this.form, data || {});
+            this.editModalOpen = true;
         },
         closeEditModal() { this.editModalOpen = false; },
         updateUrl() {
-        const base = this.updateBase || '/admin/applicant/__ID__';
-        return base.replace('__ID__', this.form?.id ?? '');
+            const base = this.updateBase || '/admin/applicant/__ID__';
+            return base.replace('__ID__', this.form?.id ?? '');
         },
 
         /* ================== HELPERS ================== */
         _err(msg) {
-        if (window.Swal) Swal.fire({ icon: 'error', title: 'Oops', text: msg });
-        else alert(msg);
+            if (window.Swal) Swal.fire({ icon: 'error', title: 'Oops', text: msg });
+            else alert(msg);
         },
-        _alertErr(msg) { this._err(msg); }, // alias kompatibilitas
+        _alertErr(msg) { this._err(msg); },
     }));
     });
     </script>
@@ -664,7 +689,7 @@
             });
             </script>
         @endif
-        </footer>
+    </footer>
 
 
     {{-- JS libs --}}
@@ -676,21 +701,21 @@
     <script>
         document.addEventListener('alpine:init', () => {
             Alpine.data('faqPage', () => ({
-            showCreate: false,
-            showEdit: false,
-            createForm: { question: '', answer: '' },
-            editForm:   { id: null, question: '', answer: '' },
-            editAction: '#',
+                showCreate: false,
+                showEdit: false,
+                createForm: { question: '', answer: '' },
+                editForm:   { id: null, question: '', answer: '' },
+                editAction: '#',
 
-            openCreate() {
-                this.createForm = { question: '', answer: '' };
-                this.showCreate = true;
-            },
-            openEdit(faq) {
-                this.editForm = { id: faq.id, question: faq.question, answer: faq.answer };
-                this.editAction = `{{ url('admin/faq') }}/${faq.id}`;
-                this.showEdit = true;
-            },
+                openCreate() {
+                    this.createForm = { question: '', answer: '' };
+                    this.showCreate = true;
+                },
+                openEdit(faq) {
+                    this.editForm = { id: faq.id, question: faq.question, answer: faq.answer };
+                    this.editAction = `{{ url('admin/faq') }}/${faq.id}`;
+                    this.showEdit = true;
+                },
             }));
         });
     </script>

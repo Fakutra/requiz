@@ -26,31 +26,32 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): RedirectResponse
     {
+        // 1. Proses autentikasi standar dari Breeze
         $request->authenticate();
 
+        // 2. Regenerate session
         $request->session()->regenerate();
 
         $user = $request->user();
 
-        // 🔒 Cegah login jika email belum diverifikasi
+        // 3. Cek email sudah terverifikasi atau belum
         if (! $user->hasVerifiedEmail()) {
             Auth::logout();
 
-            return redirect()->route('verification.notice')->withErrors([
-                'email' => 'Akun kamu belum diverifikasi. Silakan cek email kamu untuk verifikasi akun sebelum login.',
-            ]);
+            return redirect()
+                ->route('verification.notice')
+                ->withErrors([
+                    'email' => 'Akun kamu belum diverifikasi. Silakan cek email kamu untuk verifikasi akun sebelum login.',
+                ]);
         }
 
-        // ✅ Kalau sudah terverifikasi, arahkan sesuai role
-        if ($user->role === 'admin') {
-            return redirect()->route('admin.dashboard');
-        }
-
-        if ($user->role === 'user') {
-            return redirect()->route('welcome');
-        }
-
-        return redirect()->intended(RouteServiceProvider::HOME);
+        // 4. Redirect sesuai role
+        return match ($user->role) {
+            'admin'  => redirect()->route('admin.dashboard'),
+            'vendor' => redirect()->route('admin.dashboard'),   // vendor share dashboard admin (menu dibatesin di sidebar + middleware)
+            'user'   => redirect()->route('welcome'),           // pastiin route welcome ada. kalau enggak, ganti ke route('dashboard')
+            default  => redirect()->intended(RouteServiceProvider::HOME),
+        };
     }
 
     /**
