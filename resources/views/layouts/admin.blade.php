@@ -118,7 +118,7 @@
                     :class="{ '-translate-x-full': !sidebarOpen, 'translate-x-0': sidebarOpen }"
                     x-data="{
                         masterOpen: {{ request()->is('admin/faq') || request()->is('admin/vendor') || request()->is('admin/contact*') || request()->is('admin/about*') || request()->is('admin/policy*') ? 'true' : 'false' }},
-                        userOpen: {{ request()->is('admin/applicant*') || request()->is('admin/applicant/seleksi*') || request()->is('admin') ? 'true' : 'false' }},
+                        userOpen: {{ request()->is('admin/applicant*') || request()->is('admin/applicant/seleksi*') ? 'true' : 'false' }},
                         jobOpen: {{ request()->is('admin/batch*') ? 'true' : 'false' }},
                         quizOpen: {{ request()->is('admin/test') || request()->is('admin/bundle*') || request()->is('admin/question*') ? 'true' : 'false' }},
                         scheduleOpen: {{ request()->is('admin/tech-schedule*') || request()->is('admin/interview-schedule*') ? 'true' : 'false' }},
