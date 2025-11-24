@@ -16,6 +16,17 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('batch_id')->constrained()->onDelete('cascade');
             $table->foreignId('position_id')->constrained()->onDelete('cascade');
+            // vendor tempat kandidat akan ditempatkan jika lolos interview
+            $table->foreignId('vendor_id')
+                ->nullable()
+                ->constrained('vendors')
+                ->nullOnDelete();
+
+            // admin yang "memilih" kandidat (setelah diskusi potential by)
+            $table->foreignId('picked_by')
+                ->nullable()
+                ->constrained('users')
+                ->nullOnDelete();
             $table->string('name');
             $table->string('email');
             $table->string('identity_num', 16);

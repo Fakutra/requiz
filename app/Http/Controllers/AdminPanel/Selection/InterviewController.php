@@ -15,6 +15,8 @@ use App\Models\Position;
 use App\Exports\InterviewApplicantsExport;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Services\ActivityLogger; // ✅ Tambahkan
+use App\Models\Vendor;
+use App\Models\User;
 
 class InterviewController extends Controller
 {
@@ -28,6 +30,7 @@ class InterviewController extends Controller
 
         $batches   = Batch::orderBy('id')->get();
         $positions = $batchId ? Position::where('batch_id', $batchId)->get() : collect();
+        $vendors   = Vendor::orderBy('nama_vendor')->get();
 
         // Parameter sorting
         $sort      = $request->query('sort', 'name');
@@ -47,6 +50,8 @@ class InterviewController extends Controller
         $q = Applicant::with([
                 'position',
                 'batch',
+                'vendor',        
+                'pickedBy',
                 'latestEmailLog',
                 'latestTestResult.sectionResults.testSection.questionBundle.questions',
                 'technicalTestAnswers', // untuk praktik_latest lookup (kita akan query latest per applicant tapi eager buat safety)
@@ -93,14 +98,37 @@ class InterviewController extends Controller
             ->pluck('avg_score', 'applicant_id')
             ->toArray();
 
-        // potential reviewers (grouped) untuk tiap applicant (single query)
-        $potentials = InterviewResult::whereIn('applicant_id', $applicantIds)
+        // === Potential admins (yang centang potensial) ===
+        $potentialResults = InterviewResult::whereIn('applicant_id', $applicantIds)
             ->where('potencial', true)
             ->with('user:id,name')
-            ->get()
+            ->get();
+
+        // Untuk display list nama: "Potential By"
+        $potentials = $potentialResults
             ->groupBy('applicant_id')
-            ->map(fn($col) => $col->map(fn($r) => $r->user?->name)->filter()->values()->all())
+            ->map(fn($col) => $col
+                ->map(fn($r) => $r->user?->name)
+                ->filter()
+                ->values()
+                ->all()
+            )
             ->toArray();
+
+        // Untuk dropdown: kandidat "Picked By" (id + name)
+        $potentialAdmins = $potentialResults
+            ->groupBy('applicant_id')
+            ->map(function ($col) {
+                return $col->map(function ($r) {
+                    if (!$r->user) return null;
+                    return [
+                        'id'   => $r->user->id,
+                        'name' => $r->user->name,
+                    ];
+                })->filter()->values()->all();
+            })
+            ->toArray();
+
 
         // latest interview note per applicant
         $latestNotes = InterviewResult::whereIn('applicant_id', $applicantIds)
@@ -189,6 +217,7 @@ class InterviewController extends Controller
 
             // ========= DATA TAMBAHAN =========
             $a->potential_by = $potentials[$a->id] ?? [];
+            $a->potential_admins  = $potentialAdmins[$a->id] ?? [];
             $a->interview_note = $latestNotes[$a->id] ?? null;
         }
 
@@ -211,7 +240,7 @@ class InterviewController extends Controller
         );
 
         return view('admin.applicant.seleksi.interview.index', compact(
-            'batches', 'positions', 'batchId', 'positionId', 'applicants'
+            'batches', 'positions', 'batchId', 'positionId', 'applicants', 'vendors'
         ));
     }
 
@@ -328,32 +357,68 @@ class InterviewController extends Controller
         return back()->with('success', 'Penilaian interview berhasil disimpan.');
     }
 
+    protected function newStatus(string $action, string $currentStatus): string
+    {
+        // Kalau aksi "lolos" → naik ke Offering (kecuali sudah Offering / Menerima / Menolak)
+        if ($action === 'lolos') {
+            // Kalau sudah di fase offering / after-offering, jangan diturunin
+            if (in_array($currentStatus, ['Offering', 'Menerima Offering', 'Menolak Offering'])) {
+                return $currentStatus;
+            }
+
+            return 'Offering'; // status setelah Lolos Interview di sistem lo
+        }
+
+        // Kalau aksi "tidak_lolos" → cap "Tidak Lolos Interview"
+        if ($action === 'tidak_lolos') {
+            return 'Tidak Lolos Interview';
+        }
+
+        // Fallback: kalau aksinya nggak dikenal, balikin status lama aja
+        return $currentStatus;
+    }
+
+
     /**
      * Tandai hasil interview lolos/tidak lolos + log aktivitas
      */
     public function bulkMark(Request $r)
     {
         $data = $r->validate([
-            'ids'   => 'required|array',
-            'ids.*' => 'exists:applicants,id',
+            'ids'         => 'required|array',
+            'ids.*'       => 'exists:applicants,id',
             'bulk_action' => 'required|in:lolos,tidak_lolos',
+            'vendor_id'   => 'nullable|exists:vendors,id',
         ]);
 
-        $count = 0;
+        // Kalau lolos, vendor wajib ada
+        if ($data['bulk_action'] === 'lolos' && empty($data['vendor_id'])) {
+            return back()
+                ->withErrors('Vendor wajib dipilih untuk peserta yang diloloskan.')
+                ->withInput();
+        }
+
         foreach ($data['ids'] as $id) {
             $a = Applicant::find($id);
             $oldStatus = $a->status;
             $newStatus = $this->newStatus($data['bulk_action'], $a->status);
 
             SelectionLogger::write($a, $this->stage, $data['bulk_action'], auth()->id());
-            $a->forceFill(['status' => $newStatus])->save();
-            $count++;
 
-            // Catat log perubahan
+            $payload = ['status' => $newStatus];
+
+            if ($data['bulk_action'] === 'lolos') {
+                $payload['vendor_id'] = $data['vendor_id'];
+                $payload['picked_by'] = auth()->id(); // 👈 admin yang klik "Lolos"
+            }
+
+            $a->forceFill($payload)->save();
+
             ActivityLogger::log(
                 $data['bulk_action'],
                 'Seleksi Interview',
-                Auth::user()->name." mengubah status peserta {$a->name} — status: '{$oldStatus}' → '{$newStatus}'",
+                Auth::user()->name." mengubah status peserta {$a->name} — status: '{$oldStatus}' → '{$newStatus}'"
+                .($data['bulk_action'] === 'lolos' ? " (Vendor ID: {$data['vendor_id']})" : ''),
                 "Applicant ID: {$a->id}"
             );
         }
@@ -361,8 +426,48 @@ class InterviewController extends Controller
         return back()->with('success', 'Status '.count($data['ids']).' peserta diperbarui.');
     }
 
-    private function newStatus(string $result, string $current): string
+    public function bulkSetPickedBy(Request $request)
     {
-        return $result === 'lolos' ? 'Offering' : 'Tidak Lolos Interview';
+        $data = $request->validate([
+            'applicant_id' => 'required|exists:applicants,id',
+            'picked_by'    => 'required|exists:users,id',
+        ]);
+
+        $applicant = Applicant::with('pickedBy')->findOrFail($data['applicant_id']);
+
+        $oldName = $applicant->pickedBy?->name;
+        $newUser = User::find($data['picked_by']);
+
+        $applicant->picked_by = $data['picked_by'];
+        $applicant->save();
+
+        // Log aktivitas (optional tapi keren)
+        try {
+            ActivityLogger::log(
+                'set_picked_by',
+                'Seleksi Interview',
+                Auth::user()->name
+                ." mengubah Picked By untuk peserta {$applicant->name}"
+                ." dari '".($oldName ?? '-')."' menjadi '{$newUser->name}'",
+                "Applicant ID: {$applicant->id}"
+            );
+        } catch (\Throwable $e) {
+            Log::warning("Gagal mencatat activity log set_picked_by: ".$e->getMessage());
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'status'      => 'ok',
+                'applicant_id'=> $applicant->id,
+                'picked_by'   => [
+                    'id'   => $newUser->id,
+                    'name' => $newUser->name,
+                ],
+            ]);
+        }
+
+        return back()->with('success', 'Picked By berhasil diperbarui.');
     }
+
+
 }

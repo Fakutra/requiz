@@ -14,6 +14,8 @@ class Applicant extends Model
         'user_id',
         'position_id',
         'batch_id',
+        'vendor_id',
+        'picked_by',
         'name',
         'email',
         'identity_num',
@@ -204,6 +206,16 @@ class Applicant extends Model
     public function getEmailAttribute()
     {
         return $this->attributes['email'] ?? $this->user?->email;
+    }
+
+    public function vendor()
+    {
+        return $this->belongsTo(\App\Models\Vendor::class);
+    }
+
+    public function pickedBy()
+    {
+        return $this->belongsTo(\App\Models\User::class, 'picked_by');
     }
 
 }

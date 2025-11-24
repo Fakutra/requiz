@@ -45,7 +45,8 @@ class OfferingController extends Controller
                 'offering.division',
                 'offering.job',
                 'offering.placement',
-                'interviewResults.user'
+                'interviewResults.user',
+                'pickedBy',
             ])
             ->whereIn('status', [
                 'Offering',

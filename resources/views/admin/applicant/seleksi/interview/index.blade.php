@@ -184,6 +184,8 @@
               </th>
 
               <th class="px-3 py-2 text-left whitespace-nowrap">Potential By</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap">Vendor</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap">Picked By</th>
               <th class="px-3 py-2 text-left whitespace-nowrap">Status Email</th>
               <th class="px-3 py-2 text-left whitespace-nowrap">Status</th>
               <th class="px-3 py-2 text-left whitespace-nowrap">Note</th>
@@ -228,6 +230,30 @@
                 <td class="px-3 py-2 whitespace-nowrap">
                   {{ $a->potential_by ? implode(', ', $a->potential_by) : '-' }}
                 </td>
+                <td class="px-3 py-2 whitespace-nowrap">
+                    {{ optional($a->vendor)->nama_vendor ?? '-' }}
+                </td>
+
+                <td class="px-3 py-2 whitespace-nowrap">
+                  @if (!empty($a->potential_admins) && count($a->potential_admins) > 0)
+                      <select
+                          name="picked_by[{{ $a->id }}]"
+                          class="border rounded px-2 py-1 text-sm bg-white"
+                          data-applicant-id="{{ $a->id }}"
+                          onchange="handlePickedByChange(this)"
+                      >
+                          <option value="">-- pilih --</option>
+                          @foreach($a->potential_admins as $adm)
+                              <option value="{{ $adm['id'] }}"
+                                  {{ (int)$a->picked_by === (int)$adm['id'] ? 'selected' : '' }}>
+                                  {{ $adm['name'] }}
+                              </option>
+                          @endforeach
+                      </select>
+                  @else
+                      <span class="text-gray-400 text-sm">-</span>
+                  @endif
+              </td>
 
                 {{-- Email Status --}}
                 <td class="px-3 py-2 whitespace-nowrap text-center">
@@ -467,6 +493,16 @@
                 onclick="document.getElementById('confirmModal').classList.add('hidden')"
                 class="text-gray-500 hover:text-gray-700 text-2xl leading-none">&times;</button>
       </div>
+      <div id="vendorWrapper" class="mb-4 hidden">
+        <label class="block text-sm font-medium mb-1">Pilih Vendor</label>
+        <select id="vendorSelect" class="border rounded w-full px-2 py-1 text-sm">
+          <option value="">-- Pilih Vendor --</option>
+          @foreach($vendors as $v)
+            <option value="{{ $v->id }}">{{ $v->nama_vendor }}</option>
+          @endforeach
+        </select>
+        <p class="text-xs text-gray-500 mt-1">Vendor wajib dipilih untuk peserta yang diloloskan.</p>
+      </div>
       <p id="confirmMessage" class="text-gray-700 mb-6">Apakah Anda yakin?</p>
       <div class="flex justify-end gap-2">
         <button type="button"
@@ -639,26 +675,76 @@
       const msg = action === 'lolos'
         ? "Apakah Anda yakin ingin meloloskan peserta yang dipilih?"
         : "Apakah Anda yakin ingin menggagalkan peserta yang dipilih?";
+
       const cm = $('confirmMessage');
       if (cm) cm.innerText = msg;
+
       const cmModal = $('confirmModal');
       if (cmModal) cmModal.classList.remove('hidden');
+
+      const vendorWrapper = $('vendorWrapper');
+      const vendorSelect = $('vendorSelect');
+      const confirmBtn = $('confirmYesBtn');
+
+      if (vendorWrapper && vendorSelect && confirmBtn) {
+        if (action === 'lolos') {
+          vendorWrapper.classList.remove('hidden');
+          vendorSelect.value = '';
+
+          confirmBtn.disabled = true;
+          confirmBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+          vendorSelect.onchange = function() {
+            if (this.value) {
+              confirmBtn.disabled = false;
+              confirmBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+              confirmBtn.disabled = true;
+              confirmBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+          };
+        } else {
+          vendorWrapper.classList.add('hidden');
+          confirmBtn.disabled = false;
+          confirmBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+      }
     }
+
     const confirmYesBtn = $('confirmYesBtn');
     if (confirmYesBtn) {
       confirmYesBtn.addEventListener('click', function() {
-        if (selectedAction) {
-          const form = document.getElementById('bulkActionForm');
-          if (!form) return;
-          let input = document.createElement('input');
-          input.type = 'hidden';
-          input.name = 'bulk_action';
-          input.value = selectedAction;
-          form.appendChild(input);
-          form.submit();
+        if (!selectedAction) return;
+
+        const form = document.getElementById('bulkActionForm');
+        if (!form) return;
+
+        // inject jenis aksi
+        let actionInput = document.createElement('input');
+        actionInput.type = 'hidden';
+        actionInput.name = 'bulk_action';
+        actionInput.value = selectedAction;
+        form.appendChild(actionInput);
+
+        // kalau lolos, wajib vendor_id
+        if (selectedAction === 'lolos') {
+          const vendorSelect = $('vendorSelect');
+          if (!vendorSelect || !vendorSelect.value) {
+            alert('Silakan pilih vendor terlebih dahulu.');
+            return;
+          }
+
+          let vendorInput = document.createElement('input');
+          vendorInput.type = 'hidden';
+          vendorInput.name = 'vendor_id';
+          vendorInput.value = vendorSelect.value;
+          form.appendChild(vendorInput);
         }
+
+        form.submit();
       });
     }
+
 
     // Check All (safe)
     const chkAll = $('checkAll');
@@ -720,6 +806,42 @@
           if (subj) subj.value = "";
           if (editor && editor.editor) editor.editor.loadHTML("");
         }
+      });
+    }
+        // Auto save Picked By (AJAX)
+    function handlePickedByChange(selectEl) {
+      const applicantId = selectEl.getAttribute('data-applicant-id');
+      const pickedById  = selectEl.value;
+
+      if (!applicantId || !pickedById) {
+        // kalau mau support clear, di sini bisa kirim request untuk null-in
+        return;
+      }
+
+      fetch("{{ route('admin.applicant.seleksi.interview.bulkSetPickedBy') }}", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': '{{ csrf_token() }}',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+          applicant_id: applicantId,
+          picked_by: pickedById,
+        }),
+      })
+      .then(res => {
+        if (!res.ok) throw new Error('Network error');
+        return res.json();
+      })
+      .then(data => {
+        // opsional: kasih feedback halus
+        console.log('Picked By updated:', data);
+        // bisa juga nanti pake toast kecil kalau mau
+      })
+      .catch(err => {
+        console.error(err);
+        alert('Gagal menyimpan Picked By. Silakan coba lagi.');
       });
     }
   </script>
