@@ -16,9 +16,15 @@ class UserController extends Controller
      */
     public function index(Request $request)
     {
-        // tab: 'admin' atau 'user' (default: admin)
-        $tab  = $request->query('tab', 'admin');
-        $role = $tab === 'user' ? 'user' : 'admin';
+        // tab: 'admin', 'user', atau 'vendor' (default: admin)
+        $tab = $request->query('tab', 'admin');
+
+        // mapping tab -> role
+        $role = match ($tab) {
+            'user'   => 'user',
+            'vendor' => 'vendor',
+            default  => 'admin',
+        };
 
         $search = trim((string) $request->query('search'));
 
@@ -26,7 +32,7 @@ class UserController extends Controller
             ->when($search, fn ($q) =>
                 $q->where(function ($q) use ($search) {
                     $q->where('name', 'ILIKE', "%{$search}%")
-                      ->orWhere('email', 'ILIKE', "%{$search}%");
+                    ->orWhere('email', 'ILIKE', "%{$search}%");
                 })
             )
             ->orderBy('id', 'desc')
@@ -64,6 +70,36 @@ class UserController extends Controller
         );
 
         return back()->with('success', 'Admin berhasil ditambahkan.');
+    }
+
+    /**
+     * Tambah vendor baru.
+     * (Dipakai di TAB "Vendor"; role dipaksa 'vendor')
+     */
+    public function storeVendor(Request $request)
+    {
+        $validated = $request->validate([
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|email|unique:users,email',
+            'password' => 'required|min:6|confirmed',
+        ]);
+
+        $user = User::create([
+            'name'              => $validated['name'],
+            'email'             => $validated['email'],
+            'password'          => Hash::make($validated['password']),
+            'role'              => 'vendor', // selalu vendor dari halaman ini
+            'email_verified_at' => now(),
+        ]);
+
+        ActivityLogger::log(
+            'create',
+            'User',
+            auth()->user()->name . " menambahkan user vendor '{$user->name}' (role: {$user->role}, email: {$user->email})",
+            "User ID: {$user->id}"
+        );
+
+        return back()->with('success', 'Vendor berhasil ditambahkan.');
     }
 
     /**

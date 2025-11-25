@@ -242,6 +242,7 @@ Route::middleware(['auth'])->group(function () {
         // -------- User Admin Management ----------
         Route::get   ('admin/user',        [UserController::class, 'index'])->name('admin.user.index');
         Route::post  ('admin/user',        [UserController::class, 'store'])->name('admin.user.store');
+        Route::post  ('admin/user/vendor', [UserController::class, 'storeVendor'])->name('admin.user.storeVendor');
         Route::put   ('admin/user/{user}', [UserController::class, 'update'])->name('admin.user.update');
         Route::delete('admin/user/{user}', [UserController::class, 'destroy'])->name('admin.user.destroy');
 
