@@ -11,18 +11,22 @@
     >
         {{-- Header --}}
         <div class="mb-4">
-            <h1 class="text-2xl font-bold text-blue-950">Kelola User</h1>
+            <h1 class="text-2xl font-bold text-blue-950">Manajemen Akun</h1>
         </div>
 
         {{-- Tabs --}}
         <div class="flex gap-4 border-b mb-4 text-sm">
             <a href="{{ route('admin.user.index', ['tab' => 'admin'] + request()->except('page')) }}"
-               class="pb-2 border-b-2 {{ $tab === 'admin' ? 'border-blue-600 text-blue-600 font-semibold' : 'border-transparent text-gray-600 hover:text-gray-800' }}">
-                Kelola Admin
+            class="pb-2 border-b-2 {{ $tab === 'admin' ? 'border-blue-600 text-blue-600 font-semibold' : 'border-transparent text-gray-600 hover:text-gray-800' }}">
+                Admin
+            </a>
+            <a href="{{ route('admin.user.index', ['tab' => 'vendor'] + request()->except('page')) }}"
+            class="pb-2 border-b-2 {{ $tab === 'vendor' ? 'border-blue-600 text-blue-600 font-semibold' : 'border-transparent text-gray-600 hover:text-gray-800' }}">
+                Vendor
             </a>
             <a href="{{ route('admin.user.index', ['tab' => 'user'] + request()->except('page')) }}"
-               class="pb-2 border-b-2 {{ $tab === 'user' ? 'border-blue-600 text-blue-600 font-semibold' : 'border-transparent text-gray-600 hover:text-gray-800' }}">
-                Kelola User
+            class="pb-2 border-b-2 {{ $tab === 'user' ? 'border-blue-600 text-blue-600 font-semibold' : 'border-transparent text-gray-600 hover:text-gray-800' }}">
+                User
             </a>
         </div>
 
@@ -45,13 +49,20 @@
                 </div>
             </form>
 
-            {{-- Tombol Tambah hanya di tab Admin --}}
+            {{-- Tombol Tambah: beda label per tab --}}
             @if ($tab === 'admin')
                 <button 
                     type="button"
                     @click="openAdd = true"
                     class="h-10 flex items-center gap-2 px-3 rounded bg-blue-600 text-white text-sm hover:bg-blue-700">
                     + Tambah Admin
+                </button>
+            @elseif ($tab === 'vendor')
+                <button 
+                    type="button"
+                    @click="openAdd = true"
+                    class="h-10 flex items-center gap-2 px-3 rounded bg-blue-600 text-white text-sm hover:bg-blue-700">
+                    + Tambah Vendor
                 </button>
             @endif
         </div>
@@ -77,8 +88,15 @@
                             <td class="px-4 py-2">{{ $user->name }}</td>
                             <td class="px-4 py-2">{{ $user->email }}</td>
                             <td class="px-4 py-2">
-                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold
-                                    {{ $user->role === 'admin' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700' }}">
+                                @php
+                                    $badgeClass = match ($user->role) {
+                                        'admin'  => 'bg-orange-100 text-orange-700',
+                                        'vendor' => 'bg-blue-100 text-blue-700',
+                                        default  => 'bg-green-100 text-green-700',
+                                    };
+                                @endphp
+
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold {{ $badgeClass }}">
                                     {{ ucfirst($user->role) }}
                                 </span>
                             </td>
@@ -126,17 +144,20 @@
             {{ $users->withQueryString()->links() }}
         </div>
 
-        {{-- ================= MODAL TAMBAH ADMIN ================= --}}
-        @if ($tab === 'admin')
+        {{-- ================= MODAL TAMBAH (Admin / Vendor) ================= --}}
+        @if (in_array($tab, ['admin', 'vendor']))
             <div x-show="openAdd" x-cloak 
                 class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
                 <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-semibold">Tambah Admin</h3>
+                        <h3 class="text-lg font-semibold">
+                            {{ $tab === 'admin' ? 'Tambah Admin' : 'Tambah Vendor' }}
+                        </h3>
                         <button class="text-gray-500 hover:text-gray-700 text-xl" @click="openAdd=false">&times;</button>
                     </div>
 
-                    <form method="POST" action="{{ route('admin.user.store') }}">
+                    <form method="POST" 
+                        action="{{ $tab === 'admin' ? route('admin.user.store') : route('admin.vendor.store') }}">
                         @csrf
                         <div class="mb-3">
                             <label class="block text-sm">Nama</label>
