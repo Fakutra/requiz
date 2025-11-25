@@ -114,8 +114,18 @@
                                 x-show="userOpen"
                                 x-transition
                                 class="mt-3 ml-10 space-y-4 text-sm text-gray-600">
-                                <a href="{{ route('applicant.index') }}" class="block hover:text-blue-600 no-underline {{ request()->is('admin/applicant') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">Applicant</a>
-                                <a href="{{ route('admin.applicant.seleksi.index') }}" class="block hover:text-blue-600 no-underline {{ request()->is('admin/applicant/seleksi') || request()->is('admin/applicant/seleksi/*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">Selection</a>
+                                <a href="{{ route('admin.user.index') }}"
+                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/user') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                                    Manajemen User
+                                </a>
+                                <a href="{{ route('admin.applicant.index') }}"
+                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/applicant') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                                    Applicant
+                                </a>
+                                <a href="{{ route('admin.applicant.seleksi.index') }}"
+                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/applicant/seleksi') || request()->is('admin/applicant/seleksi/*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                                    Selection
+                                </a>
                             </div>
                         </div>
 
