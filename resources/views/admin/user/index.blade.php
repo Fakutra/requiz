@@ -157,7 +157,7 @@
                     </div>
 
                     <form method="POST" 
-                        action="{{ $tab === 'admin' ? route('admin.user.store') : route('admin.vendor.store') }}">
+                        action="{{ $tab === 'admin' ? route('admin.user.store') : route('admin.user.storeVendor') }}">
                         @csrf
                         <div class="mb-3">
                             <label class="block text-sm">Nama</label>
