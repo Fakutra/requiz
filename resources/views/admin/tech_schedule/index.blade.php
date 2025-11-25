@@ -33,28 +33,41 @@
 
                                 <div class="me-md-3">
                                     <h5 class="mb-1 fw-bold">{{ $sch->position->name ?? '—' }}</h5>
-                                    <div class="text-muted small">
-                                        <i class="bi bi-calendar-range"></i>
-                                        {{ optional($sch->schedule_date)->translatedFormat('d F Y H:i') }}
-                                        <span class="mx-2">|</span>
-                                        <i class="bi bi-link-45deg"></i>
-                                        <a href="{{ $sch->zoom_link }}" target="_blank">
-                                            {{ \Illuminate\Support\Str::limit($sch->zoom_link, 60) }}
-                                        </a>
+
+                                    <div class="text-muted small d-flex flex-column gap-1">
+
+                                        <div>
+                                            <i class="bi bi-calendar-range"></i>
+                                            {{ optional($sch->schedule_date)->translatedFormat('d F Y H:i') }}
+                                        </div>
+
+                                        <div>
+                                            <i class="bi bi-link-45deg"></i>
+                                            <a href="{{ $sch->zoom_link }}" target="_blank">
+                                                {{ \Illuminate\Support\Str::limit($sch->zoom_link, 60) }}
+                                            </a>
+                                        </div>
+
                                         @if ($sch->zoom_id || $sch->zoom_passcode)
-                                            <span class="mx-2">|</span>
-                                            <i class="bi bi-shield-lock"></i>
-                                            ID: {{ $sch->zoom_id ?? '—' }}, Pwd: {{ $sch->zoom_passcode ?? '—' }}
+                                            <div>
+                                                <i class="bi bi-shield-lock"></i>
+                                                ID: {{ $sch->zoom_id ?? '—' }},
+                                                Pwd: {{ $sch->zoom_passcode ?? '—' }}
+                                            </div>
                                         @endif
+
                                         @if ($sch->upload_deadline)
-                                            <span class="mx-2">|</span>
-                                            <i class="bi bi-hourglass-split"></i>
-                                            Deadline:
-                                            {{ optional($sch->upload_deadline)->translatedFormat('d F Y H:i') }}
+                                            <div>
+                                                <i class="bi bi-hourglass-split"></i>
+                                                Deadline:
+                                                {{ optional($sch->upload_deadline)->translatedFormat('d F Y H:i') }}
+                                            </div>
                                         @endif
+
                                     </div>
+
                                     @if ($sch->keterangan)
-                                        <div class="mt-1 text-secondary small">
+                                        <div class="mt-2 text-secondary small">
                                             <i class="bi bi-card-text"></i>
                                             {{ \Illuminate\Support\Str::limit($sch->keterangan, 120) }}
                                         </div>
@@ -83,6 +96,7 @@
                                 aria-hidden="true">
                                 <div class="modal-dialog">
                                     <div class="modal-content">
+
                                         <div class="modal-header">
                                             <h1 class="modal-title fs-5">Edit Schedule</h1>
                                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -93,26 +107,51 @@
                                             @method('PUT')
 
                                             <div class="modal-body">
+
+                                                {{-- POSISI --}}
                                                 <div class="mb-3">
-                                                    <label class="form-label">Posisi</label>
-                                                    <select name="position_id" class="form-select" required>
-                                                        @foreach ($positions as $pos)
-                                                            <option value="{{ $pos->id }}"
-                                                                @selected($pos->id == $sch->position_id)>
-                                                                {{ $pos->name }}
-                                                            </option>
+                                                    <label class="form-label">
+                                                        Posisi <span class="text-danger">*</span>
+                                                    </label>
+
+                                                    <select
+                                                        name="position_id"
+                                                        class="form-select position-select"
+                                                        required
+                                                        style="max-height: 250px; overflow-y: auto;"
+                                                    >
+                                                        <option value="">-- Pilih --</option>
+
+                                                        @foreach ($positions->groupBy(fn($p) => $p->batch->name ?? 'Tanpa Batch') as $batchName => $batchPositions)
+                                                            <optgroup label="{{ $batchName }}">
+                                                                @foreach ($batchPositions as $pos)
+                                                                    <option
+                                                                        value="{{ $pos->id }}"
+                                                                        data-batch="{{ $batchName }}"
+                                                                        data-pos-name="{{ $pos->name }}"
+                                                                        @selected($pos->id == $sch->position_id)
+                                                                    >
+                                                                        {{ $pos->name }}
+                                                                    </option>
+                                                                @endforeach
+                                                            </optgroup>
                                                         @endforeach
                                                     </select>
                                                 </div>
 
+
+                                                {{-- SCHEDULE DATE --}}
                                                 <div class="mb-3">
-                                                    <label class="form-label">Schedule Date</label>
+                                                    <label class="form-label">
+                                                        Schedule Date <span class="text-danger">*</span>
+                                                    </label>
                                                     <input type="datetime-local" name="schedule_date"
                                                         class="form-control"
                                                         value="{{ optional($sch->schedule_date)?->format('Y-m-d\TH:i') }}"
                                                         required>
                                                 </div>
 
+                                                {{-- DEADLINE UPLOAD --}}
                                                 <div class="mb-3">
                                                     <label class="form-label">Upload Deadline</label>
                                                     <input type="datetime-local" name="upload_deadline"
@@ -120,12 +159,16 @@
                                                         value="{{ optional($sch->upload_deadline)?->format('Y-m-d\TH:i') }}">
                                                 </div>
 
+                                                {{-- ZOOM LINK --}}
                                                 <div class="mb-3">
-                                                    <label class="form-label">Zoom Link</label>
+                                                    <label class="form-label">
+                                                        Zoom Link <span class="text-danger">*</span>
+                                                    </label>
                                                     <input type="url" name="zoom_link" class="form-control"
                                                         value="{{ $sch->zoom_link }}" required>
                                                 </div>
 
+                                                {{-- ZOOM ID & PASSCODE --}}
                                                 <div class="row">
                                                     <div class="col-md-6 mb-3">
                                                         <label class="form-label">Zoom ID</label>
@@ -139,10 +182,12 @@
                                                     </div>
                                                 </div>
 
+                                                {{-- KETERANGAN --}}
                                                 <div class="mb-3">
                                                     <label class="form-label">Note / Keterangan</label>
-                                                    <textarea name="keterangan" rows="3" class="form-control">{{ $sch->keterangan }}</textarea>
+                                                    <textarea name="keterangan" rows="3" class="form-control" placeholder = 'Contoh : Soal akan dibagikan saat zoom berlangsung'>{{ $sch->keterangan }}</textarea>
                                                 </div>
+
                                             </div>
 
                                             <div class="modal-footer">
@@ -150,11 +195,13 @@
                                                     data-bs-dismiss="modal">Close</button>
                                                 <button type="submit" class="btn btn-primary">Update</button>
                                             </div>
+
                                         </form>
 
                                     </div>
                                 </div>
                             </div>
+
                         @empty
                             <div class="list-group-item">
                                 <p class="text-center text-muted my-3">Belum ada Schedule.</p>
@@ -189,33 +236,45 @@
                     @csrf
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label class="form-label">Posisi</label>
-                            <select name="position_id" class="form-select" required style="max-height: 250px; overflow-y: auto;">
-                            <option value="">-- Pilih --</option>
-                            @foreach ($positions->groupBy(fn($p) => $p->batch->name ?? 'Tanpa Batch') as $batchName => $batchPositions)
-                                <optgroup label="{{ $batchName }}">
-                                    @foreach ($batchPositions as $pos)
-                                        <option value="{{ $pos->id }}">{{ $pos->name }}</option>
-                                    @endforeach
-                                </optgroup>
-                            @endforeach
+                            <label class="form-label">Posisi <span class="text-danger">*</span></label>
+                            <select
+                                name="position_id"
+                                class="form-select position-select"
+                                required
+                                style="max-height: 250px; overflow-y: auto;"
+                            >
+                                <option value="">-- Pilih --</option>
+
+                                @foreach ($positions->groupBy(fn($p) => $p->batch->name ?? 'Tanpa Batch') as $batchName => $batchPositions)
+                                    <optgroup label="{{ $batchName }}">
+                                        @foreach ($batchPositions as $pos)
+                                            <option
+                                                value="{{ $pos->id }}"
+                                                data-batch="{{ $batchName }}"
+                                                data-pos-name="{{ $pos->name }}"
+                                            >
+                                                {{ $pos->name }}
+                                            </option>
+                                        @endforeach
+                                    </optgroup>
+                                @endforeach
                             </select>
                         </div>
 
+
                         <div class="mb-3">
-                            <label class="form-label">Schedule Date</label>
+                            <label class="form-label">Schedule Date <span class="text-danger">*</span></label>
                             <input type="datetime-local" name="schedule_date" class="form-control" required>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Upload Deadline</label>
+                            <label class="form-label">Deadline upload Jawaban</label>
                             <input type="datetime-local" name="upload_deadline" class="form-control">
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Zoom Link</label>
-                            <input type="url" name="zoom_link" class="form-control" placeholder="https://..."
-                                required>
+                            <label class="form-label">Zoom Link <span class="text-danger">*</span></label>
+                            <input type="url" name="zoom_link" class="form-control" placeholder="https://..." required>
                         </div>
 
                         <div class="row">
@@ -231,13 +290,12 @@
 
                         <div class="mb-3">
                             <label class="form-label">Note / Keterangan</label>
-                            <textarea name="keterangan" rows="3" class="form-control"></textarea>
+                            <textarea name="keterangan" rows="3" class="form-control" placeholder = 'Contoh : Soal akan dibagikan saat zoom berlangsung'></textarea>
                         </div>
                     </div>
 
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-secondary"
-                            data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
                         <button type="submit" class="btn btn-primary">Simpan</button>
                     </div>
                 </form>
@@ -255,4 +313,46 @@
             });
         </script>
     @endif
+
+    {{-- Preview Batch - Posisi di bawah select --}}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            function applyBatchLabel(selectEl) {
+                if (!selectEl) return;
+
+                const options = Array.from(selectEl.options);
+
+                // reset semua option ke text awalnya
+                options.forEach(function (opt) {
+                    const original = opt.getAttribute('data-original-text');
+                    if (original) {
+                        opt.textContent = original;
+                    } else {
+                        opt.setAttribute('data-original-text', opt.textContent.trim());
+                    }
+                });
+
+                const selected = selectEl.options[selectEl.selectedIndex];
+                if (!selected || !selected.value) return;
+
+                const batch = selected.getAttribute('data-batch') || '';
+                const originalText = selected.getAttribute('data-original-text') || selected.textContent.trim();
+
+                if (batch && originalText) {
+                    selected.textContent = batch + ' - ' + originalText;
+                }
+            }
+
+            // init semua select posisi
+            document.querySelectorAll('.position-select').forEach(function (selectEl) {
+                // initial (buat modal edit)
+                applyBatchLabel(selectEl);
+
+                // on change
+                selectEl.addEventListener('change', function () {
+                    applyBatchLabel(this);
+                });
+            });
+        });
+    </script>
 </x-app-admin>

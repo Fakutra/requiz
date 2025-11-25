@@ -29,29 +29,41 @@
                                 class="list-group-item list-group-item-action d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-2">
                                 <div class="me-md-3">
                                     <h5 class="mb-1 fw-bold">{{ $sch->position->name ?? '—' }}</h5>
-                                    <div class="text-muted small">
-                                        <i class="bi bi-calendar-range"></i>
-                                        {{ optional($sch->schedule_start)->translatedFormat('d F Y H:i') }}
-                                        —
-                                        {{ optional($sch->schedule_end)->translatedFormat('d F Y H:i') }}
 
+                                    <div class="text-muted small d-flex flex-column gap-1">
+
+                                        {{-- Start - End --}}
+                                        <div>
+                                            <i class="bi bi-calendar-range"></i>
+                                            {{ optional($sch->schedule_start)->translatedFormat('d F Y H:i') }}
+                                            —
+                                            {{ optional($sch->schedule_end)->translatedFormat('d F Y H:i') }}
+                                        </div>
+
+                                        {{-- Meeting Link --}}
                                         @if ($sch->zoom_link)
-                                            <span class="mx-2">|</span>
-                                            <i class="bi bi-link-45deg"></i>
-                                            <a href="{{ $sch->zoom_link }}" target="_blank">
-                                                {{ \Illuminate\Support\Str::limit($sch->zoom_link, 60) }}
-                                            </a>
+                                            <div>
+                                                <i class="bi bi-link-45deg"></i>
+                                                <a href="{{ $sch->zoom_link }}" target="_blank">
+                                                    {{ \Illuminate\Support\Str::limit($sch->zoom_link, 60) }}
+                                                </a>
+                                            </div>
                                         @endif
 
+                                        {{-- Meeting ID + Passcode --}}
                                         @if ($sch->zoom_id || $sch->zoom_passcode)
-                                            <span class="mx-2">|</span>
-                                            <i class="bi bi-shield-lock"></i>
-                                            ID: {{ $sch->zoom_id ?? '—' }}, Pwd: {{ $sch->zoom_passcode ?? '—' }}
+                                            <div>
+                                                <i class="bi bi-shield-lock"></i>
+                                                ID: {{ $sch->zoom_id ?? '—' }}, 
+                                                Pwd: {{ $sch->zoom_passcode ?? '—' }}
+                                            </div>
                                         @endif
+
                                     </div>
 
+                                    {{-- Notes --}}
                                     @if ($sch->keterangan)
-                                        <div class="mt-1 text-secondary small">
+                                        <div class="mt-2 text-secondary small">
                                             <i class="bi bi-card-text"></i>
                                             {{ \Illuminate\Support\Str::limit($sch->keterangan, 120) }}
                                         </div>
@@ -87,37 +99,49 @@
                                             @csrf @method('PUT')
                                             <div class="modal-body">
                                                 <div class="mb-3">
-                                                    <label class="form-label">Posisi</label>
-                                                    <select name="position_id" class="form-select" required>
-                                                        @foreach ($positions as $pos)
-                                                            <option value="{{ $pos->id }}"
-                                                                @selected($pos->id == $sch->position_id)>{{ $pos->name }}
-                                                            </option>
+                                                    <label class="form-label">Posisi <span class="text-danger">*</span></label>
+                                                    <select name="position_id"
+                                                        class="form-select position-select"
+                                                        style="max-height: 250px; overflow-y: auto;"
+                                                        required
+                                                    >
+                                                        <option value="">-- Pilih --</option>
+                                                        @foreach ($positions->groupBy(fn($p) => $p->batch->name ?? 'Tanpa Batch') as $batchName => $batchPositions)
+                                                            <optgroup label="{{ $batchName }}">
+                                                                @foreach ($batchPositions as $pos)
+                                                                    <option
+                                                                        value="{{ $pos->id }}"
+                                                                        data-batch="{{ $batchName }}"
+                                                                        data-pos-name="{{ $pos->name }}"
+                                                                        @selected($pos->id == $sch->position_id)
+                                                                    >
+                                                                        {{ $pos->name }}
+                                                                    </option>
+                                                                @endforeach
+                                                            </optgroup>
                                                         @endforeach
                                                     </select>
                                                 </div>
 
                                                 <div class="row">
                                                     <div class="col-md-6 mb-3">
-                                                        <label class="form-label">Start</label>
-                                                        <input type="datetime-local" name="schedule_start"
-                                                            class="form-control"
-                                                            value="{{ optional($sch->schedule_start)?->format('Y-m-d\TH:i') }}"
-                                                            required>
+                                                        <label class="form-label">Start <span class="text-danger">*</span></label>
+                                                        <input type="datetime-local" name="schedule_start" class="form-control"
+                                                            value="{{ optional($sch->schedule_start)?->format('Y-m-d\TH:i') }}" required>
                                                     </div>
+
                                                     <div class="col-md-6 mb-3">
-                                                        <label class="form-label">End</label>
-                                                        <input type="datetime-local" name="schedule_end"
-                                                            class="form-control"
-                                                            value="{{ optional($sch->schedule_end)?->format('Y-m-d\TH:i') }}"
-                                                            required>
+                                                        <label class="form-label">End <span class="text-danger">*</span></label>
+                                                        <input type="datetime-local" name="schedule_end" class="form-control"
+                                                            value="{{ optional($sch->schedule_end)?->format('Y-m-d\TH:i') }}" required>
                                                     </div>
                                                 </div>
 
+                                                {{-- ZOOM LINK WAJIB --}}
                                                 <div class="mb-3">
-                                                    <label class="form-label">Meeting Link (Zoom/Meet)</label>
+                                                    <label class="form-label">Meeting Link (Zoom/Meet) <span class="text-danger">*</span></label>
                                                     <input type="url" name="zoom_link" class="form-control"
-                                                        value="{{ $sch->zoom_link }}">
+                                                        value="{{ $sch->zoom_link }}" required>
                                                 </div>
 
                                                 <div class="row">
@@ -175,36 +199,45 @@
                     @csrf
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label class="form-label">Posisi</label>
-                            <select name="position_id" 
-                                class="form-select" 
-                                required 
-                                style="max-height: 250px; overflow-y: auto;">
-                            <option value="">-- Pilih --</option>
-                            @foreach ($positions->groupBy(fn($p) => $p->batch->name ?? 'Tanpa Batch') as $batchName => $batchPositions)
-                                <optgroup label="{{ $batchName }}">
-                                    @foreach ($batchPositions as $pos)
-                                        <option value="{{ $pos->id }}">{{ $pos->name }}</option>
-                                    @endforeach
-                                </optgroup>
-                            @endforeach
+                            <label class="form-label">Posisi <span class="text-danger">*</span></label>
+                            <select 
+                                name="position_id" 
+                                class="form-select position-select"
+                                required
+                                style="max-height: 250px; overflow-y: auto;"
+                            >
+                                <option value="">-- Pilih --</option>
+                                @foreach ($positions->groupBy(fn($p) => $p->batch->name ?? 'Tanpa Batch') as $batchName => $batchPositions)
+                                    <optgroup label="{{ $batchName }}">
+                                        @foreach ($batchPositions as $pos)
+                                            <option
+                                                value="{{ $pos->id }}"
+                                                data-batch="{{ $batchName }}"
+                                                data-pos-name="{{ $pos->name }}"
+                                            >
+                                                {{ $pos->name }}
+                                            </option>
+                                        @endforeach
+                                    </optgroup>
+                                @endforeach
                             </select>
                         </div>
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Start</label>
+                                <label class="form-label">Start <span class="text-danger">*</span></label>
                                 <input type="datetime-local" name="schedule_start" class="form-control" required>
                             </div>
+
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">End</label>
+                                <label class="form-label">End <span class="text-danger">*</span></label>
                                 <input type="datetime-local" name="schedule_end" class="form-control" required>
                             </div>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Meeting Link (Zoom/Meet)</label>
-                            <input type="url" name="zoom_link" class="form-control" placeholder="https://...">
+                            <label class="form-label">Meeting Link (Zoom/Meet) <span class="text-danger">*</span></label>
+                            <input type="url" name="zoom_link" class="form-control" placeholder="https://..." required>
                         </div>
 
                         <div class="row">
@@ -243,4 +276,45 @@
             });
         </script>
     @endif
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            function applyBatchLabel(selectEl) {
+                if (!selectEl) return;
+
+                const options = Array.from(selectEl.options);
+
+                // reset semua option ke text awal
+                options.forEach(function (opt) {
+                    // skip placeholder
+                    if (!opt.value) return;
+
+                    const original = opt.getAttribute('data-original-text');
+                    if (original) {
+                        opt.textContent = original;
+                    } else {
+                        opt.setAttribute('data-original-text', opt.textContent.trim());
+                    }
+                });
+
+                const selected = selectEl.options[selectEl.selectedIndex];
+                if (!selected || !selected.value) return;
+
+                const batch = selected.getAttribute('data-batch') || '';
+                const originalText = selected.getAttribute('data-original-text') || selected.textContent.trim();
+
+                if (batch && originalText) {
+                    selected.textContent = batch + ' - ' + originalText;
+                }
+            }
+
+            document.querySelectorAll('.position-select').forEach(function (selectEl) {
+                // initial (buat modal edit biar langsung rapi)
+                applyBatchLabel(selectEl);
+
+                selectEl.addEventListener('change', function () {
+                    applyBatchLabel(this);
+                });
+            });
+        });
+    </script>
 </x-app-admin>
