@@ -8,12 +8,19 @@ use App\Models\InterviewSchedule;
 use App\Models\Position;
 use App\Services\ActivityLogger;
 use Carbon\Carbon;
+use App\Models\TechnicalTestSchedule;
 
 class InterviewScheduleController extends Controller
 {
     public function index(Request $request)
     {
-        $schedules = InterviewSchedule::with('position')
+        // data untuk TAB TECH
+        $techSchedules = TechnicalTestSchedule::with('position')
+            ->orderByDesc('schedule_date')
+            ->paginate(15);
+
+        // data untuk TAB INTERVIEW
+        $interviewSchedules = InterviewSchedule::with('position')
             ->orderByDesc('schedule_start')
             ->paginate(10)
             ->withQueryString();
@@ -25,8 +32,16 @@ class InterviewScheduleController extends Controller
             ->select('positions.*')
             ->get();
 
-        return view('admin.interview-schedule.index', compact('schedules', 'positions'));
+        $activeTab = 'interview'; // ⬅️ langsung buka tab Interview
+
+        return view('admin.schedule.index', compact(
+            'techSchedules',
+            'interviewSchedules',
+            'positions',
+            'activeTab'
+        ));
     }
+
 
     public function store(Request $request)
     {
@@ -34,7 +49,7 @@ class InterviewScheduleController extends Controller
             'position_id'    => ['required','exists:positions,id'],
             'schedule_start' => ['required','date'],
             'schedule_end'   => ['required','date','after:schedule_start'],
-            'zoom_link'      => ['nullable','url'],
+            'zoom_link'      => ['required','url'],
             'zoom_id'        => ['nullable','string','max:191'],
             'zoom_passcode'  => ['nullable','string','max:191'],
             'keterangan'     => ['nullable','string'],

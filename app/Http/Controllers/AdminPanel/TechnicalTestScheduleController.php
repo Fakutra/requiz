@@ -8,15 +8,23 @@ use App\Models\TechnicalTestSchedule;
 use Illuminate\Http\Request;
 use App\Services\ActivityLogger;
 use Carbon\Carbon;
+use App\Models\InterviewSchedule;
 
 class TechnicalTestScheduleController extends Controller
 {
     public function index()
     {
-        $schedules = TechnicalTestSchedule::with('position')
+        // data untuk TAB TECH
+        $techSchedules = TechnicalTestSchedule::with('position')
             ->orderByDesc('schedule_date')
             ->paginate(15);
 
+        // data untuk TAB INTERVIEW
+        $interviewSchedules = InterviewSchedule::with('position')
+            ->orderByDesc('schedule_start')
+            ->paginate(10);
+
+        // posisi (dipakai dua-duanya)
         $positions = Position::with('batch')
             ->join('batches', 'positions.batch_id', '=', 'batches.id')
             ->orderBy('batches.name')
@@ -24,8 +32,16 @@ class TechnicalTestScheduleController extends Controller
             ->select('positions.*')
             ->get();
 
-        return view('admin.tech_schedule.index', compact('schedules', 'positions'));
+        $activeTab = 'tech'; // ⬅️ default tab aktif
+
+        return view('admin.schedule.index', compact(
+            'techSchedules',
+            'interviewSchedules',
+            'positions',
+            'activeTab'
+        ));
     }
+
 
     public function store(Request $request)
     {
@@ -33,7 +49,7 @@ class TechnicalTestScheduleController extends Controller
             'position_id'     => ['required', 'exists:positions,id'],
             'schedule_date'   => ['required', 'date'],
             'zoom_link'       => ['required', 'url'],
-            'zoom_id'         => ['nullable', 'string', 'max:100'],
+            'zoom_id'         => ['required', 'string', 'max:100'],
             'zoom_passcode'   => ['nullable', 'string', 'max:100'],
             'keterangan'      => ['nullable', 'string'],
             'upload_deadline' => ['nullable', 'date', 'after_or_equal:schedule_date'],
