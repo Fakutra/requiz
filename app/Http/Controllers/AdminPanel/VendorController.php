@@ -18,9 +18,10 @@ class VendorController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'nama_vendor' => ['required', 'string', 'max:255'],
-            'pic'         => ['nullable', 'string', 'max:255'],
-            'kontak'      => ['nullable', 'string', 'max:255'],
+            'nama_vendor'    => ['required', 'string', 'max:255'],
+            'alamat'         => ['nullable', 'string'],              // boleh kosong
+            'email'          => ['nullable', 'email', 'max:255'],    // optional
+            'nomor_telepon'  => ['nullable', 'string', 'max:50'],    // no telp fleksibel
         ]);
 
         Vendor::create($validated);
@@ -30,19 +31,19 @@ class VendorController extends Controller
             ->with('status', 'Vendor berhasil ditambahkan.');
     }
 
-    // ✨ Form edit
+    // sebenernya kalau pakai modal di index, method ini bisa aja ga kepake
     public function edit(Vendor $vendor)
     {
         return view('admin.vendor.edit', compact('vendor'));
     }
 
-    // ✨ Proses update
     public function update(Request $request, Vendor $vendor)
     {
         $validated = $request->validate([
-            'nama_vendor' => ['required', 'string', 'max:255'],
-            'pic'         => ['nullable', 'string', 'max:255'],
-            'kontak'      => ['nullable', 'string', 'max:255'],
+            'nama_vendor'    => ['required', 'string', 'max:255'],
+            'alamat'         => ['nullable', 'string'],
+            'email'          => ['nullable', 'email', 'max:255'],
+            'nomor_telepon'  => ['nullable', 'string', 'max:50'],
         ]);
 
         $vendor->update($validated);

@@ -8,7 +8,8 @@ class Vendor extends Model
 {
     protected $fillable = [
         'nama_vendor',
-        'pic',
-        'kontak',
+        'alamat',
+        'nomor_telepon',
+        'email',
     ];
 }

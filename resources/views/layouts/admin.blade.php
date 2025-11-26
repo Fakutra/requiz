@@ -102,11 +102,12 @@
                 @php
                     $user = Auth::user();
                     $name = $user?->name ?? 'Admin';
-                    // kalau lo pakai kolom "role" di users
                     $role = $user?->role ?? 'admin';
 
                     $isAdmin  = $role === 'admin';
                     $isVendor = $role === 'vendor';
+
+                    $vendorName  = $isVendor ? optional($user->vendor)->nama_vendor : null;
 
                     $initials = collect(explode(' ', $name))
                         ->map(fn($w) => strtoupper(substr($w, 0, 1)))
@@ -138,7 +139,13 @@
                             <div>
                                 <h4 class="font-bold text-lg">{{ $name }}</h4>
                                 <span class="text-sm text-slate-700">
-                                    {{ $isVendor ? 'Vendor' : 'Administrator' }}
+                                    @if ($isVendor && $vendorName)
+                                        {{ $vendorName }}
+                                    @elseif ($isVendor)
+                                        Vendor
+                                    @else
+                                        Admin Internal
+                                    @endif
                                 </span>
                             </div>
                         </div>
@@ -196,10 +203,6 @@
                                     class="block hover:text-blue-600 no-underline {{ request()->is('admin/skregis*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
                                     S & K Registration
                                 </a>
-                                <a href="{{ route('admin.vendor.index') }}"
-                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/vendor') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
-                                    Vendor
-                                </a>
                             </div>
                         </div>
                         @endif
@@ -226,16 +229,15 @@
 
                                 {{-- Admin list hanya untuk admin --}}
                                 @if($isAdmin)
-                                <a href="{{ route('admin.user.index') }}"
-                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/user') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                                <a href="{{ route('admin.administrator.index') }}"
+                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/admin') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
                                     Admin
                                 </a>
                                 @endif
 
-                                {{-- Applicant (admin & vendor) --}}
-                                <a href="{{ route('admin.applicant.index') }}"
-                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/applicant') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
-                                    Applicant
+                                <a href="{{ route('admin.user.index') }}"
+                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/user') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                                    User Account
                                 </a>
 
                                 {{-- Selection (admin & vendor) --}}
@@ -256,6 +258,17 @@
                             </svg>
                             Batch
                         </a>
+
+                        @if($isAdmin)
+                        <a href="{{ route('admin.vendor.index') }}"
+                            class="flex items-center no-underline hover:text-blue-600 focus:outline-none {{ request()->is('admin/vendor*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-2' : 'text-gray-600' }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 me-4">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Z" />
+                            </svg>
+                            Vendor
+                        </a>
+                        @endif
+
 
                         {{-- QUIZ (Admin: Question+Section+Quiz, Vendor: Section+Quiz) --}}
                         <div class="py-1">

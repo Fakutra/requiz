@@ -240,6 +240,11 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware('role:admin')->group(function () {
 
         // -------- User Admin Management ----------
+        Route::get   ('admin/admin',       [UserController::class, 'admin'])->name('admin.administrator.index');
+        Route::put   ('admin/user/vendor/{user}', [UserController::class, 'updateVendor'])->name('admin.user.updateVendor');
+
+
+        // -------- User Account Management ----------
         Route::get   ('admin/user',        [UserController::class, 'index'])->name('admin.user.index');
         Route::post  ('admin/user',        [UserController::class, 'store'])->name('admin.user.store');
         Route::post  ('admin/user/vendor', [UserController::class, 'storeVendor'])->name('admin.user.storeVendor');

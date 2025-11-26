@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Applicant;
+use App\Models\TestResult;
 use Illuminate\Support\Facades\Auth;
 
 class HistoryController extends Controller
@@ -27,6 +28,29 @@ class HistoryController extends Controller
             ->where('user_id', $userId)
             ->latest()
             ->get();
+        
+        $applicants->each(function ($applicant) {
+            $test = $applicant->position?->test;
+
+            // Kalau posisinya gak punya tes tulis
+            if (!$test) {
+                $applicant->hasStartedWrittenTest  = false;
+                $applicant->hasFinishedWrittenTest = false;
+                return;
+            }
+
+            // Ambil test_result terbaru untuk applicant + test ini
+            $latestResult = TestResult::where('applicant_id', $applicant->id)
+                ->where('test_id', $test->id)
+                ->latest('id')
+                ->first();
+
+            $hasStarted  = $latestResult && !is_null($latestResult->started_at);
+            $hasFinished = $latestResult && !is_null($latestResult->finished_at);
+
+            $applicant->hasStartedWrittenTest  = $hasStarted;
+            $applicant->hasFinishedWrittenTest = $hasFinished;
+        });
 
         return response()
             ->view('history', compact('applicants'))

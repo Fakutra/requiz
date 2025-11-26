@@ -3,12 +3,19 @@
         x-data="{
             showVendorModal: @json($errors->any() && old('modal') === 'create'),
             showEditModal: false,
-            editVendor: { id: null, nama_vendor: '', pic: '', kontak: '' },
+            editVendor: {
+                id: null,
+                nama_vendor: '',
+                alamat: '',
+                email: '',
+                nomor_telepon: ''
+            },
             openEdit(data) {
-                this.editVendor.id = data.id;
-                this.editVendor.nama_vendor = data.nama;
-                this.editVendor.pic = data.pic;
-                this.editVendor.kontak = data.kontak;
+                this.editVendor.id            = data.id;
+                this.editVendor.nama_vendor   = data.nama_vendor;
+                this.editVendor.alamat        = data.alamat ?? '';
+                this.editVendor.email         = data.email ?? '';
+                this.editVendor.nomor_telepon = data.nomor_telepon ?? '';
                 this.showEditModal = true;
             }
         }"
@@ -49,15 +56,16 @@
             </button>
         </div>
 
-        {{-- Tabel Vendor (dinamis) --}}
+        {{-- Tabel Vendor --}}
         <div class="overflow-x-auto">
             <table class="min-w-full text-sm">
                 <thead>
                     <tr class="text-gray-600 bg-gray-50 border-b">
                         <th class="px-4 py-2 text-left font-medium">Nama Vendor</th>
-                        <th class="px-4 py-2 text-left font-medium">PIC</th>
-                        <th class="px-4 py-2 text-left font-medium">Kontak</th>
-                        <th class="px-4 py-2 text-right font-medium">Aksi</th>
+                        <th class="px-4 py-2 text-left font-medium">Alamat</th>
+                        <th class="px-4 py-2 text-left font-medium">Email</th>
+                        <th class="px-4 py-2 text-left font-medium">Nomor Telepon</th>
+                        <th class="px-4 py-2 text-left font-medium">Aksi</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y">
@@ -67,22 +75,26 @@
                                 {{ $vendor->nama_vendor }}
                             </td>
                             <td class="px-4 py-3">
-                                {{ $vendor->pic ?: '-' }}
+                                {{ $vendor->alamat ?: '-' }}
                             </td>
                             <td class="px-4 py-3">
-                                {{ $vendor->kontak ?: '-' }}
+                                {{ $vendor->email ?: '-' }}
                             </td>
                             <td class="px-4 py-3">
-                                <div class="flex items-center justify-end gap-2">
-                                    {{-- ✨ Tombol Edit (buka modal) --}}
+                                {{ $vendor->nomor_telepon ?: '-' }}
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="flex items-center gap-2">
+                                    {{-- Tombol Edit (buka modal) --}}
                                     <button
                                         type="button"
                                         x-data
                                         @click="openEdit($el.dataset)"
                                         data-id="{{ $vendor->id }}"
-                                        data-nama="{{ $vendor->nama_vendor }}"
-                                        data-pic="{{ $vendor->pic }}"
-                                        data-kontak="{{ $vendor->kontak }}"
+                                        data-nama_vendor="{{ $vendor->nama_vendor }}"
+                                        data-alamat="{{ $vendor->alamat }}"
+                                        data-email="{{ $vendor->email }}"
+                                        data-nomor_telepon="{{ $vendor->nomor_telepon }}"
                                         class="px-3 py-1.5 rounded-lg border hover:bg-gray-50 text-xs"
                                     >
                                         Edit
@@ -107,7 +119,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4" class="px-4 py-6 text-center text-sm text-gray-500">
+                            <td colspan="5" class="px-4 py-6 text-center text-sm text-gray-500">
                                 Belum ada vendor terdaftar.
                             </td>
                         </tr>
@@ -116,7 +128,7 @@
             </table>
         </div>
 
-        {{-- Pagination dinamis --}}
+        {{-- Pagination --}}
         <div class="mt-4 flex justify-between items-center text-xs text-gray-500">
             <div>
                 @if ($vendors->total() > 0)
@@ -159,6 +171,7 @@
                     @csrf
                     <input type="hidden" name="modal" value="create">
 
+                    {{-- Nama Vendor --}}
                     <div>
                         <label class="block text-xs text-gray-600 mb-1" for="nama_vendor_modal">Nama Vendor</label>
                         <input
@@ -172,28 +185,42 @@
                         >
                     </div>
 
+                    {{-- Alamat --}}
+                    <div>
+                        <label class="block text-xs text-gray-600 mb-1" for="alamat_modal">Alamat</label>
+                        <textarea
+                            name="alamat"
+                            id="alamat_modal"
+                            rows="2"
+                            class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Jl. Contoh No. 123, Jakarta"
+                        >{{ old('alamat') }}</textarea>
+                    </div>
+
                     <div class="grid md:grid-cols-2 gap-3">
+                        {{-- Email --}}
                         <div>
-                            <label class="block text-xs text-gray-600 mb-1" for="pic_modal">PIC</label>
+                            <label class="block text-xs text-gray-600 mb-1" for="email_modal">Email</label>
                             <input
-                                type="text"
-                                name="pic"
-                                id="pic_modal"
+                                type="email"
+                                name="email"
+                                id="email_modal"
                                 class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="Nama PIC"
-                                value="{{ old('pic') }}"
+                                placeholder="example@vendor.com"
+                                value="{{ old('email') }}"
                             >
                         </div>
 
+                        {{-- Nomor Telepon --}}
                         <div>
-                            <label class="block text-xs text-gray-600 mb-1" for="kontak_modal">Kontak</label>
+                            <label class="block text-xs text-gray-600 mb-1" for="nomor_modal">Nomor Telepon</label>
                             <input
                                 type="text"
-                                name="kontak"
-                                id="kontak_modal"
+                                name="nomor_telepon"
+                                id="nomor_modal"
                                 class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                                 placeholder="0812xxxxxxx"
-                                value="{{ old('kontak') }}"
+                                value="{{ old('nomor_telepon') }}"
                             >
                         </div>
                     </div>
@@ -246,6 +273,7 @@
                     @csrf
                     @method('PUT')
 
+                    {{-- Nama Vendor --}}
                     <div>
                         <label class="block text-xs text-gray-600 mb-1">Nama Vendor</label>
                         <input
@@ -257,23 +285,36 @@
                         >
                     </div>
 
+                    {{-- Alamat --}}
+                    <div>
+                        <label class="block text-xs text-gray-600 mb-1">Alamat</label>
+                        <textarea
+                            name="alamat"
+                            x-model="editVendor.alamat"
+                            rows="2"
+                            class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                        ></textarea>
+                    </div>
+
                     <div class="grid md:grid-cols-2 gap-3">
+                        {{-- Email --}}
                         <div>
-                            <label class="block text-xs text-gray-600 mb-1">PIC</label>
+                            <label class="block text-xs text-gray-600 mb-1">Email</label>
                             <input
-                                type="text"
-                                name="pic"
-                                x-model="editVendor.pic"
+                                type="email"
+                                name="email"
+                                x-model="editVendor.email"
                                 class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                             >
                         </div>
 
+                        {{-- Nomor Telepon --}}
                         <div>
-                            <label class="block text-xs text-gray-600 mb-1">Kontak</label>
+                            <label class="block text-xs text-gray-600 mb-1">Nomor Telepon</label>
                             <input
                                 type="text"
-                                name="kontak"
-                                x-model="editVendor.kontak"
+                                name="nomor_telepon"
+                                x-model="editVendor.nomor_telepon"
                                 class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                             >
                         </div>
