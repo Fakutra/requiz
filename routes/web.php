@@ -36,6 +36,7 @@ use App\Http\Controllers\AdminPanel\SkregisController;
 use App\Http\Controllers\AdminPanel\ContactController;
 use App\Http\Controllers\AdminPanel\AboutController;
 use App\Http\Controllers\AdminPanel\VendorController;
+use App\Http\Controllers\AdminPanel\ScheduleController;
 
 // ====== Seleksi (baru, dipisah per tahap) ======
 use App\Http\Controllers\AdminPanel\Selection\RekapController;
@@ -360,5 +361,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post  ('admin/vendor',          [VendorController::class, 'store'])->name('admin.vendor.store');
         Route::delete('admin/vendor/{vendor}', [VendorController::class, 'destroy'])->name('admin.vendor.destroy');
         Route::put   ('admin/vendor/{vendor}', [VendorController::class, 'update'])->name('admin.vendor.update');
+
+        Route::get('/admin/schedule', [ScheduleController::class, 'index'])->name('admin.schedule.index');
     });
 });

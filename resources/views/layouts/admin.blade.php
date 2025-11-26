@@ -300,7 +300,16 @@
                         </div>
 
                         {{-- SCHEDULE (Technical Test & Interview) --}}
-                        <div class="py-1">
+                        <a href="{{ route('admin.schedule.index') }}"
+                            class="flex items-center no-underline hover:text-blue-600 focus:outline-none {{ request()->is('admin/schedule*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-2' : 'text-gray-600' }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke-width="1.5" stroke="currentColor" class="size-6 me-4">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M6.75 3v2.25M17.25 3v2.25M3 8.25h18M4.5 21h15a1.5 1.5 0 001.5-1.5V7.5a1.5 1.5 0 00-1.5-1.5h-15A1.5 1.5 0 003 7.5v12a1.5 1.5 0 001.5 1.5z" />
+                            </svg>
+                            Schedule
+                        </a>
+                        <!-- <div class="py-1">
                             <button @click="toggleMenu('scheduleOpen')"
                                 class="flex items-center w-full text-gray-700 hover:text-blue-600 focus:outline-none">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
@@ -326,8 +335,12 @@
                                     class="block hover:text-blue-600 no-underline {{ request()->is('admin/interview-schedule*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
                                     Interview
                                 </a>
+                                <a href="{{ route('admin.schedule.index') }}"
+                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/schedule*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                                    Schedule
+                                </a>
                             </div>
-                        </div>
+                        </div> -->
 
                         {{-- Personality Rules, Report & Activity Logs khusus admin --}}
                         @if($isAdmin)

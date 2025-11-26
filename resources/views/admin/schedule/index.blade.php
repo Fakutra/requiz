@@ -1,0 +1,632 @@
+<x-app-admin>
+    <div class="py-3">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+
+            {{-- Errors --}}
+            @if ($errors->any())
+                <div class="alert alert-danger">
+                    <div class="fw-semibold mb-1">Periksa input:</div>
+                    <ul class="mb-0">
+                        @foreach ($errors->all() as $e)
+                            <li>{{ $e }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-4 p-md-5 text-gray-900">
+
+                    {{-- Title --}}
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2 class="font-semibold text-xl text-gray-800 leading-tight mb-0">
+                            Schedule
+                        </h2>
+                    </div>
+
+                    {{-- Tabs --}}
+                    <ul class="nav nav-tabs mb-3" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button
+                                class="nav-link active"
+                                id="tab-tech-tab"
+                                data-bs-toggle="tab"
+                                data-bs-target="#tab-tech"
+                                type="button"
+                                role="tab"
+                            >
+                                Technical Test
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button
+                                class="nav-link"
+                                id="tab-interview-tab"
+                                data-bs-toggle="tab"
+                                data-bs-target="#tab-interview"
+                                type="button"
+                                role="tab"
+                            >
+                                Interview
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content">
+
+                        {{-- ================== TAB TECHNICAL TEST ================== --}}
+                        <div class="tab-pane fade show active" id="tab-tech" role="tabpanel" aria-labelledby="tab-tech-tab">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h5 class="mb-0">Penjadwalan Technical Test</h5>
+                                <a href="#" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalCreateTechSchedule">
+                                    Create New Schedule
+                                </a>
+                            </div>
+
+                            <div class="list-group">
+                                @forelse ($techSchedules as $sch)
+                                    <div
+                                        class="list-group-item list-group-item-action d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-2">
+
+                                        <div class="me-md-3">
+                                            <h5 class="mb-1 fw-bold">{{ $sch->position->name ?? '—' }}</h5>
+
+                                            <div class="text-muted small d-flex flex-column gap-1">
+
+                                                <div>
+                                                    <i class="bi bi-calendar-range"></i>
+                                                    {{ optional($sch->schedule_date)->translatedFormat('d F Y H:i') }}
+                                                </div>
+
+                                                <div>
+                                                    <i class="bi bi-link-45deg"></i>
+                                                    <a href="{{ $sch->zoom_link }}" target="_blank">
+                                                        {{ \Illuminate\Support\Str::limit($sch->zoom_link, 60) }}
+                                                    </a>
+                                                </div>
+
+                                                @if ($sch->zoom_id || $sch->zoom_passcode)
+                                                    <div>
+                                                        <i class="bi bi-shield-lock"></i>
+                                                        ID: {{ $sch->zoom_id ?? '—' }},
+                                                        Pwd: {{ $sch->zoom_passcode ?? '—' }}
+                                                    </div>
+                                                @endif
+
+                                                @if ($sch->upload_deadline)
+                                                    <div>
+                                                        <i class="bi bi-hourglass-split"></i>
+                                                        Deadline:
+                                                        {{ optional($sch->upload_deadline)->translatedFormat('d F Y H:i') }}
+                                                    </div>
+                                                @endif
+                                            </div>
+
+                                            @if ($sch->keterangan)
+                                                <div class="mt-2 text-secondary small">
+                                                    <i class="bi bi-card-text"></i>
+                                                    {{ \Illuminate\Support\Str::limit($sch->keterangan, 120) }}
+                                                </div>
+                                            @endif
+                                        </div>
+
+                                        <div class="btn-group mt-3 mt-md-0" role="group">
+                                            <button class="btn btn-info btn-sm text-white" data-bs-toggle="modal"
+                                                data-bs-target="#editTechSchedule{{ $sch->id }}">
+                                                <i class="bi bi-pencil-square"></i> Edit
+                                            </button>
+
+                                            <form action="{{ route('tech-schedule.destroy', $sch) }}" method="post"
+                                                class="d-inline" onsubmit="return confirm('Hapus schedule ini?')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-danger btn-sm">
+                                                    <i class="bi bi-trash"></i> Hapus
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+
+                                    {{-- Modal Edit Technical --}}
+                                    <div class="modal fade" id="editTechSchedule{{ $sch->id }}" tabindex="-1"
+                                        aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+
+                                                <div class="modal-header">
+                                                    <h1 class="modal-title fs-5">Edit Technical Test Schedule</h1>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+
+                                                <form method="post" action="{{ route('tech-schedule.update', $sch) }}">
+                                                    @csrf
+                                                    @method('PUT')
+
+                                                    <div class="modal-body">
+
+                                                        {{-- POSISI --}}
+                                                        <div class="mb-3">
+                                                            <label class="form-label">
+                                                                Posisi <span class="text-danger">*</span>
+                                                            </label>
+
+                                                            <select
+                                                                name="position_id"
+                                                                class="form-select position-select"
+                                                                required
+                                                                style="max-height: 250px; overflow-y: auto;"
+                                                            >
+                                                                <option value="">-- Pilih --</option>
+
+                                                                @foreach ($positions->groupBy(fn($p) => $p->batch->name ?? 'Tanpa Batch') as $batchName => $batchPositions)
+                                                                    <optgroup label="{{ $batchName }}">
+                                                                        @foreach ($batchPositions as $pos)
+                                                                            <option
+                                                                                value="{{ $pos->id }}"
+                                                                                data-batch="{{ $batchName }}"
+                                                                                data-pos-name="{{ $pos->name }}"
+                                                                                @selected($pos->id == $sch->position_id)
+                                                                            >
+                                                                                {{ $pos->name }}
+                                                                            </option>
+                                                                        @endforeach
+                                                                    </optgroup>
+                                                                @endforeach
+                                                            </select>
+                                                        </div>
+
+                                                        {{-- SCHEDULE DATE --}}
+                                                        <div class="mb-3">
+                                                            <label class="form-label">
+                                                                Schedule Date <span class="text-danger">*</span>
+                                                            </label>
+                                                            <input type="datetime-local" name="schedule_date"
+                                                                class="form-control"
+                                                                value="{{ optional($sch->schedule_date)?->format('Y-m-d\TH:i') }}"
+                                                                required>
+                                                        </div>
+
+                                                        {{-- DEADLINE UPLOAD --}}
+                                                        <div class="mb-3">
+                                                            <label class="form-label">Upload Deadline</label>
+                                                            <input type="datetime-local" name="upload_deadline"
+                                                                class="form-control"
+                                                                value="{{ optional($sch->upload_deadline)?->format('Y-m-d\TH:i') }}">
+                                                        </div>
+
+                                                        {{-- ZOOM LINK --}}
+                                                        <div class="mb-3">
+                                                            <label class="form-label">
+                                                                Zoom Link <span class="text-danger">*</span>
+                                                            </label>
+                                                            <input type="url" name="zoom_link" class="form-control"
+                                                                value="{{ $sch->zoom_link }}" required>
+                                                        </div>
+
+                                                        {{-- ZOOM ID & PASSCODE --}}
+                                                        <div class="row">
+                                                            <div class="col-md-6 mb-3">
+                                                                <label class="form-label">Zoom ID</label>
+                                                                <input type="text" name="zoom_id" class="form-control"
+                                                                    value="{{ $sch->zoom_id }}">
+                                                            </div>
+                                                            <div class="col-md-6 mb-3">
+                                                                <label class="form-label">Zoom Passcode</label>
+                                                                <input type="text" name="zoom_passcode"
+                                                                    class="form-control" value="{{ $sch->zoom_passcode }}">
+                                                            </div>
+                                                        </div>
+
+                                                        {{-- KETERANGAN --}}
+                                                        <div class="mb-3">
+                                                            <label class="form-label">Note / Keterangan</label>
+                                                            <textarea name="keterangan" rows="3" class="form-control" placeholder="Contoh : Soal akan dibagikan saat zoom berlangsung">{{ $sch->keterangan }}</textarea>
+                                                        </div>
+
+                                                    </div>
+
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary"
+                                                            data-bs-dismiss="modal">Close</button>
+                                                        <button type="submit" class="btn btn-primary">Update</button>
+                                                    </div>
+
+                                                </form>
+
+                                            </div>
+                                        </div>
+                                    </div>
+                                @empty
+                                    <div class="list-group-item">
+                                        <p class="text-center text-muted my-3">Belum ada Schedule Technical Test.</p>
+                                    </div>
+                                @endforelse
+                            </div>
+
+                            {{-- Pagination Technical --}}
+                            @if ($techSchedules->hasPages())
+                                <div class="mt-3">
+                                    {{ $techSchedules->links() }}
+                                </div>
+                            @endif
+
+                        </div> {{-- /tab-tech --}}
+
+                        {{-- Modal Create Technical --}}
+                        <div class="modal fade" id="modalCreateTechSchedule" tabindex="-1" aria-labelledby="modalCreateTechScheduleLabel"
+                            aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+
+                                    <div class="modal-header">
+                                        <h1 class="modal-title fs-5" id="modalCreateTechScheduleLabel">Create Technical Test Schedule</h1>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+
+                                    <form method="post" action="{{ route('tech-schedule.store') }}">
+                                        @csrf
+                                        <div class="modal-body">
+                                            <div class="mb-3">
+                                                <label class="form-label">Posisi <span class="text-danger">*</span></label>
+                                                <select
+                                                    name="position_id"
+                                                    class="form-select position-select"
+                                                    required
+                                                    style="max-height: 250px; overflow-y: auto;"
+                                                >
+                                                    <option value="">-- Pilih --</option>
+
+                                                    @foreach ($positions->groupBy(fn($p) => $p->batch->name ?? 'Tanpa Batch') as $batchName => $batchPositions)
+                                                        <optgroup label="{{ $batchName }}">
+                                                            @foreach ($batchPositions as $pos)
+                                                                <option
+                                                                    value="{{ $pos->id }}"
+                                                                    data-batch="{{ $batchName }}"
+                                                                    data-pos-name="{{ $pos->name }}"
+                                                                >
+                                                                    {{ $pos->name }}
+                                                                </option>
+                                                            @endforeach
+                                                        </optgroup>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label class="form-label">Schedule Date <span class="text-danger">*</span></label>
+                                                <input type="datetime-local" name="schedule_date" class="form-control" required>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label class="form-label">Deadline upload Jawaban</label>
+                                                <input type="datetime-local" name="upload_deadline" class="form-control">
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label class="form-label">Zoom Link <span class="text-danger">*</span></label>
+                                                <input type="url" name="zoom_link" class="form-control" placeholder="https://..." required>
+                                            </div>
+
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">Zoom ID</label>
+                                                    <input type="text" name="zoom_id" class="form-control">
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">Zoom Passcode</label>
+                                                    <input type="text" name="zoom_passcode" class="form-control">
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label class="form-label">Note / Keterangan</label>
+                                                <textarea name="keterangan" rows="3" class="form-control" placeholder="Contoh : Soal akan dibagikan saat zoom berlangsung"></textarea>
+                                            </div>
+                                        </div>
+
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                                            <button type="submit" class="btn btn-primary">Simpan</button>
+                                        </div>
+                                    </form>
+
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- ================== TAB INTERVIEW ================== --}}
+                        <div class="tab-pane fade" id="tab-interview" role="tabpanel" aria-labelledby="tab-interview-tab">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h5 class="mb-0">Penjadwalan Interview</h5>
+                                <a href="#" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalCreateInterviewSchedule">
+                                    Create Interview Schedule
+                                </a>
+                            </div>
+
+                            <div class="list-group">
+                                @forelse ($interviewSchedules as $sch)
+                                    <div
+                                        class="list-group-item list-group-item-action d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-2">
+                                        <div class="me-md-3">
+                                            <h5 class="mb-1 fw-bold">{{ $sch->position->name ?? '—' }}</h5>
+
+                                            <div class="text-muted small d-flex flex-column gap-1">
+
+                                                <div>
+                                                    <i class="bi bi-calendar-range"></i>
+                                                    {{ optional($sch->schedule_start)->translatedFormat('d F Y H:i') }}
+                                                    —
+                                                    {{ optional($sch->schedule_end)->translatedFormat('d F Y H:i') }}
+                                                </div>
+
+                                                <div>
+                                                    <i class="bi bi-link-45deg"></i>
+                                                    <a href="{{ $sch->zoom_link }}" target="_blank">
+                                                        {{ \Illuminate\Support\Str::limit($sch->zoom_link, 60) }}
+                                                    </a>
+                                                </div>
+
+                                                @if ($sch->zoom_id || $sch->zoom_passcode)
+                                                    <div>
+                                                        <i class="bi bi-shield-lock"></i>
+                                                        ID: {{ $sch->zoom_id ?? '—' }},
+                                                        Pwd: {{ $sch->zoom_passcode ?? '—' }}
+                                                    </div>
+                                                @endif
+                                            </div>
+
+                                            @if ($sch->keterangan)
+                                                <div class="mt-2 text-secondary small">
+                                                    <i class="bi bi-card-text"></i>
+                                                    {{ \Illuminate\Support\Str::limit($sch->keterangan, 120) }}
+                                                </div>
+                                            @endif
+                                        </div>
+
+                                        <div class="btn-group mt-3 mt-md-0" role="group">
+                                            <button class="btn btn-info btn-sm text-white" data-bs-toggle="modal"
+                                                data-bs-target="#editInterviewSchedule{{ $sch->id }}">
+                                                <i class="bi bi-pencil-square"></i> Edit
+                                            </button>
+
+                                            <form action="{{ route('interview-schedule.destroy', $sch) }}" method="post"
+                                                class="d-inline" onsubmit="return confirm('Hapus schedule ini?')">
+                                                @csrf @method('DELETE')
+                                                <button type="submit" class="btn btn-danger btn-sm">
+                                                    <i class="bi bi-trash"></i> Hapus
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+
+                                    {{-- Modal Edit Interview --}}
+                                    <div class="modal fade" id="editInterviewSchedule{{ $sch->id }}" tabindex="-1"
+                                        aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h1 class="modal-title fs-5">Edit Interview Schedule</h1>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <form method="post" action="{{ route('interview-schedule.update', $sch) }}">
+                                                    @csrf @method('PUT')
+                                                    <div class="modal-body">
+                                                        <div class="mb-3">
+                                                            <label class="form-label">Posisi <span class="text-danger">*</span></label>
+                                                            <select name="position_id"
+                                                                class="form-select position-select"
+                                                                required
+                                                                style="max-height: 250px; overflow-y: auto;">
+                                                                <option value="">-- Pilih --</option>
+                                                                @foreach ($positions->groupBy(fn($p) => $p->batch->name ?? 'Tanpa Batch') as $batchName => $batchPositions)
+                                                                    <optgroup label="{{ $batchName }}">
+                                                                        @foreach ($batchPositions as $pos)
+                                                                            <option
+                                                                                value="{{ $pos->id }}"
+                                                                                data-batch="{{ $batchName }}"
+                                                                                data-pos-name="{{ $pos->name }}"
+                                                                                @selected($pos->id == $sch->position_id)
+                                                                            >
+                                                                                {{ $pos->name }}
+                                                                            </option>
+                                                                        @endforeach
+                                                                    </optgroup>
+                                                                @endforeach
+                                                            </select>
+                                                        </div>
+
+                                                        <div class="row">
+                                                            <div class="col-md-6 mb-3">
+                                                                <label class="form-label">Start <span class="text-danger">*</span></label>
+                                                                <input type="datetime-local" name="schedule_start"
+                                                                    class="form-control"
+                                                                    value="{{ optional($sch->schedule_start)?->format('Y-m-d\TH:i') }}"
+                                                                    required>
+                                                            </div>
+                                                            <div class="col-md-6 mb-3">
+                                                                <label class="form-label">End <span class="text-danger">*</span></label>
+                                                                <input type="datetime-local" name="schedule_end"
+                                                                    class="form-control"
+                                                                    value="{{ optional($sch->schedule_end)?->format('Y-m-d\TH:i') }}"
+                                                                    required>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="mb-3">
+                                                            <label class="form-label">Meeting Link (Zoom/Meet) <span class="text-danger">*</span></label>
+                                                            <input type="url" name="zoom_link" class="form-control"
+                                                                value="{{ $sch->zoom_link }}" required>
+                                                        </div>
+
+                                                        <div class="row">
+                                                            <div class="col-md-6 mb-3">
+                                                                <label class="form-label">Meeting ID</label>
+                                                                <input type="text" name="zoom_id" class="form-control"
+                                                                    value="{{ $sch->zoom_id }}">
+                                                            </div>
+                                                            <div class="col-md-6 mb-3">
+                                                                <label class="form-label">Passcode</label>
+                                                                <input type="text" name="zoom_passcode"
+                                                                    class="form-control" value="{{ $sch->zoom_passcode }}">
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="mb-3">
+                                                            <label class="form-label">Keterangan</label>
+                                                            <textarea name="keterangan" rows="3" class="form-control">{{ $sch->keterangan }}</textarea>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary"
+                                                            data-bs-dismiss="modal">Close</button>
+                                                        <button type="submit" class="btn btn-primary">Update</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @empty
+                                    <div class="list-group-item">
+                                        <p class="text-center text-muted my-3">Belum ada Jadwal Interview.</p>
+                                    </div>
+                                @endforelse
+                            </div>
+
+                            @if ($interviewSchedules->hasPages())
+                                <div class="mt-3">{{ $interviewSchedules->links() }}</div>
+                            @endif
+                        </div> {{-- /tab-interview --}}
+
+                        {{-- Modal Create Interview --}}
+                        <div class="modal fade" id="modalCreateInterviewSchedule" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h1 class="modal-title fs-5">Create Interview Schedule</h1>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+
+                                    <form method="post" action="{{ route('interview-schedule.store') }}">
+                                        @csrf
+                                        <div class="modal-body">
+                                            <div class="mb-3">
+                                                <label class="form-label">Posisi <span class="text-danger">*</span></label>
+                                                <select name="position_id"
+                                                    class="form-select position-select"
+                                                    required
+                                                    style="max-height: 250px; overflow-y: auto;">
+                                                    <option value="">-- Pilih --</option>
+                                                    @foreach ($positions->groupBy(fn($p) => $p->batch->name ?? 'Tanpa Batch') as $batchName => $batchPositions)
+                                                        <optgroup label="{{ $batchName }}">
+                                                            @foreach ($batchPositions as $pos)
+                                                                <option
+                                                                    value="{{ $pos->id }}"
+                                                                    data-batch="{{ $batchName }}"
+                                                                    data-pos-name="{{ $pos->name }}"
+                                                                >
+                                                                    {{ $pos->name }}
+                                                                </option>
+                                                            @endforeach
+                                                        </optgroup>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">Start <span class="text-danger">*</span></label>
+                                                    <input type="datetime-local" name="schedule_start" class="form-control" required>
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">End <span class="text-danger">*</span></label>
+                                                    <input type="datetime-local" name="schedule_end" class="form-control" required>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label class="form-label">Meeting Link (Zoom/Meet) <span class="text-danger">*</span></label>
+                                                <input type="url" name="zoom_link" class="form-control" placeholder="https://..." required>
+                                            </div>
+
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">Meeting ID</label>
+                                                    <input type="text" name="zoom_id" class="form-control">
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">Passcode</label>
+                                                    <input type="text" name="zoom_passcode" class="form-control">
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label class="form-label">Keterangan</label>
+                                                <textarea name="keterangan" rows="3" class="form-control"></textarea>
+                                            </div>
+                                        </div>
+
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-outline-secondary"
+                                                data-bs-dismiss="modal">Close</button>
+                                            <button type="submit" class="btn btn-primary">Simpan</button>
+                                        </div>
+                                    </form>
+
+                                </div>
+                            </div>
+                        </div>
+
+                    </div> {{-- /tab-content --}}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Auto show success modal (seperti Quiz) --}}
+    @if (session('success'))
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                var sm = new bootstrap.Modal(document.getElementById('successModal'));
+                sm.show();
+            });
+        </script>
+    @endif
+
+    {{-- Batch label "Batch - Posisi" hanya di option terpilih --}}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            function applyBatchLabel(selectEl) {
+                if (!selectEl) return;
+
+                const options = Array.from(selectEl.options);
+
+                // reset semua option ke text awal
+                options.forEach(function (opt) {
+                    const original = opt.getAttribute('data-original-text');
+                    if (original) {
+                        opt.textContent = original;
+                    } else {
+                        opt.setAttribute('data-original-text', opt.textContent.trim());
+                    }
+                });
+
+                const selected = selectEl.options[selectEl.selectedIndex];
+                if (!selected || !selected.value) return;
+
+                const batch = selected.getAttribute('data-batch') || '';
+                const originalText = selected.getAttribute('data-original-text') || selected.textContent.trim();
+
+                if (batch && originalText) {
+                    selected.textContent = batch + ' - ' + originalText;
+                }
+            }
+
+            document.querySelectorAll('.position-select').forEach(function (selectEl) {
+                applyBatchLabel(selectEl);
+                selectEl.addEventListener('change', function () {
+                    applyBatchLabel(this);
+                });
+            });
+        });
+    </script>
+</x-app-admin>
