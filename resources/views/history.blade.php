@@ -155,18 +155,16 @@
             @endif
 
             @php
-            // flags per section
-            $showQuiz = ($applicant->status === 'Tes Tulis') && optional($applicant->position)->test;
-            $showTech = in_array($applicant->status, ['Technical Test','Seleksi Tes Praktek']) && $applicant->position;
-            $showInterview = ($applicant->status === 'Interview') && $applicant->position;
+                // flags per section
+                $showQuiz = ($applicant->status === 'Tes Tulis') && optional($applicant->position)->test;
+                $showTech = in_array($applicant->status, ['Technical Test','Seleksi Tes Praktek']) && $applicant->position;
+                $showInterview = ($applicant->status === 'Interview') && $applicant->position;
             @endphp
 
             {{-- TES TULIS: Belum dibuat --}}
             @if ($applicant->status === 'Tes Tulis' && ! optional($applicant->position)->test)
             <section class="mt-6 rounded-xl border border-[#009DA9] p-4" style="background-color:#EFFEFF;">
-
                 <h4 class="text-sm font-semibold text-[#009DA9] mb-3">Tes Tulis (Belum Tersedia)</h4>
-
                 <div class="text-sm text-zinc-700 leading-relaxed">
                     Anda telah masuk ke tahap <strong>Tes Tulis</strong>, namun saat ini tes belum disiapkan oleh tim rekrutmen.
                     Informasi terkait jadwal, instruksi, dan akses pengerjaan akan ditampilkan pada halaman ini setelah tes tersedia.
@@ -177,28 +175,41 @@
             @if ($showQuiz || $showTech || $showInterview)
             <section class="mt-6 rounded-xl border border-[#009DA9] p-4" style="background-color:#EFFEFF;">
 
-                {{-- ===== QUIZ ===== --}}
+                {{-- ===== QUIZ / TES TULIS ===== --}}
                 @if ($showQuiz)
-                @php
-                $test = $applicant->position->test;
-                $now = now();
-                $open = $test->test_date;
-                $close = $test->test_closed;
-                $end = $test->test_end;
+                    @php
+                        $test = $applicant->position->test;
+                        $now  = now();
+                        $open = $test->test_date;
+                        $close = $test->test_closed;
+                        $end  = $test->test_end;
 
-                $tr = \App\Models\TestResult::where('applicant_id',$applicant->id)
-                ->where('test_id',$test->id)->first();
+                        // ambil sesi tes tulis (test_results)
+                        $tr = \App\Models\TestResult::where('applicant_id', $applicant->id)
+                                ->where('test_id', $test->id)
+                                ->latest('id') // kalau bisa ambil yang paling baru
+                                ->first();
 
-                $hasStarted = $tr && ($tr->started_at ||
-                \App\Models\TestSectionResult::where('test_result_id',$tr->id)
-                ->whereNotNull('started_at')->exists());
+                        // sudah mulai kalau sudah ada session + sudah mulai salah satu section
+                        $hasStarted = $tr && (
+                            $tr->started_at ||
+                            \App\Models\TestSectionResult::where('test_result_id', $tr->id)
+                                ->whereNotNull('started_at')
+                                ->exists()
+                        );
 
-                $inWindow = ($open && $close) ? $now->between($open, $close, true) : false;
-                $beforeEnd = $end ? $now->lt($end) : true;
-                $canEnter = $inWindow || ($hasStarted && $beforeEnd);
+                        // ✅ dianggap selesai kalau finished_at KEISI
+                        $isFinished = $tr && $tr->finished_at;
 
-                $startUrl = URL::signedRoute('quiz.intro', ['slug' => $test->slug]);
-                @endphp
+                        // window waktu tes
+                        $inWindow   = ($open && $close) ? $now->between($open, $close, true) : false;
+                        $beforeEnd  = $end ? $now->lt($end) : true;
+
+                        // ✅ hanya bisa masuk kalau BELUM selesai
+                        $canEnter = !$isFinished && ($inWindow || ($hasStarted && $beforeEnd));
+
+                        $startUrl = URL::signedRoute('quiz.intro', ['slug' => $test->slug]);
+                    @endphp
 
                 <div>
                     <h4 class="text-sm font-semibold text-[#009DA9] mb-3">Tes Tulis (Online Quiz)</h4>
@@ -220,12 +231,23 @@
                     <div class="mt-4 flex items-center gap-3">
                         <a href="{{ $startUrl }}"
                             @if(!$canEnter) aria-disabled="true" @endif
-                            class="px-5 h-10 inline-flex items-center rounded-lg bg-[#009DA9] text-white text-sm font-medium hover:bg-sky-700 {{ $canEnter ? '' : 'pointer-events-none opacity-50' }}">
-                            {{ $hasStarted ? 'Lanjutkan Tes' : 'Mulai Tes' }}
+                            class="px-5 h-10 inline-flex items-center rounded-lg bg-[#009DA9] text-white text-sm font-medium
+                                {{ $canEnter ? 'hover:bg-sky-700' : 'pointer-events-none opacity-50' }}">
+                            {{-- 🔽 label tombol disesuaikan status --}}
+                            {{ $isFinished
+                                ? 'Tes Selesai'
+                                : ($hasStarted ? 'Lanjutkan Tes' : 'Mulai Tes') }}
                         </a>
-                        @unless($canEnter)
-                        <span class="text-xs text-zinc-500">Tombol aktif saat periode dibuka.</span>
-                        @endunless
+
+                        @if(!$canEnter && !$isFinished)
+                            <span class="text-xs text-zinc-500">
+                                Tombol aktif saat periode dibuka.
+                            </span>
+                        @elseif($isFinished)
+                            <span class="text-xs text-zinc-500">
+                                Anda telah menyelesaikan Tes Tulis.
+                            </span>
+                        @endif
                     </div>
                 </div>
                 @endif

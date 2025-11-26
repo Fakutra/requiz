@@ -1,5 +1,8 @@
 {{-- resources/views/admin/applicant/index.blade.php --}}
 <x-app-admin>
+  @php
+      $activeTab = 'applicant_user';
+  @endphp
   <div x-data="applicantPage()" x-init="init()" class="space-y-6">
     <div class="bg-white border rounded-lg shadow-sm p-4">
       <h1 class="text-2xl font-bold text-blue-950 mb-4">Data Applicant</h1>
