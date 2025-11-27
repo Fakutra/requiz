@@ -30,14 +30,6 @@ class UserSeeder extends Seeder
             ]);
         }
 
-        // === 1 Vendor User ===
-        User::factory()->create([
-            'name'     => 'Dinan (DPP)',
-            'email'    => 'dinan@dpp.com',
-            'role'     => 'vendor',
-            'password' => bcrypt('password'),
-        ]);
-
         // === 20 Regular Users ===
         $users = [
             ['name' => 'Delanda', 'email' => 'delanda.f@gmail.com'],
@@ -70,5 +62,13 @@ class UserSeeder extends Seeder
                 'password' => bcrypt('password'),
             ]);
         }
+
+        // === 1 Vendor User ===
+        User::factory()->create([
+            'name'     => 'Listyo (Vendor DPP)',
+            'email'    => 'listyo@dpp.com',
+            'role'     => 'vendor',
+            'password' => bcrypt('password'),
+        ]);
     }
 }
