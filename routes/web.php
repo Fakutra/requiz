@@ -37,6 +37,7 @@ use App\Http\Controllers\AdminPanel\ContactController;
 use App\Http\Controllers\AdminPanel\AboutController;
 use App\Http\Controllers\AdminPanel\VendorController;
 use App\Http\Controllers\AdminPanel\ScheduleController;
+use App\Http\Controllers\AdminPanel\VendorPasswordController;
 
 // ====== Seleksi (baru, dipisah per tahap) ======
 use App\Http\Controllers\AdminPanel\Selection\RekapController;
@@ -127,24 +128,20 @@ Route::middleware(['auth'])->group(function () {
 
     /**
      * ========== ADMIN + VENDOR (role: admin,vendor) ==========
-     * Digunakan vendor juga buat operasional di menu:
-     * - Dashboard
-     * - User → Applicant & Selection
-     * - Jobs  → Batch (index)
-     * - Quiz  → Quiz (test.index) & Bundle (bundle.index)
-     * - Schedule → Technical Test & Interview (index)
-     * - Report
+     * Vendor: cuma Selection + Schedule (CRUD tech & interview schedule)
      */
     Route::middleware('role:admin,vendor')->group(function () {
 
-        // Dashboard panel
+        // Dashboard panel (khusus admin)
         Route::get('/admin', [AdminController::class, 'index'])
             ->name('admin.dashboard');
 
-        // -------- Applicant (read/export) ----------
-        Route::get('admin/applicant',        [ApplicantController::class, 'index'])->name('admin.applicant.index');
-        Route::get('admin/applicant/export', [ApplicantController::class, 'export'])->name('admin.applicant.export');
-        // update/destroy di blok admin-only
+        // Vendor - Ubah Password
+        Route::get('admin/password', [VendorPasswordController::class, 'edit'])
+            ->name('admin.vendor.password.edit');
+
+        Route::put('admin/password', [VendorPasswordController::class, 'update'])
+            ->name('admin.vendor.password.update');
 
         // -------- SELEKSI (rekap + per tahap + aksi) ----------
         Route::prefix('admin/applicant/seleksi')->name('admin.applicant.seleksi.')->group(function () {
@@ -214,23 +211,20 @@ Route::middleware(['auth'])->group(function () {
         Route::post('admin/applicant/seleksi/send-email', [ActionsController::class, 'sendEmail'])
             ->name('admin.applicant.seleksi.sendEmail');
 
-        // -------- Jobs: Batch INDEX (admin & vendor) ----------
-        Route::get('admin/batch', [BatchController::class, 'index'])->name('batch.index');
-
-        // -------- Quiz: Test INDEX/SHOW (admin & vendor) ----------
-        Route::get('admin/test',        [TestController::class, 'index'])->name('test.index');
-        Route::get('admin/test/{test}', [TestController::class, 'show'])->name('test.show');
-
-        // -------- Bundle INDEX/SHOW (admin & vendor) ----------
-        Route::get('admin/bundle',          [QuestionBundleController::class, 'index'])->name('bundle.index');
-        Route::get('admin/bundle/{bundle}', [QuestionBundleController::class, 'show'])->name('bundle.show');
-
-        // -------- Technical Answers INDEX (admin & vendor) ----------
-        Route::get('admin/tech-answers', [TechnicalTestAnswerController::class, 'index'])->name('tech-answers.index');
-
         // -------- Schedule INDEX (admin & vendor) ----------
-        Route::get('admin/tech-schedule',      [TechnicalTestScheduleController::class, 'index'])->name('tech-schedule.index');
-        Route::get('admin/interview-schedule', [InterviewScheduleController::class, 'index'])->name('interview-schedule.index');
+        Route::get('/admin/schedule', [ScheduleController::class, 'index'])->name('admin.schedule.index');
+
+        // -------- Technical Test Schedules (CRUD admin + vendor) ----------
+        Route::get   ('admin/tech-schedule',            [TechnicalTestScheduleController::class, 'index'])->name('tech-schedule.index');
+        Route::post  ('admin/tech-schedule',            [TechnicalTestScheduleController::class, 'store'])->name('tech-schedule.store');
+        Route::put   ('admin/tech-schedule/{schedule}', [TechnicalTestScheduleController::class, 'update'])->name('tech-schedule.update');
+        Route::delete('admin/tech-schedule/{schedule}', [TechnicalTestScheduleController::class, 'destroy'])->name('tech-schedule.destroy');
+
+        // -------- Interview Schedules (CRUD admin + vendor) ----------
+        Route::get   ('admin/interview-schedule',            [InterviewScheduleController::class, 'index'])->name('interview-schedule.index');
+        Route::post  ('admin/interview-schedule',            [InterviewScheduleController::class, 'store'])->name('interview-schedule.store');
+        Route::put   ('admin/interview-schedule/{schedule}', [InterviewScheduleController::class, 'update'])->name('interview-schedule.update');
+        Route::delete('admin/interview-schedule/{schedule}', [InterviewScheduleController::class, 'destroy'])->name('interview-schedule.destroy');
     });
 
 
@@ -240,10 +234,17 @@ Route::middleware(['auth'])->group(function () {
      */
     Route::middleware('role:admin')->group(function () {
 
+        
+
+        // -------- Applicant (read/export + write) ----------
+        Route::get   ('admin/applicant',        [ApplicantController::class, 'index'])->name('admin.applicant.index');
+        Route::get   ('admin/applicant/export', [ApplicantController::class, 'export'])->name('admin.applicant.export');
+        Route::put   ('admin/applicant/{applicant}',   [ApplicantController::class, 'update'])->name('admin.applicant.update');
+        Route::delete('admin/applicant/{applicant}',   [ApplicantController::class, 'destroy'])->name('admin.applicant.destroy');
+
         // -------- User Admin Management ----------
         Route::get   ('admin/admin',       [UserController::class, 'admin'])->name('admin.administrator.index');
         Route::put   ('admin/user/vendor/{user}', [UserController::class, 'updateVendor'])->name('admin.user.updateVendor');
-
 
         // -------- User Account Management ----------
         Route::get   ('admin/user',        [UserController::class, 'index'])->name('admin.user.index');
@@ -254,6 +255,7 @@ Route::middleware(['auth'])->group(function () {
 
         // -------- Batch & Position (full CRUD) ----------
         Route::post  ('admin/batch',           [BatchController::class, 'store'])->name('batch.store');
+        Route::get   ('admin/batch',           [BatchController::class, 'index'])->name('batch.index');
         Route::get   ('admin/batch/{batch}',   [BatchController::class, 'show'])->name('batch.show');
         Route::put   ('admin/batch/{id}',      [BatchController::class, 'update'])->name('batch.update');
         Route::delete('admin/batch/{id}',      [BatchController::class, 'destroy'])->name('batch.destroy');
@@ -264,12 +266,10 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('admin/batch/position/{id}',    [PositionController::class, 'destroy'])->name('position.destroy');
         Route::get   ('admin/batch/position/checkSlug', [PositionController::class, 'checkSlug'])->name('position.checkSlug');
 
-        // -------- Applicant write (update/destroy) ----------
-        Route::put   ('admin/applicant/{applicant}',   [ApplicantController::class, 'update'])->name('admin.applicant.update');
-        Route::delete('admin/applicant/{applicant}',   [ApplicantController::class, 'destroy'])->name('admin.applicant.destroy');
-
         // -------- Test & Section (config) ----------
         Route::post  ('admin/test',               [TestController::class, 'store'])->name('test.store');
+        Route::get   ('admin/test',               [TestController::class, 'index'])->name('test.index');
+        Route::get   ('admin/test/{test}',        [TestController::class, 'show'])->name('test.show');
         Route::put   ('admin/test/{test}',        [TestController::class, 'update'])->name('test.update');
         Route::delete('admin/test/{test}',        [TestController::class, 'destroy'])->name('test.destroy');
         Route::get   ('admin/test/checkSlug',     [TestController::class, 'checkSlug'])->name('test.checkSlug');
@@ -288,8 +288,10 @@ Route::middleware(['auth'])->group(function () {
         Route::post  ('admin/question/import',        [QuestionController::class, 'import'])->name('question.import');
         Route::get   ('admin/question/template',      [QuestionController::class, 'downloadTemplate'])->name('question.template');
 
-        // -------- Bundle (config) ----------
+        // -------- Bundle (config + index/show) ----------
         Route::post  ('admin/bundle',                       [QuestionBundleController::class, 'store'])->name('bundle.store');
+        Route::get   ('admin/bundle',                       [QuestionBundleController::class, 'index'])->name('bundle.index');
+        Route::get   ('admin/bundle/{bundle}',              [QuestionBundleController::class, 'show'])->name('bundle.show');
         Route::put   ('admin/bundle/{bundle}',              [QuestionBundleController::class, 'update'])->name('bundle.update');
         Route::delete('admin/bundle/{bundle}',              [QuestionBundleController::class, 'destroy'])->name('bundle.destroy');
         Route::get   ('admin/bundle/checkSlug',             [QuestionBundleController::class, 'checkSlug'])->name('bundle.checkSlug');
@@ -304,17 +306,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get   ('essay-grading',                     [EssayGradingController::class, 'index'])->name('essay_grading.index');
         Route::patch ('essay-grading/result/{testResult}', [EssayGradingController::class, 'updateResult'])->name('essay_grading.update_result');
 
-        // -------- Technical Test Schedules (full CRUD admin-only) ----------
-        Route::post  ('admin/tech-schedule',            [TechnicalTestScheduleController::class, 'store'])->name('tech-schedule.store');
-        Route::put   ('admin/tech-schedule/{schedule}', [TechnicalTestScheduleController::class, 'update'])->name('tech-schedule.update');
-        Route::delete('admin/tech-schedule/{schedule}', [TechnicalTestScheduleController::class, 'destroy'])->name('tech-schedule.destroy');
-
-        // -------- Interview Schedules (full CRUD admin-only) ----------
-        Route::post  ('admin/interview-schedule',            [InterviewScheduleController::class, 'store'])->name('interview-schedule.store');
-        Route::put   ('admin/interview-schedule/{schedule}', [InterviewScheduleController::class, 'update'])->name('interview-schedule.update');
-        Route::delete('admin/interview-schedule/{schedule}', [InterviewScheduleController::class, 'destroy'])->name('interview-schedule.destroy');
-
-        // Admin: Penilaian Technical Test (update saja)
+        // Admin: Penilaian Technical Test (update saja + index)
+        Route::get   ('admin/tech-answers', [TechnicalTestAnswerController::class, 'index'])->name('tech-answers.index');
         Route::patch ('admin/tech-answers/{answer}', [TechnicalTestAnswerController::class, 'update'])->name('tech-answers.update');
 
         // -------- Activity Logs ----------
@@ -366,7 +359,5 @@ Route::middleware(['auth'])->group(function () {
         Route::post  ('admin/vendor',          [VendorController::class, 'store'])->name('admin.vendor.store');
         Route::delete('admin/vendor/{vendor}', [VendorController::class, 'destroy'])->name('admin.vendor.destroy');
         Route::put   ('admin/vendor/{vendor}', [VendorController::class, 'update'])->name('admin.vendor.update');
-
-        Route::get('/admin/schedule', [ScheduleController::class, 'index'])->name('admin.schedule.index');
     });
 });

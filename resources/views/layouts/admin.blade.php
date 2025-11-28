@@ -15,7 +15,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Gabarito:wght@400..900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-
     {{-- Vite --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
@@ -42,7 +41,6 @@
             display: none !important
         }
 
-        /* Style tambahan untuk tab dan chart dummy */
         input[name="summary-tab"]:checked+label {
             background-color: #0d6efd;
             color: white;
@@ -81,7 +79,6 @@
         }
     </style>
 </head>
-
 
 <body class="font-sans antialiased bg-white" x-data="{ sidebarOpen: false }">
     <div class="min-h-screen bg-gray-100">
@@ -158,211 +155,209 @@
                     </div>
 
                     <nav class="space-y-5">
-                        {{-- DASHBOARD (admin & vendor) --}}
-                        <a href="{{ route('admin.dashboard') }}"
-                            class="flex items-center no-underline hover:text-blue-600 focus:outline-none {{ request()->is('admin') || request()->is('admin/dashboard') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-2' : 'text-gray-600' }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke-width="1.5" stroke="currentColor" class="size-6 me-4">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25A2.25 2.25 0 0 1 8.25 10.5H6A2.25 2.25 0 0 1 3.75 8.25V6Z M3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25A2.25 2.25 0 0 1 10.5 15.75V18A2.25 2.25 0 0 1 8.25 20.25H6A2.25 2.25 0 0 1 3.75 18V15.75Z M13.5 6A2.25 2.25 0 0 1 15.75 3.75H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25A2.25 2.25 0 0 1 13.5 8.25V6Z M13.5 15.75A2.25 2.25 0 0 1 15.75 13.5H18A2.25 2.25 0 0 1 20.25 15.75V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18V15.75Z" />
-                            </svg>
-                            Dashboard
-                        </a>
-
-                        {{-- CMS (ADMIN ONLY) --}}
-                        @if($isAdmin)
-                        <div class="py-1">
-                            <button @click="toggleMenu('masterOpen')"
-                                class="flex items-center w-full text-gray-700 hover:text-blue-600 focus:outline-none">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" class="size-6 me-4">
-                                    <path fill="none" stroke="currentColor" d="m17.3 10.453l1.927.315a.326.326 0 0 1 .273.322v1.793a.326.326 0 0 1-.27.321l-1.93.339q-.167.582-.459 1.111l1.141 1.584a.326.326 0 0 1-.034.422l-1.268 1.268a.326.326 0 0 1-.418.037l-1.6-1.123a5.5 5.5 0 0 1-1.118.468l-.34 1.921a.326.326 0 0 1-.322.269H11.09a.325.325 0 0 1-.321-.272l-.319-1.911a5.5 5.5 0 0 1-1.123-.465l-1.588 1.113a.326.326 0 0 1-.418-.037L6.052 16.66a.33.33 0 0 1-.035-.42l1.123-1.57a5.5 5.5 0 0 1-.47-1.129l-1.901-.337a.326.326 0 0 1-.269-.321V11.09c0-.16.115-.296.273-.322l1.901-.317q.173-.59.47-1.128l-1.11-1.586a.326.326 0 0 1 .037-.417L7.34 6.053a.326.326 0 0 1 .42-.035l1.575 1.125q.533-.292 1.121-.46l.312-1.91a.326.326 0 0 1 .322-.273h1.793c.159 0 .294.114.322.27l.336 1.92q.585.169 1.12.465l1.578-1.135a.326.326 0 0 1 .422.033l1.268 1.268a.326.326 0 0 1 .036.418L16.84 9.342q.29.53.46 1.11ZM9.716 12a2.283 2.283 0 1 0 4.566 0a2.283 2.283 0 0 0-4.566 0Z" clip-rule="evenodd" stroke-width="1"/>
-                                </svg>
-                                CMS
-                                <svg class="w-4 h-4 ml-auto transform" :class="{ 'rotate-180': masterOpen }"
-                                    fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        @if($isVendor)
+                            {{-- VENDOR: Dashboard + Selection + Schedule --}}
+                            <a href="{{ route('admin.dashboard') }}"
+                                class="flex items-center no-underline hover:text-blue-600 focus:outline-none {{ request()->is('admin') || request()->is('admin/dashboard') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-2' : 'text-gray-600' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke-width="1.5" stroke="currentColor" class="size-6 me-4">
                                     <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="M19 9l-7 7-7-7" />
+                                        d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25A2.25 2.25 0 0 1 8.25 10.5H6A2.25 2.25 0 0 1 3.75 8.25V6Z M3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25A2.25 2.25 0 0 1 10.5 15.75V18A2.25 2.25 0 0 1 8.25 20.25H6A2.25 2.25 0 0 1 3.75 18V15.75Z M13.5 6A2.25 2.25 0 0 1 15.75 3.75H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25A2.25 2.25 0 0 1 13.5 8.25V6Z M13.5 15.75A2.25 2.25 0 0 1 15.75 13.5H18A2.25 2.25 0 0 1 20.25 15.75V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18V15.75Z" />
                                 </svg>
-                            </button>
+                                Dashboard
+                            </a>
 
-                            <div x-show="masterOpen" x-transition
-                                class="mt-3 ml-10 space-y-4 text-sm text-gray-600">
-                                <a href="{{ route('admin.faq.index') }}"
-                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/faq') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
-                                    FAQ
-                                </a>
-                                <a href="{{ route('admin.about.index', [], false) }}"
-                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/about*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
-                                    About Us
-                                </a>
-                                <a href="{{ route('admin.contact.index', [], false) }}"
-                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/contact*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
-                                    Contact Information
-                                </a>
-                                <a href="{{ route('admin.skregis.index', [], false) }}"
-                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/skregis*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
-                                    Terms & Conditons
-                                </a>
-                            </div>
-                        </div>
-                        @endif
+                            {{-- Menu Ubah Password (hanya vendor) --}}
+                            <a href="{{ route('admin.vendor.password.edit') }}"
+                                class="flex items-center no-underline hover:text-blue-600 focus:outline-none text-gray-600 mt-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="size-6 me-4" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="1.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M16.5 10.5V7.5A4.5 4.5 0 0 0 7.5 7.5v3M6 10.5h12v9H6z" />
+                                </svg>
+                                Ubah Password
+                            </a>
 
-                        {{-- USER (Applicant & Selection untuk vendor, + Admin list untuk admin) --}}
-                        <div class="py-1">
-                            <button @click="toggleMenu('userOpen')"
-                                class="flex items-center w-full text-gray-700 hover:text-blue-600 focus:outline-none">
+                            <a href="{{ route('admin.applicant.seleksi.index') }}"
+                                class="flex items-center no-underline hover:text-blue-600 focus:outline-none {{ request()->is('admin/applicant/seleksi*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-2' : 'text-gray-600' }}">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                     stroke-width="1.5" stroke="currentColor" class="size-6 me-4">
                                     <path stroke-linecap="round" stroke-linejoin="round"
                                         d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z M4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
                                 </svg>
-                                User
-                                <svg class="w-4 h-4 ml-auto transform" :class="{ 'rotate-180': userOpen }"
-                                    fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </button>
+                                Selection
+                            </a>
 
-                            <div x-show="userOpen" x-transition
-                                class="mt-3 ml-10 space-y-4 text-sm text-gray-600">
-
-                                {{-- Admin list hanya untuk admin --}}
-                                @if($isAdmin)
-                                <a href="{{ route('admin.administrator.index') }}"
-                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/admin') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
-                                    Admin
-                                </a>
-                                @endif
-
-                                <a href="{{ route('admin.user.index') }}"
-                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/user') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
-                                    User Account
-                                </a>
-
-                                {{-- Selection (admin & vendor) --}}
-                                <a href="{{ route('admin.applicant.seleksi.index') }}"
-                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/applicant/seleksi') || request()->is('admin/applicant/seleksi/*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
-                                    Selection
-                                </a>
-                            </div>
-                        </div>
-
-                        {{-- BATCH (admin & vendor) – tetap pakai nama "Batch" --}}
-                        <a href="{{ route('batch.index') }}"
-                            class="flex items-center no-underline hover:text-blue-600 focus:outline-none {{ request()->is('admin/batch*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-2' : 'text-gray-600' }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                viewBox="0 0 32 32" class="size-6 me-4">
-                                <path fill="currentColor"
-                                    d="M14 3c-1.094 0-2 .906-2 2v1H9V5H7v1H5c-1.094 0-2 .906-2 2v16c0 1.094.906 2 2 2h22c1.094 0 2-.906 2-2V8c0-1.094-.906-2-2-2h-2V5h-2v1h-3V5c0-1.094-.906-2-2-2zm0 2h4v1h-4zM5 8h22v16h-2V9h-2v15H9V9H7v15H5z" />
-                            </svg>
-                            Batch
-                        </a>
-
-                        @if($isAdmin)
-                        <a href="{{ route('admin.vendor.index') }}"
-                            class="flex items-center no-underline hover:text-blue-600 focus:outline-none {{ request()->is('admin/vendor*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-2' : 'text-gray-600' }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 me-4">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Z" />
-                            </svg>
-                            Vendor
-                        </a>
-                        @endif
-
-
-                        {{-- QUIZ (Admin: Question+Section+Quiz, Vendor: Section+Quiz) --}}
-                        <div class="py-1">
-                            <button @click="toggleMenu('quizOpen')"
-                                class="flex items-center w-full text-gray-700 hover:text-blue-600 focus:outline-none">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                    viewBox="0 0 20 20" class="size-6 me-4">
-                                    <path fill="currentColor"
-                                        d="M5.5 3A2.5 2.5 0 0 0 3 5.5v9A2.5 2.5 0 0 0 5.5 17h4.1a5.5 5.5 0 0 1-.393-1H5.5A1.5 1.5 0 0 1 4 14.5v-9A1.5 1.5 0 0 1 5.5 4h9A1.5 1.5 0 0 1 16 5.5v3.707q.524.149 1 .393V5.5A2.5 2.5 0 0 0 14.5 3zm3.707 10q.149-.524.393-1H5.5a.5.5 0 0 0 0 1zM8.5 15a.5.5 0 0 0 0-1h-3a.5.5 0 0 0 0 1zM8 5a.5.5 0 0 1 .457.297l2 4.5a.5.5 0 1 1-.914.406L9.008 9H6.992l-.535 1.203a.5.5 0 0 1-.914-.406l2-4.5A.5.5 0 0 1 8 5m.564 3L8 6.731L7.436 8zM13.5 5.5a.5.5 0 0 0-1 0v1h-1a.5.5 0 0 0 0 1h1v1a.5.5 0 0 0 1 0v-1h1a.5.5 0 0 0 0-1h-1zm5.5 9a4.5 4.5 0 1 1-9 0a4.5 4.5 0 0 1 9 0m-4-2a.5.5 0 0 0-1 0V14h-1.5a.5.5 0 0 0 0 1H14v1.5a.5.5 0 0 0 1 0V15h1.5a.5.5 0 0 0 0-1H15z"/>
-                                </svg>
-                                Quiz
-                                <svg class="w-4 h-4 ml-auto transform" :class="{ 'rotate-180': quizOpen }"
-                                    fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </button>
-
-                            <div x-show="quizOpen" x-transition
-                                class="mt-3 ml-10 space-y-4 text-sm text-gray-600">
-
-                                {{-- Question hanya admin --}}
-                                @if($isAdmin)
-                                <a href="{{ route('question.index') }}"
-                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/question') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
-                                    Question
-                                </a>
-                                @endif
-
-                                {{-- Section = bundle.index (admin & vendor) --}}
-                                <a href="{{ route('bundle.index') }}"
-                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/bundle') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
-                                    Section
-                                </a>
-
-                                {{-- Quiz (test index) (admin & vendor) --}}
-                                <a href="{{ route('test.index') }}"
-                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/test') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
-                                    Quiz
-                                </a>
-                            </div>
-                        </div>
-
-                        {{-- SCHEDULE (Technical Test & Interview) --}}
-                        <a href="{{ route('admin.schedule.index') }}"
-                            class="flex items-center no-underline hover:text-blue-600 focus:outline-none {{ request()->is('admin/schedule*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-2' : 'text-gray-600' }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke-width="1.5" stroke="currentColor" class="size-6 me-4">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M6.75 3v2.25M17.25 3v2.25M3 8.25h18M4.5 21h15a1.5 1.5 0 001.5-1.5V7.5a1.5 1.5 0 00-1.5-1.5h-15A1.5 1.5 0 003 7.5v12a1.5 1.5 0 001.5 1.5z" />
-                            </svg>
-                            Schedule
-                        </a>
-                        <!-- <div class="py-1">
-                            <button @click="toggleMenu('scheduleOpen')"
-                                class="flex items-center w-full text-gray-700 hover:text-blue-600 focus:outline-none">
+                            <a href="{{ route('admin.schedule.index') }}"
+                                class="flex items-center no-underline hover:text-blue-600 focus:outline-none {{ request()->is('admin/schedule*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-2' : 'text-gray-600' }}">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                     stroke-width="1.5" stroke="currentColor" class="size-6 me-4">
                                     <path stroke-linecap="round" stroke-linejoin="round"
                                         d="M6.75 3v2.25M17.25 3v2.25M3 8.25h18M4.5 21h15a1.5 1.5 0 001.5-1.5V7.5a1.5 1.5 0 00-1.5-1.5h-15A1.5 1.5 0 003 7.5v12a1.5 1.5 0 001.5 1.5z" />
                                 </svg>
                                 Schedule
-                                <svg class="w-4 h-4 ml-auto transform" :class="{ 'rotate-180': scheduleOpen }"
-                                    fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            </a>
+                        @else
+                            {{-- ADMIN: full menu --}}
+                            {{-- DASHBOARD --}}
+                            <a href="{{ route('admin.dashboard') }}"
+                                class="flex items-center no-underline hover:text-blue-600 focus:outline-none {{ request()->is('admin') || request()->is('admin/dashboard') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-2' : 'text-gray-600' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke-width="1.5" stroke="currentColor" class="size-6 me-4">
                                     <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="M19 9l-7 7-7-7" />
+                                        d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25A2.25 2.25 0 0 1 8.25 10.5H6A2.25 2.25 0 0 1 3.75 8.25V6Z M3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25A2.25 2.25 0 0 1 10.5 15.75V18A2.25 2.25 0 0 1 8.25 20.25H6A2.25 2.25 0 0 1 3.75 18V15.75Z M13.5 6A2.25 2.25 0 0 1 15.75 3.75H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25A2.25 2.25 0 0 1 13.5 8.25V6Z M13.5 15.75A2.25 2.25 0 0 1 15.75 13.5H18A2.25 2.25 0 0 1 20.25 15.75V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18V15.75Z" />
                                 </svg>
-                            </button>
+                                Dashboard
+                            </a>
 
-                            <div x-show="scheduleOpen" x-transition
-                                class="mt-3 ml-10 space-y-4 text-sm text-gray-600">
-                                <a href="{{ route('tech-schedule.index') }}"
-                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/tech-schedule*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
-                                    Technical Test
-                                </a>
-                                <a href="{{ route('interview-schedule.index') }}"
-                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/interview-schedule*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
-                                    Interview
-                                </a>
-                                <a href="{{ route('admin.schedule.index') }}"
-                                    class="block hover:text-blue-600 no-underline {{ request()->is('admin/schedule*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
-                                    Schedule
-                                </a>
+                            {{-- CMS (ADMIN ONLY) --}}
+                            <div class="py-1">
+                                <button @click="toggleMenu('masterOpen')"
+                                    class="flex items-center w-full text-gray-700 hover:text-blue-600 focus:outline-none">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                        viewBox="0 0 24 24" class="size-6 me-4">
+                                        <path fill="none" stroke="currentColor"
+                                            d="m17.3 10.453l1.927.315a.326.326 0 0 1 .273.322v1.793a.326.326 0 0 1-.27.321l-1.93.339q-.167.582-.459 1.111l1.141 1.584a.326.326 0 0 1-.034.422l-1.268 1.268a.326.326 0 0 1-.418.037l-1.6-1.123a5.5 5.5 0 0 1-1.118.468l-.34 1.921a.326.326 0 0 1-.322.269H11.09a.325.325 0 0 1-.321-.272l-.319-1.911a5.5 5.5 0 0 1-1.123-.465l-1.588 1.113a.326.326 0 0 1-.418-.037L6.052 16.66a.33.33 0 0 1-.035-.42l1.123-1.57a5.5 5.5 0 0 1-.47-1.129l-1.901-.337a.326.326 0 0 1-.269-.321V11.09c0-.16.115-.296.273-.322l1.901-.317q.173-.59.47-1.128l-1.11-1.586a.326.326 0 0 1 .037-.417L7.34 6.053a.326.326 0 0 1 .42-.035l1.575 1.125q.533-.292 1.121-.46l.312-1.91a.326.326 0 0 1 .322-.273h1.793c.159 0 .294.114.322.27l.336 1.92q.585.169 1.12.465l1.578-1.135a.326.326 0 0 1 .422.033l1.268 1.268a.326.326 0 0 1 .036.418L16.84 9.342q.29.53.46 1.11ZM9.716 12a2.283 2.283 0 1 0 4.566 0a2.283 2.283 0 0 0-4.566 0Z"
+                                            clip-rule="evenodd" stroke-width="1" />
+                                    </svg>
+                                    CMS
+                                    <svg class="w-4 h-4 ml-auto transform" :class="{ 'rotate-180': masterOpen }"
+                                        fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                            d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+
+                                <div x-show="masterOpen" x-transition
+                                    class="mt-3 ml-10 space-y-4 text-sm text-gray-600">
+                                    <a href="{{ route('admin.faq.index') }}"
+                                        class="block hover:text-blue-600 no-underline {{ request()->is('admin/faq') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                                        FAQ
+                                    </a>
+                                    <a href="{{ route('admin.about.index', [], false) }}"
+                                        class="block hover:text-blue-600 no-underline {{ request()->is('admin/about*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                                        About Us
+                                    </a>
+                                    <a href="{{ route('admin.contact.index', [], false) }}"
+                                        class="block hover:text-blue-600 no-underline {{ request()->is('admin/contact*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                                        Contact Information
+                                    </a>
+                                    <a href="{{ route('admin.skregis.index', [], false) }}"
+                                        class="block hover:text-blue-600 no-underline {{ request()->is('admin/skregis*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                                        Terms & Conditons
+                                    </a>
+                                </div>
                             </div>
-                        </div> -->
 
-                        {{-- Personality Rules, Report & Activity Logs khusus admin --}}
-                        @if($isAdmin)
+                            {{-- USER (Applicant & Selection + Admin list) --}}
+                            <div class="py-1">
+                                <button @click="toggleMenu('userOpen')"
+                                    class="flex items-center w-full text-gray-700 hover:text-blue-600 focus:outline-none">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                        stroke-width="1.5" stroke="currentColor" class="size-6 me-4">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                            d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z M4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                                    </svg>
+                                    User
+                                    <svg class="w-4 h-4 ml-auto transform" :class="{ 'rotate-180': userOpen }"
+                                        fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                            d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+
+                                <div x-show="userOpen" x-transition
+                                    class="mt-3 ml-10 space-y-4 text-sm text-gray-600">
+
+                                    <a href="{{ route('admin.administrator.index') }}"
+                                        class="block hover:text-blue-600 no-underline {{ request()->is('admin/admin') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                                        Admin
+                                    </a>
+
+                                    <a href="{{ route('admin.user.index') }}"
+                                        class="block hover:text-blue-600 no-underline {{ request()->is('admin/user') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                                        User Account
+                                    </a>
+
+                                    <a href="{{ route('admin.applicant.seleksi.index') }}"
+                                        class="block hover:text-blue-600 no-underline {{ request()->is('admin/applicant/seleksi') || request()->is('admin/applicant/seleksi/*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                                        Selection
+                                    </a>
+                                </div>
+                            </div>
+
+                            {{-- BATCH --}}
+                            <a href="{{ route('batch.index') }}"
+                                class="flex items-center no-underline hover:text-blue-600 focus:outline-none {{ request()->is('admin/batch*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-2' : 'text-gray-600' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                    viewBox="0 0 32 32" class="size-6 me-4">
+                                    <path fill="currentColor"
+                                        d="M14 3c-1.094 0-2 .906-2 2v1H9V5H7v1H5c-1.094 0-2 .906-2 2v16c0 1.094.906 2 2 2h22c1.094 0 2-.906 2-2V8c0-1.094-.906-2-2-2h-2V5h-2v1h-3V5c0-1.094-.906-2-2-2zm0 2h4v1h-4zM5 8h22v16h-2V9h-2v15H9V9H7v15H5z" />
+                                </svg>
+                                Batch
+                            </a>
+
+                            {{-- Vendor --}}
+                            <a href="{{ route('admin.vendor.index') }}"
+                                class="flex items-center no-underline hover:text-blue-600 focus:outline-none {{ request()->is('admin/vendor*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-2' : 'text-gray-600' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke-width="1.5" stroke="currentColor" class="size-6 me-4">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Z" />
+                                </svg>
+                                Vendor
+                            </a>
+
+                            {{-- QUIZ --}}
+                            <div class="py-1">
+                                <button @click="toggleMenu('quizOpen')"
+                                    class="flex items-center w-full text-gray-700 hover:text-blue-600 focus:outline-none">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                        viewBox="0 0 20 20" class="size-6 me-4">
+                                        <path fill="currentColor"
+                                            d="M5.5 3A2.5 2.5 0 0 0 3 5.5v9A2.5 2.5 0 0 0 5.5 17h4.1a5.5 5.5 0 0 1-.393-1H5.5A1.5 1.5 0 0 1 4 14.5v-9A1.5 1.5 0 0 1 5.5 4h9A1.5 1.5 0 0 1 16 5.5v3.707q.524.149 1 .393V5.5A2.5 2.5 0 0 0 14.5 3zm3.707 10q.149-.524.393-1H5.5a.5.5 0 0 0 0 1zM8.5 15a.5.5 0 0 0 0-1h-3a.5.5 0 0 0 0 1zM8 5a.5.5 0 0 1 .457.297l2 4.5a.5.5 0 1 1-.914.406L9.008 9H6.992l-.535 1.203a.5.5 0 0 1-.914-.406l2-4.5A.5.5 0 0 1 8 5m.564 3L8 6.731L7.436 8zM13.5 5.5a.5.5 0 0 0-1 0v1h-1a.5.5 0 0 0 0 1h1v1a.5.5 0 0 0 1 0v-1h1a.5.5 0 0 0 0-1h-1zm5.5 9a4.5 4.5 0 1 1-9 0a4.5 4.5 0 0 1 9 0m-4-2a.5.5 0 0 0-1 0V14h-1.5a.5.5 0 0 0 0 1H14v1.5a.5.5 0 0 0 1 0V15h1.5a.5.5 0 0 0 0-1H15z" />
+                                    </svg>
+                                    Quiz
+                                    <svg class="w-4 h-4 ml-auto transform" :class="{ 'rotate-180': quizOpen }"
+                                        fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                            d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+
+                                <div x-show="quizOpen" x-transition
+                                    class="mt-3 ml-10 space-y-4 text-sm text-gray-600">
+                                    <a href="{{ route('question.index') }}"
+                                        class="block hover:text-blue-600 no-underline {{ request()->is('admin/question') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                                        Question
+                                    </a>
+                                    <a href="{{ route('bundle.index') }}"
+                                        class="block hover:text-blue-600 no-underline {{ request()->is('admin/bundle') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                                        Section
+                                    </a>
+                                    <a href="{{ route('test.index') }}"
+                                        class="block hover:text-blue-600 no-underline {{ request()->is('admin/test') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                                        Quiz
+                                    </a>
+                                </div>
+                            </div>
+
+                            {{-- SCHEDULE --}}
+                            <a href="{{ route('admin.schedule.index') }}"
+                                class="flex items-center no-underline hover:text-blue-600 focus:outline-none {{ request()->is('admin/schedule*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-2' : 'text-gray-600' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke-width="1.5" stroke="currentColor" class="size-6 me-4">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M6.75 3v2.25M17.25 3v2.25M3 8.25h18M4.5 21h15a1.5 1.5 0 001.5-1.5V7.5a1.5 1.5 0 00-1.5-1.5h-15A1.5 1.5 0 003 7.5v12a1.5 1.5 0 001.5 1.5z" />
+                                </svg>
+                                Schedule
+                            </a>
 
                             {{-- Personality Rules --}}
                             <a href="{{ route('admin.personality-rules.index') }}"
                                 class="flex items-center no-underline hover:text-blue-600 focus:outline-none {{ request()->routeIs('admin.personality-rules.*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-2' : 'text-gray-600' }}">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                    viewBox="0 0 14 14" class ="size-6 me-4">
+                                    viewBox="0 0 14 14" class="size-6 me-4">
                                     <path fill="currentColor" fill-rule="evenodd"
                                         d="M2.5 1.25c-.103 0-.2.04-.27.108a.35.35 0 0 0-.105.248v10.788c0 .09.037.18.106.247a.38.38 0 0 0 .269.109h9c.103 0 .2-.04.27-.109a.35.35 0 0 0 .105-.247V4.968c0-.1-.04-.197-.112-.268L8.354 1.357a.38.38 0 0 0-.263-.107zM1.355.466C1.661.166 2.073 0 2.5 0h5.591c.426 0 .835.167 1.138.465l3.409 3.343c.311.305.487.724.487 1.16v7.426c0 .43-.174.84-.48 1.14S11.927 14 11.5 14h-9c-.427 0-.84-.166-1.145-.466s-.48-.71-.48-1.14V1.606c0-.43.174-.84.48-1.14m5.829 5.921c0-.345.28-.625.625-.625h2.25a.625.625 0 1 1 0 1.25h-2.25a.625.625 0 0 1-.625-.625m.625 3.022a.625.625 0 0 0 0 1.25h2.25a.625.625 0 1 0 0-1.25zM6.367 8.277a.75.75 0 0 1 .165 1.048l-1.396 1.917a.75.75 0 0 1-1.132.094l-.838-.822a.75.75 0 1 1 1.05-1.07l.218.213l.886-1.215a.75.75 0 0 1 1.047-.165m.165-2.661a.75.75 0 1 0-1.212-.883l-.886 1.215l-.217-.213a.75.75 0 1 0-1.05 1.07l.837.822a.75.75 0 0 0 1.132-.094z"
                                         clip-rule="evenodd" />
@@ -370,15 +365,16 @@
                                 Rules of Personality Test
                             </a>
 
-                            {{-- Report (tetep sebelum Activity Logs seperti versi awal) --}}
+                            {{-- Report --}}
                             <a href="{{ route('admin.report.index') }}"
                                 class="flex items-center no-underline hover:text-blue-600 focus:outline-none {{ request()->is('admin/report') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-2' : 'text-gray-600' }}">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                    viewBox="0 0 24 24" class ="size-6 me-4">
+                                    viewBox="0 0 24 24" class="size-6 me-4">
                                     <g fill="none" stroke="currentColor" stroke-width="1.5">
                                         <path stroke-linecap="round" stroke-linejoin="round"
-                                            d="M10 9H6m9.5 2a2.5 2.5 0 1 1 0-5a2.5 2.5 0 0 1 0 5M6 6h3m9 12l-4.5-3l-2.5 2l-5-4"/>
-                                        <path d="M3 20.4V3.6a.6.6 0 0 1 .6-.6h16.8a.6.6 0 0 1 .6.6v16.8a.6.6 0 0 1-.6.6H3.6a.6.6 0 0 1-.6-.6Z"/>
+                                            d="M10 9H6m9.5 2a2.5 2.5 0 1 1 0-5a2.5 2.5 0 0 1 0 5M6 6h3m9 12l-4.5-3l-2.5 2l-5-4" />
+                                        <path
+                                            d="M3 20.4V3.6a.6.6 0 0 1 .6-.6h16.8a.6.6 0 0 1 .6.6v16.8a.6.6 0 0 1-.6.6H3.6a.6.6 0 0 1-.6-.6Z" />
                                     </g>
                                 </svg>
                                 Report
@@ -388,7 +384,7 @@
                             <a href="{{ route('admin.logs.index') }}"
                                 class="flex items-center no-underline hover:text-blue-600 focus:outline-none {{ request()->is('admin/logs') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-2' : 'text-gray-600' }}">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                    viewBox="0 0 24 24" class ="size-6 me-4">
+                                    viewBox="0 0 24 24" class="size-6 me-4">
                                     <path fill="currentColor"
                                         d="M12 21q-3.45 0-6.012-2.287T3.05 13H5.1q.35 2.6 2.313 4.3T12 19q2.925 0 4.963-2.037T19 12t-2.037-4.962T12 5q-1.725 0-3.225.8T6.25 8H9v2H3V4h2v2.35q1.275-1.6 3.113-2.475T12 3q1.875 0 3.513.713t2.85 1.924t1.925 2.85T21 12t-.712 3.513t-1.925 2.85t-2.85 1.925T12 21m2.8-4.8L11 12.4V7h2v4.6l3.2 3.2z" />
                                 </svg>
@@ -397,7 +393,6 @@
                         @endif
                     </nav>
 
-                    {{-- form logout dibiarkan sama seperti sebelumnya --}}
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
                         <button class="mt-6 w-full bg-blue-600 text-white py-2 rounded-full hover:bg-blue-700">
@@ -422,6 +417,7 @@
                 {{-- Overlay mobile --}}
                 <div class="fixed inset-0 z-20 lg:hidden" x-show="sidebarOpen"
                     @click="sidebarOpen = false" x-transition.opacity></div>
+
                 <div class="min-h-screen w-full bg-gray-100">
                     @if (isset($header))
                         <header class="bg-white shadow">
@@ -431,7 +427,6 @@
                         </header>
                     @endif
 
-                    {{-- Page Content --}}
                     <main class="flex-1 p-8 md:p-8 max-w-7xl mx-auto overflow-x-auto md:overflow-x-visible">
                         {{ $slot }}
                     </main>
@@ -442,157 +437,139 @@
 
     {{-- Helpers untuk halaman seleksi --}}
     <script>
-    document.addEventListener('alpine:init', () => {
-    Alpine.data('stageSeleksiGlobal', () => ({
-        /* ================= STATE ================ */
-        // stage baca dari hidden input name="stage" (fallback: null)
-        stage: null,
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('stageSeleksiGlobal', () => ({
+                stage: null,
+                emailModalOpen: false,
+                useTemplate: true,
+                selectedEmails: [],
+                selectedMeta: [],
+                cvModalOpen: false,
+                cvUrl: null,
+                cvName: '',
+                editModalOpen: false,
+                updateBase: '',
+                form: {
+                    id: null,
+                    name: '', email: '',
+                    nik: '', no_telp: '',
+                    tpt_lahir: '', tgl_lahir: '',
+                    alamat: '',
+                    pendidikan: 'S1',
+                    universitas: '', jurusan: '',
+                    thn_lulus: '',
+                    position_id: '',
+                    status: 'Seleksi Administrasi',
+                },
 
-        // Email modal
-        emailModalOpen: false,
-        useTemplate: true,
-        selectedEmails: [],
-        selectedMeta: [], // [{id,email,name,position}]
+                init() {
+                    const selectAll = document.getElementById('selectAll');
+                    if (selectAll) {
+                        selectAll.addEventListener('change', (e) => {
+                            document.querySelectorAll('.applicant-checkbox').forEach(cb => cb.checked = e.target.checked);
+                        });
+                    }
+                    const ub = document.getElementById('update_base')?.value;
+                    if (ub) this.updateBase = ub;
 
-        // CV modal
-        cvModalOpen: false,
-        cvUrl: null,
-        cvName: '',
+                    this.stage = document.querySelector('input[name="stage"]')?.value || this.stage;
+                },
 
-        // Edit modal
-        editModalOpen: false,
-        updateBase: '', // diisi dari #update_base => "admin/applicant/__ID__"
-        form: {
-            id: null,
-            name: '', email: '',
-            nik: '', no_telp: '',
-            tpt_lahir: '', tgl_lahir: '',
-            alamat: '',
-            pendidikan: 'S1',
-            universitas: '', jurusan: '',
-            thn_lulus: '',
-            position_id: '',
-            status: 'Seleksi Administrasi',
-        },
+                submitStatus(action, opts = {}) {
+                    const form = document.getElementById('statusForm');
+                    if (!form) return this._err('Form status (#statusForm) tidak ditemukan.');
 
-        /* ================= INIT ================ */
-        init() {
-            // select all
-            const selectAll = document.getElementById('selectAll');
-            if (selectAll) {
-                selectAll.addEventListener('change', (e) => {
-                    document.querySelectorAll('.applicant-checkbox').forEach(cb => cb.checked = e.target.checked);
-                });
-            }
-            // base URL edit
-            const ub = document.getElementById('update_base')?.value;
-            if (ub) this.updateBase = ub;
+                    if (opts.autoSelectAll) {
+                        document.querySelectorAll('.applicant-checkbox').forEach(cb => cb.checked = true);
+                    }
 
-            // stage untuk template
-            this.stage = document.querySelector('input[name="stage"]')?.value || this.stage;
-        },
+                    const checked = Array.from(document.querySelectorAll('.applicant-checkbox:checked'));
+                    if (checked.length === 0) return this._err('Pilih minimal satu peserta.');
 
-        /* ============ MASS ACTION: LOLOS/GAGAL ============ */
-        submitStatus(action, opts = {}) {
-            const form = document.getElementById('statusForm');
-            if (!form) return this._err('Form status (#statusForm) tidak ditemukan.');
+                    const box = document.getElementById('statusInputs');
+                    if (!box) return this._err('Container hidden input (#statusInputs) tidak ditemukan.');
+                    box.innerHTML = '';
 
-            if (opts.autoSelectAll) {
-                document.querySelectorAll('.applicant-checkbox').forEach(cb => cb.checked = true);
-            }
+                    checked.forEach(cb => {
+                        const sel = document.createElement('input');
+                        sel.type = 'hidden';
+                        sel.name = 'selected_applicants[]';
+                        sel.value = cb.value;
+                        box.appendChild(sel);
 
-            const checked = Array.from(document.querySelectorAll('.applicant-checkbox:checked'));
-            if (checked.length === 0) return this._err('Pilih minimal satu peserta.');
+                        const st = document.createElement('input');
+                        st.type = 'hidden';
+                        st.name = `status[${cb.value}]`;
+                        st.value = (action === 'lolos') ? 'lolos' : 'tidak_lolos';
+                        box.appendChild(st);
+                    });
 
-            const box = document.getElementById('statusInputs');
-            if (!box) return this._err('Container hidden input (#statusInputs) tidak ditemukan.');
-            box.innerHTML = '';
+                    if (!form.querySelector('input[name="stage"]')) {
+                        const stageFromData = form.dataset?.stage;
+                        if (!stageFromData) return this._err("Input 'stage' tidak ditemukan di form.");
+                        const stageInput = document.createElement('input');
+                        stageInput.type = 'hidden';
+                        stageInput.name = 'stage';
+                        stageInput.value = stageFromData;
+                        box.appendChild(stageInput);
+                    }
 
-            // isi selected_applicants[] + status[id]
-            checked.forEach(cb => {
-                const sel = document.createElement('input');
-                sel.type = 'hidden';
-                sel.name = 'selected_applicants[]';
-                sel.value = cb.value;
-                box.appendChild(sel);
+                    form.submit();
+                },
 
-                const st = document.createElement('input');
-                st.type = 'hidden';
-                st.name = `status[${cb.value}]`;
-                st.value = (action === 'lolos') ? 'lolos' : 'tidak_lolos';
-                box.appendChild(st);
-            });
+                openEmailModal() {
+                    const selected = Array.from(document.querySelectorAll('.applicant-checkbox:checked'));
+                    let nodes = selected.length
+                        ? selected
+                        : Array.from(document.querySelectorAll('.applicant-checkbox[data-stage-state=\"lolos\"]'));
 
-            // pastikan ada 'stage'
-            if (!form.querySelector('input[name="stage"]')) {
-                const stageFromData = form.dataset?.stage;
-                if (!stageFromData) return this._err("Input 'stage' tidak ditemukan di form.");
-                const stageInput = document.createElement('input');
-                stageInput.type = 'hidden';
-                stageInput.name = 'stage';
-                stageInput.value = stageFromData;
-                box.appendChild(stageInput);
-            }
+                    if (!nodes.length) return this._err('Belum ada peserta dipilih / berstatus LOLOS di halaman ini.');
 
-            form.submit();
-        },
+                    this.selectedEmails = [...new Set(nodes.map(cb => cb.dataset.email).filter(Boolean))];
+                    this.selectedMeta = nodes.map(cb => ({
+                        id: cb.value,
+                        email: cb.dataset.email || '',
+                        name: cb.dataset.name || 'Peserta',
+                        position: cb.dataset.position || '-',
+                    }));
 
-        /* ================== EMAIL ================== */
-        openEmailModal() {
-            const selected = Array.from(document.querySelectorAll('.applicant-checkbox:checked'));
-            let nodes = selected.length
-                ? selected
-                : Array.from(document.querySelectorAll('.applicant-checkbox[data-stage-state=\"lolos\"]'));
+                    document.getElementById('recipients')?.setAttribute('value', this.selectedEmails.join(','));
+                    document.getElementById('recipient_ids')?.setAttribute('value', nodes.map(cb => cb.value).join(','));
 
-            if (!nodes.length) return this._err('Belum ada peserta dipilih / berstatus LOLOS di halaman ini.');
+                    const useTpl = document.getElementById('use_template');
+                    if (useTpl) useTpl.checked = true;
+                    this.useTemplate = true;
+                    this._syncTemplateInputs(true);
 
-            this.selectedEmails = [...new Set(nodes.map(cb => cb.dataset.email).filter(Boolean))];
-            this.selectedMeta = nodes.map(cb => ({
-                id: cb.value,
-                email: cb.dataset.email || '',
-                name: cb.dataset.name || 'Peserta',
-                position: cb.dataset.position || '-',
-            }));
+                    this.emailModalOpen = true;
+                },
 
-            // isi hidden input di modal
-            document.getElementById('recipients')?.setAttribute('value', this.selectedEmails.join(','));
-            document.getElementById('recipient_ids')?.setAttribute('value', nodes.map(cb => cb.value).join(','));
+                openEmailModalAuto() {
+                    document.querySelectorAll('.applicant-checkbox[data-stage-state=\"lolos\"]').forEach(cb => cb.checked = true);
+                    this.openEmailModal();
+                },
 
-            // default: pakai template → preview untuk penerima pertama
-            const useTpl = document.getElementById('use_template');
-            if (useTpl) useTpl.checked = true;
-            this.useTemplate = true;
-            this._syncTemplateInputs(true);
+                toggleTemplate() {
+                    const on = document.getElementById('use_template')?.checked ?? true;
+                    this.useTemplate = !!on;
+                    this._syncTemplateInputs(this.useTemplate);
+                },
+                toggleUseTemplate(ev) { this.toggleTemplate(ev); },
 
-            this.emailModalOpen = true;
-        },
+                _syncTemplateInputs(useTpl) {
+                    const subjectEl = document.querySelector('[name=\"subject\"]');
+                    const msgEl = document.querySelector('[name=\"message\"]');
+                    if (!subjectEl || !msgEl) return;
 
-        openEmailModalAuto() {
-            document.querySelectorAll('.applicant-checkbox[data-stage-state=\"lolos\"]').forEach(cb => cb.checked = true);
-            this.openEmailModal();
-        },
+                    if (useTpl) {
+                        const first = this.selectedMeta?.[0] || {};
+                        const tplSubject =
+                            document.getElementById('tpl_subject')?.value
+                            || `INFORMASI HASIL SELEKSI ${this.stage || ''} TAD/OUTSOURCING - PLN ICON PLUS`;
 
-        toggleTemplate() {
-            const on = document.getElementById('use_template')?.checked ?? true;
-            this.useTemplate = !!on;
-            this._syncTemplateInputs(this.useTemplate);
-        },
-        toggleUseTemplate(ev) { this.toggleTemplate(ev); },
-
-        _syncTemplateInputs(useTpl) {
-            const subjectEl = document.querySelector('[name=\"subject\"]');
-            const msgEl = document.querySelector('[name=\"message\"]');
-            if (!subjectEl || !msgEl) return;
-
-            if (useTpl) {
-                const first = this.selectedMeta?.[0] || {};
-                const tplSubject =
-                    document.getElementById('tpl_subject')?.value
-                    || `INFORMASI HASIL SELEKSI ${this.stage || ''} TAD/OUTSOURCING - PLN ICON PLUS`;
-
-                let tplMsg =
-                    document.getElementById('tpl_message')?.value
-                    || `Halo {NAMA_PESERTA}
+                        let tplMsg =
+                            document.getElementById('tpl_message')?.value
+                            || `Halo {NAMA_PESERTA}
 
 Terima kasih atas partisipasi Saudara/i dalam mengikuti proses seleksi TAD/OUTSOURCING PLN ICON PLUS pada posisi {POSISI}.
 
@@ -601,74 +578,69 @@ Selamat Anda lolos pada tahap ${this.stage || ''}. Selanjutnya, silakan cek jadw
 Demikian kami sampaikan.
 Terima kasih atas partisipasinya dan semoga sukses.`;
 
-                subjectEl.value = tplSubject;
-                msgEl.value = tplMsg
-                    .replaceAll('{NAMA_PESERTA}', first.name || 'Peserta')
-                    .replaceAll('{POSISI}', first.position || '-');
+                        subjectEl.value = tplSubject;
+                        msgEl.value = tplMsg
+                            .replaceAll('{NAMA_PESERTA}', first.name || 'Peserta')
+                            .replaceAll('{POSISI}', first.position || '-');
 
-                subjectEl.readOnly = true;
-                msgEl.readOnly = true;
-            } else {
-                subjectEl.readOnly = false;
-                msgEl.readOnly = false;
-            }
-        },
+                        subjectEl.readOnly = true;
+                        msgEl.readOnly = true;
+                    } else {
+                        subjectEl.readOnly = false;
+                        msgEl.readOnly = false;
+                    }
+                },
 
-        validateAndSubmit(e) {
-            const form = e.target;
-            const file = form.querySelector('input[type=\"file\"][name=\"attachment\"]')?.files?.[0];
+                validateAndSubmit(e) {
+                    const form = e.target;
+                    const file = form.querySelector('input[type=\"file\"][name=\"attachment\"]')?.files?.[0];
 
-            if (!file) { e.preventDefault(); return this._err('Wajib unggah lampiran PDF.'); }
-            const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-            if (!isPdf) { e.preventDefault(); return this._err('Lampiran harus PDF.'); }
-            if (file.size > 5 * 1024 * 1024) { e.preventDefault(); return this._err('Ukuran PDF maksimal 5 MB.'); }
+                    if (!file) { e.preventDefault(); return this._err('Wajib unggah lampiran PDF.'); }
+                    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+                    if (!isPdf) { e.preventDefault(); return this._err('Lampiran harus PDF.'); }
+                    if (file.size > 5 * 1024 * 1024) { e.preventDefault(); return this._err('Ukuran PDF maksimal 5 MB.'); }
 
-            const useTpl = document.getElementById('use_template')?.checked ?? true;
-            if (!useTpl) {
-                const subject = (form.querySelector('[name=\"subject\"]')?.value || '').trim();
-                const message = (form.querySelector('[name=\"message\"]')?.value || '').trim();
-                if (!subject || !message) {
-                    e.preventDefault();
-                    return this._err('Subjek dan pesan wajib diisi bila template dimatikan.');
-                }
-            }
-        },
+                    const useTpl = document.getElementById('use_template')?.checked ?? true;
+                    if (!useTpl) {
+                        const subject = (form.querySelector('[name=\"subject\"]')?.value || '').trim();
+                        const message = (form.querySelector('[name=\"message\"]')?.value || '').trim();
+                        if (!subject || !message) {
+                            e.preventDefault();
+                            return this._err('Subjek dan pesan wajib diisi bila template dimatikan.');
+                        }
+                    }
+                },
 
-        /* ================== CV MODAL ================== */
-        openCvModal(url, name) {
-            if (!url) return this._err('CV tidak tersedia.');
-            this.cvUrl = url;
-            this.cvName = name || 'CV';
-            this.cvModalOpen = true;
-        },
-        closeCvModal() {
-            this.cvModalOpen = false;
-            this.cvUrl = null;
-            this.cvName = '';
-        },
+                openCvModal(url, name) {
+                    if (!url) return this._err('CV tidak tersedia.');
+                    this.cvUrl = url;
+                    this.cvName = name || 'CV';
+                    this.cvModalOpen = true;
+                },
+                closeCvModal() {
+                    this.cvModalOpen = false;
+                    this.cvUrl = null;
+                    this.cvName = '';
+                },
 
-        /* ================== EDIT MODAL ================== */
-        openEditModal(data) {
-            this.form = Object.assign({}, this.form, data || {});
-            this.editModalOpen = true;
-        },
-        closeEditModal() { this.editModalOpen = false; },
-        updateUrl() {
-            const base = this.updateBase || '/admin/applicant/__ID__';
-            return base.replace('__ID__', this.form?.id ?? '');
-        },
+                openEditModal(data) {
+                    this.form = Object.assign({}, this.form, data || {});
+                    this.editModalOpen = true;
+                },
+                closeEditModal() { this.editModalOpen = false; },
+                updateUrl() {
+                    const base = this.updateBase || '/admin/applicant/__ID__';
+                    return base.replace('__ID__', this.form?.id ?? '');
+                },
 
-        /* ================== HELPERS ================== */
-        _err(msg) {
-            if (window.Swal) Swal.fire({ icon: 'error', title: 'Oops', text: msg });
-            else alert(msg);
-        },
-        _alertErr(msg) { this._err(msg); },
-    }));
-    });
+                _err(msg) {
+                    if (window.Swal) Swal.fire({ icon: 'error', title: 'Oops', text: msg });
+                    else alert(msg);
+                },
+                _alertErr(msg) { this._err(msg); },
+            }));
+        });
     </script>
-
-
 
     <footer class="bg-gray-900 text-gray-200 py-10 px-8">
         <div class="max-w-7xl mx-auto">
@@ -677,28 +649,28 @@ Terima kasih atas partisipasinya dan semoga sukses.`;
 
             <div class="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-6">
                 @forelse($footerContacts as $c)
-                <div>
-                    <h4 class="text-lg font-semibold">{{ $c->narahubung ?? 'Kontak' }}</h4>
+                    <div>
+                        <h4 class="text-lg font-semibold">{{ $c->narahubung ?? 'Kontak' }}</h4>
 
-                    @if($c->email)
-                    <a href="mailto:{{ $c->email }}" class="block text-sm text-gray-300 hover:text-white no-underline">
-                        ✉️ {{ $c->email }}
-                    </a>
-                    @endif
+                        @if($c->email)
+                            <a href="mailto:{{ $c->email }}" class="block text-sm text-gray-300 hover:text-white no-underline">
+                                ✉️ {{ $c->email }}
+                            </a>
+                        @endif
 
-                    @php $wa = $c->wa_number; @endphp
-                    @if($wa)
-                    <a href="https://wa.me/{{ $wa }}" target="_blank" class="block text-sm text-gray-300 hover:text-white no-underline">
-                        📱 {{ $c->phone }}
-                    </a>
-                    @endif
+                        @php $wa = $c->wa_number; @endphp
+                        @if($wa)
+                            <a href="https://wa.me/{{ $wa }}" target="_blank" class="block text-sm text-gray-300 hover:text-white no-underline">
+                                📱 {{ $c->phone }}
+                            </a>
+                        @endif
 
-                    @if($c->jam_operasional)
-                    <div class="text-xs text-gray-400 mt-1">{{ $c->jam_operasional }}</div>
-                    @endif
-                </div>
+                        @if($c->jam_operasional)
+                            <div class="text-xs text-gray-400 mt-1">{{ $c->jam_operasional }}</div>
+                        @endif
+                    </div>
                 @empty
-                <div class="col-span-1 text-gray-400">Belum ada kontak aktif.</div>
+                    <div class="col-span-1 text-gray-400">Belum ada kontak aktif.</div>
                 @endforelse
             </div>
         </div>
@@ -708,15 +680,13 @@ Terima kasih atas partisipasinya dan semoga sukses.`;
 
         @if (session('success'))
             <script>
-            document.addEventListener('DOMContentLoaded', () => {
-                Swal.fire({ icon:'success', title:'Berhasil', text:"{{ session('success') }}", confirmButtonColor:'#3085d6' });
-            });
+                document.addEventListener('DOMContentLoaded', () => {
+                    Swal.fire({ icon:'success', title:'Berhasil', text:"{{ session('success') }}", confirmButtonColor:'#3085d6' });
+                });
             </script>
         @endif
     </footer>
 
-
-    {{-- JS libs --}}
     <script defer src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-j1CDi7MgGQ12Z7Qab0qlWQ/Qqz24Gc6BM0thvEMVjHnfYGF0rmFCozFSxQBxwHKO" crossorigin="anonymous">
     </script>
@@ -743,9 +713,8 @@ Terima kasih atas partisipasinya dan semoga sukses.`;
             }));
         });
     </script>
+
     @stack('scripts')
-
-
 </body>
 
 </html>
