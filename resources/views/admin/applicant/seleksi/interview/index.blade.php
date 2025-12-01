@@ -201,7 +201,13 @@
                                 ->first();
               @endphp
               <tr>
-                <td class="px-3 py-2 whitespace-nowrap"><input type="checkbox" name="ids[]" value="{{ $a->id }}"></td>
+                <td class="px-3 py-2 whitespace-nowrap">
+                  <input
+                      type="checkbox"
+                      name="ids[]"
+                      value="{{ $a->id }}"
+                      data-potential-admins='@json($a->potential_admins)'
+                  ></td>
                 <td class="px-3 py-2 whitespace-nowrap">{{ $a->name }}</td>
                 <td class="px-3 py-2 whitespace-nowrap">{{ $a->universitas ?? '-' }}</td>
                 <td class="px-3 py-2 whitespace-nowrap">{{ $a->jurusan ?? '-' }}</td>
@@ -235,25 +241,13 @@
                 </td>
 
                 <td class="px-3 py-2 whitespace-nowrap">
-                  @if (!empty($a->potential_admins) && count($a->potential_admins) > 0)
-                      <select
-                          name="picked_by[{{ $a->id }}]"
-                          class="border rounded px-2 py-1 text-sm bg-white"
-                          data-applicant-id="{{ $a->id }}"
-                          onchange="handlePickedByChange(this)"
-                      >
-                          <option value="">-- pilih --</option>
-                          @foreach($a->potential_admins as $adm)
-                              <option value="{{ $adm['id'] }}"
-                                  {{ (int)$a->picked_by === (int)$adm['id'] ? 'selected' : '' }}>
-                                  {{ $adm['name'] }}
-                              </option>
-                          @endforeach
-                      </select>
+                  @if (!empty($a->picked_by_name))
+                      <span class="text-sm text-gray-800">{{ $a->picked_by_name }}</span>
                   @else
                       <span class="text-gray-400 text-sm">-</span>
                   @endif
-              </td>
+                </td>
+
 
                 {{-- Email Status --}}
                 <td class="px-3 py-2 whitespace-nowrap text-center">
@@ -493,6 +487,7 @@
                 onclick="document.getElementById('confirmModal').classList.add('hidden')"
                 class="text-gray-500 hover:text-gray-700 text-2xl leading-none">&times;</button>
       </div>
+
       <div id="vendorWrapper" class="mb-4 hidden">
         <label class="block text-sm font-medium mb-1">Pilih Vendor</label>
         <select id="vendorSelect" class="border rounded w-full px-2 py-1 text-sm">
@@ -503,7 +498,20 @@
         </select>
         <p class="text-xs text-gray-500 mt-1">Vendor wajib dipilih untuk peserta yang diloloskan.</p>
       </div>
+
+      {{-- ✅ SATU wrapper saja, nggak dobel --}}
+      <div id="pickedByWrapper" class="mb-4 hidden">
+        <label class="block text-sm font-medium mb-1">Picked By</label>
+        <select id="pickedBySelect" class="border rounded w-full px-2 py-1 text-sm">
+          <option value="">-- Pilih Admin --</option>
+        </select>
+        <p class="text-xs text-gray-500 mt-1">
+          List admin diambil dari yang menandai peserta sebagai <strong>potential</strong>.
+        </p>
+      </div>
+
       <p id="confirmMessage" class="text-gray-700 mb-6">Apakah Anda yakin?</p>
+
       <div class="flex justify-end gap-2">
         <button type="button"
                 onclick="document.getElementById('confirmModal').classList.add('hidden')"
@@ -513,6 +521,7 @@
       </div>
     </div>
   </div>
+
 
   {{-- Modal Email Interview --}}
   <div id="emailModalInterview" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
@@ -682,34 +691,53 @@
       const cmModal = $('confirmModal');
       if (cmModal) cmModal.classList.remove('hidden');
 
-      const vendorWrapper = $('vendorWrapper');
-      const vendorSelect = $('vendorSelect');
-      const confirmBtn = $('confirmYesBtn');
+      const vendorWrapper   = $('vendorWrapper');
+      const vendorSelect    = $('vendorSelect');
+      const pickedByWrapper = $('pickedByWrapper');
+      const pickedBySelect  = $('pickedBySelect');
+      const confirmBtn      = $('confirmYesBtn');
 
-      if (vendorWrapper && vendorSelect && confirmBtn) {
-        if (action === 'lolos') {
-          vendorWrapper.classList.remove('hidden');
-          vendorSelect.value = '';
+      if (!confirmBtn) return;
 
-          confirmBtn.disabled = true;
-          confirmBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      if (action === 'lolos') {
+        if (vendorWrapper) vendorWrapper.classList.remove('hidden');
+        if (pickedByWrapper) pickedByWrapper.classList.remove('hidden');
+        if (vendorSelect) vendorSelect.value = '';
+        if (pickedBySelect) pickedBySelect.value = '';
 
-          vendorSelect.onchange = function() {
-            if (this.value) {
-              confirmBtn.disabled = false;
-              confirmBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-            } else {
-              confirmBtn.disabled = true;
-              confirmBtn.classList.add('opacity-50', 'cursor-not-allowed');
-            }
-          };
-        } else {
-          vendorWrapper.classList.add('hidden');
-          confirmBtn.disabled = false;
-          confirmBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        const updateConfirmState = () => {
+          const vendorOk = vendorSelect && vendorSelect.value;
+          const pickedOk = pickedBySelect && pickedBySelect.value && !pickedBySelect.disabled;
+          const allValid = vendorOk && pickedOk;
+
+          confirmBtn.disabled = !allValid;
+          confirmBtn.classList.toggle('opacity-50', !allValid);
+          confirmBtn.classList.toggle('cursor-not-allowed', !allValid);
+        };
+
+        // ⬇️⬇️⬇️ build list dari peserta yang dipilih
+        const countAdmins = buildPickedByOptionsFromChecked();
+        if (countAdmins === 0) {
+          alert('Peserta yang dipilih belum punya admin potensial. Isi dulu checkbox "Potencial" di penilaian interview.');
+          const cmModal2 = $('confirmModal');
+          if (cmModal2) cmModal2.classList.add('hidden');
+          return;
         }
+
+        if (vendorSelect) vendorSelect.onchange = updateConfirmState;
+        if (pickedBySelect) pickedBySelect.onchange = updateConfirmState;
+
+        // awal: disabled sampai dua-duanya kepilih
+        updateConfirmState();
+      } else {
+        if (vendorWrapper) vendorWrapper.classList.add('hidden');
+        if (pickedByWrapper) pickedByWrapper.classList.add('hidden');
+        confirmBtn.disabled = false;
+        confirmBtn.classList.remove('opacity-50', 'cursor-not-allowed');
       }
     }
+
+
 
     const confirmYesBtn = $('confirmYesBtn');
     if (confirmYesBtn) {
@@ -726,11 +754,16 @@
         actionInput.value = selectedAction;
         form.appendChild(actionInput);
 
-        // kalau lolos, wajib vendor_id
         if (selectedAction === 'lolos') {
-          const vendorSelect = $('vendorSelect');
+          const vendorSelect   = $('vendorSelect');
+          const pickedBySelect = $('pickedBySelect');
+
           if (!vendorSelect || !vendorSelect.value) {
             alert('Silakan pilih vendor terlebih dahulu.');
+            return;
+          }
+          if (!pickedBySelect || !pickedBySelect.value) {
+            alert('Silakan pilih Picked By terlebih dahulu.');
             return;
           }
 
@@ -739,11 +772,18 @@
           vendorInput.name = 'vendor_id';
           vendorInput.value = vendorSelect.value;
           form.appendChild(vendorInput);
+
+          let pickedInput = document.createElement('input');
+          pickedInput.type = 'hidden';
+          pickedInput.name = 'picked_by';
+          pickedInput.value = pickedBySelect.value;
+          form.appendChild(pickedInput);
         }
 
         form.submit();
       });
     }
+
 
 
     // Check All (safe)
@@ -808,41 +848,89 @@
         }
       });
     }
-        // Auto save Picked By (AJAX)
-    function handlePickedByChange(selectEl) {
-      const applicantId = selectEl.getAttribute('data-applicant-id');
-      const pickedById  = selectEl.value;
+    function buildPickedByOptionsFromChecked() {
+      const pickedSelect = $('pickedBySelect');
+      if (!pickedSelect) return 0;
 
-      if (!applicantId || !pickedById) {
-        // kalau mau support clear, di sini bisa kirim request untuk null-in
-        return;
+      // reset isi select
+      pickedSelect.innerHTML = '<option value="">-- Pilih Admin --</option>';
+      pickedSelect.disabled = false;
+
+      const map = new Map();
+
+      document.querySelectorAll('input[name="ids[]"]:checked').forEach(cb => {
+          const raw = cb.getAttribute('data-potential-admins');
+          if (!raw) return;
+
+          let list;
+          try {
+              list = JSON.parse(raw);
+          } catch (e) {
+              console.error('Invalid JSON in data-potential-admins', e);
+              return;
+          }
+
+          if (!Array.isArray(list)) return;
+
+          list.forEach(item => {
+              if (!item || !item.id) return;
+              if (!map.has(item.id)) {
+                  map.set(item.id, item.name || ('Admin #' + item.id));
+              }
+          });
+      });
+
+      if (map.size === 0) {
+          pickedSelect.innerHTML =
+              '<option value="">Belum ada admin potential untuk peserta terpilih</option>';
+          pickedSelect.disabled = true;
+          return 0;
       }
 
-      fetch("{{ route('admin.applicant.seleksi.interview.bulkSetPickedBy') }}", {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': '{{ csrf_token() }}',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify({
-          applicant_id: applicantId,
-          picked_by: pickedById,
-        }),
-      })
-      .then(res => {
-        if (!res.ok) throw new Error('Network error');
-        return res.json();
-      })
-      .then(data => {
-        // opsional: kasih feedback halus
-        console.log('Picked By updated:', data);
-        // bisa juga nanti pake toast kecil kalau mau
-      })
-      .catch(err => {
-        console.error(err);
-        alert('Gagal menyimpan Picked By. Silakan coba lagi.');
+      map.forEach((name, id) => {
+          const opt = document.createElement('option');
+          opt.value = id;
+          opt.textContent = name;
+          pickedSelect.appendChild(opt);
       });
-    }
+
+      return map.size;
+  }
+        // Auto save Picked By (AJAX)
+    // function handlePickedByChange(selectEl) {
+    //   const applicantId = selectEl.getAttribute('data-applicant-id');
+    //   const pickedById  = selectEl.value;
+
+    //   if (!applicantId || !pickedById) {
+    //     // kalau mau support clear, di sini bisa kirim request untuk null-in
+    //     return;
+    //   }
+
+    //   fetch("{{ route('admin.applicant.seleksi.interview.bulkSetPickedBy') }}", {
+    //     method: 'POST',
+    //     headers: {
+    //       'Content-Type': 'application/json',
+    //       'X-CSRF-TOKEN': '{{ csrf_token() }}',
+    //       'Accept': 'application/json',
+    //     },
+    //     body: JSON.stringify({
+    //       applicant_id: applicantId,
+    //       picked_by: pickedById,
+    //     }),
+    //   })
+    //   .then(res => {
+    //     if (!res.ok) throw new Error('Network error');
+    //     return res.json();
+    //   })
+    //   .then(data => {
+    //     // opsional: kasih feedback halus
+    //     console.log('Picked By updated:', data);
+    //     // bisa juga nanti pake toast kecil kalau mau
+    //   })
+    //   .catch(err => {
+    //     console.error(err);
+    //     alert('Gagal menyimpan Picked By. Silakan coba lagi.');
+    //   });
+    // }
   </script>
 </x-app-admin>

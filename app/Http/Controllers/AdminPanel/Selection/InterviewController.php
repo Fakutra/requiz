@@ -14,7 +14,7 @@ use App\Models\Batch;
 use App\Models\Position;
 use App\Exports\InterviewApplicantsExport;
 use Maatwebsite\Excel\Facades\Excel;
-use App\Services\ActivityLogger; // ✅ Tambahkan
+use App\Services\ActivityLogger;
 use App\Models\Vendor;
 use App\Models\User;
 
@@ -31,12 +31,12 @@ class InterviewController extends Controller
         $batches   = Batch::orderBy('id')->get();
         $positions = $batchId ? Position::where('batch_id', $batchId)->get() : collect();
         $vendors   = Vendor::orderBy('nama_vendor')->get();
+        $admins    = User::where('role', 'admin')->orderBy('name')->get(); // ⬅️ TAMBAHAN
 
         // Parameter sorting
         $sort      = $request->query('sort', 'name');
         $direction = $request->query('direction', 'asc');
 
-        // kolom yang boleh di-sort (harus sesuai properti yang nanti tersedia pada collection)
         $allowedSorts = [
             'name', 'universitas', 'jurusan', 'posisi',
             'ekspektasi_gaji', 'dokumen',
@@ -46,15 +46,14 @@ class InterviewController extends Controller
             $sort = 'name';
         }
 
-        // eager load relasi yg dibutuhkan supaya nggak N+1
         $q = Applicant::with([
                 'position',
                 'batch',
-                'vendor',        
+                'vendor',
                 'pickedBy',
                 'latestEmailLog',
                 'latestTestResult.sectionResults.testSection.questionBundle.questions',
-                'technicalTestAnswers', // untuk praktik_latest lookup (kita akan query latest per applicant tapi eager buat safety)
+                'technicalTestAnswers',
             ])
             ->whereIn('status', [
                 'Interview',
@@ -75,13 +74,10 @@ class InterviewController extends Controller
             });
         }
 
-        // Ambil semua data dulu
         $applicants = $q->get();
-
-        // ambil nilai-nilai agregat sekali saja (hindari loop DB)
         $applicantIds = $applicants->pluck('id')->all();
 
-        // max personality final untuk batch tertentu (kalau batch diberikan, prioritas ke batch)
+        // max personality
         $maxPersonalityFinal = 0;
         try {
             $ruleQ = DB::table('personality_rules');
@@ -91,20 +87,19 @@ class InterviewController extends Controller
             Log::warning("Gagal baca personality_rules: ".$e->getMessage());
         }
 
-        // avg interview per applicant (single query)
+        // rata-rata interview per applicant
         $avgInterviews = InterviewResult::whereIn('applicant_id', $applicantIds)
             ->select('applicant_id', DB::raw('AVG(score) as avg_score'))
             ->groupBy('applicant_id')
             ->pluck('avg_score', 'applicant_id')
             ->toArray();
 
-        // === Potential admins (yang centang potensial) ===
+        // potential admins
         $potentialResults = InterviewResult::whereIn('applicant_id', $applicantIds)
             ->where('potencial', true)
             ->with('user:id,name')
             ->get();
 
-        // Untuk display list nama: "Potential By"
         $potentials = $potentialResults
             ->groupBy('applicant_id')
             ->map(fn($col) => $col
@@ -115,7 +110,6 @@ class InterviewController extends Controller
             )
             ->toArray();
 
-        // Untuk dropdown: kandidat "Picked By" (id + name)
         $potentialAdmins = $potentialResults
             ->groupBy('applicant_id')
             ->map(function ($col) {
@@ -129,18 +123,16 @@ class InterviewController extends Controller
             })
             ->toArray();
 
-
-        // latest interview note per applicant
+        // latest notes
         $latestNotes = InterviewResult::whereIn('applicant_id', $applicantIds)
             ->select('applicant_id', 'note', DB::raw('MAX(id) as mx'))
             ->groupBy('applicant_id', 'note')
-            // simpler fallback: get latest by id per applicant via subquery
             ->get()
             ->groupBy('applicant_id')
             ->map(fn($g) => last($g)->note ?? null)
             ->toArray();
 
-        // latest technical test answer (latest submitted_at) per applicant
+        // latest technical answers
         $latestTechAnswers = DB::table('technical_test_answers')
             ->whereIn('applicant_id', $applicantIds)
             ->select('applicant_id', 'score', 'submitted_at')
@@ -150,10 +142,9 @@ class InterviewController extends Controller
             ->keyBy('applicant_id')
             ->toArray();
 
-        // sekarang process tiap applicant tanpa nambah query
         foreach ($applicants as $a) {
-            // ========= TES TULIS =========
-            $testResult = $a->latestTestResult; // sudah eager loaded
+            // TES TULIS
+            $testResult = $a->latestTestResult;
             $finalTotal = 0;
             $maxTotal   = 0;
 
@@ -199,36 +190,36 @@ class InterviewController extends Controller
             $a->quiz_final = $finalTotal ?: null;
             $a->quiz_max   = $maxTotal ?: null;
 
-            // ========= INTERVIEW =========
+            // INTERVIEW
             $avgInterview = $avgInterviews[$a->id] ?? null;
             $a->interview_final = $avgInterview ? round($avgInterview, 2) : null;
             $a->interview_max   = 100;
 
-            // ========= PRAKTIK =========
+            // PRAKTIK
             $latestAns = $latestTechAnswers[$a->id] ?? null;
             $a->praktik_final = $latestAns->score ?? null;
             $a->praktik_max   = 100;
 
-            // ========= DOKUMEN (ada/tidak) =========
+            // dokumen
             $a->dokumen = $a->cv_path ? 1 : 0;
 
-            // ========= POSISI (nama posisi relasi) =========
+            // posisi
             $a->posisi = $a->position?->name ?? null;
 
-            // ========= DATA TAMBAHAN =========
-            $a->potential_by = $potentials[$a->id] ?? [];
-            $a->potential_admins  = $potentialAdmins[$a->id] ?? [];
-            $a->interview_note = $latestNotes[$a->id] ?? null;
+            // data tambahan
+            $a->potential_by     = $potentials[$a->id] ?? [];
+            $a->potential_admins = $potentialAdmins[$a->id] ?? [];
+            $a->interview_note   = $latestNotes[$a->id] ?? null;
+
+            $a->picked_by_name = $a->pickedBy?->name;
         }
 
-        // Sorting collection — pakai closure supaya properti dinamis (name/posisi/quiz_final dll) bisa di-handle
         $applicants = $applicants->sortBy(function ($item) use ($sort) {
             $val = $item->{$sort} ?? $item->posisi ?? $item->name ?? '';
             if (is_array($val)) return strtolower(implode(',', $val));
             return is_null($val) ? '' : strtolower((string)$val);
         }, SORT_NATURAL, $direction === 'desc')->values();
 
-        // Pagination manual
         $page = request('page', 1);
         $perPage = 20;
         $applicants = new \Illuminate\Pagination\LengthAwarePaginator(
@@ -240,13 +231,16 @@ class InterviewController extends Controller
         );
 
         return view('admin.applicant.seleksi.interview.index', compact(
-            'batches', 'positions', 'batchId', 'positionId', 'applicants', 'vendors'
+            'batches',
+            'positions',
+            'batchId',
+            'positionId',
+            'applicants',
+            'vendors',
+            'admins' // ⬅️ DIKIRIM KE VIEW
         ));
     }
 
-    /**
-     * EXPORT data interview ke Excel + catat log
-     */
     public function export(Request $request)
     {
         $batchId    = $request->query('batch');
@@ -255,7 +249,6 @@ class InterviewController extends Controller
 
         $fileName = 'Interview_Applicants_' . now()->format('Ymd_His') . '.xlsx';
 
-        // Catat log aktivitas export
         try {
             ActivityLogger::log(
                 'export',
@@ -273,9 +266,6 @@ class InterviewController extends Controller
         );
     }
 
-    /**
-     * Simpan atau update nilai interview + log perbandingan before/after
-     */
     public function storeScore(Request $request)
     {
         $data = $request->validate([
@@ -295,7 +285,6 @@ class InterviewController extends Controller
             $data['poin_cara_bicara']
         ) / 4;
 
-        // Cek apakah data sebelumnya sudah ada
         $existing = InterviewResult::where('applicant_id', $data['applicant_id'])
             ->where('user_id', auth()->id())
             ->first();
@@ -322,14 +311,12 @@ class InterviewController extends Controller
             ]
         );
 
-        // Siapkan data baru
         $newData = [
             'score'     => number_format($result->score, 2),
             'note'      => $result->note,
             'potencial' => $result->potencial ? 'Ya' : 'Tidak'
         ];
 
-        // Catat log perubahan
         if ($oldData) {
             $changes = [];
             foreach ($newData as $key => $value) {
@@ -359,29 +346,20 @@ class InterviewController extends Controller
 
     protected function newStatus(string $action, string $currentStatus): string
     {
-        // Kalau aksi "lolos" → naik ke Offering (kecuali sudah Offering / Menerima / Menolak)
         if ($action === 'lolos') {
-            // Kalau sudah di fase offering / after-offering, jangan diturunin
             if (in_array($currentStatus, ['Offering', 'Menerima Offering', 'Menolak Offering'])) {
                 return $currentStatus;
             }
-
-            return 'Offering'; // status setelah Lolos Interview di sistem lo
+            return 'Offering';
         }
 
-        // Kalau aksi "tidak_lolos" → cap "Tidak Lolos Interview"
         if ($action === 'tidak_lolos') {
             return 'Tidak Lolos Interview';
         }
 
-        // Fallback: kalau aksinya nggak dikenal, balikin status lama aja
         return $currentStatus;
     }
 
-
-    /**
-     * Tandai hasil interview lolos/tidak lolos + log aktivitas
-     */
     public function bulkMark(Request $r)
     {
         $data = $r->validate([
@@ -389,17 +367,26 @@ class InterviewController extends Controller
             'ids.*'       => 'exists:applicants,id',
             'bulk_action' => 'required|in:lolos,tidak_lolos',
             'vendor_id'   => 'nullable|exists:vendors,id',
+            'picked_by'   => 'nullable|exists:users,id', // ⬅️ TAMBAHAN
         ]);
 
-        // Kalau lolos, vendor wajib ada
-        if ($data['bulk_action'] === 'lolos' && empty($data['vendor_id'])) {
-            return back()
-                ->withErrors('Vendor wajib dipilih untuk peserta yang diloloskan.')
-                ->withInput();
+        if ($data['bulk_action'] === 'lolos') {
+            if (empty($data['vendor_id'])) {
+                return back()
+                    ->withErrors('Vendor wajib dipilih untuk peserta yang diloloskan.')
+                    ->withInput();
+            }
+            if (empty($data['picked_by'])) {
+                return back()
+                    ->withErrors('Picked By wajib dipilih untuk peserta yang diloloskan.')
+                    ->withInput();
+            }
         }
 
         foreach ($data['ids'] as $id) {
             $a = Applicant::find($id);
+            if (!$a) continue;
+
             $oldStatus = $a->status;
             $newStatus = $this->newStatus($data['bulk_action'], $a->status);
 
@@ -409,7 +396,7 @@ class InterviewController extends Controller
 
             if ($data['bulk_action'] === 'lolos') {
                 $payload['vendor_id'] = $data['vendor_id'];
-                $payload['picked_by'] = auth()->id(); // 👈 admin yang klik "Lolos"
+                $payload['picked_by'] = $data['picked_by']; // ⬅️ DARI MODAL, BUKAN auth()->id()
             }
 
             $a->forceFill($payload)->save();
@@ -418,7 +405,9 @@ class InterviewController extends Controller
                 $data['bulk_action'],
                 'Seleksi Interview',
                 Auth::user()->name." mengubah status peserta {$a->name} — status: '{$oldStatus}' → '{$newStatus}'"
-                .($data['bulk_action'] === 'lolos' ? " (Vendor ID: {$data['vendor_id']})" : ''),
+                .($data['bulk_action'] === 'lolos'
+                    ? " (Vendor ID: {$data['vendor_id']}, Picked By: {$data['picked_by']})"
+                    : ''),
                 "Applicant ID: {$a->id}"
             );
         }
@@ -441,7 +430,6 @@ class InterviewController extends Controller
         $applicant->picked_by = $data['picked_by'];
         $applicant->save();
 
-        // Log aktivitas (optional tapi keren)
         try {
             ActivityLogger::log(
                 'set_picked_by',
@@ -468,6 +456,4 @@ class InterviewController extends Controller
 
         return back()->with('success', 'Picked By berhasil diperbarui.');
     }
-
-
 }

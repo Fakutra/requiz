@@ -116,7 +116,7 @@
                     :class="{ '-translate-x-full': !sidebarOpen, 'translate-x-0': sidebarOpen }"
                     x-data="{
                         masterOpen: {{ request()->is('admin/faq') || request()->is('admin/vendor') || request()->is('admin/contact*') || request()->is('admin/about*') || request()->is('admin/policy*') ? 'true' : 'false' }},
-                        userOpen: {{ request()->is('admin/applicant*') || request()->is('admin/applicant/seleksi*') ? 'true' : 'false' }},
+                        userOpen: {{ request()->is('admin/admin*') || request()->is('admin/user*') ? 'true' : 'false' }},
                         jobOpen: {{ request()->is('admin/batch*') ? 'true' : 'false' }},
                         quizOpen: {{ request()->is('admin/test') || request()->is('admin/bundle*') || request()->is('admin/question*') ? 'true' : 'false' }},
                         scheduleOpen: {{ request()->is('admin/tech-schedule*') || request()->is('admin/interview-schedule*') ? 'true' : 'false' }},
@@ -210,6 +210,126 @@
                                 Dashboard
                             </a>
 
+                            {{-- QUIZ --}}
+                            <div class="py-1">
+                                <button @click="toggleMenu('quizOpen')"
+                                    class="flex items-center w-full text-gray-700 hover:text-blue-600 focus:outline-none">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                        viewBox="0 0 20 20" class="size-6 me-4">
+                                        <path fill="currentColor"
+                                            d="M5.5 3A2.5 2.5 0 0 0 3 5.5v9A2.5 2.5 0 0 0 5.5 17h4.1a5.5 5.5 0 0 1-.393-1H5.5A1.5 1.5 0 0 1 4 14.5v-9A1.5 1.5 0 0 1 5.5 4h9A1.5 1.5 0 0 1 16 5.5v3.707q.524.149 1 .393V5.5A2.5 2.5 0 0 0 14.5 3zm3.707 10q.149-.524.393-1H5.5a.5.5 0 0 0 0 1zM8.5 15a.5.5 0 0 0 0-1h-3a.5.5 0 0 0 0 1zM8 5a.5.5 0 0 1 .457.297l2 4.5a.5.5 0 1 1-.914.406L9.008 9H6.992l-.535 1.203a.5.5 0 0 1-.914-.406l2-4.5A.5.5 0 0 1 8 5m.564 3L8 6.731L7.436 8zM13.5 5.5a.5.5 0 0 0-1 0v1h-1a.5.5 0 0 0 0 1h1v1a.5.5 0 0 0 1 0v-1h1a.5.5 0 0 0 0-1h-1zm5.5 9a4.5 4.5 0 1 1-9 0a4.5 4.5 0 0 1 9 0m-4-2a.5.5 0 0 0-1 0V14h-1.5a.5.5 0 0 0 0 1H14v1.5a.5.5 0 0 0 1 0V15h1.5a.5.5 0 0 0 0-1H15z" />
+                                    </svg>
+                                    Management Quiz
+                                    <svg class="w-4 h-4 ml-auto transform" :class="{ 'rotate-180': quizOpen }"
+                                        fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                            d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+
+                                <div x-show="quizOpen" x-transition
+                                    class="mt-3 ml-10 space-y-4 text-sm text-gray-600">
+                                    <a href="{{ route('question.index') }}"
+                                        class="block hover:text-blue-600 no-underline {{ request()->is('admin/question') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                                        Question
+                                    </a>
+                                    <a href="{{ route('bundle.index') }}"
+                                        class="block hover:text-blue-600 no-underline {{ request()->is('admin/bundle') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                                        Section
+                                    </a>
+                                    <a href="{{ route('test.index') }}"
+                                        class="block hover:text-blue-600 no-underline {{ request()->is('admin/test') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                                        Quiz
+                                    </a>
+                                </div>
+                            </div>
+
+                            
+
+                            
+
+                            <a href="{{ route('admin.applicant.seleksi.index') }}"
+                                class="flex items-center no-underline hover:text-blue-600 focus:outline-none {{ request()->is('admin/applicant/seleksi*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-2' : 'text-gray-600' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 48 48" class="size-6 me-4">
+                                    <g fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="2.9">
+                                        <path d="M34 5H8a3 3 0 0 0-3 3v26a3 3 0 0 0 3 3h26a3 3 0 0 0 3-3V8a3 3 0 0 0-3-3Z" />
+                                        <path stroke-linecap="round" d="M44 13.002V42a2 2 0 0 1-2 2H13.003M13 20.486l6 5.525l10-10.292" />
+                                    </g>
+                                </svg>
+                                Selection
+                            </a>
+
+                            
+
+                            {{-- BATCH --}}
+                            <a href="{{ route('batch.index') }}"
+                                class="flex items-center no-underline hover:text-blue-600 focus:outline-none {{ request()->is('admin/batch*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-2' : 'text-gray-600' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                    viewBox="0 0 32 32" class="size-6 me-4">
+                                    <path fill="currentColor"
+                                        d="M14 3c-1.094 0-2 .906-2 2v1H9V5H7v1H5c-1.094 0-2 .906-2 2v16c0 1.094.906 2 2 2h22c1.094 0 2-.906 2-2V8c0-1.094-.906-2-2-2h-2V5h-2v1h-3V5c0-1.094-.906-2-2-2zm0 2h4v1h-4zM5 8h22v16h-2V9h-2v15H9V9H7v15H5z" />
+                                </svg>
+                                Batch
+                            </a>
+
+                            {{-- SCHEDULE --}}
+                            <a href="{{ route('admin.schedule.index') }}"
+                                class="flex items-center no-underline hover:text-blue-600 focus:outline-none {{ request()->is('admin/schedule*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-2' : 'text-gray-600' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke-width="1.5" stroke="currentColor" class="size-6 me-4">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M6.75 3v2.25M17.25 3v2.25M3 8.25h18M4.5 21h15a1.5 1.5 0 001.5-1.5V7.5a1.5 1.5 0 00-1.5-1.5h-15A1.5 1.5 0 003 7.5v12a1.5 1.5 0 001.5 1.5z" />
+                                </svg>
+                                Schedule
+                            </a>
+
+                            {{-- Report --}}
+                            <a href="{{ route('admin.report.index') }}"
+                                class="flex items-center no-underline hover:text-blue-600 focus:outline-none {{ request()->is('admin/report') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-2' : 'text-gray-600' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                    viewBox="0 0 24 24" class="size-6 me-4">
+                                    <g fill="none" stroke="currentColor" stroke-width="1.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                            d="M10 9H6m9.5 2a2.5 2.5 0 1 1 0-5a2.5 2.5 0 0 1 0 5M6 6h3m9 12l-4.5-3l-2.5 2l-5-4" />
+                                        <path
+                                            d="M3 20.4V3.6a.6.6 0 0 1 .6-.6h16.8a.6.6 0 0 1 .6.6v16.8a.6.6 0 0 1-.6.6H3.6a.6.6 0 0 1-.6-.6Z" />
+                                    </g>
+                                </svg>
+                                Report
+                            </a>
+
+                            {{-- USER (Applicant & Selection + Admin list) --}}
+                            <div class="py-1">
+                                <button @click="toggleMenu('userOpen')"
+                                    class="flex items-center w-full text-gray-700 hover:text-blue-600 focus:outline-none">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                        stroke-width="1.5" stroke="currentColor" class="size-6 me-4">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                            d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z M4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                                    </svg>
+                                    User
+                                    <svg class="w-4 h-4 ml-auto transform" :class="{ 'rotate-180': userOpen }"
+                                        fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                            d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+
+                                <div x-show="userOpen" x-transition
+                                    class="mt-3 ml-10 space-y-4 text-sm text-gray-600">
+
+                                    <a href="{{ route('admin.administrator.index') }}"
+                                        class="block hover:text-blue-600 no-underline {{ request()->is('admin/admin') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                                        Admin
+                                    </a>
+
+                                    <a href="{{ route('admin.user.index') }}"
+                                        class="block hover:text-blue-600 no-underline {{ request()->is('admin/user') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                                        User Account
+                                    </a>
+                                </div>
+                            </div>
+
                             {{-- CMS (ADMIN ONLY) --}}
                             <div class="py-1">
                                 <button @click="toggleMenu('masterOpen')"
@@ -249,54 +369,6 @@
                                 </div>
                             </div>
 
-                            {{-- USER (Applicant & Selection + Admin list) --}}
-                            <div class="py-1">
-                                <button @click="toggleMenu('userOpen')"
-                                    class="flex items-center w-full text-gray-700 hover:text-blue-600 focus:outline-none">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                        stroke-width="1.5" stroke="currentColor" class="size-6 me-4">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                            d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z M4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
-                                    </svg>
-                                    User
-                                    <svg class="w-4 h-4 ml-auto transform" :class="{ 'rotate-180': userOpen }"
-                                        fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                            d="M19 9l-7 7-7-7" />
-                                    </svg>
-                                </button>
-
-                                <div x-show="userOpen" x-transition
-                                    class="mt-3 ml-10 space-y-4 text-sm text-gray-600">
-
-                                    <a href="{{ route('admin.administrator.index') }}"
-                                        class="block hover:text-blue-600 no-underline {{ request()->is('admin/admin') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
-                                        Admin
-                                    </a>
-
-                                    <a href="{{ route('admin.user.index') }}"
-                                        class="block hover:text-blue-600 no-underline {{ request()->is('admin/user') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
-                                        User Account
-                                    </a>
-
-                                    <a href="{{ route('admin.applicant.seleksi.index') }}"
-                                        class="block hover:text-blue-600 no-underline {{ request()->is('admin/applicant/seleksi') || request()->is('admin/applicant/seleksi/*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
-                                        Selection
-                                    </a>
-                                </div>
-                            </div>
-
-                            {{-- BATCH --}}
-                            <a href="{{ route('batch.index') }}"
-                                class="flex items-center no-underline hover:text-blue-600 focus:outline-none {{ request()->is('admin/batch*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-2' : 'text-gray-600' }}">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                    viewBox="0 0 32 32" class="size-6 me-4">
-                                    <path fill="currentColor"
-                                        d="M14 3c-1.094 0-2 .906-2 2v1H9V5H7v1H5c-1.094 0-2 .906-2 2v16c0 1.094.906 2 2 2h22c1.094 0 2-.906 2-2V8c0-1.094-.906-2-2-2h-2V5h-2v1h-3V5c0-1.094-.906-2-2-2zm0 2h4v1h-4zM5 8h22v16h-2V9h-2v15H9V9H7v15H5z" />
-                                </svg>
-                                Batch
-                            </a>
-
                             {{-- Vendor --}}
                             <a href="{{ route('admin.vendor.index') }}"
                                 class="flex items-center no-underline hover:text-blue-600 focus:outline-none {{ request()->is('admin/vendor*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-2' : 'text-gray-600' }}">
@@ -308,50 +380,6 @@
                                 Vendor
                             </a>
 
-                            {{-- QUIZ --}}
-                            <div class="py-1">
-                                <button @click="toggleMenu('quizOpen')"
-                                    class="flex items-center w-full text-gray-700 hover:text-blue-600 focus:outline-none">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                        viewBox="0 0 20 20" class="size-6 me-4">
-                                        <path fill="currentColor"
-                                            d="M5.5 3A2.5 2.5 0 0 0 3 5.5v9A2.5 2.5 0 0 0 5.5 17h4.1a5.5 5.5 0 0 1-.393-1H5.5A1.5 1.5 0 0 1 4 14.5v-9A1.5 1.5 0 0 1 5.5 4h9A1.5 1.5 0 0 1 16 5.5v3.707q.524.149 1 .393V5.5A2.5 2.5 0 0 0 14.5 3zm3.707 10q.149-.524.393-1H5.5a.5.5 0 0 0 0 1zM8.5 15a.5.5 0 0 0 0-1h-3a.5.5 0 0 0 0 1zM8 5a.5.5 0 0 1 .457.297l2 4.5a.5.5 0 1 1-.914.406L9.008 9H6.992l-.535 1.203a.5.5 0 0 1-.914-.406l2-4.5A.5.5 0 0 1 8 5m.564 3L8 6.731L7.436 8zM13.5 5.5a.5.5 0 0 0-1 0v1h-1a.5.5 0 0 0 0 1h1v1a.5.5 0 0 0 1 0v-1h1a.5.5 0 0 0 0-1h-1zm5.5 9a4.5 4.5 0 1 1-9 0a4.5 4.5 0 0 1 9 0m-4-2a.5.5 0 0 0-1 0V14h-1.5a.5.5 0 0 0 0 1H14v1.5a.5.5 0 0 0 1 0V15h1.5a.5.5 0 0 0 0-1H15z" />
-                                    </svg>
-                                    Quiz
-                                    <svg class="w-4 h-4 ml-auto transform" :class="{ 'rotate-180': quizOpen }"
-                                        fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                            d="M19 9l-7 7-7-7" />
-                                    </svg>
-                                </button>
-
-                                <div x-show="quizOpen" x-transition
-                                    class="mt-3 ml-10 space-y-4 text-sm text-gray-600">
-                                    <a href="{{ route('question.index') }}"
-                                        class="block hover:text-blue-600 no-underline {{ request()->is('admin/question') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
-                                        Question
-                                    </a>
-                                    <a href="{{ route('bundle.index') }}"
-                                        class="block hover:text-blue-600 no-underline {{ request()->is('admin/bundle') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
-                                        Section
-                                    </a>
-                                    <a href="{{ route('test.index') }}"
-                                        class="block hover:text-blue-600 no-underline {{ request()->is('admin/test') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
-                                        Quiz
-                                    </a>
-                                </div>
-                            </div>
-
-                            {{-- SCHEDULE --}}
-                            <a href="{{ route('admin.schedule.index') }}"
-                                class="flex items-center no-underline hover:text-blue-600 focus:outline-none {{ request()->is('admin/schedule*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-2' : 'text-gray-600' }}">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                    stroke-width="1.5" stroke="currentColor" class="size-6 me-4">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="M6.75 3v2.25M17.25 3v2.25M3 8.25h18M4.5 21h15a1.5 1.5 0 001.5-1.5V7.5a1.5 1.5 0 00-1.5-1.5h-15A1.5 1.5 0 003 7.5v12a1.5 1.5 0 001.5 1.5z" />
-                                </svg>
-                                Schedule
-                            </a>
 
                             {{-- Personality Rules --}}
                             <a href="{{ route('admin.personality-rules.index') }}"
@@ -365,20 +393,7 @@
                                 Rules of Personality Test
                             </a>
 
-                            {{-- Report --}}
-                            <a href="{{ route('admin.report.index') }}"
-                                class="flex items-center no-underline hover:text-blue-600 focus:outline-none {{ request()->is('admin/report') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-2' : 'text-gray-600' }}">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                    viewBox="0 0 24 24" class="size-6 me-4">
-                                    <g fill="none" stroke="currentColor" stroke-width="1.5">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                            d="M10 9H6m9.5 2a2.5 2.5 0 1 1 0-5a2.5 2.5 0 0 1 0 5M6 6h3m9 12l-4.5-3l-2.5 2l-5-4" />
-                                        <path
-                                            d="M3 20.4V3.6a.6.6 0 0 1 .6-.6h16.8a.6.6 0 0 1 .6.6v16.8a.6.6 0 0 1-.6.6H3.6a.6.6 0 0 1-.6-.6Z" />
-                                    </g>
-                                </svg>
-                                Report
-                            </a>
+                            
 
                             {{-- Activity Logs --}}
                             <a href="{{ route('admin.logs.index') }}"
