@@ -241,20 +241,22 @@
                                         class="block hover:text-blue-600 no-underline {{ request()->is('admin/test') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
                                         Quiz
                                     </a>
+                                    {{-- Personality Rules --}}
+                                    <a href="{{ route('admin.personality-rules.index') }}"
+                                        class="flex items-center no-underline hover:text-blue-600 focus:outline-none {{ request()->routeIs('admin.personality-rules.*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-2' : 'text-gray-600' }}">
+                                        
+                                        Rules of Personality Test
+                                    </a>
                                 </div>
                             </div>
 
-                            
-
-                            
-
                             <a href="{{ route('admin.applicant.seleksi.index') }}"
                                 class="flex items-center no-underline hover:text-blue-600 focus:outline-none {{ request()->is('admin/applicant/seleksi*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-2' : 'text-gray-600' }}">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 48 48" class="size-6 me-4">
-                                    <g fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="2.9">
-                                        <path d="M34 5H8a3 3 0 0 0-3 3v26a3 3 0 0 0 3 3h26a3 3 0 0 0 3-3V8a3 3 0 0 0-3-3Z" />
-                                        <path stroke-linecap="round" d="M44 13.002V42a2 2 0 0 1-2 2H13.003M13 20.486l6 5.525l10-10.292" />
-                                    </g>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                    viewBox="0 0 14 14" class="size-6 me-4">
+                                    <path fill="currentColor" fill-rule="evenodd"
+                                        d="M2.5 1.25c-.103 0-.2.04-.27.108a.35.35 0 0 0-.105.248v10.788c0 .09.037.18.106.247a.38.38 0 0 0 .269.109h9c.103 0 .2-.04.27-.109a.35.35 0 0 0 .105-.247V4.968c0-.1-.04-.197-.112-.268L8.354 1.357a.38.38 0 0 0-.263-.107zM1.355.466C1.661.166 2.073 0 2.5 0h5.591c.426 0 .835.167 1.138.465l3.409 3.343c.311.305.487.724.487 1.16v7.426c0 .43-.174.84-.48 1.14S11.927 14 11.5 14h-9c-.427 0-.84-.166-1.145-.466s-.48-.71-.48-1.14V1.606c0-.43.174-.84.48-1.14m5.829 5.921c0-.345.28-.625.625-.625h2.25a.625.625 0 1 1 0 1.25h-2.25a.625.625 0 0 1-.625-.625m.625 3.022a.625.625 0 0 0 0 1.25h2.25a.625.625 0 1 0 0-1.25zM6.367 8.277a.75.75 0 0 1 .165 1.048l-1.396 1.917a.75.75 0 0 1-1.132.094l-.838-.822a.75.75 0 1 1 1.05-1.07l.218.213l.886-1.215a.75.75 0 0 1 1.047-.165m.165-2.661a.75.75 0 1 0-1.212-.883l-.886 1.215l-.217-.213a.75.75 0 1 0-1.05 1.07l.837.822a.75.75 0 0 0 1.132-.094z"
+                                        clip-rule="evenodd" />
                                 </svg>
                                 Selection
                             </a>
@@ -327,6 +329,16 @@
                                         class="block hover:text-blue-600 no-underline {{ request()->is('admin/user') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
                                         User Account
                                     </a>
+                                    {{-- Vendor --}}
+                                    <a href="{{ route('admin.vendor.index') }}"
+                                        class="flex items-center no-underline hover:text-blue-600 focus:outline-none {{ request()->is('admin/vendor*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-2' : 'text-gray-600' }}">
+                                        <!-- <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                            stroke-width="1.5" stroke="currentColor" class="size-6 me-4">
+                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Z" />
+                                        </svg> -->
+                                        Vendor
+                                    </a>
                                 </div>
                             </div>
 
@@ -369,29 +381,10 @@
                                 </div>
                             </div>
 
-                            {{-- Vendor --}}
-                            <a href="{{ route('admin.vendor.index') }}"
-                                class="flex items-center no-underline hover:text-blue-600 focus:outline-none {{ request()->is('admin/vendor*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-2' : 'text-gray-600' }}">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                    stroke-width="1.5" stroke="currentColor" class="size-6 me-4">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Z" />
-                                </svg>
-                                Vendor
-                            </a>
+                            
 
 
-                            {{-- Personality Rules --}}
-                            <a href="{{ route('admin.personality-rules.index') }}"
-                                class="flex items-center no-underline hover:text-blue-600 focus:outline-none {{ request()->routeIs('admin.personality-rules.*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-2' : 'text-gray-600' }}">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                    viewBox="0 0 14 14" class="size-6 me-4">
-                                    <path fill="currentColor" fill-rule="evenodd"
-                                        d="M2.5 1.25c-.103 0-.2.04-.27.108a.35.35 0 0 0-.105.248v10.788c0 .09.037.18.106.247a.38.38 0 0 0 .269.109h9c.103 0 .2-.04.27-.109a.35.35 0 0 0 .105-.247V4.968c0-.1-.04-.197-.112-.268L8.354 1.357a.38.38 0 0 0-.263-.107zM1.355.466C1.661.166 2.073 0 2.5 0h5.591c.426 0 .835.167 1.138.465l3.409 3.343c.311.305.487.724.487 1.16v7.426c0 .43-.174.84-.48 1.14S11.927 14 11.5 14h-9c-.427 0-.84-.166-1.145-.466s-.48-.71-.48-1.14V1.606c0-.43.174-.84.48-1.14m5.829 5.921c0-.345.28-.625.625-.625h2.25a.625.625 0 1 1 0 1.25h-2.25a.625.625 0 0 1-.625-.625m.625 3.022a.625.625 0 0 0 0 1.25h2.25a.625.625 0 1 0 0-1.25zM6.367 8.277a.75.75 0 0 1 .165 1.048l-1.396 1.917a.75.75 0 0 1-1.132.094l-.838-.822a.75.75 0 1 1 1.05-1.07l.218.213l.886-1.215a.75.75 0 0 1 1.047-.165m.165-2.661a.75.75 0 1 0-1.212-.883l-.886 1.215l-.217-.213a.75.75 0 1 0-1.05 1.07l.837.822a.75.75 0 0 0 1.132-.094z"
-                                        clip-rule="evenodd" />
-                                </svg>
-                                Rules of Personality Test
-                            </a>
+                            
 
                             
 
