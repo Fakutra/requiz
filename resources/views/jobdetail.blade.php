@@ -114,41 +114,60 @@
 
                     {{-- PERSYARATAN UMUM --}}
                     @php
-                        // helper inline untuk parsing newline/JSON/array
-                        $toList = fn($value) => match(true) {
-                            empty($value) => [],
-                            is_array($value) => $value,
-                            @json_decode($value, true) => json_decode($value, true),
-                            default => preg_split('/\r\n|\r|\n|,/', $value),
+                        // helper: normalize value ke array bersih
+                        $toList = function ($value) {
+                            if (is_array($value)) {
+                                $items = $value;
+                            } elseif (is_null($value) || $value === '') {
+                                $items = [];
+                            } else {
+                                // coba decode JSON dulu
+                                $decoded = json_decode($value, true);
+                                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                                    $items = $decoded;
+                                } else {
+                                    // fallback: pecah pakai newline / koma
+                                    $items = preg_split('/\r\n|\r|\n|,/', $value);
+                                }
+                            }
+
+                            // trim + buang kosong
+                            return array_values(array_filter(array_map('trim', (array) $items)));
                         };
                     @endphp
 
                     {{-- Requirements --}}
-                    @php $reqList = array_values(array_filter(array_map('trim', (array) $toList($position->requirements)))); @endphp
-                    @if(count($reqList))
+                    @php
+                        $reqList = $toList($position->requirements);
+                    @endphp
+
+                    @if (count($reqList))
                         <div class="mt-5">
                             <div class="flex items-center gap-2">
                                 <span class="inline-block w-2 h-2 rounded-full bg-[#009DA9] ring-4 ring-[#009DA9]/15"></span>
                                 <h3 class="font-semibold text-gray-900 ml-1">Persyaratan Umum</h3>
                             </div>
                             <ul class="mt-2 list-disc list-inside text-gray-600 space-y-1">
-                                @foreach($reqList as $req)
+                                @foreach ($reqList as $req)
                                     <li>{{ $req }}</li>
                                 @endforeach
                             </ul>
                         </div>
                     @endif
 
-                    {{-- JURUSAN YANG DAPAT MELAMAR --}}
-                    @php $majorsList = array_values(array_filter(array_map('trim', (array) $toList($position->majors)))); @endphp
-                    @if(count($majorsList))
+                    {{-- Majors --}}
+                    @php
+                        $majorsList = $toList($position->majors);
+                    @endphp
+
+                    @if (count($majorsList))
                         <div class="mt-5">
                             <div class="flex items-center gap-2">
                                 <span class="inline-block w-2 h-2 rounded-full bg-[#009DA9] ring-4 ring-[#009DA9]/15"></span>
                                 <h3 class="font-semibold text-gray-900 ml-1">Jurusan yang dapat melamar</h3>
                             </div>
                             <ul class="mt-2 list-disc list-inside text-gray-600 space-y-1">
-                                @foreach($majorsList as $major)
+                                @foreach ($majorsList as $major)
                                     <li>{{ $major }}</li>
                                 @endforeach
                             </ul>
@@ -398,12 +417,12 @@
                         </div>
                         <div>
                             <label class="block text-sm font-medium">Jurusan</label>
-                            <input name="jurusan" type="text" class="mt-1 w-full rounded-lg border-gray-300 focus:border-[#009DA9] focus:ring-[#009DA9]" placeholder="Jurusan" />
+                            <input name="jurusan" type="text" class="mt-1 w-full rounded-lg border-gray-300 focus:border-[#009DA9] focus:ring-[#009DA9]" placeholder="Jurusan" / required>
                             <p class="text-sm text-red-600 mt-1" x-text="errors.jurusan?.[0]" x-show="errors.jurusan"></p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium">Tahun Lulus</label>
-                            <input name="thn_lulus" type="text" maxlength="4" class="mt-1 w-full rounded-lg border-gray-300 focus:border-[#009DA9] focus:ring-[#009DA9]" placeholder="Tahun Kelulusan" />
+                            <input name="thn_lulus" type="text" maxlength="4" class="mt-1 w-full rounded-lg border-gray-300 focus:border-[#009DA9] focus:ring-[#009DA9]" placeholder="Tahun Kelulusan" / required>
                             <p class="text-sm text-red-600 mt-1" x-text="errors.thn_lulus?.[0]" x-show="errors.thn_lulus"></p>
                         </div>
                     </div>

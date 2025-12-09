@@ -238,7 +238,7 @@
                                         <input type="text"
                                             class="form-control @error('option_' . $option) is-invalid @enderror"
                                             id="create_option_{{ $option }}" name="option_{{ $option }}"
-                                            value="{{ old('option_' . $option) }}">
+                                            value="{{ old('option_' . $option) }}" required>
                                     </div>
                                     {{-- Ganti class menjadi 'create-point-input-wrapper' --}}
                                     <div class="col-md-4 create-point-input-wrapper">
@@ -258,7 +258,7 @@
                         {{-- Ganti id menjadi 'create_pg_answer_container' --}}
                         <div class="mb-3" id="create_pg_answer_container">
                             <label for="create_answer_pg" class="form-label">Correct Answer</label>
-                            <select class="form-select @error('answer') is-invalid @enderror" id="create_answer_pg"
+                            <select class="form-select @error('answer') is-invalid @enderror" id="create_answer_pg" required
                                 name="answer">
                                 <option value="">Select Correct Answer</option>
                                 <option value="A" {{ old('answer') == 'A' ? 'selected' : '' }}>Option A</option>

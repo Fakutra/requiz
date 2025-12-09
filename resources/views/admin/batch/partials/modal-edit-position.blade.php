@@ -7,7 +7,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
-            {{-- form action di-set dinamis via JS (openEditModal) --}}
+            {{-- action di-set dinamis via JS --}}
             <form method="POST">
                 @csrf
                 @method('PUT')

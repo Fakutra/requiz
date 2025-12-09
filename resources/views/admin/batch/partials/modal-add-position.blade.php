@@ -71,7 +71,14 @@ Berkoordinasi dengan divisi IT">{{ old('descriptions') }}</textarea>
                     {{-- SKILL YANG DIBUTUHKAN --}}
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Skill yang Dibutuhkan</label>
-                        <textarea class="form-control" name="skills" rows="3" placeholder="Contoh: SQL, Python, Data Visualization">{{ old('skills') }}</textarea>
+                        <textarea class="form-control" name="skills" rows="3"
+                            placeholder="Contoh:
+SQL
+Python
+Data Visualization">{{ old('skills') }}</textarea>
+                        <small class="text-muted d-block mt-1">
+                            Pisahkan tiap poin dengan <code>Enter</code>. Atau boleh juga dipisah dengan koma.
+                        </small>
                     </div>
 
                     {{-- PERSYARATAN UMUM --}}
@@ -81,6 +88,9 @@ Berkoordinasi dengan divisi IT">{{ old('descriptions') }}</textarea>
                             placeholder="Contoh:
 Min. IPK 3.00
 Batas usia 35 tahun">{{ old('requirements') }}</textarea>
+                        <small class="text-muted d-block mt-1">
+                            Pisahkan tiap poin dengan <code>Enter</code>.
+                        </small>
                     </div>
 
                     {{-- JURUSAN YANG DAPAT MELAMAR --}}
@@ -91,6 +101,9 @@ Batas usia 35 tahun">{{ old('requirements') }}</textarea>
 Teknik Informatika
 Ilmu Komputer
 Sistem Informasi">{{ old('majors') }}</textarea>
+                        <small class="text-muted d-block mt-1">
+                            Pisahkan tiap jurusan dengan <code>Enter</code>.
+                        </small>
                     </div>
 
                     {{-- BATAS LAMARAN --}}

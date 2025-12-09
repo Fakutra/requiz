@@ -179,6 +179,16 @@
             </tr>
           </thead>
           <tbody>
+            @php
+                // mapping index kolom → kategori section
+                $sectionCategories = [
+                    1 => 'umum_pg',      // kolom "Umum PG"
+                    2 => 'teknis_pg',    // kolom "Teknis PG"
+                    3 => 'psikologi',    // kolom "Psikologi"
+                    4 => 'umum_essay',   // kolom "Umum Essay"
+                    5 => 'teknis_essay', // kolom "Teknis Essay"
+                ];
+            @endphp
             @forelse($applicants as $a)
               <tr>
                 <td class="px-3 py-2">
@@ -188,66 +198,72 @@
                 {{-- NAMA pakai kolom applicants --}}
                 <td class="px-3 py-2 whitespace-nowrap">{{ $a->name ?? '-' }}</td>
 
-                {{-- Loop 5 section + tampilkan RAW / MAX atau RAW / MAX → FINAL --}}
+                {{-- Loop 5 kolom section: Umum PG, Teknis PG, Psikologi, Umum Essay, Teknis Essay --}}
                 @for ($i = 1; $i <= 5; $i++)
-                  @php
-                    $sectionResult = $a->latestTestResult?->sectionResults
-                      ?->first(function ($s) use ($i) {
-                          return $s->testSection && $s->testSection->order == $i;
-                        });
+                    @php
+                        $categoryKey = $sectionCategories[$i] ?? null;
 
-                    $rawScore   = null;
-                    $maxScore   = null;
-                    $finalScore = null;
-                    $isPersonality = false;
+                        // Cari sectionResult berdasarkan CATEGORY, bukan ORDER lagi
+                        $sectionResult = $categoryKey
+                            ? $a->latestTestResult?->sectionResults
+                                ?->first(function ($s) use ($categoryKey) {
+                                    return $s->testSection && $s->testSection->category === $categoryKey;
+                                })
+                            : null;
 
-                    if ($sectionResult && $sectionResult->testSection && $sectionResult->testSection->questionBundle) {
-                      $questions = $sectionResult->testSection->questionBundle->questions ?? collect();
-                      $rawScore  = (float) ($sectionResult->score ?? 0);
+                        $rawScore      = null;
+                        $maxScore      = null;
+                        $finalScore    = null;
+                        $isPersonality = false;
 
-                      // DETEKSI PERSONALITY
-                      $isPersonality = $questions->contains(fn($q) => $q->type === 'Poin');
+                        if ($sectionResult && $sectionResult->testSection && $sectionResult->testSection->questionBundle) {
+                            $questions = $sectionResult->testSection->questionBundle->questions ?? collect();
+                            $rawScore  = (float) ($sectionResult->score ?? 0);
 
-                      // HITUNG MAX SCORE per tipe
-                      if ($isPersonality) {
-                        $maxScore = $questions->count() * 5;
-                      } else {
-                        $pgCount     = $questions->where('type','PG')->count();
-                        $multiCount  = $questions->where('type','Multiple')->count();
-                        $essayCount  = $questions->where('type','Essay')->count();
-                        $maxScore = ($pgCount * 1) + ($multiCount * 1) + ($essayCount * 3);
-                      }
+                            // DETEKSI PERSONALITY (soal tipe "Poin")
+                            $isPersonality = $questions->contains(fn($q) => $q->type === 'Poin');
 
-                      // FINAL khusus personality (pakai rules batch terkait)
-                      if ($isPersonality) {
-                        $percent = $maxScore > 0 ? ($rawScore / $maxScore) * 100 : 0;
-                        $rule = DB::table('personality_rules')
-                            ->where('batch_id', $batchId)
-                            ->where('min_percentage', '<=', $percent)
-                            ->where(function ($q) use ($percent) {
-                                $q->where('max_percentage', '>=', $percent)
-                                  ->orWhereNull('max_percentage');
-                            })
-                            ->orderByDesc('min_percentage')
-                            ->first();
-                        $finalScore = $rule ? (int) $rule->score_value : 0;
-                      }
-                    }
-                  @endphp
+                            // HITUNG MAX SCORE per tipe
+                            if ($isPersonality) {
+                                $maxScore = $questions->count() * 5;
+                            } else {
+                                $pgCount    = $questions->where('type', 'PG')->count();
+                                $multiCount = $questions->where('type', 'Multiple')->count();
+                                $essayCount = $questions->where('type', 'Essay')->count();
+                                $maxScore   = ($pgCount * 1) + ($multiCount * 1) + ($essayCount * 3);
+                            }
 
-                  <td class="px-3 py-2 whitespace-nowrap">
-                    @if (!$sectionResult)
-                      -
-                    @else
-                      @if ($isPersonality)
-                        {{-- RAW / MAX → FINAL --}}
-                        {{ $rawScore }} / {{ $maxScore }} → <span class="font-semibold text-blue-700">{{ $finalScore }}</span>
-                      @else
-                        {{-- RAW / MAX --}}
-                        {{ $rawScore }} / {{ $maxScore }}
-                      @endif
-                    @endif
-                  </td>
+                            // FINAL khusus personality (pakai rules batch terkait)
+                            if ($isPersonality) {
+                                $percent = $maxScore > 0 ? ($rawScore / $maxScore) * 100 : 0;
+                                $rule = DB::table('personality_rules')
+                                    ->where('batch_id', $batchId)
+                                    ->where('min_percentage', '<=', $percent)
+                                    ->where(function ($q) use ($percent) {
+                                        $q->where('max_percentage', '>=', $percent)
+                                          ->orWhereNull('max_percentage');
+                                    })
+                                    ->orderByDesc('min_percentage')
+                                    ->first();
+                                $finalScore = $rule ? (int) $rule->score_value : 0;
+                            }
+                        }
+                    @endphp
+
+                    <td class="px-3 py-2 whitespace-nowrap">
+                        @if (!$sectionResult)
+                            -
+                        @else
+                            @if ($isPersonality)
+                                {{-- RAW / MAX → FINAL --}}
+                                {{ $rawScore }} / {{ $maxScore }} →
+                                <span class="font-semibold text-blue-700">{{ $finalScore }}</span>
+                            @else
+                                {{-- RAW / MAX --}}
+                                {{ $rawScore }} / {{ $maxScore }}
+                            @endif
+                        @endif
+                    </td>
                 @endfor
 
                 {{-- Total nilai FINAL / MAX TOTAL --}}

@@ -28,9 +28,9 @@
                     userToEdit:null,
                     userToDelete:null
                 }">
-            {{-- Bar atas: Search + Tambah (Admin/Vendor) --}}
-            <div class="flex justify-between items-center mb-4 gap-3">
-                {{-- Search --}}
+                
+            {{-- Bar atas: Search --}}
+            <div class="mb-4">
                 <form method="GET" class="flex-1 max-w-sm">
                     {{-- biar tab tetep registered --}}
                     <input type="hidden" name="tab" value="registered">
@@ -38,22 +38,14 @@
                         <input type="text" name="search" value="{{ $search ?? '' }}"
                             placeholder="Cari nama atau email..."
                             class="w-full h-10 pl-3 pr-9 rounded text-sm 
-                                          border border-[#8B8B8B]
-                                          focus:outline-none focus:border-[#A0A0A0] 
-                                          focus:ring-1 focus:ring-[#A0A0A0]">
+                                        border border-[#8B8B8B]
+                                        focus:outline-none focus:border-[#A0A0A0] 
+                                        focus:ring-1 focus:ring-[#A0A0A0]">
                         <span class="absolute right-3 text-gray-500">
                             <x-search-button />
                         </span>
                     </div>
                 </form>
-
-                {{-- Tombol Tambah: kalau mau bedain admin/vendor tinggal pakai kondisi role --}}
-                <button
-                    type="button"
-                    @click="openAdd = true"
-                    class="h-10 flex items-center gap-2 px-3 rounded bg-blue-600 text-white text-sm hover:bg-blue-700">
-                    + Tambah User
-                </button>
             </div>
 
             {{-- Tabel Registered User --}}
@@ -78,15 +70,20 @@
                             <td class="px-4 py-2">{{ $user->email }}</td>
                             <td class="px-4 py-2">
                                 @php
-                                $badgeClass = match ($user->role) {
-                                'admin' => 'bg-orange-100 text-orange-700',
-                                'vendor' => 'bg-blue-100 text-blue-700',
-                                default => 'bg-green-100 text-green-700',
-                                };
+                                    $badgeClass = match ($user->role) {
+                                        'admin'  => 'bg-orange-100 text-orange-700',
+                                        'vendor' => 'bg-blue-100 text-blue-700',
+                                        default  => 'bg-green-100 text-green-700',
+                                    };
+
+                                    // label yang ditampilkan
+                                    $badgeLabel = $user->role === 'user'
+                                        ? 'Applicant'
+                                        : ucfirst($user->role);
                                 @endphp
 
                                 <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold {{ $badgeClass }}">
-                                    {{ ucfirst($user->role) }}
+                                    {{ $badgeLabel }}
                                 </span>
                             </td>
                             <td class="px-4 py-2 text-center">

@@ -693,6 +693,19 @@ Terima kasih atas partisipasinya dan semoga sukses.`;
                 });
             </script>
         @endif
+
+        @if (session('error'))
+            <script>
+                document.addEventListener('DOMContentLoaded', () => {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal',
+                        text: "{{ session('error') }}",
+                        confirmButtonColor: '#d33'
+                    });
+                });
+            </script>
+        @endif
     </footer>
 
     <script defer src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"

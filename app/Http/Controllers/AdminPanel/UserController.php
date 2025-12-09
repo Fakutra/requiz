@@ -26,6 +26,7 @@ class UserController extends Controller
             $search = trim((string) $request->query('search'));
 
             $users = User::query()
+                ->where('role', 'user') // ⬅️ cuma ambil user dengan role 'user'
                 ->when($search, fn($q) =>
                     $q->where(function($qq) use ($search) {
                         $qq->where('name', 'ILIKE', "%{$search}%")
@@ -44,7 +45,6 @@ class UserController extends Controller
 
         // tab applicant
         $applicants = Applicant::with(['position','batch','user'])
-            // tambahin filter search, sort, dsb sesuai logic lama lu
             ->paginate(15);
 
         $positions = Position::orderBy('name')->get();
@@ -52,12 +52,13 @@ class UserController extends Controller
 
         return view('admin.user.index', [
             'tab'        => $tab,
-            'users'      => collect(), // boleh kosong, nggak kepake di tab applicant
+            'users'      => collect(),
             'applicants' => $applicants,
             'positions'  => $positions,
             'batches'    => $batches,
         ]);
     }
+
 
     public function admin(Request $request)
     {
