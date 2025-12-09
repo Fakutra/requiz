@@ -12,6 +12,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use App\Imports\QuestionsImport;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use App\Services\ActivityLogger;
+use Symfony\Component\HttpFoundation\Response;
 
 class QuestionController extends Controller
 {
@@ -27,7 +28,7 @@ class QuestionController extends Controller
         $query->when($request->filled('type'), fn($q) => $q->where('type', $request->type));
         $query->when($request->filled('category'), fn($q) => $q->where('category', $request->category));
 
-        $questions = $query->latest()->paginate(10)->appends($request->query());
+        $questions  = $query->latest()->paginate(10)->appends($request->query());
         $categories = Question::pluck('category')->unique();
 
         return view('admin.question.index', compact('questions', 'categories'));
@@ -36,167 +37,222 @@ class QuestionController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'type' => ['required', 'in:PG,Multiple,Poin,Essay'],
-            'category' => ['required', 'string'],
-            'question' => ['required', 'string', 'min:5'],
-            'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
-            'option_a' => ['exclude_if:type,Essay', 'required', 'string'],
-            'option_b' => ['exclude_if:type,Essay', 'required', 'string'],
-            'option_c' => ['nullable', 'string'],
-            'option_d' => ['nullable', 'string'],
-            'option_e' => ['nullable', 'string'],
-            'point_a' => ['required_if:type,Poin', 'nullable', 'integer'],
-            'point_b' => ['required_if:type,Poin', 'nullable', 'integer'],
-            'point_c' => ['required_if:type,Poin', 'nullable', 'integer'],
-            'point_d' => ['required_if:type,Poin', 'nullable', 'integer'],
-            'point_e' => ['required_if:type,Poin', 'nullable', 'integer'],
-            'answer'  => ['required_if:type,PG,Multiple', 'nullable'],
+            'type'      => ['required', 'in:PG,Multiple,Poin,Essay'],
+            'category'  => ['required', 'string'],
+            'question'  => ['required', 'string', 'min:5'],
+            'image'     => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
+            'option_a'  => ['exclude_if:type,Essay', 'required', 'string'],
+            'option_b'  => ['exclude_if:type,Essay', 'required', 'string'],
+            'option_c'  => ['nullable', 'string'],
+            'option_d'  => ['nullable', 'string'],
+            'option_e'  => ['nullable', 'string'],
+            'point_a'   => ['required_if:type,Poin', 'nullable', 'integer'],
+            'point_b'   => ['required_if:type,Poin', 'nullable', 'integer'],
+            'point_c'   => ['required_if:type,Poin', 'nullable', 'integer'],
+            'point_d'   => ['required_if:type,Poin', 'nullable', 'integer'],
+            'point_e'   => ['required_if:type,Poin', 'nullable', 'integer'],
+            'answer'    => ['required_if:type,PG,Multiple', 'nullable'],
         ]);
 
         if ($validator->fails()) {
-            return back()->withErrors($validator)->withInput()->with('error', 'Validation failed!');
+            return back()
+                ->withErrors($validator)
+                ->withInput()
+                ->with('error', 'Validation failed! Periksa kembali data yang diinput.');
         }
 
-        $data = $request->except(['_token', 'image']);
+        try {
+            $data = $request->except(['_token', 'image']);
 
-        switch ($request->type) {
-            case 'Multiple':
-                $data['answer'] = is_array($request->answer) ? implode(',', $request->answer) : null;
-                $data = array_merge($data, ['point_a'=>null,'point_b'=>null,'point_c'=>null,'point_d'=>null,'point_e'=>null]);
-                break;
-            case 'PG':
-                $data = array_merge($data, ['point_a'=>null,'point_b'=>null,'point_c'=>null,'point_d'=>null,'point_e'=>null]);
-                break;
-            case 'Poin':
-                $data['answer'] = null;
-                break;
-            case 'Essay':
-                $data = array_merge($data, [
-                    'option_a'=>null,'option_b'=>null,'option_c'=>null,'option_d'=>null,'option_e'=>null,
-                    'point_a'=>null,'point_b'=>null,'point_c'=>null,'point_d'=>null,'point_e'=>null,
-                    'answer'=>null
-                ]);
-                break;
+            switch ($request->type) {
+                case 'Multiple':
+                    $data['answer'] = is_array($request->answer) ? implode(',', $request->answer) : null;
+                    $data = array_merge($data, [
+                        'point_a'=>null,'point_b'=>null,'point_c'=>null,'point_d'=>null,'point_e'=>null
+                    ]);
+                    break;
+
+                case 'PG':
+                    $data = array_merge($data, [
+                        'point_a'=>null,'point_b'=>null,'point_c'=>null,'point_d'=>null,'point_e'=>null
+                    ]);
+                    break;
+
+                case 'Poin':
+                    $data['answer'] = null;
+                    break;
+
+                case 'Essay':
+                    $data = array_merge($data, [
+                        'option_a'=>null,'option_b'=>null,'option_c'=>null,'option_d'=>null,'option_e'=>null,
+                        'point_a'=>null,'point_b'=>null,'point_c'=>null,'point_d'=>null,'point_e'=>null,
+                        'answer'=>null
+                    ]);
+                    break;
+            }
+
+            if ($request->hasFile('image')) {
+                $path = $request->file('image')->store('questions', 'public');
+                $data['image_path'] = 'storage/' . $path;
+            }
+
+            $question = Question::create($data);
+
+            ActivityLogger::log(
+                'create',
+                'Question',
+                auth()->user()->name . " menambahkan soal baru: '{$question->question}'",
+                "Question ID: {$question->id}"
+            );
+
+            return redirect()
+                ->route('question.index')
+                ->with('success', 'Question created successfully!');
+
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()
+                ->withInput()
+                ->with('error', 'Terjadi kesalahan saat menyimpan soal. Silakan coba lagi.');
         }
-
-        if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('questions', 'public');
-            $data['image_path'] = 'storage/' . $path;
-        }
-
-        $question = Question::create($data);
-
-        ActivityLogger::log(
-            'create',
-            'Question',
-            auth()->user()->name . " menambahkan soal baru: '{$question->question}'",
-            "Question ID: {$question->id}"
-        );
-
-        return redirect()->route('question.index')->with('success', 'Question created successfully!');
     }
 
     public function update(Request $request, Question $question)
     {
         $validator = Validator::make($request->all(), [
-            'type' => ['required', 'in:PG,Multiple,Poin,Essay'],
-            'category' => ['required', 'string'],
-            'question' => ['required', 'string', 'min:5'],
-            'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
-            'option_a' => ['exclude_if:type,Essay', 'required', 'string'],
-            'option_b' => ['exclude_if:type,Essay', 'required', 'string'],
-            'option_c' => ['nullable', 'string'],
-            'option_d' => ['nullable', 'string'],
-            'option_e' => ['nullable', 'string'],
-            'point_a' => ['required_if:type,Poin', 'nullable', 'integer'],
-            'point_b' => ['required_if:type,Poin', 'nullable', 'integer'],
-            'point_c' => ['required_if:type,Poin', 'nullable', 'integer'],
-            'point_d' => ['required_if:type,Poin', 'nullable', 'integer'],
-            'point_e' => ['required_if:type,Poin', 'nullable', 'integer'],
-            'answer'  => ['required_if:type,PG,Multiple', 'nullable'],
+            'type'      => ['required', 'in:PG,Multiple,Poin,Essay'],
+            'category'  => ['required', 'string'],
+            'question'  => ['required', 'string', 'min:5'],
+            'image'     => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
+            'option_a'  => ['exclude_if:type,Essay', 'required', 'string'],
+            'option_b'  => ['exclude_if:type,Essay', 'required', 'string'],
+            'option_c'  => ['nullable', 'string'],
+            'option_d'  => ['nullable', 'string'],
+            'option_e'  => ['nullable', 'string'],
+            'point_a'   => ['required_if:type,Poin', 'nullable', 'integer'],
+            'point_b'   => ['required_if:type,Poin', 'nullable', 'integer'],
+            'point_c'   => ['required_if:type,Poin', 'nullable', 'integer'],
+            'point_d'   => ['required_if:type,Poin', 'nullable', 'integer'],
+            'point_e'   => ['required_if:type,Poin', 'nullable', 'integer'],
+            'answer'    => ['required_if:type,PG,Multiple', 'nullable'],
         ]);
 
         if ($validator->fails()) {
-            return back()->withErrors($validator)->withInput()->with('error', 'Update failed!');
+            return back()
+                ->withErrors($validator)
+                ->withInput()
+                ->with('error', 'Update failed! Periksa kembali data yang diinput.');
         }
 
-        $oldData = $question->toArray();
-        $data = $request->except(['_token', '_method', 'image']);
+        try {
+            $oldData = $question->toArray();
+            $data    = $request->except(['_token', '_method', 'image']);
 
-        switch ($request->type) {
-            case 'Multiple':
-                $data['answer'] = is_array($request->answer) ? implode(',', $request->answer) : null;
-                $data = array_merge($data, ['point_a'=>null,'point_b'=>null,'point_c'=>null,'point_d'=>null,'point_e'=>null]);
-                break;
-            case 'PG':
-                $data['answer'] = $request->answer;
-                $data = array_merge($data, ['point_a'=>null,'point_b'=>null,'point_c'=>null,'point_d'=>null,'point_e'=>null]);
-                break;
-            case 'Poin':
-                $data['answer'] = null;
-                break;
-            case 'Essay':
-                $data = array_merge($data, [
-                    'option_a'=>null,'option_b'=>null,'option_c'=>null,'option_d'=>null,'option_e'=>null,
-                    'point_a'=>null,'point_b'=>null,'point_c'=>null,'point_d'=>null,'point_e'=>null,
-                    'answer'=>null
-                ]);
-                break;
-        }
+            switch ($request->type) {
+                case 'Multiple':
+                    $data['answer'] = is_array($request->answer) ? implode(',', $request->answer) : null;
+                    $data = array_merge($data, [
+                        'point_a'=>null,'point_b'=>null,'point_c'=>null,'point_d'=>null,'point_e'=>null
+                    ]);
+                    break;
 
-        if ($request->hasFile('image')) {
-            if ($question->image_path) {
-                Storage::delete(str_replace('storage/', 'public/', $question->image_path));
+                case 'PG':
+                    $data['answer'] = $request->answer;
+                    $data = array_merge($data, [
+                        'point_a'=>null,'point_b'=>null,'point_c'=>null,'point_d'=>null,'point_e'=>null
+                    ]);
+                    break;
+
+                case 'Poin':
+                    $data['answer'] = null;
+                    break;
+
+                case 'Essay':
+                    $data = array_merge($data, [
+                        'option_a'=>null,'option_b'=>null,'option_c'=>null,'option_d'=>null,'option_e'=>null,
+                        'point_a'=>null,'point_b'=>null,'point_c'=>null,'point_d'=>null,'point_e'=>null,
+                        'answer'=>null
+                    ]);
+                    break;
             }
 
-            $path = $request->file('image')->store('questions', 'public');
-            $data['image_path'] = 'storage/' . $path;
-        } else {
-            unset($data['image_path']);
+            if ($request->hasFile('image')) {
+                if ($question->image_path) {
+                    Storage::delete(str_replace('storage/', 'public/', $question->image_path));
+                }
+
+                $path = $request->file('image')->store('questions', 'public');
+                $data['image_path'] = 'storage/' . $path;
+            } else {
+                unset($data['image_path']);
+            }
+
+            $question->update($data);
+            $newData = $question->toArray();
+
+            ActivityLogger::logUpdate('Question', $question, $oldData, $newData);
+
+            if ($request->hasFile('image')) {
+                ActivityLogger::log(
+                    'update',
+                    'Question',
+                    auth()->user()->name . " mengubah gambar soal: '{$question->question}'",
+                    "Question ID: {$question->id}"
+                );
+            }
+
+            return redirect()
+                ->route('question.index')
+                ->with('success', 'Question updated successfully!');
+
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()
+                ->withInput()
+                ->with('error', 'Terjadi kesalahan saat mengupdate soal. Silakan coba lagi.');
         }
-
-        $question->update($data);
-        $newData = $question->toArray();
-
-        // Log detail perubahan
-        ActivityLogger::logUpdate('Question', $question, $oldData, $newData);
-
-        // Log khusus untuk perubahan gambar (agar tercatat jelas)
-        if ($request->hasFile('image')) {
-            ActivityLogger::log(
-                'update',
-                'Question',
-                auth()->user()->name . " mengubah gambar soal: '{$question->question}'",
-                "Question ID: {$question->id}"
-            );
-        }
-
-        return redirect()->route('question.index')->with('success', 'Question updated successfully!');
     }
 
     public function destroy(Question $question)
     {
-        $name = $question->question;
+        try {
+            $name = $question->question;
 
-        if ($question->image_path) {
-            Storage::delete(str_replace('storage/', 'public/', $question->image_path));
+            if ($question->image_path) {
+                Storage::delete(str_replace('storage/', 'public/', $question->image_path));
+            }
+
+            $question->delete();
+
+            ActivityLogger::log(
+                'delete',
+                'Question',
+                auth()->user()->name . " menghapus soal: '{$name}'",
+                "Question: {$name}"
+            );
+
+            return redirect()
+                ->route('question.index')
+                ->with('success', 'Question deleted successfully!');
+
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()
+                ->with('error', 'Terjadi kesalahan saat menghapus soal. Silakan coba lagi.');
         }
-
-        $question->delete();
-
-        ActivityLogger::log(
-            'delete',
-            'Question',
-            auth()->user()->name . " menghapus soal: '{$name}'",
-            "Question: {$name}"
-        );
-
-        return redirect()->route('question.index')->with('success', 'Question deleted successfully!');
     }
 
     public function import(Request $request)
     {
-        $request->validate(['excel_file' => 'required|mimes:xlsx,xls']);
+        $request->validate([
+            'excel_file' => 'required|mimes:xlsx,xls'
+        ], [
+            'excel_file.required' => 'File Excel wajib diupload.',
+            'excel_file.mimes'    => 'Format file harus .xlsx atau .xls.',
+        ]);
 
         try {
             $importer = new QuestionsImport;
@@ -207,17 +263,23 @@ class QuestionController extends Controller
             ActivityLogger::log(
                 'import',
                 'Question',
-                auth()->user()->name . " mengimpor {$count} soal dari file: " . $request->file('excel_file')->getClientOriginalName()
+                auth()->user()->name . " mengimpor {$count} soal dari file: " .
+                $request->file('excel_file')->getClientOriginalName()
             );
 
-            return redirect()->route('question.index')->with('success', "Berhasil mengimpor {$count} soal!");
+            return redirect()
+                ->route('question.index')
+                ->with('success', "Berhasil mengimpor {$count} soal!");
 
         } catch (\Exception $e) {
-            return back()->with('error', 'Import failed: '.$e->getMessage());
+            report($e);
+
+            return back()
+                ->with('error', 'Import failed: ' . $e->getMessage());
         }
     }
 
-    public function downloadTemplate(): BinaryFileResponse
+    public function downloadTemplate(): Response
     {
         $filePath = public_path('templates/question_import_template.xlsx');
 
@@ -228,7 +290,10 @@ class QuestionController extends Controller
         );
 
         if (!file_exists($filePath)) {
-            abort(404, 'Template file not found.');
+            // daripada 404 page jelek, kirim notif error ke SweetAlert
+            return redirect()
+                ->route('question.index')
+                ->with('error', 'Template file tidak ditemukan. Silakan hubungi admin.');
         }
 
         return response()->download($filePath);
