@@ -30,13 +30,13 @@ class UserSeeder extends Seeder
             ]);
         }
 
-        // === 20 Regular Users ===
+        // // === 20 Regular Users ===
         $users = [
             ['name' => 'Delanda', 'email' => 'delanda.f@gmail.com'],
             ['name' => 'Sela', 'email' => 'marselatrianggraini27@gmail.com'],
-            ['name' => 'Dina', 'email' => 'dina@gmail.com'],
-            ['name' => 'Rizky', 'email' => 'rizky@gmail.com'],
-            ['name' => 'Salsa', 'email' => 'salsa@gmail.com'],
+            ['name' => 'Bagas', 'email' => 'bagasprasetio52@gmail.com'],
+            ['name' => 'Dinan', 'email' => 'fauzandinan@gmail.com'],
+            ['name' => 'faqih', 'email' => 'faqihqih619@gmail.com'],
             ['name' => 'Ahmad', 'email' => 'ahmad@gmail.com'],
             ['name' => 'Budi', 'email' => 'budi@gmail.com'],
             ['name' => 'Citra', 'email' => 'citra@gmail.com'],
@@ -63,12 +63,12 @@ class UserSeeder extends Seeder
             ]);
         }
 
-        // === 1 Vendor User ===
-        User::factory()->create([
-            'name'     => 'Listyo (Vendor DPP)',
-            'email'    => 'listyo@dpp.com',
-            'role'     => 'vendor',
-            'password' => bcrypt('password'),
-        ]);
+        // // === 1 Vendor User ===
+        // User::factory()->create([
+        //     'name'     => 'Listyo (Vendor DPP)',
+        //     'email'    => 'listyo@dpp.com',
+        //     'role'     => 'vendor',
+        //     'password' => bcrypt('password'),
+        // ]);
     }
 }

@@ -27,7 +27,7 @@ class DatabaseSeeder extends Seeder
             PlacementSeeder::class,
             QuestionBundleSeeder::class,
             BundleQuestionSeeder::class,
-            // PersonalityRuleSeeder::class,
+            PersonalityRuleSeeder::class,
             SkregisSeeder::class,
         ]);
 
