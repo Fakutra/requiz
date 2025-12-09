@@ -19,6 +19,15 @@ class TestSection extends Model
         'shuffle_questions',
         'shuffle_options',
         'order',
+        'category',
+    ];
+
+    const CATEGORIES = [
+        'umum_pg',
+        'teknis_pg',
+        'psikologi',
+        'umum_essay',
+        'teknis_essay',
     ];
 
     protected $casts = [

@@ -21,14 +21,14 @@ class DatabaseSeeder extends Seeder
             ProfileSeeder::class,
             BatchSeeder::class,
             ApplicantSeeder::class,
-            // QuestionSeeder::class,
-            // DivisionSeeder::class,
-            // JobSeeder::class,
-            // PlacementSeeder::class,
-            // QuestionBundleSeeder::class,
-            // BundleQuestionSeeder::class,
-            // PersonalityRuleSeeder::class,
-            // SkregisSeeder::class,
+            QuestionSeeder::class,
+            DivisionSeeder::class,
+            JobSeeder::class,
+            PlacementSeeder::class,
+            QuestionBundleSeeder::class,
+            BundleQuestionSeeder::class,
+            PersonalityRuleSeeder::class,
+            SkregisSeeder::class,
         ]);
 
     }

@@ -70,15 +70,20 @@
                             <td class="px-4 py-2">{{ $user->email }}</td>
                             <td class="px-4 py-2">
                                 @php
-                                $badgeClass = match ($user->role) {
-                                'admin' => 'bg-orange-100 text-orange-700',
-                                'vendor' => 'bg-blue-100 text-blue-700',
-                                default => 'bg-green-100 text-green-700',
-                                };
+                                    $badgeClass = match ($user->role) {
+                                        'admin'  => 'bg-orange-100 text-orange-700',
+                                        'vendor' => 'bg-blue-100 text-blue-700',
+                                        default  => 'bg-green-100 text-green-700',
+                                    };
+
+                                    // label yang ditampilkan
+                                    $badgeLabel = $user->role === 'user'
+                                        ? 'Applicant'
+                                        : ucfirst($user->role);
                                 @endphp
 
                                 <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold {{ $badgeClass }}">
-                                    {{ ucfirst($user->role) }}
+                                    {{ $badgeLabel }}
                                 </span>
                             </td>
                             <td class="px-4 py-2 text-center">
