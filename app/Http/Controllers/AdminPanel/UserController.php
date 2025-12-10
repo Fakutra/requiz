@@ -22,31 +22,112 @@ class UserController extends Controller
     {
         $tab = $request->query('tab', 'registered');
 
+        /**
+         * =========================
+         * TAB: REGISTERED USER
+         * =========================
+         */
         if ($tab === 'registered') {
-            $search = trim((string) $request->query('search'));
+            $search    = trim((string) $request->query('search'));
+            $sort      = $request->query('sort', 'name');
+            $direction = $request->query('direction', 'asc');
+
+            // kolom yang boleh di-sort
+            $allowedSorts = ['id', 'name', 'email', 'role'];
+
+            if (! in_array($sort, $allowedSorts, true)) {
+                $sort = 'name';
+            }
+
+            // normalisasi direction
+            $direction = strtolower($direction) === 'desc' ? 'desc' : 'asc';
 
             $users = User::query()
-                ->where('role', 'user') // ⬅️ cuma ambil user dengan role 'user'
-                ->when($search, fn($q) =>
-                    $q->where(function($qq) use ($search) {
+                ->where('role', 'user') // hanya role 'user' di tab Registered
+                ->when($search, function ($q) use ($search) {
+                    $q->where(function ($qq) use ($search) {
                         $qq->where('name', 'ILIKE', "%{$search}%")
-                        ->orWhere('email', 'ILIKE', "%{$search}%");
-                    })
-                )
-                ->orderBy('name')
-                ->paginate(15);
+                            ->orWhere('email', 'ILIKE', "%{$search}%");
+                    });
+                })
+                ->orderBy($sort, $direction)
+                ->paginate(15)
+                ->appends($request->query());
 
             return view('admin.user.index', [
-                'tab'   => $tab,
-                'users' => $users,
-                'search'=> $search,
+                'tab'        => $tab,
+                'users'      => $users,
+                'search'     => $search,
+                // supaya view tidak error saat akses variabel di tab lain
+                'applicants' => collect(),
+                'positions'  => collect(),
+                'batches'    => collect(),
             ]);
         }
 
-        // tab applicant
-        $applicants = Applicant::with(['position','batch','user'])
-            ->paginate(15);
 
+        /**
+         * =========================
+         * TAB: APPLICANT USER
+         * =========================
+         */
+        // parameter dari query string
+        $search    = trim((string) $request->query('search'));
+        $batchId   = $request->query('batch');     // filter batch
+        $positionId= $request->query('position');  // filter posisi
+        $sort      = $request->query('sort', 'name');
+        $direction = $request->query('direction', 'asc');
+
+        // whitelist kolom yang boleh di-sort
+        $allowedSorts = [
+            'name',
+            'email',
+            'position_id',
+            'ekspektasi_gaji',
+            'umur',
+            'pendidikan',
+            'jurusan',
+            'batch_id',
+        ];
+
+        if (! in_array($sort, $allowedSorts, true)) {
+            $sort = 'name';
+        }
+
+        // normalisasi direction
+        $direction = strtolower($direction) === 'desc' ? 'desc' : 'asc';
+
+        $applicantsQuery = Applicant::with(['position', 'batch', 'user'])
+            // SEARCH: Nama / Email / Jurusan / Posisi
+            ->when($search, function ($q) use ($search) {
+                $q->where(function ($qq) use ($search) {
+                    // jika kolom name/email ada di tabel applicants
+                    $qq->where('name', 'ILIKE', "%{$search}%")
+                        ->orWhere('email', 'ILIKE', "%{$search}%")
+                        ->orWhere('jurusan', 'ILIKE', "%{$search}%")
+                        // cari dari relasi position
+                        ->orWhereHas('position', function ($qp) use ($search) {
+                            $qp->where('name', 'ILIKE', "%{$search}%");
+                        });
+                });
+            })
+            // FILTER: Batch
+            ->when($batchId, function ($q) use ($batchId) {
+                $q->where('batch_id', $batchId);
+            })
+            // FILTER: Position
+            ->when($positionId, function ($q) use ($positionId) {
+                $q->where('position_id', $positionId);
+            });
+
+        // SORTING
+        $applicantsQuery->orderBy($sort, $direction);
+
+        $applicants = $applicantsQuery
+            ->paginate(15)
+            ->appends($request->query());
+
+        // data referensi untuk filter di modal
         $positions = Position::orderBy('name')->get();
         $batches   = Batch::orderBy('name')->get();
 
@@ -56,6 +137,7 @@ class UserController extends Controller
             'applicants' => $applicants,
             'positions'  => $positions,
             'batches'    => $batches,
+            'search'     => $search,
         ]);
     }
 

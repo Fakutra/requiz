@@ -54,13 +54,56 @@
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm border-collapse">
                         <thead class="bg-gray-50 text-gray-700">
-                        <tr>
-                            <th class="px-4 py-2 text-left whitespace-nowrap">No.</th>
-                            <th class="px-4 py-2 text-left whitespace-nowrap">Nama</th>
-                            <th class="px-4 py-2 text-left whitespace-nowrap">Email</th>
-                            <th class="px-4 py-2 text-left whitespace-nowrap">Role</th>
-                            <th class="px-4 py-2 text-center whitespace-nowrap">Aksi</th>
-                        </tr>
+                            <tr>
+                                <th class="px-4 py-2 text-left whitespace-nowrap">No.</th>
+
+                                {{-- Nama --}}
+                                <th class="px-4 py-2 text-left whitespace-nowrap">
+                                    <a href="{{ request()->fullUrlWithQuery([
+                                            'sort' => 'name',
+                                            'direction' => (request('sort') === 'name' && request('direction','asc') === 'asc') ? 'desc' : 'asc',
+                                        ]) }}"
+                                    class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
+                                        Nama
+                                        <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'name' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
+                                            fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </a>
+                                </th>
+
+                                {{-- Email --}}
+                                <th class="px-4 py-2 text-left whitespace-nowrap">
+                                    <a href="{{ request()->fullUrlWithQuery([
+                                            'sort' => 'email',
+                                            'direction' => (request('sort') === 'email' && request('direction','asc') === 'asc') ? 'desc' : 'asc',
+                                        ]) }}"
+                                    class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
+                                        Email
+                                        <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'email' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
+                                            fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </a>
+                                </th>
+
+                                {{-- Role --}}
+                                <th class="px-4 py-2 text-left whitespace-nowrap">
+                                    <a href="{{ request()->fullUrlWithQuery([
+                                            'sort' => 'role',
+                                            'direction' => (request('sort') === 'role' && request('direction','asc') === 'asc') ? 'desc' : 'asc',
+                                        ]) }}"
+                                    class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
+                                        Role
+                                        <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'role' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}"
+                                            fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </a>
+                                </th>
+
+                                <th class="px-4 py-2 text-center whitespace-nowrap">Aksi</th>
+                            </tr>
                         </thead>
                         <tbody class="divide-y">
                         @forelse ($users as $user)
