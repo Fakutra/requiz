@@ -29,18 +29,20 @@ class PositionController extends Controller
     {
         if (!$text) return [];
 
-        // normalize commas to newlines for unified splitting
-        $normalized = str_replace(',', "\n", $text);
-        $parts = preg_split('/\r\n|\r|\n/', $normalized);
+        // pecah hanya berdasarkan ENTER
+        $parts = preg_split('/\r\n|\r|\n/', $text);
         $clean = [];
 
         foreach ($parts as $p) {
             $p = trim($p);
             if ($p === '') continue;
-            // remove common bullets
+
+            // hapus bullet: -, *, •, >
             $p = preg_replace('/^[\-\*\•\>\s]+/u', '', $p);
-            // collapse internal whitespace
+
+            // rapikan spasi berlebih
             $p = preg_replace('/\s+/', ' ', $p);
+
             $clean[] = $p;
         }
 
