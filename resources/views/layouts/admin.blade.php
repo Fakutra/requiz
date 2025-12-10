@@ -327,7 +327,7 @@
 
                                     <a href="{{ route('admin.user.index') }}"
                                         class="block hover:text-blue-600 no-underline {{ request()->is('admin/user') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
-                                        User Account
+                                        Applicant
                                     </a>
                                     {{-- Vendor --}}
                                     <a href="{{ route('admin.vendor.index') }}"

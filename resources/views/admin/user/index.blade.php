@@ -3,18 +3,18 @@
     <div class="bg-white rounded-lg shadow-sm p-4">
         {{-- Header halaman --}}
         <div class="mb-4">
-            <h1 class="text-2xl font-bold text-blue-950">Manajemen User</h1>
+            <h1 class="text-2xl font-bold text-blue-950">Manajemen User Applicant</h1>
         </div>
 
         {{-- Tabs (sama kaya halaman admin internal / eksternal) --}}
         <div class="flex gap-4 border-b mb-4 text-sm">
             <a href="{{ route('admin.user.index', ['tab' => 'registered'] + request()->except('page','tab')) }}"
                class="pb-2 border-b-2 {{ $tab === 'registered' ? 'border-blue-600 text-blue-600 font-semibold' : 'border-transparent text-gray-600 hover:text-gray-800' }}">
-                Registered User
+                Registered Applicant
             </a>
             <a href="{{ route('admin.user.index', ['tab' => 'applicant'] + request()->except('page','tab')) }}"
                class="pb-2 border-b-2 {{ $tab === 'applicant' ? 'border-blue-600 text-blue-600 font-semibold' : 'border-transparent text-gray-600 hover:text-gray-800' }}">
-                Applicant User
+                Applied Applicant
             </a>
         </div>
 

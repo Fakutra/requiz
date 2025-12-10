@@ -3,7 +3,7 @@
     <div class="bg-white rounded-lg shadow-sm p-4">
         {{-- Header halaman --}}
         <div class="mb-4">
-            <h1 class="text-2xl font-bold text-blue-950">Manajemen User</h1>
+            <h1 class="text-2xl font-bold text-blue-950">Manajemen User Admin</h1>
         </div>
 
         {{-- Tabs --}}
