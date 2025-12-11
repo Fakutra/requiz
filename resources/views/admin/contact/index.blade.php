@@ -157,7 +157,7 @@
                           name="narahubung"
                           value="{{ old('narahubung', $c->narahubung) }}"
                           class="w-full border rounded-lg px-3 py-2"
-                        >
+                        required>
                       </div>
                       <div>
                         <label class="text-sm">Email</label>
@@ -166,7 +166,7 @@
                           name="email"
                           value="{{ old('email', $c->email) }}"
                           class="w-full border rounded-lg px-3 py-2"
-                        >
+                        required>
                       </div>
                       <div>
                         <label class="text-sm">Telepon / WA</label>
@@ -174,7 +174,7 @@
                           name="phone"
                           value="{{ old('phone', $c->phone) }}"
                           class="w-full border rounded-lg px-3 py-2"
-                        >
+                        required>
                       </div>
                       <div>
                         <label class="text-sm">Jam Operasional</label>
@@ -183,7 +183,7 @@
                           value="{{ old('jam_operasional', $c->jam_operasional) }}"
                           class="w-full border rounded-lg px-3 py-2"
                           placeholder="Senin–Jumat, 09.00–17.00"
-                        >
+                        required>
                       </div>
                       <div class="md:col-span-2">
                         <label class="inline-flex items-center gap-2">
@@ -238,7 +238,7 @@
                 name="narahubung"
                 value="{{ old('narahubung') }}"
                 class="w-full border rounded-lg px-3 py-2"
-              >
+              required>
             </div>
             <div>
               <label class="text-sm">Email</label>
@@ -247,7 +247,7 @@
                 name="email"
                 value="{{ old('email') }}"
                 class="w-full border rounded-lg px-3 py-2"
-              >
+              required>
             </div>
             <div>
               <label class="text-sm">Telepon / WA</label>
@@ -255,7 +255,7 @@
                 name="phone"
                 value="{{ old('phone') }}"
                 class="w-full border rounded-lg px-3 py-2"
-              >
+              required>
             </div>
             <div>
               <label class="text-sm">Jam Operasional</label>
@@ -264,7 +264,7 @@
                 value="{{ old('jam_operasional') }}"
                 class="w-full border rounded-lg px-3 py-2"
                 placeholder="Senin–Jumat, 09.00–17.00"
-              >
+              required>
             </div>
             <div class="md:col-span-2">
               <label class="inline-flex items-center gap-2">

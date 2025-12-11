@@ -156,11 +156,32 @@
                         </div>
                         <div class="mb-3">
                             <label class="block text-sm">Password</label>
-                            <input type="password" name="password" class="border rounded w-full px-3 py-2 text-sm" required>
+                            <div x-data="{ show: false }" class="relative">
+                                <input :type="show ? 'text' : 'password'"
+                                    name="password"
+                                    class="border rounded w-full px-3 py-2 text-sm pr-10"
+                                    required>
+                                <button type="button"
+                                        @click="show = !show"
+                                        class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500">
+                                    <i :class="show ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                                </button>
+                            </div>
                         </div>
+
                         <div class="mb-5">
                             <label class="block text-sm">Konfirmasi Password</label>
-                            <input type="password" name="password_confirmation" class="border rounded w-full px-3 py-2 text-sm" required>
+                            <div x-data="{ show: false }" class="relative">
+                                <input :type="show ? 'text' : 'password'"
+                                    name="password_confirmation"
+                                    class="border rounded w-full px-3 py-2 text-sm pr-10"
+                                    required>
+                                <button type="button"
+                                        @click="show = !show"
+                                        class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500">
+                                    <i :class="show ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="flex justify-end gap-2">
                             <button type="button" @click="openAdd=false" class="text-gray-600 text-sm">Batal</button>
@@ -200,14 +221,30 @@
 
                             <div class="mb-3">
                                 <label class="block text-sm">Password Baru (opsional)</label>
-                                <input type="password" name="password"
-                                    class="border rounded w-full px-3 py-2 text-sm">
+                                <div x-data="{ show: false }" class="relative">
+                                    <input :type="show ? 'text' : 'password'"
+                                        name="password"
+                                        class="border rounded w-full px-3 py-2 text-sm pr-10">
+                                    <button type="button"
+                                            @click="show = !show"
+                                            class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500">
+                                        <i :class="show ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                                    </button>
+                                </div>
                             </div>
 
                             <div class="mb-5">
                                 <label class="block text-sm">Konfirmasi Password</label>
-                                <input type="password" name="password_confirmation"
-                                    class="border rounded w-full px-3 py-2 text-sm">
+                                <div x-data="{ show: false }" class="relative">
+                                    <input :type="show ? 'text' : 'password'"
+                                        name="password_confirmation"
+                                        class="border rounded w-full px-3 py-2 text-sm pr-10">
+                                    <button type="button"
+                                            @click="show = !show"
+                                            class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500">
+                                        <i :class="show ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                                    </button>
+                                </div>
                             </div>
 
                             <div class="flex justify-end gap-2">
@@ -399,11 +436,32 @@
                         </div>
                         <div class="mb-3">
                             <label class="block text-sm">Password</label>
-                            <input type="password" name="password" class="border rounded w-full px-3 py-2 text-sm" required>
+                            <div x-data="{ show: false }" class="relative">
+                                <input :type="show ? 'text' : 'password'"
+                                    name="password"
+                                    class="border rounded w-full px-3 py-2 text-sm pr-10"
+                                    required>
+                                <button type="button"
+                                        @click="show = !show"
+                                        class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500">
+                                    <i :class="show ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                                </button>
+                            </div>
                         </div>
+
                         <div class="mb-5">
                             <label class="block text-sm">Konfirmasi Password</label>
-                            <input type="password" name="password_confirmation" class="border rounded w-full px-3 py-2 text-sm" required>
+                            <div x-data="{ show: false }" class="relative">
+                                <input :type="show ? 'text' : 'password'"
+                                    name="password_confirmation"
+                                    class="border rounded w-full px-3 py-2 text-sm pr-10"
+                                    required>
+                                <button type="button"
+                                        @click="show = !show"
+                                        class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500">
+                                    <i :class="show ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="flex justify-end gap-2">
                             <button type="button" @click="openAdd=false" class="text-gray-600 text-sm">Batal</button>
@@ -467,14 +525,30 @@
 
                             <div class="mb-3">
                                 <label class="block text-sm">Password Baru (opsional)</label>
-                                <input type="password" name="password"
-                                    class="border rounded w-full px-3 py-2 text-sm">
+                                <div x-data="{ show: false }" class="relative">
+                                    <input :type="show ? 'text' : 'password'"
+                                        name="password"
+                                        class="border rounded w-full px-3 py-2 text-sm pr-10">
+                                    <button type="button"
+                                            @click="show = !show"
+                                            class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500">
+                                        <i :class="show ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                                    </button>
+                                </div>
                             </div>
 
                             <div class="mb-5">
                                 <label class="block text-sm">Konfirmasi Password</label>
-                                <input type="password" name="password_confirmation"
-                                    class="border rounded w-full px-3 py-2 text-sm">
+                                <div x-data="{ show: false }" class="relative">
+                                    <input :type="show ? 'text' : 'password'"
+                                        name="password_confirmation"
+                                        class="border rounded w-full px-3 py-2 text-sm pr-10">
+                                    <button type="button"
+                                            @click="show = !show"
+                                            class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500">
+                                        <i :class="show ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                                    </button>
+                                </div>
                             </div>
 
                             <div class="flex justify-end gap-2">
