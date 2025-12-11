@@ -342,16 +342,25 @@
 
                     <div class="mt-6 flex flex-wrap items-center gap-2">
                         @if (!empty($techSched->zoom_link))
-                        <button type="button"
-                            onclick="window.open('{{ $techSched->zoom_link }}', '_blank', 'noopener,noreferrer')"
-                            class="px-4 h-10 rounded-lg border border-[#009DA9] text-[#009DA9] text-sm font-medium hover:bg-[#009DA9]/10 inline-flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                            </svg>
-                            Buka Link Zoom
-                        </button>
+                            @php
+                                // tombol zoom hanya aktif kalau belum lewat upload_deadline
+                                $canJoinTechZoom = $withinDeadline;
+                            @endphp
+
+                            <button type="button"
+                                @if ($canJoinTechZoom)
+                                    onclick="window.open('{{ $techSched->zoom_link }}', '_blank', 'noopener,noreferrer')"
+                                @else
+                                    disabled
+                                @endif
+                                class="px-4 h-10 rounded-lg border border-[#009DA9] text-[#009DA9] text-sm font-medium hover:bg-[#009DA9]/10 inline-flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                                </svg>
+                                Buka Link Zoom
+                            </button>
                         @else
-                        <span class="text-gray-500">Belum ada link</span>
+                            <span class="text-gray-500">Belum ada link</span>
                         @endif
 
                         <button type="button"
@@ -406,21 +415,30 @@
 
                 {{-- divider --}}
                 @if (($showTech && $showInterview) || (!$showTech && $showQuiz && $showInterview))
-                <div class="border-t border-[#009DA9]/20 my-4"></div>
+                    <div class="border-t border-[#009DA9]/20 my-4"></div>
                 @endif
 
                 {{-- ===== INTERVIEW ===== --}}
                 @if ($showInterview)
                 @php
-                $iSch = optional($applicant->position->interviewSchedules ?? collect())
-                ->sortByDesc('schedule_start')->first();
-                $now = now();
-                $start = $iSch?->schedule_start;
-                $end = $iSch?->schedule_end;
-                $earlyMinutes = 10;
-                $canEarly = $start ? $now->gte($start->copy()->subMinutes($earlyMinutes)) : false;
-                $inWindow = $start && $end ? $now->between($start, $end, true) : false;
-                $canJoin = $iSch && $iSch->zoom_link ? ($inWindow || $canEarly) : false;
+                    $iSch = optional($applicant->position->interviewSchedules ?? collect())
+                        ->sortByDesc('schedule_start')
+                        ->first();
+
+                    $now   = now();
+                    $start = $iSch?->schedule_start;
+                    $end   = $iSch?->schedule_end;
+
+                    $earlyMinutes = 10;
+
+                    // waktu mulai join: 10 menit sebelum jadwal
+                    $joinOpenAt = $start ? $start->copy()->subMinutes($earlyMinutes) : null;
+
+                    // boleh join HANYA antara (start - 10 menit) s/d end
+                    $canJoin = false;
+                    if ($iSch && $iSch->zoom_link && $joinOpenAt && $end) {
+                        $canJoin = $now->between($joinOpenAt, $end, true);
+                    }
                 @endphp
 
                 @if ($iSch)
@@ -445,20 +463,31 @@
 
                     <div class="mt-6">
                         @if ($iSch->zoom_id || $iSch->zoom_passcode)
-                        <div class="text-gray-500 mt-2">ID: {{ $iSch->zoom_id ?? '—' }}</div>
-                        <div class="text-gray-500">Passcode: {{ $iSch->zoom_passcode ?? '—' }}</div>
+                            <div class="text-gray-500 mt-2">ID: {{ $iSch->zoom_id ?? '—' }}</div>
+                            <div class="text-gray-500">Passcode: {{ $iSch->zoom_passcode ?? '—' }}</div>
                         @endif
+
                         @if ($iSch->zoom_link)
-                        <button type="button"
-                            onclick="window.open('{{ $iSch->zoom_link }}', '_blank', 'noopener,noreferrer')"
-                            class="px-5 h-10 mt-4 inline-flex items-center rounded-lg bg-[#009DA9] text-white text-sm font-medium hover:bg-[#008a95] hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                            </svg>
-                            Buka Link Zoom
-                        </button>
+                            <button type="button"
+                                @if ($canJoin)
+                                    onclick="window.open('{{ $iSch->zoom_link }}', '_blank', 'noopener,noreferrer')"
+                                @else
+                                    disabled
+                                @endif
+                                class="px-5 h-10 mt-4 inline-flex items-center rounded-lg bg-[#009DA9] text-white text-sm font-medium hover:bg-[#008a95] disabled:opacity-50 disabled:cursor-not-allowed">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                                </svg>
+                                Buka Link Zoom
+                            </button>
+
+                            @if (!$canJoin)
+                                <p class="mt-2 text-xs text-gray-500">
+                                    Link Zoom hanya aktif saat jadwal interview berlangsung.
+                                </p>
+                            @endif
                         @else
-                        <span class="text-gray-500">Belum ada link</span>
+                            <span class="text-gray-500">Belum ada link</span>
                         @endif
                     </div>
 
