@@ -717,12 +717,12 @@
 
         // ⬇️⬇️⬇️ build list dari peserta yang dipilih
         const countAdmins = buildPickedByOptionsFromChecked();
-        if (countAdmins === 0) {
-          alert('Peserta yang dipilih belum punya admin potensial. Isi dulu checkbox "Potencial" di penilaian interview.');
-          const cmModal2 = $('confirmModal');
-          if (cmModal2) cmModal2.classList.add('hidden');
-          return;
-        }
+        // if (countAdmins === 0) {
+        //   alert('Peserta yang dipilih belum punya admin potensial. Isi dulu checkbox "Potencial" di penilaian interview.');
+        //   const cmModal2 = $('confirmModal');
+        //   if (cmModal2) cmModal2.classList.add('hidden');
+        //   return;
+        // }
 
         if (vendorSelect) vendorSelect.onchange = updateConfirmState;
         if (pickedBySelect) pickedBySelect.onchange = updateConfirmState;
@@ -848,54 +848,67 @@
         }
       });
     }
+    function safeParsePotentialAdmins(raw) {
+      if (!raw) return [];
+
+      try {
+        let v = JSON.parse(raw);
+
+        // kalau hasilnya STRING (double-encoded), parse sekali lagi
+        if (typeof v === 'string') {
+          try { v = JSON.parse(v); } catch (e) {}
+        }
+
+        // kalau array of numbers => ubah jadi object {id, name}
+        if (Array.isArray(v) && v.length && (typeof v[0] === 'number' || typeof v[0] === 'string')) {
+          return v.map(id => ({ id: Number(id), name: `Admin #${id}` }));
+        }
+
+        // kalau udah array of objects
+        if (Array.isArray(v)) return v;
+
+        return [];
+      } catch (e) {
+        console.error('Invalid JSON in data-potential-admins:', raw, e);
+        return [];
+      }
+    }
+
     function buildPickedByOptionsFromChecked() {
       const pickedSelect = $('pickedBySelect');
       if (!pickedSelect) return 0;
 
-      // reset isi select
       pickedSelect.innerHTML = '<option value="">-- Pilih Admin --</option>';
       pickedSelect.disabled = false;
 
       const map = new Map();
 
       document.querySelectorAll('input[name="ids[]"]:checked').forEach(cb => {
-          const raw = cb.getAttribute('data-potential-admins');
-          if (!raw) return;
+        const raw = cb.getAttribute('data-potential-admins');
+        const list = safeParsePotentialAdmins(raw);
 
-          let list;
-          try {
-              list = JSON.parse(raw);
-          } catch (e) {
-              console.error('Invalid JSON in data-potential-admins', e);
-              return;
-          }
-
-          if (!Array.isArray(list)) return;
-
-          list.forEach(item => {
-              if (!item || !item.id) return;
-              if (!map.has(item.id)) {
-                  map.set(item.id, item.name || ('Admin #' + item.id));
-              }
-          });
+        list.forEach(item => {
+          if (!item || !item.id) return;
+          if (!map.has(item.id)) map.set(item.id, item.name || ('Admin #' + item.id));
+        });
       });
 
       if (map.size === 0) {
-          pickedSelect.innerHTML =
-              '<option value="">Belum ada admin potential untuk peserta terpilih</option>';
-          pickedSelect.disabled = true;
-          return 0;
+        pickedSelect.innerHTML = '<option value="">Belum ada admin potential untuk peserta terpilih</option>';
+        pickedSelect.disabled = true;
+        return 0;
       }
 
       map.forEach((name, id) => {
-          const opt = document.createElement('option');
-          opt.value = id;
-          opt.textContent = name;
-          pickedSelect.appendChild(opt);
+        const opt = document.createElement('option');
+        opt.value = id;
+        opt.textContent = name;
+        pickedSelect.appendChild(opt);
       });
 
       return map.size;
-  }
+    }
+
         // Auto save Picked By (AJAX)
     // function handlePickedByChange(selectEl) {
     //   const applicantId = selectEl.getAttribute('data-applicant-id');

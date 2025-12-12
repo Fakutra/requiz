@@ -8,7 +8,7 @@ class Offering extends Model
 {
     // field yang bisa diisi mass-assignment
     protected $fillable = [
-        'applicant_id','position','division_id','job_id','placement_id',
+        'applicant_id','position','job_id','placement_id','field_id','sub_field_id',
         'gaji','uang_makan','uang_transport',
         'kontrak_mulai','kontrak_selesai',
         'link_pkwt','link_berkas','link_form_pelamar'
@@ -31,12 +31,6 @@ class Offering extends Model
         return $this->belongsTo(Applicant::class);
     }
 
-    // relasi ke Division
-    public function division()
-    {
-        return $this->belongsTo(Division::class);
-    }
-
     // relasi ke Job
     public function job()
     {
@@ -48,4 +42,14 @@ class Offering extends Model
     {
         return $this->belongsTo(Placement::class);
     }
+
+    public function field()
+    {
+        return $this->belongsTo(Field::class);
+    }
+
+   public function subfield()
+{
+    return $this->belongsTo(SubField::class, 'sub_field_id'); // ✅
+}
 }

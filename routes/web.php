@@ -38,6 +38,12 @@ use App\Http\Controllers\AdminPanel\AboutController;
 use App\Http\Controllers\AdminPanel\VendorController;
 use App\Http\Controllers\AdminPanel\ScheduleController;
 use App\Http\Controllers\AdminPanel\VendorPasswordController;
+use App\Http\Controllers\AdminPanel\DivisionController;
+use App\Http\Controllers\AdminPanel\FieldController;
+use App\Http\Controllers\AdminPanel\SubFieldController;
+use App\Http\Controllers\AdminPanel\JobController;
+use App\Http\Controllers\AdminPanel\PlacementController;
+
 
 // ====== Seleksi (baru, dipisah per tahap) ======
 use App\Http\Controllers\AdminPanel\Selection\RekapController;
@@ -197,14 +203,33 @@ Route::middleware(['auth'])->group(function () {
                 Route::post('/send-email', [OfferingEmailController::class, 'send'])->name('sendEmail');
             });
 
-            // master data seleksi
-            Route::post('/divisions/store',  [\App\Http\Controllers\AdminPanel\Selection\DivisionController::class, 'store'])->name('divisions.store');
-            Route::post('/jobs/store',       [\App\Http\Controllers\AdminPanel\Selection\JobController::class, 'store'])->name('jobs.store');
-            Route::post('/placements/store', [\App\Http\Controllers\AdminPanel\Selection\PlacementController::class, 'store'])->name('placements.store');
-
             // Aksi generik: mark lolos/tidak
             Route::post('/mark', [StageActionController::class, 'mark'])->name('mark');
         });
+
+        // Master
+        Route::middleware(['auth', 'role:admin'])
+            ->prefix('admin')
+            ->name('admin.')
+            ->group(function () {
+
+                // Divisi (CRUD)
+                Route::resource('divisions', DivisionController::class);
+
+                // Bidang (CRUD)
+                Route::resource('fields', FieldController::class);
+
+                // Sub Bidang (CRUD)
+                Route::resource('sub-fields', SubFieldController::class)
+                    ->names('subfields'); 
+                    // supaya route name menjadi admin.subfields.* 
+
+                // Jabatan (CRUD)
+                Route::resource('jobs', JobController::class);
+
+                // Penempatan (CRUD)
+                Route::resource('placements', PlacementController::class);
+            });
 
         Route::post('admin/applicant/seleksi/update-status', [ActionsController::class, 'updateStatus'])
             ->name('admin.applicant.seleksi.updateStatus');

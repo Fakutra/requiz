@@ -115,21 +115,6 @@
                 </a>
               </th>
 
-              {{-- Penempatan --}}
-              <th class="px-3 py-2 text-left whitespace-nowrap">
-                <a href="{{ request()->fullUrlWithQuery([
-                    'sort' => 'penempatan',
-                    'direction' => (request('sort') === 'penempatan' && request('direction') === 'asc') ? 'desc' : 'asc'
-                ]) }}" 
-                  class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
-                  Penempatan
-                  <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'penempatan' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}" 
-                      fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
-                  </svg>
-                </a>
-              </th>
-
               {{-- Jabatan --}}
               <th class="px-3 py-2 text-left whitespace-nowrap">
                 <a href="{{ request()->fullUrlWithQuery([
@@ -145,20 +130,51 @@
                 </a>
               </th>
 
-              {{-- Divisi --}}
+              {{-- Bidang --}}
               <th class="px-3 py-2 text-left whitespace-nowrap">
                 <a href="{{ request()->fullUrlWithQuery([
-                    'sort' => 'divisi',
-                    'direction' => (request('sort') === 'divisi' && request('direction') === 'asc') ? 'desc' : 'asc'
+                    'sort' => 'bidang',
+                    'direction' => (request('sort') === 'bidang' && request('direction') === 'asc') ? 'desc' : 'asc'
                 ]) }}" 
                   class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
-                  Divisi
-                  <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'divisi' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}" 
+                  Bidang
+                  <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'bidang' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}" 
                       fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
                   </svg>
                 </a>
               </th>
+
+              {{-- Sub Bidang --}}
+              <th class="px-3 py-2 text-left whitespace-nowrap">
+                <a href="{{ request()->fullUrlWithQuery([
+                    'sort' => 'subbidang',
+                    'direction' => (request('sort') === 'subbidang' && request('direction') === 'asc') ? 'desc' : 'asc'
+                ]) }}" 
+                  class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
+                  Sub Bidang
+                  <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'subbidang' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}" 
+                      fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
+                  </svg>
+                </a>
+              </th>
+
+              {{-- Penempatan --}}
+              <th class="px-3 py-2 text-left whitespace-nowrap">
+                <a href="{{ request()->fullUrlWithQuery([
+                    'sort' => 'penempatan',
+                    'direction' => (request('sort') === 'penempatan' && request('direction') === 'asc') ? 'desc' : 'asc'
+                ]) }}" 
+                  class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
+                  Penempatan
+                  <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'penempatan' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}" 
+                      fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
+                  </svg>
+                </a>
+              </th>
+
 
               {{-- Status --}}
               <th class="px-3 py-2 text-left whitespace-nowrap">
@@ -187,9 +203,10 @@
                 <td class="px-3 py-2">{{ $a->name }}</td>
                 <td class="px-3 py-2">{{ $a->email }}</td>
                 <td class="px-3 py-2">{{ $a->position->name ?? '-' }}</td>
-                <td class="px-3 py-2">{{ optional($a->offering->placement ?? null)->name ?? '-' }}</td>
-                <td class="px-3 py-2">{{ optional($a->offering->job ?? null)->name ?? '-' }}</td>
-                <td class="px-3 py-2">{{ optional($a->offering->division ?? null)->name ?? '-' }}</td>
+                <td class="px-3 py-2">{{ optional(optional($a->offering)->job)->name ?? '-' }}</td>
+                <td class="px-3 py-2">{{ optional(optional($a->offering)->field)->name ?? '-' }}</td>
+                <td class="px-3 py-2">{{ optional(optional($a->offering)->subfield)->name ?? '-' }}</td>
+                <td class="px-3 py-2">{{ optional(optional($a->offering)->placement)->name ?? '-' }}</td>
                 <td class="px-3 py-2">{{ $a->status ?? '-' }}</td>
 
                 {{-- Status Email --}}
@@ -216,7 +233,7 @@
                 </td>
               </tr>  
             @empty
-              <tr><td colspan="10" class="text-center text-gray-500 py-5">Data masih kosong</td></tr>
+              <tr><td colspan="11" class="text-center text-gray-500 py-5">Data masih kosong</td></tr>
             @endforelse
           </tbody>
         </table>
@@ -255,18 +272,34 @@
                   readonly>
           </div>
 
-          {{-- Divisi --}}
+          {{-- Bidang --}}
           <div>
-            <label class="block text-sm">Divisi</label>
-            <select name="division_id" class="border rounded w-full px-3 py-2">
-              <option value="">-- Pilih Divisi --</option>
-              @foreach($divisions as $div)
-                <option value="{{ $div->id }}" {{ optional($a->offering)->division_id == $div->id ? 'selected' : '' }}>
-                  {{ $div->name }}
+            <label class="block text-sm">Bidang</label>
+            <select name="field_id" class="border rounded w-full px-3 py-2">
+              <option value="">-- Pilih Bidang --</option>
+              @foreach($fields as $field)
+                <option value="{{ $field->id }}" 
+                  {{ optional($a->offering)->field_id == $field->id ? 'selected' : '' }}>
+                  {{ $field->name }}
                 </option>
               @endforeach
             </select>
           </div>
+
+          {{-- Sub Bidang --}}
+          <div>
+            <label class="block text-sm">Sub Bidang</label>
+            <select name="sub_field_id" class="border rounded w-full px-3 py-2">
+              <option value="">-- Pilih Sub Bidang --</option>
+              @foreach($subfields as $sf)
+                <option value="{{ $sf->id }}" 
+                  {{ optional($a->offering)->sub_field_id == $sf->id ? 'selected' : '' }}>
+                  {{ $sf->name }}
+                </option>
+              @endforeach
+            </select>
+          </div>
+
 
           {{-- Jabatan --}}
           <div>
@@ -525,7 +558,7 @@
 
 
 {{-- ✅ Modal Tambah Divisi --}}
-<div id="addDivisionModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+{{--<div id="addDivisionModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
   <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
     <h3 class="text-lg font-semibold mb-4">Tambah Divisi</h3>
     <form method="POST" action="{{ route('admin.applicant.seleksi.divisions.store') }}">
@@ -538,10 +571,10 @@
       </div>
     </form>
   </div>
-</div>
+</div>--}}
 
 {{-- ✅ Modal Tambah Jabatan --}}
-<div id="addJobModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+{{--<div id="addJobModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
   <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
     <h3 class="text-lg font-semibold mb-4">Tambah Jabatan</h3>
     <form method="POST" action="{{ route('admin.applicant.seleksi.jobs.store') }}">
@@ -554,10 +587,10 @@
       </div>
     </form>
   </div>
-</div>
+</div>--}}
 
 {{-- ✅ Modal Tambah Penempatan --}}
-<div id="addPlacementModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+{{--<div id="addPlacementModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
   <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
     <h3 class="text-lg font-semibold mb-4">Tambah Penempatan</h3>
     <form method="POST" action="{{ route('admin.applicant.seleksi.placements.store') }}">
@@ -570,7 +603,7 @@
       </div>
     </form>
   </div>
-</div>
+</div>--}}
 
 </x-app-admin>
 
@@ -589,7 +622,8 @@
       trix.editor.loadHTML(`
         Selamat! Anda <strong>dinyatakan terpilih untuk menerima penawaran kerja (Offering)</strong> 
         dari <strong>PLN ICON PLUS</strong> untuk posisi 
-        <strong>{{job}}</strong> di divisi <strong>{{division}}</strong> dengan penempatan di 
+        <strong>{{job}}</strong> pada bidang <strong>{{bidang}}</strong> 
+        (sub bidang: <strong>{{subbidang}}</strong>) dengan penempatan di 
         <strong>{{placement}}</strong>.<br><br>
 
         Berikut adalah rincian penawaran yang kami sampaikan:<br>
