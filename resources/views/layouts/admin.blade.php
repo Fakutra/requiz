@@ -341,18 +341,17 @@
                                     </a>
                                 </div>
                             </div>
-
-                            {{-- CMS (ADMIN ONLY) --}}
+                            
+                            {{-- master --}}
                             <div class="py-1">
                                 <button @click="toggleMenu('masterOpen')"
                                     class="flex items-center w-full text-gray-700 hover:text-blue-600 focus:outline-none">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                        viewBox="0 0 24 24" class="size-6 me-4">
-                                        <path fill="none" stroke="currentColor"
-                                            d="m17.3 10.453l1.927.315a.326.326 0 0 1 .273.322v1.793a.326.326 0 0 1-.27.321l-1.93.339q-.167.582-.459 1.111l1.141 1.584a.326.326 0 0 1-.034.422l-1.268 1.268a.326.326 0 0 1-.418.037l-1.6-1.123a5.5 5.5 0 0 1-1.118.468l-.34 1.921a.326.326 0 0 1-.322.269H11.09a.325.325 0 0 1-.321-.272l-.319-1.911a5.5 5.5 0 0 1-1.123-.465l-1.588 1.113a.326.326 0 0 1-.418-.037L6.052 16.66a.33.33 0 0 1-.035-.42l1.123-1.57a5.5 5.5 0 0 1-.47-1.129l-1.901-.337a.326.326 0 0 1-.269-.321V11.09c0-.16.115-.296.273-.322l1.901-.317q.173-.59.47-1.128l-1.11-1.586a.326.326 0 0 1 .037-.417L7.34 6.053a.326.326 0 0 1 .42-.035l1.575 1.125q.533-.292 1.121-.46l.312-1.91a.326.326 0 0 1 .322-.273h1.793c.159 0 .294.114.322.27l.336 1.92q.585.169 1.12.465l1.578-1.135a.326.326 0 0 1 .422.033l1.268 1.268a.326.326 0 0 1 .036.418L16.84 9.342q.29.53.46 1.11ZM9.716 12a2.283 2.283 0 1 0 4.566 0a2.283 2.283 0 0 0-4.566 0Z"
-                                            clip-rule="evenodd" stroke-width="1" />
+                                        viewBox="0 0 20 20" class="size-6 me-4">
+                                        <path fill="currentColor"
+                                            d="M5.5 3A2.5 2.5 0 0 0 3 5.5v9A2.5 2.5 0 0 0 5.5 17h4.1a5.5 5.5 0 0 1-.393-1H5.5A1.5 1.5 0 0 1 4 14.5v-9A1.5 1.5 0 0 1 5.5 4h9A1.5 1.5 0 0 1 16 5.5v3.707q.524.149 1 .393V5.5A2.5 2.5 0 0 0 14.5 3zm3.707 10q.149-.524.393-1H5.5a.5.5 0 0 0 0 1zM8.5 15a.5.5 0 0 0 0-1h-3a.5.5 0 0 0 0 1zM8 5a.5.5 0 0 1 .457.297l2 4.5a.5.5 0 1 1-.914.406L9.008 9H6.992l-.535 1.203a.5.5 0 0 1-.914-.406l2-4.5A.5.5 0 0 1 8 5m.564 3L8 6.731L7.436 8zM13.5 5.5a.5.5 0 0 0-1 0v1h-1a.5.5 0 0 0 0 1h1v1a.5.5 0 0 0 1 0v-1h1a.5.5 0 0 0 0-1h-1zm5.5 9a4.5 4.5 0 1 1-9 0a4.5 4.5 0 0 1 9 0m-4-2a.5.5 0 0 0-1 0V14h-1.5a.5.5 0 0 0 0 1H14v1.5a.5.5 0 0 0 1 0V15h1.5a.5.5 0 0 0 0-1H15z" />
                                     </svg>
-                                    CMS
+                                    Master
                                     <svg class="w-4 h-4 ml-auto transform" :class="{ 'rotate-180': masterOpen }"
                                         fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round"
@@ -361,6 +360,58 @@
                                 </button>
 
                                 <div x-show="masterOpen" x-transition
+                                    class="mt-3 ml-10 space-y-4 text-sm text-gray-600">
+
+                                    {{-- Bidang --}}
+                                    <a href="{{ route('admin.fields.index') }}"
+                                        class="block hover:text-blue-600 no-underline
+                                            {{ request()->routeIs('admin.fields.*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                                        Bidang
+                                    </a>
+
+                                    {{-- Sub Bidang --}}
+                                    <a href="{{ route('admin.subfields.index') }}"
+                                        class="block hover:text-blue-600 no-underline
+                                            {{ request()->routeIs('admin.subfields.*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                                        Sub Bidang
+                                    </a>
+
+                                    {{-- Jabatan --}}
+                                    <a href="{{ route('admin.jobs.index') }}"
+                                        class="block hover:text-blue-600 no-underline
+                                            {{ request()->routeIs('admin.jobs.*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                                        Jabatan
+                                    </a>
+
+                                    {{-- Penempatan --}}
+                                    <a href="{{ route('admin.placements.index') }}"
+                                        class="block hover:text-blue-600 no-underline
+                                            {{ request()->routeIs('admin.placements.*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                                        Penempatan
+                                    </a>
+                                </div>
+                            </div>
+
+
+                            {{-- CMS (ADMIN ONLY) --}}
+                            <div class="py-1">
+                                <button @click="toggleMenu('cmsOpen')"
+                                    class="flex items-center w-full text-gray-700 hover:text-blue-600 focus:outline-none">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                        viewBox="0 0 24 24" class="size-6 me-4">
+                                        <path fill="none" stroke="currentColor"
+                                            d="m17.3 10.453l1.927.315a.326.326 0 0 1 .273.322v1.793a.326.326 0 0 1-.27.321l-1.93.339q-.167.582-.459 1.111l1.141 1.584a.326.326 0 0 1-.034.422l-1.268 1.268a.326.326 0 0 1-.418.037l-1.6-1.123a5.5 5.5 0 0 1-1.118.468l-.34 1.921a.326.326 0 0 1-.322.269H11.09a.325.325 0 0 1-.321-.272l-.319-1.911a5.5 5.5 0 0 1-1.123-.465l-1.588 1.113a.326.326 0 0 1-.418-.037L6.052 16.66a.33.33 0 0 1-.035-.42l1.123-1.57a5.5 5.5 0 0 1-.47-1.129l-1.901-.337a.326.326 0 0 1-.269-.321V11.09c0-.16.115-.296.273-.322l1.901-.317q.173-.59.47-1.128l-1.11-1.586a.326.326 0 0 1 .037-.417L7.34 6.053a.326.326 0 0 1 .42-.035l1.575 1.125q.533-.292 1.121-.46l.312-1.91a.326.326 0 0 1 .322-.273h1.793c.159 0 .294.114.322.27l.336 1.92q.585.169 1.12.465l1.578-1.135a.326.326 0 0 1 .422.033l1.268 1.268a.326.326 0 0 1 .036.418L16.84 9.342q.29.53.46 1.11ZM9.716 12a2.283 2.283 0 1 0 4.566 0a2.283 2.283 0 0 0-4.566 0Z"
+                                            clip-rule="evenodd" stroke-width="1" />
+                                    </svg>
+                                    CMS
+                                    <svg class="w-4 h-4 ml-auto transform" :class="{ 'rotate-180': cmsOpen }"
+                                        fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                            d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+                                
+                                <div x-show="cmsOpen" x-transition
                                     class="mt-3 ml-10 space-y-4 text-sm text-gray-600">
                                     <a href="{{ route('admin.faq.index') }}"
                                         class="block hover:text-blue-600 no-underline {{ request()->is('admin/faq') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
