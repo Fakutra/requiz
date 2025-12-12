@@ -622,8 +622,8 @@
       trix.editor.loadHTML(`
         Selamat! Anda <strong>dinyatakan terpilih untuk menerima penawaran kerja (Offering)</strong> 
         dari <strong>PLN ICON PLUS</strong> untuk posisi 
-        <strong>{{job}}</strong> pada bidang <strong>{{bidang}}</strong> 
-        (sub bidang: <strong>{{subbidang}}</strong>) dengan penempatan di 
+        <strong>{{job}}</strong> pada bidang <strong>{{field}}</strong> 
+        (sub bidang: <strong>{{subfield}}</strong>) dengan penempatan di 
         <strong>{{placement}}</strong>.<br><br>
 
         Berikut adalah rincian penawaran yang kami sampaikan:<br>
