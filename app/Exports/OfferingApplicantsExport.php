@@ -3,9 +3,9 @@
 namespace App\Exports;
 
 use App\Models\Applicant;
-use App\Services\ActivityLogger; // ✅ tambahkan
+use App\Services\ActivityLogger;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log; // ✅ tambahkan
+use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 
@@ -29,9 +29,10 @@ class OfferingApplicantsExport implements FromCollection, WithHeadings
         $q = Applicant::with([
                 'position',
                 'batch',
-                'offering.division',
+                'offering.field',
+                'offering.subfield',
                 'offering.job',
-                'offering.placement'
+                'offering.placement',
             ])
             ->whereIn('status', ['Offering', 'Menerima Offering', 'Menolak Offering']);
 
@@ -59,7 +60,7 @@ class OfferingApplicantsExport implements FromCollection, WithHeadings
 
         $data = $q->get();
 
-        // ✅ Catat log aktivitas export otomatis
+        // log export
         try {
             $userName = Auth::user()?->name ?? 'System';
             $batchInfo = $this->batchId ? "Batch ID {$this->batchId}" : "Semua Batch";
@@ -78,18 +79,21 @@ class OfferingApplicantsExport implements FromCollection, WithHeadings
         }
 
         return $data->map(function ($a) {
+            $off = $a->offering;
+
             return [
                 'Nama'            => $a->name,
                 'Email'           => $a->email,
                 'Jurusan'         => $a->jurusan ?? '-',
-                'Batch'           => $a->batch->name ?? '-',
-                'Posisi Dilamar'  => $a->position->name ?? '-',
-                'Divisi'          => optional($a->offering->division ?? null)->name ?? '-',
-                'Jabatan'         => optional($a->offering->job ?? null)->name ?? '-',
-                'Penempatan'      => optional($a->offering->placement ?? null)->name ?? '-',
+                'Batch'           => optional($a->batch)->name ?? '-',
+                'Posisi Dilamar'  => optional($a->position)->name ?? '-',
+                'Bidang'          => optional(optional($off)->field)->name ?? '-',
+                'Sub Bidang'      => optional(optional($off)->subfield)->name ?? '-',
+                'Jabatan'         => optional(optional($off)->job)->name ?? '-',
+                'Penempatan'      => optional(optional($off)->placement)->name ?? '-',
                 'Status'          => $a->status ?? '-',
-                'Tanggal Mulai'   => optional($a->offering->kontrak_mulai ?? null)?->format('d-m-Y') ?? '-',
-                'Tanggal Selesai' => optional($a->offering->kontrak_selesai ?? null)?->format('d-m-Y') ?? '-',
+                'Tanggal Mulai'   => optional($off?->kontrak_mulai)?->format('d-m-Y') ?? '-',
+                'Tanggal Selesai' => optional($off?->kontrak_selesai)?->format('d-m-Y') ?? '-',
             ];
         });
     }
@@ -102,7 +106,8 @@ class OfferingApplicantsExport implements FromCollection, WithHeadings
             'Jurusan',
             'Batch',
             'Posisi Dilamar',
-            'Divisi',
+            'Bidang',
+            'Sub Bidang',
             'Jabatan',
             'Penempatan',
             'Status',
