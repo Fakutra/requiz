@@ -280,17 +280,17 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Zoom ID</label>
-                                <input type="text" name="zoom_id" class="form-control">
+                                <input type="text" name="zoom_id" class="form-control" required>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Zoom Passcode</label>
-                                <input type="text" name="zoom_passcode" class="form-control">
+                                <input type="text" name="zoom_passcode" class="form-control" required>
                             </div>
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label">Note / Keterangan</label>
-                            <textarea name="keterangan" rows="3" class="form-control" placeholder = 'Contoh : Soal akan dibagikan saat zoom berlangsung'></textarea>
+                            <textarea name="keterangan" rows="3" class="form-control" placeholder = 'Contoh : Soal akan dibagikan saat zoom berlangsung' required></textarea>
                         </div>
                     </div>
 

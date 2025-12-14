@@ -59,7 +59,7 @@
                             placeholder="Contoh:
 Mengelola operasional harian tim
 Bertanggung jawab atas laporan mingguan
-Berkoordinasi dengan divisi IT">{{ old('descriptions') }}</textarea>
+Berkoordinasi dengan divisi IT" required>{{ old('descriptions') }}</textarea>
 
                         <small class="text-muted d-block mt-1">Pisahkan tiap poin dengan <code>Enter</code>. Sistem menyimpan tiap baris sebagai item terpisah.</small>
 
@@ -71,7 +71,14 @@ Berkoordinasi dengan divisi IT">{{ old('descriptions') }}</textarea>
                     {{-- SKILL YANG DIBUTUHKAN --}}
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Skill yang Dibutuhkan</label>
-                        <textarea class="form-control" name="skills" rows="3" placeholder="Contoh: SQL, Python, Data Visualization">{{ old('skills') }}</textarea>
+                        <textarea class="form-control" name="skills" rows="3"
+                            placeholder="Contoh:
+SQL
+Python
+Data Visualization" required>{{ old('skills') }}</textarea>
+                        <small class="text-muted d-block mt-1">
+                            Pisahkan tiap poin dengan <code>Enter</code>. Atau boleh juga dipisah dengan koma.
+                        </small>
                     </div>
 
                     {{-- PERSYARATAN UMUM --}}
@@ -80,7 +87,10 @@ Berkoordinasi dengan divisi IT">{{ old('descriptions') }}</textarea>
                         <textarea class="form-control" name="requirements" rows="3"
                             placeholder="Contoh:
 Min. IPK 3.00
-Batas usia 35 tahun">{{ old('requirements') }}</textarea>
+Batas usia 35 tahun" required>{{ old('requirements') }}</textarea>
+                        <small class="text-muted d-block mt-1">
+                            Pisahkan tiap poin dengan <code>Enter</code>.
+                        </small>
                     </div>
 
                     {{-- JURUSAN YANG DAPAT MELAMAR --}}
@@ -90,13 +100,16 @@ Batas usia 35 tahun">{{ old('requirements') }}</textarea>
                             placeholder="Contoh:
 Teknik Informatika
 Ilmu Komputer
-Sistem Informasi">{{ old('majors') }}</textarea>
+Sistem Informasi" required>{{ old('majors') }}</textarea>
+                        <small class="text-muted d-block mt-1">
+                            Pisahkan tiap jurusan dengan <code>Enter</code>.
+                        </small>
                     </div>
 
                     {{-- BATAS LAMARAN --}}
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Batas Lamaran</label>
-                        <input type="date" class="form-control" name="deadline" value="{{ old('deadline') }}">
+                        <input type="date" class="form-control" name="deadline" value="{{ old('deadline') }}" required>
                     </div>
                 </div>
 

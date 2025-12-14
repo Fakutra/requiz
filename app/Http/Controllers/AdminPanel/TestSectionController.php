@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\TestSection;
 use App\Models\Test;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use App\Services\ActivityLogger;
 use Cviebrock\EloquentSluggable\Services\SlugService;
 
@@ -14,24 +15,25 @@ class TestSectionController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'test_id' => 'required|exists:tests,id',
-            'name' => 'required|string|max:255',
+            'test_id'            => 'required|exists:tests,id',
+            'name'               => 'required|string|max:255',
+            'category'           => ['required', Rule::in(TestSection::CATEGORIES)], // ⬅️ kategori wajib & terkontrol
             'question_bundle_id' => 'nullable|exists:question_bundles,id',
-            'duration_minutes' => 'required|integer|min:1',
-            'shuffle_questions' => 'sometimes|boolean',
-            'shuffle_options' => 'sometimes|boolean',
+            'duration_minutes'   => 'required|integer|min:1',
+            'shuffle_questions'  => 'sometimes|boolean',
+            'shuffle_options'    => 'sometimes|boolean',
         ]);
         
         $validated['shuffle_questions'] = $request->has('shuffle_questions');
-        $validated['shuffle_options'] = $request->has('shuffle_options');
+        $validated['shuffle_options']   = $request->has('shuffle_options');
 
-        // --- HITUNG ORDER ---
+        // --- HITUNG ORDER (urutan tampil di quiz) ---
         $maxOrder = TestSection::where('test_id', $validated['test_id'])->max('order');
         $validated['order'] = ($maxOrder ?? 0) + 1;
 
         // --- CREATE SECTION ---
         $section = TestSection::create($validated);
-        $test = Test::find($validated['test_id']);
+        $test    = Test::find($validated['test_id']);
 
         // ✅ LOG CREATE
         ActivityLogger::log(
@@ -41,22 +43,25 @@ class TestSectionController extends Controller
             "Section ID: {$section->id}"
         );
 
-        return redirect()->route('test.show', $test)->with('success', 'Section baru berhasil ditambahkan!');
+        return redirect()
+            ->route('test.show', $test)
+            ->with('success', 'Section baru berhasil ditambahkan!');
     }
 
     public function update(Request $request, TestSection $section)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'name'               => 'required|string|max:255',
+            'category'           => ['required', Rule::in(TestSection::CATEGORIES)], // ⬅️ bisa ganti kategori
             'question_bundle_id' => 'nullable|exists:question_bundles,id',
-            'duration_minutes' => 'required|integer|min:1',
-            'shuffle_questions' => 'sometimes|boolean',
-            'shuffle_options' => 'sometimes|boolean',
-            'order' => 'required|integer|min:1',
+            'duration_minutes'   => 'required|integer|min:1',
+            'shuffle_questions'  => 'sometimes|boolean',
+            'shuffle_options'    => 'sometimes|boolean',
+            'order'              => 'required|integer|min:1', // urutan pengerjaan di quiz
         ]);
         
         $validated['shuffle_questions'] = $request->has('shuffle_questions');
-        $validated['shuffle_options'] = $request->has('shuffle_options');
+        $validated['shuffle_options']   = $request->has('shuffle_options');
 
         // ✅ LOG DATA LAMA
         $oldData = $section->toArray();
@@ -76,7 +81,9 @@ class TestSectionController extends Controller
             $newData
         );
 
-        return redirect()->route('test.show', $section->test)->with('success', 'Section berhasil diperbarui!');
+        return redirect()
+            ->route('test.show', $section->test)
+            ->with('success', 'Section berhasil diperbarui!');
     }
 
     public function destroy(TestSection $section)
@@ -95,7 +102,9 @@ class TestSectionController extends Controller
             "Section ID: {$id}"
         );
 
-        return redirect()->route('test.show', $test)->with('success', 'Section berhasil dihapus!');
+        return redirect()
+            ->route('test.show', $test)
+            ->with('success', 'Section berhasil dihapus!');
     }
 
     public function checkSlug(Request $request)

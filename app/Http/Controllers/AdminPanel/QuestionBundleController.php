@@ -7,7 +7,8 @@ use Illuminate\Http\Request;
 use App\Models\QuestionBundle;
 use App\Models\Question;
 use App\Services\ActivityLogger;
-use \Cviebrock\EloquentSluggable\Services\SlugService;
+use Cviebrock\EloquentSluggable\Services\SlugService;
+use Illuminate\Support\Facades\Validator;
 
 class QuestionBundleController extends Controller
 {
@@ -19,10 +20,10 @@ class QuestionBundleController extends Controller
 
     public function show(QuestionBundle $bundle)
     {
-        $questionsInBundle = $bundle->questions()->paginate(10);
-        $existingQuestionIds = $bundle->questions()->pluck('questions.id');
-        $availableQuestions = Question::whereNotIn('id', $existingQuestionIds)->get();
-        $categories = $availableQuestions->pluck('category')->unique()->sort();
+        $questionsInBundle     = $bundle->questions()->paginate(10);
+        $existingQuestionIds   = $bundle->questions()->pluck('questions.id');
+        $availableQuestions    = Question::whereNotIn('id', $existingQuestionIds)->get();
+        $categories            = $availableQuestions->pluck('category')->unique()->sort();
 
         return view('admin.bundle.show', compact(
             'bundle',
@@ -34,25 +35,44 @@ class QuestionBundleController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:question_bundles,name',
+        $validator = Validator::make($request->all(), [
+            'name'        => 'required|string|max:255|unique:question_bundles,name',
             'description' => 'nullable|string',
         ]);
 
-        $bundle = new QuestionBundle();
-        $bundle->name = $validated['name'];
-        $bundle->description = $validated['description'];
-        $bundle->save();
+        if ($validator->fails()) {
+            return back()
+                ->withErrors($validator)
+                ->withInput()
+                ->with('error', 'Gagal membuat bundle. Periksa kembali data yang diinput.');
+        }
 
-        ActivityLogger::log(
-            'create',
-            'Question Bundle',
-            auth()->user()->name . " membuat bundle baru: '{$bundle->name}'",
-            "Bundle ID: {$bundle->id}"
-        );
+        try {
+            $data = $validator->validated();
 
-        return redirect()->route('bundle.index')
-            ->with('success', 'Bundle baru berhasil dibuat!');
+            $bundle              = new QuestionBundle();
+            $bundle->name        = $data['name'];
+            $bundle->description = $data['description'] ?? null;
+            $bundle->save();
+
+            ActivityLogger::log(
+                'create',
+                'Question Bundle',
+                auth()->user()->name . " membuat bundle baru: '{$bundle->name}'",
+                "Bundle ID: {$bundle->id}"
+            );
+
+            return redirect()
+                ->route('bundle.index')
+                ->with('success', 'Bundle baru berhasil dibuat!');
+
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()
+                ->withInput()
+                ->with('error', 'Terjadi kesalahan saat membuat bundle. Silakan coba lagi.');
+        }
     }
 
     public function checkSlug(Request $request)
@@ -63,79 +83,135 @@ class QuestionBundleController extends Controller
 
     public function update(Request $request, QuestionBundle $bundle)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
+        $validator = Validator::make($request->all(), [
+            'name'        => 'required|string|max:255',
             'description' => 'nullable|string',
         ]);
 
-        $oldData = $bundle->toArray();
+        if ($validator->fails()) {
+            return back()
+                ->withErrors($validator)
+                ->withInput()
+                ->with('error', 'Gagal memperbarui bundle. Periksa kembali data yang diinput.');
+        }
 
-        $bundle->update([
-            'name' => $request->name,
-            'description' => $request->description,
-        ]);
+        try {
+            $data    = $validator->validated();
+            $oldData = $bundle->toArray();
 
-        $bundle->refresh();
-        $newData = $bundle->toArray();
+            $bundle->update([
+                'name'        => $data['name'],
+                'description' => $data['description'] ?? null,
+            ]);
 
-        ActivityLogger::logUpdate('Question Bundle', $bundle, $oldData, $newData);
+            $bundle->refresh();
+            $newData = $bundle->toArray();
 
-        return redirect()->route('bundle.index')
-            ->with('success', 'Bundle berhasil diperbarui!');
+            ActivityLogger::logUpdate('Question Bundle', $bundle, $oldData, $newData);
+
+            return redirect()
+                ->route('bundle.index')
+                ->with('success', 'Bundle berhasil diperbarui!');
+
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()
+                ->withInput()
+                ->with('error', 'Terjadi kesalahan saat memperbarui bundle. Silakan coba lagi.');
+        }
     }
 
     public function destroy(QuestionBundle $bundle)
     {
-        ActivityLogger::log(
-            'delete',
-            'Question Bundle',
-            auth()->user()->name . " menghapus bundle: '{$bundle->name}'",
-            "Bundle ID: {$bundle->id}"
-        );
+        try {
+            ActivityLogger::log(
+                'delete',
+                'Question Bundle',
+                auth()->user()->name . " menghapus bundle: '{$bundle->name}'",
+                "Bundle ID: {$bundle->id}"
+            );
 
-        $bundle->delete();
+            $bundle->delete();
 
-        return redirect()->route('bundle.index')
-            ->with('success', 'Bundle berhasil dihapus!');
+            return redirect()
+                ->route('bundle.index')
+                ->with('success', 'Bundle berhasil dihapus!');
+
+        } catch (\Throwable $e) {
+            report($e);
+
+            return redirect()
+                ->route('bundle.index')
+                ->with('error', 'Terjadi kesalahan saat menghapus bundle. Silakan coba lagi.');
+        }
     }
 
     public function addQuestion(Request $request, QuestionBundle $bundle)
     {
-        $request->validate([
-            'question_ids' => 'required|array',
+        $validator = Validator::make($request->all(), [
+            'question_ids'   => 'required|array',
             'question_ids.*' => 'exists:questions,id',
+        ], [
+            'question_ids.required' => 'Minimal pilih satu soal terlebih dahulu.',
         ]);
 
-        $existingQuestionIds = $bundle->questions()->pluck('questions.id')->toArray();
-        $newQuestionIds = array_diff($request->question_ids, $existingQuestionIds);
-
-        if (!empty($newQuestionIds)) {
-            $bundle->questions()->attach($newQuestionIds);
-
-            ActivityLogger::log(
-                'attach',
-                'Question Bundle',
-                auth()->user()->name . " menambahkan " . count($newQuestionIds) . " soal ke bundle '{$bundle->name}'",
-                "Bundle ID: {$bundle->id}"
-            );
-
-            return redirect()->back()->with('success', count($newQuestionIds) . ' soal berhasil ditambahkan!');
+        if ($validator->fails()) {
+            return back()
+                ->withErrors($validator)
+                ->withInput()
+                ->with('error', 'Gagal menambahkan soal ke bundle. Periksa kembali pilihan soal.');
         }
 
-        return redirect()->back()->with('info', 'Tidak ada soal baru yang ditambahkan.');
+        try {
+            $data = $validator->validated();
+
+            $existingQuestionIds = $bundle->questions()->pluck('questions.id')->toArray();
+            $newQuestionIds      = array_diff($data['question_ids'], $existingQuestionIds);
+
+            if (!empty($newQuestionIds)) {
+                $bundle->questions()->attach($newQuestionIds);
+
+                ActivityLogger::log(
+                    'attach',
+                    'Question Bundle',
+                    auth()->user()->name . " menambahkan " . count($newQuestionIds) . " soal ke bundle '{$bundle->name}'",
+                    "Bundle ID: {$bundle->id}"
+                );
+
+                return back()->with('success', count($newQuestionIds) . ' soal berhasil ditambahkan!');
+            }
+
+            // semua soal yang dipilih sudah ada di bundle
+            return back()->with('error', 'Semua soal yang dipilih sudah ada di bundle.');
+
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()
+                ->with('error', 'Terjadi kesalahan saat menambahkan soal ke bundle. Silakan coba lagi.');
+        }
     }
 
     public function removeQuestion(QuestionBundle $bundle, Question $question)
     {
-        $bundle->questions()->detach($question->id);
+        try {
+            $bundle->questions()->detach($question->id);
 
-        ActivityLogger::log(
-            'detach',
-            'Question Bundle',
-            auth()->user()->name . " menghapus soal ID {$question->id} dari bundle '{$bundle->name}'",
-            "Bundle ID: {$bundle->id}"
-        );
+            ActivityLogger::log(
+                'detach',
+                'Question Bundle',
+                auth()->user()->name . " menghapus soal ID {$question->id} dari bundle '{$bundle->name}'",
+                "Bundle ID: {$bundle->id}"
+            );
 
-        return redirect()->back()->with('success', 'Soal berhasil dihapus dari bundle!');
+            return back()->with('success', 'Soal berhasil dihapus dari bundle!');
+
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()
+                ->with('error', 'Terjadi kesalahan saat menghapus soal dari bundle. Silakan coba lagi.');
+        }
     }
 }

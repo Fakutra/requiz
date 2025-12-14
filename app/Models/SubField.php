@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Division extends Model
+class SubField extends Model
 {
     protected $fillable = ['name'];
 

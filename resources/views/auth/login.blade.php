@@ -53,7 +53,7 @@
                             </a>
                             @endif
                         </div>
-                        <div class="flex justify-center mt-6">
+                        <div class="flex flex-col items-center mt-6">
                             <button type="submit" class="flex items-center justify-center bg-[#1F2855] w-[153px] h-[54px] text-white text-base font-medium rounded-[30px] shadow-md" :disabled="loading">
                                 <span x-show="!loading">Login</span>
                                 <svg x-show="loading" class="animate-spin h-5 w-5 text-white"
@@ -64,6 +64,9 @@
                                     </path>
                                 </svg>
                             </button>
+                            <a class="underline text-sm mt-3 text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('register') }}">
+                                {{ __('Belum punya akun? Register Sekarang') }}
+                            </a>
                         </div>
                     </div>
                 </div>

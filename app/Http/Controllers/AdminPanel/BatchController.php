@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Batch;
 use App\Services\ActivityLogger;
 use Cviebrock\EloquentSluggable\Services\SlugService;
+use Illuminate\Support\Facades\Validator;
 
 class BatchController extends Controller
 {
@@ -24,80 +25,127 @@ class BatchController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             'name'       => 'required|string|max:255',
-            'status'     => 'required',
-            'start_date' => 'date',
-            'end_date'   => 'date',
+            // 'status'     => 'required',
+            'start_date' => 'nullable|date',
+            'end_date'   => 'nullable|date',
         ]);
 
-        $batch = Batch::create($validated);
+        if ($validator->fails()) {
+            return back()
+                ->withErrors($validator)
+                ->withInput()
+                ->with('error', 'Gagal menambahkan batch. Periksa kembali data yang diinput.');
+        }
 
-        // ✅ Rangkai data untuk deskripsi log
-        $details = collect($validated)
-            ->map(fn($v, $k) => "{$k}='{$v}'")
-            ->implode(', ');
+        try {
+            $validated = $validator->validated();
 
-        // ✅ Log CREATE
-        ActivityLogger::log(
-            'create',
-            'Batch',
-            auth()->user()->name." menambahkan batch baru dengan data: {$details}",
-            "Batch: {$batch->name}"
-        );
+            $batch = Batch::create($validated);
 
-        return redirect()->route('batch.index')->with('success', 'New Batch has been added!');
+            // rangkai data buat log
+            $details = collect($validated)
+                ->map(fn($v, $k) => "{$k}='{$v}'")
+                ->implode(', ');
+
+            ActivityLogger::log(
+                'create',
+                'Batch',
+                auth()->user()->name . " menambahkan batch baru dengan data: {$details}",
+                "Batch: {$batch->name}"
+            );
+
+            return redirect()
+                ->route('batch.index')
+                ->with('success', 'New Batch has been added!');
+
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()
+                ->withInput()
+                ->with('error', 'Terjadi kesalahan saat menambahkan batch. Silakan coba lagi.');
+        }
     }
 
     public function update(Request $request, $id)
     {
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             'name'       => 'required|string|max:255',
             'status'     => 'required',
             'start_date' => 'required|date',
             'end_date'   => 'required|date',
         ]);
 
-        $batch = Batch::findOrFail($id);
+        if ($validator->fails()) {
+            return back()
+                ->withErrors($validator)
+                ->withInput()
+                ->with('error', 'Gagal mengupdate batch. Periksa kembali data yang diinput.');
+        }
 
-        // ✅ Data sebelum update
-        $oldData = $batch->only(['name','status','start_date','end_date']);
+        try {
+            $validated = $validator->validated();
 
-        // ✅ Update data
-        $batch->update($validated);
+            $batch = Batch::findOrFail($id);
 
-        // ✅ Data sesudah update
-        $newData = $batch->only(['name','status','start_date','end_date']);
+            // data sebelum update
+            $oldData = $batch->only(['name', 'status', 'start_date', 'end_date']);
 
-        // ✅ Log UPDATE (diff before → after)
-        ActivityLogger::logUpdate(
-            'Batch',
-            $batch,
-            $oldData,
-            $newData
-        );
+            // update
+            $batch->update($validated);
 
-        return redirect()->route('batch.index')->with('success', 'Batch has been updated!');
+            // data sesudah update
+            $newData = $batch->only(['name', 'status', 'start_date', 'end_date']);
+
+            ActivityLogger::logUpdate(
+                'Batch',
+                $batch,
+                $oldData,
+                $newData
+            );
+
+            return redirect()
+                ->route('batch.index')
+                ->with('success', 'Batch has been updated!');
+
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()
+                ->withInput()
+                ->with('error', 'Terjadi kesalahan saat mengupdate batch. Silakan coba lagi.');
+        }
     }
 
     public function destroy($id)
     {
-        $batch = Batch::findOrFail($id);
+        try {
+            $batch = Batch::findOrFail($id);
 
-        // ✅ simpan nama sebelum delete
-        $batchName = $batch->name;
+            $batchName = $batch->name;
 
-        $batch->delete();
+            $batch->delete();
 
-        // ✅ Log DELETE
-        ActivityLogger::log(
-            'delete',
-            'Batch',
-            auth()->user()->name." menghapus batch {$batchName}",
-            "Batch: {$batchName}"
-        );
+            ActivityLogger::log(
+                'delete',
+                'Batch',
+                auth()->user()->name . " menghapus batch {$batchName}",
+                "Batch: {$batchName}"
+            );
 
-        return redirect()->route('batch.index')->with('success', 'Batch has been deleted!');
+            return redirect()
+                ->route('batch.index')
+                ->with('success', 'Batch has been deleted!');
+
+        } catch (\Throwable $e) {
+            report($e);
+
+            return redirect()
+                ->route('batch.index')
+                ->with('error', 'Terjadi kesalahan saat menghapus batch. Silakan coba lagi.');
+        }
     }
 
     public function checkSlug(Request $request)

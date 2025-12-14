@@ -8,12 +8,15 @@ use App\Models\Applicant;
 use App\Models\Batch;
 use App\Models\Position;
 use App\Models\Offering;
-use App\Models\Division;
+use App\Models\Field;
+use App\Models\SubField;
 use App\Models\Job;
 use App\Models\Placement;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth; // ✅ tambahkan
 use Illuminate\Validation\ValidationException;
+use Illuminate\Database\QueryException;
 use App\Exports\OfferingApplicantsExport;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Services\ActivityLogger; // ✅ tambahkan
@@ -42,7 +45,8 @@ class OfferingController extends Controller
                 'position', 
                 'batch', 
                 'latestEmailLog',
-                'offering.division',
+                'offering.field',
+                'offering.subfield',
                 'offering.job',
                 'offering.placement',
                 'interviewResults.user',
@@ -72,7 +76,7 @@ class OfferingController extends Controller
         $direction = $request->query('direction', 'asc');
 
         // Kolom yang boleh di-sort
-        $allowedSorts = ['name', 'email', 'posisi', 'penempatan', 'jabatan', 'divisi', 'status'];
+        $allowedSorts = ['name', 'email', 'posisi', 'penempatan', 'jabatan', 'bidang', 'subbidang', 'status'];
         if (!in_array($sort, $allowedSorts)) {
             $sort = 'name';
         }
@@ -82,7 +86,8 @@ class OfferingController extends Controller
             $a->posisi     = $a->position?->name;
             $a->penempatan = $a->offering?->placement?->name;
             $a->jabatan    = $a->offering?->job?->name;
-            $a->divisi     = $a->offering?->division?->name;
+            $a->bidang     = $a->offering?->field?->name;
+            $a->subbidang     = $a->offering?->subfield?->name;
             return $a;
         });
 
@@ -102,14 +107,15 @@ class OfferingController extends Controller
 
 
         // master untuk dropdown
-        $divisions  = Division::orderBy('name')->get();
+        $fields  = Field::orderBy('name')->get();
+        $subfields  = SubField::orderBy('name')->get();
         $jobs       = Job::orderBy('name')->get();
         $placements = Placement::orderBy('name')->get();
 
         return view('admin.applicant.seleksi.offering.index', compact(
             'batches','positions','batchId','positionId',
             'applicants','jurusan','allJurusan',
-            'divisions','jobs','placements'
+            'fields','subfields','jobs','placements'
         ));
     }
 
@@ -152,61 +158,88 @@ class OfferingController extends Controller
     /**
      * CREATE / UPDATE OFFERING DATA
      */
+ 
+
     public function store(Request $request)
     {
-        $data = $request->validate([
-            'applicant_id'     => 'required|exists:applicants,id',
-            'position'         => 'nullable|string',
-            'division_id'      => 'nullable|exists:divisions,id',
-            'job_id'           => 'nullable|exists:jobs,id',
-            'placement_id'     => 'nullable|exists:placements,id',
-            'gaji'             => 'nullable|numeric',
-            'uang_makan'       => 'nullable|numeric',
-            'uang_transport'   => 'nullable|numeric',
-            'kontrak_mulai'    => 'nullable|date',
-            'kontrak_selesai'  => 'nullable|date|after_or_equal:kontrak_mulai',
-            'link_pkwt'        => 'nullable|string',
-            'link_berkas'      => 'nullable|string',
-            'link_form_pelamar'=> 'nullable|string',
-        ]);
-
         try {
+            // 1️⃣ VALIDASI
+            $data = $request->validate([
+                'applicant_id'     => 'required|exists:applicants,id',
+                'field_id'         => 'nullable|exists:fields,id',
+                'sub_field_id'      => 'nullable|exists:sub_fields,id',
+                'job_id'           => 'nullable|exists:jobs,id',
+                'placement_id'     => 'nullable|exists:placements,id',
+                'gaji'             => 'nullable|numeric',
+                'uang_makan'       => 'nullable|numeric',
+                'uang_transport'   => 'nullable|numeric',
+                'kontrak_mulai'    => 'nullable|date',
+                'kontrak_selesai'  => 'nullable|date|after_or_equal:kontrak_mulai',
+                'link_pkwt'        => 'nullable|string',
+                'link_berkas'      => 'nullable|string',
+                'link_form_pelamar'=> 'nullable|string',
+            ]);
+
+            // 2️⃣ AMBIL APPLICANT
             $applicant = Applicant::findOrFail($data['applicant_id']);
 
-            $existingOffering = $applicant->offering()->first();
-            $oldData = $existingOffering ? $existingOffering->toArray() : [];
+            // 3️⃣ BUANG applicant_id DARI PAYLOAD
+            $payload = Arr::except($data, ['applicant_id']);
 
-            // ✅ Simpan atau update Offering
+            // 4️⃣ SIMPAN / UPDATE OFFERING
             $offering = $applicant->offering()->updateOrCreate(
                 ['applicant_id' => $applicant->id],
-                $data
+                $payload
             );
 
-            // ✅ Update status applicant
+            // 5️⃣ UPDATE STATUS
             $applicant->update(['status' => 'Offering']);
 
-            // ✅ Log aktivitas
-            $user = Auth::user()?->name ?? 'System';
-            $desc = $existingOffering
-                ? "{$user} memperbarui data Offering untuk {$applicant->name}"
-                : "{$user} membuat data Offering untuk {$applicant->name}";
-
+            // 6️⃣ LOG AKTIVITAS (OPTIONAL)
             ActivityLogger::log(
-                $existingOffering ? 'update' : 'create',
+                'save',
                 'Offering',
-                $desc,
-                json_encode([
-                    'Sebelumnya' => $oldData,
-                    'Sesudahnya' => $offering->toArray(),
-                ])
+                'Menyimpan offering untuk ' . $applicant->name,
+                $offering->toArray()
             );
 
             return back()->with('success', 'Data Offering berhasil disimpan.');
-        } catch (\Throwable $e) {
-            Log::error('Gagal menyimpan Offering: '.$e->getMessage());
-            return back()->with('error', 'Gagal menyimpan data Offering.');
+
+        }
+        // ❌ VALIDATION ERROR (jarang kena karena validate di atas)
+        catch (ValidationException $e) {
+            return back()
+                ->withErrors($e->errors())
+                ->withInput();
+        }
+        // ❌ ERROR DATABASE (FK, TABLE, COLUMN, dll)
+        catch (QueryException $e) {
+            Log::error('Offering DB Error', [
+                'error' => $e->getMessage(),
+                'sql'   => $e->getSql(),
+                'bindings' => $e->getBindings(),
+            ]);
+
+            return back()->with(
+                'error',
+                'Gagal menyimpan Offering (Database Error). Silakan hubungi admin.'
+            );
+        }
+        // ❌ ERROR LAINNYA (logic / model / typo)
+        catch (\Throwable $e) {
+            Log::error('Offering General Error', [
+                'error' => $e->getMessage(),
+                'file'  => $e->getFile(),
+                'line'  => $e->getLine(),
+            ]);
+
+            return back()->with(
+                'error',
+                'Terjadi kesalahan sistem saat menyimpan Offering.'
+            );
         }
     }
+
 
     /**
      * BULK MARK (MENERIMA / MENOLAK OFFERING)

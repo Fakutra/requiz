@@ -1,3 +1,4 @@
+{{-- resources/views/jobdetail.blade.php --}}
 <x-guest-layout>
     <div class="max-w-7xl mx-auto py-8 px-6 md:px-8 xl:px-0"
         x-data="applyForm({
@@ -14,6 +15,47 @@
             <span class="mx-2">/</span>
             <span class="text-[#009DA9] font-semibold">Job Detail</span>
         </nav>
+
+        @php
+            /**
+             * Helper: normalisasi list dari DB → array of string
+             * - support: array, JSON string, plain text
+             * - pemisah poin: baris (ENTER) saja, bukan koma
+             * - bersihin bullet (-, *, •, >) dan spasi berlebih
+             */
+            $normalizeList = function ($value) {
+                if (is_array($value)) {
+                    $items = $value;
+                } elseif (is_null($value) || $value === '') {
+                    $items = [];
+                } else {
+                    $decoded = json_decode($value, true);
+                    if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                        $items = $decoded;
+                    } else {
+                        // fallback: split per baris saja
+                        $items = preg_split('/\r\n|\r|\n/', $value);
+                    }
+                }
+
+                $items = array_map(function ($item) {
+                    $item = trim($item);
+                    // hapus bullet di depan
+                    $item = preg_replace('/^[\-\*\•\>\s]+/u', '', $item);
+                    // rapikan spasi
+                    return preg_replace('/\s+/', ' ', $item);
+                }, (array) $items);
+
+                // buang empty
+                return array_values(array_filter($items, fn ($v) => $v !== ''));
+            };
+
+            // siapkan semua list
+            $descList   = $normalizeList($position->description ?? null);
+            $skillList  = $normalizeList($position->skills ?? null);
+            $reqList    = $normalizeList($position->requirements ?? null);
+            $majorsList = $normalizeList($position->majors ?? null);
+        @endphp
 
         <div class="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
             {{-- ===== LEFT: Job detail ===== --}}
@@ -39,25 +81,10 @@
 
                         <div class="mt-6 space-y-6 text-md leading-6 text-gray-800">
                             {{-- DESKRIPSI PEKERJAAN --}}
-                            @php
-                                // normalize description ke array
-                                if (is_array($position->description)) {
-                                    $descList = $position->description;
-                                } elseif ($position->description && @json_decode($position->description, true)) {
-                                    $descList = json_decode($position->description, true);
-                                } elseif ($position->description) {
-                                    $descList = preg_split('/\r\n|\r|\n/', $position->description);
-                                } else {
-                                    $descList = [];
-                                }
-                            @endphp
-
-                            @if(count($descList))
+                            @if (count($descList))
                                 <ul class="mt-1 list-disc list-inside space-y-1 text-gray-600">
-                                    @foreach($descList as $d)
-                                        @if(trim($d) !== '')
-                                            <li>{{ trim($d) }}</li>
-                                        @endif
+                                    @foreach ($descList as $d)
+                                        <li>{{ $d }}</li>
                                     @endforeach
                                 </ul>
                             @else
@@ -66,18 +93,7 @@
 
                             {{-- SKILL YANG DIBUTUHKAN --}}
                             @php
-                                // skill bisa array / JSON / CSV
-                                if (is_array($position->skills)) {
-                                    $skillOptions = $position->skills;
-                                } elseif ($position->skills && @json_decode($position->skills, true)) {
-                                    $skillOptions = json_decode($position->skills, true);
-                                } elseif ($position->skills) {
-                                    // comma or newline separated
-                                    $skillOptions = preg_split('/\r\n|\r|\n|,/', $position->skills);
-                                } else {
-                                    $skillOptions = [];
-                                }
-                                $skillOptions = array_values(array_filter(array_map('trim', $skillOptions)));
+                                $skillOptions = $skillList;
                             @endphp
 
                             @if (count($skillOptions))
@@ -113,26 +129,14 @@
                     @endif
 
                     {{-- PERSYARATAN UMUM --}}
-                    @php
-                        // helper inline untuk parsing newline/JSON/array
-                        $toList = fn($value) => match(true) {
-                            empty($value) => [],
-                            is_array($value) => $value,
-                            @json_decode($value, true) => json_decode($value, true),
-                            default => preg_split('/\r\n|\r|\n|,/', $value),
-                        };
-                    @endphp
-
-                    {{-- Requirements --}}
-                    @php $reqList = array_values(array_filter(array_map('trim', (array) $toList($position->requirements)))); @endphp
-                    @if(count($reqList))
+                    @if (count($reqList))
                         <div class="mt-5">
                             <div class="flex items-center gap-2">
                                 <span class="inline-block w-2 h-2 rounded-full bg-[#009DA9] ring-4 ring-[#009DA9]/15"></span>
                                 <h3 class="font-semibold text-gray-900 ml-1">Persyaratan Umum</h3>
                             </div>
                             <ul class="mt-2 list-disc list-inside text-gray-600 space-y-1">
-                                @foreach($reqList as $req)
+                                @foreach ($reqList as $req)
                                     <li>{{ $req }}</li>
                                 @endforeach
                             </ul>
@@ -140,15 +144,14 @@
                     @endif
 
                     {{-- JURUSAN YANG DAPAT MELAMAR --}}
-                    @php $majorsList = array_values(array_filter(array_map('trim', (array) $toList($position->majors)))); @endphp
-                    @if(count($majorsList))
+                    @if (count($majorsList))
                         <div class="mt-5">
                             <div class="flex items-center gap-2">
                                 <span class="inline-block w-2 h-2 rounded-full bg-[#009DA9] ring-4 ring-[#009DA9]/15"></span>
                                 <h3 class="font-semibold text-gray-900 ml-1">Jurusan yang dapat melamar</h3>
                             </div>
                             <ul class="mt-2 list-disc list-inside text-gray-600 space-y-1">
-                                @foreach($majorsList as $major)
+                                @foreach ($majorsList as $major)
                                     <li>{{ $major }}</li>
                                 @endforeach
                             </ul>
@@ -172,12 +175,20 @@
                     <div class="mt-5">
                         @php
                             $alreadyApplied = in_array($position->batch_id, $appliedBatchIds, true);
+                            $isClosed = $position->deadline
+                                ? \Carbon\Carbon::today()->gt(\Carbon\Carbon::parse($position->deadline))
+                                : false;
                         @endphp
 
                         @if ($alreadyApplied)
                             <button type="button"
                                 class="w-full rounded-lg bg-gray-200 text-gray-500 font-semibold px-4 py-3 cursor-not-allowed">
                                 Sudah melamar pada batch ini
+                            </button>
+                        @elseif ($isClosed)
+                            <button type="button"
+                                class="w-full rounded-lg bg-gray-200 text-gray-500 font-semibold px-4 py-3 cursor-not-allowed">
+                                Batas lamaran telah berakhir
                             </button>
                         @else
                             <button type="button"
@@ -204,9 +215,9 @@
             <div class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
 
             {{-- panel --}}
-            <form 
-                x-ref="applyForm" 
-                method="POST" 
+            <form
+                x-ref="applyForm"
+                method="POST"
                 enctype="multipart/form-data"
                 action="{{ route('apply.store', $position) }}"
                 @submit.prevent="submit($event)"
@@ -231,7 +242,7 @@
                         </div>
                     </template>
 
-                    <div class="flex items-center gap-2 mb-2 mb-4">
+                    <div class="flex items-center gap-2 mb-4">
                         <h3 class="text-base font-semibold text-gray-800 whitespace-nowrap">
                             Data Pribadi
                         </h3>
@@ -307,17 +318,8 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         @php
-                            // normalize skills to array (same logic as above)
-                            if (is_array($position->skills)) {
-                                $skillOptions = $position->skills;
-                            } elseif ($position->skills && @json_decode($position->skills, true)) {
-                                $skillOptions = json_decode($position->skills, true);
-                            } elseif ($position->skills) {
-                                $skillOptions = preg_split('/\r\n|\r|\n|,/', $position->skills);
-                            } else {
-                                $skillOptions = [];
-                            }
-                            $skillOptions = array_values(array_filter(array_map('trim', $skillOptions)));
+                            // pakai list yang sama (skillList)
+                            $skillOptions = $skillList;
                         @endphp
 
                         @if (count($skillOptions))
@@ -393,17 +395,19 @@
                                 value="{{ old('universitas') }}"
                                 class="mt-1 w-full rounded-lg border-gray-300 focus:border-[#009DA9] focus:ring-[#009DA9]" placeholder="Nama Universitas" />
                             @error('universitas')
-                            <p class="text-sm text-red-600 mt-1" x-text="errors.name?.[0]" x-show="errors.universitas"></p>
+                                <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
                             @enderror
                         </div>
                         <div>
                             <label class="block text-sm font-medium">Jurusan</label>
-                            <input name="jurusan" type="text" class="mt-1 w-full rounded-lg border-gray-300 focus:border-[#009DA9] focus:ring-[#009DA9]" placeholder="Jurusan" />
+                            <input name="jurusan" type="text" required
+                                class="mt-1 w-full rounded-lg border-gray-300 focus:border-[#009DA9] focus:ring-[#009DA9]" placeholder="Jurusan" />
                             <p class="text-sm text-red-600 mt-1" x-text="errors.jurusan?.[0]" x-show="errors.jurusan"></p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium">Tahun Lulus</label>
-                            <input name="thn_lulus" type="text" maxlength="4" class="mt-1 w-full rounded-lg border-gray-300 focus:border-[#009DA9] focus:ring-[#009DA9]" placeholder="Tahun Kelulusan" />
+                            <input name="thn_lulus" type="text" maxlength="4" required
+                                class="mt-1 w-full rounded-lg border-gray-300 focus:border-[#009DA9] focus:ring-[#009DA9]" placeholder="Tahun Kelulusan" />
                             <p class="text-sm text-red-600 mt-1" x-text="errors.thn_lulus?.[0]" x-show="errors.thn_lulus"></p>
                         </div>
                     </div>
@@ -422,7 +426,7 @@
                                 <span class="inline-flex items-center px-3 rounded-l-lg border border-r-0 bg-gray-50 text-gray-500">Rp</span>
                                 <input type="number" name="ekspektasi_gaji"
                                     class="flex-1 rounded-r-lg border border-gray-300 focus:ring-2 focus:ring-cyan-500"
-                                    placeholder="Contoh: 5000000" inputmode="numeric" autocomplete="number" id="ekspetasi_gaji" :value="old('ekspetasi_gaji')" required>
+                                    placeholder="Contoh: 5000000" inputmode="numeric" autocomplete="number" id="ekspetasi_gaji" value="{{ old('ekspektasi_gaji') }}" required>
                             </div>
                             <p class="text-sm text-red-600 mt-1" x-text="errors.ekspetasi_gaji?.[0]" x-show="errors.ekspetasi_gaji"></p>
                         </div>
@@ -437,8 +441,8 @@
                                 file:rounded-lg file:border file:border-[#009DA9]
                                 file:text-[#009DA9] file:bg-white
                                 hover:file:bg-[#009DA9]/10 hover:file:text-[#007C85]" />
-                                @error('cv')
-                                <p class="mt-1 text-sm text-red-600" x-text="errors.cv_document?.[0]" x-show="errors.cv_document"></p>
+                                @error('cv_document')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
                             </div>
                             <div>
@@ -451,7 +455,7 @@
                                 file:text-[#009DA9] file:bg-white
                                 hover:file:bg-[#009DA9]/10 hover:file:text-[#007C85]" />
                                 @error('doc_tambahan')
-                                <p class="mt-1 text-sm text-red-600" x-text="errors.doc_tambahan?.[0]" x-show="errors.doc_tambahan"></p>
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
                             </div>
                         </div>
@@ -468,7 +472,7 @@
                         </label>
                     </div>
                     @error('agreed')
-                    <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                        <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
                     @enderror
 
                     <!-- kanan -->

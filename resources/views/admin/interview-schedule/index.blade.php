@@ -243,17 +243,17 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Meeting ID</label>
-                                <input type="text" name="zoom_id" class="form-control">
+                                <input type="text" name="zoom_id" class="form-control" required>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Passcode</label>
-                                <input type="text" name="zoom_passcode" class="form-control">
+                                <input type="text" name="zoom_passcode" class="form-control" required>
                             </div>
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label">Keterangan</label>
-                            <textarea name="keterangan" rows="3" class="form-control"></textarea>
+                            <textarea name="keterangan" rows="3" class="form-control" required></textarea>
                         </div>
                     </div>
 

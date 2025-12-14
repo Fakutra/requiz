@@ -22,12 +22,11 @@ class DatabaseSeeder extends Seeder
             BatchSeeder::class,
             ApplicantSeeder::class,
             QuestionSeeder::class,
-            DivisionSeeder::class,
             JobSeeder::class,
             PlacementSeeder::class,
             QuestionBundleSeeder::class,
             BundleQuestionSeeder::class,
-            // PersonalityRuleSeeder::class,
+            PersonalityRuleSeeder::class,
             SkregisSeeder::class,
         ]);
 

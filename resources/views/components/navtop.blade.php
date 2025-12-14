@@ -118,8 +118,16 @@
                 @endauth
 
                 @guest
-                    <x-nav-link href="{{ route('login') }}" class="text-xl font-medium">Login</x-nav-link>
-                    <x-nav-link href="{{ route('register') }}" class="text-xl font-medium">Register</x-nav-link>
+                    @php
+                        // daftar route yang dianggap sebagai halaman auth
+                        $authPageRoutes = ['login', 'register'];
+                    @endphp
+
+                    {{-- Hanya tampilkan tombol Login/Register jika BUKAN di halaman login/register --}}
+                    @if (!in_array(Route::currentRouteName(), $authPageRoutes))
+                        <x-nav-link href="{{ route('login') }}" class="text-xl font-medium">Login</x-nav-link>
+                        <x-nav-link href="{{ route('register') }}" class="text-xl font-medium">Register</x-nav-link>
+                    @endif
                 @endguest
             </div>
 
