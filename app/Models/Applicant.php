@@ -110,7 +110,7 @@ class Applicant extends Model
 
     public function offering()
     {
-        return $this->hasOne(Offering::class);
+        return $this->hasOne(Offering::class, 'applicant_id');
     }
 
     public function interviewResults()

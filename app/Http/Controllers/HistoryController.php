@@ -24,6 +24,7 @@ class HistoryController extends Controller
                 'position.technicalSchedules.answers' => fn ($q) => $q->whereIn('applicant_id', $userApplicantIds),
                 // Jadwal Interview untuk posisi (urut terbaru)
                 'position.interviewSchedules' => fn ($q) => $q->orderByDesc('schedule_start'),
+                'offering',
             ])
             ->where('user_id', $userId)
             ->latest()

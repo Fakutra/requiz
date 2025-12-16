@@ -60,7 +60,7 @@ use App\Http\Controllers\AdminPanel\Selection\TesTulisEmailController;
 use App\Http\Controllers\AdminPanel\Selection\TechnicalTestEmailController;
 use App\Http\Controllers\AdminPanel\Selection\InterviewEmailController;
 use App\Http\Controllers\AdminPanel\Selection\OfferingEmailController;
-
+use App\Http\Controllers\OfferingResponseController;
 
 // ================= PUBLIC =================
 Route::get('/', [DashboardController::class, 'index'])->name('welcome');
@@ -124,6 +124,9 @@ Route::middleware('auth', 'verified', 'role:user')->group(function () {
     // Peserta upload jawaban technical test untuk suatu schedule
     Route::post('technical-test/schedule/{schedule}/answer', [TechnicalTestAnswerController::class, 'store'])
         ->name('technical.answers.store');
+
+    Route::post('/offering/{offering}/response', [OfferingResponseController::class, 'response'])
+        ->name('offering.response');
 });
 
 require __DIR__ . '/auth.php';

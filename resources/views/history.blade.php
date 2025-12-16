@@ -233,7 +233,7 @@
                             @if(!$canEnter) aria-disabled="true" @endif
                             class="px-5 h-10 inline-flex items-center rounded-lg bg-[#009DA9] text-white text-sm font-medium
                                 {{ $canEnter ? 'hover:bg-sky-700' : 'pointer-events-none opacity-50' }}">
-                            {{-- 🔽 label tombol disesuaikan status --}}
+                            {{-- label tombol disesuaikan status --}}
                             {{ $isFinished
                                 ? 'Tes Selesai'
                                 : ($hasStarted ? 'Lanjutkan Tes' : 'Mulai Tes') }}
@@ -507,10 +507,83 @@
             @endif
 
             {{-- ===== OFFERING ===== --}}
-            @if ($applicant->status === 'Offering' || $applicant->status === 'Menerima Offering')
+            @if (in_array($applicant->status, ['Offering', 'Menerima Offering', 'Menolak Offering']))
             <section class="mt-6 rounded-xl border border-[#009DA9] p-4" style="background-color:#EFFEFF;">
                 <h4 class="text-md font-semibold text-[#009DA9] mb-2">Offering</h4>
-                <p class="text-zinc-800 text-md">Selamat anda lolos, silahkan untuk memeriksa email.</p>
+
+                @php $offering = $applicant->offering; @endphp
+
+                {{-- 1) Belum pilih: tampil tombol --}}
+                @if ($applicant->status === 'Offering')
+                    <p class="text-zinc-800 text-md mb-4">
+                        Selamat! Anda mendapatkan offering dari kami. Berikut rinciannya:
+                    </p>
+
+                    <p><strong>Bidang:</strong> {{ $offering?->field?->name ?? '-' }}</p>
+                    <p><strong>Sub Bidang:</strong> {{ $offering?->subField?->name ?? '-' }}</p>
+                    <p><strong>Jabatan:</strong> {{ $offering?->job?->name ?? '-' }}</p>
+                    <p><strong>Penempatan:</strong> {{ $offering?->placement?->name ?? '-' }}</p>
+                    <p><strong>Gaji Pokok:</strong> Rp {{ number_format((float)($offering?->gaji ?? 0), 0, ',', '.') }}</p>
+
+                    <br>
+
+                    <p>
+                        <strong>Link PKWT:</strong> 
+                        <a href="{{ $offering->link_pkwt }}" target="_blank" rel="noopener noreferrer" style="color: #009DA9; text-decoration: underline; display: inline-flex; align-items: center; gap: 4px;">
+                            {{ $offering->link_pkwt }}
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                            </svg>
+                        </a>
+                    </p>
+                    <p>
+                        <strong>Link Berkas:</strong> 
+                        <a href="{{ $offering->link_berkas }}" target="_blank" rel="noopener noreferrer" style="color: #009DA9; text-decoration: underline; display: inline-flex; align-items: center; gap: 4px;">
+                            {{ $offering->link_berkas }}
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                            </svg>
+                        </a>
+                    </p>
+                    <p>
+                        <strong>Formulir Pelamar:</strong> 
+                        <a href="{{ $offering->link_form_pelamar }}" target="_blank" rel="noopener noreferrer" style="color: #009DA9; text-decoration: underline; display: inline-flex; align-items: center; gap: 4px;">
+                            {{ $offering->link_form_pelamar }}
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                            </svg>
+                        </a>
+                    </p>
+                    
+                    <form id="offeringForm-{{ $applicant->id }}" method="POST" action="{{ route('offering.response', $applicant->offering->id) }}">
+                        <input type="hidden" name="action" id="offeringAction-{{ $applicant->id }}">
+                    
+                        @csrf
+                        <button type="button" onclick="confirmOffering({{ $applicant->id }},'accept')"
+                            class="px-5 h-10 mt-4 inline-flex items-center rounded-lg bg-[#009DA9] text-white text-sm font-medium hover:bg-[#008a95] disabled:opacity-50 disabled:cursor-not-allowed">
+                            Terima Offering
+                        </button>
+
+                        <button type="button" onclick="confirmOffering({{ $applicant->id }}, 'decline')"
+                            class="px-4 h-10 rounded-lg border border-[#009DA9] text-[#009DA9] text-sm font-medium hover:bg-[#009DA9]/10 inline-flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                            Tolak
+                        </button>
+                    </form>
+                @endif
+
+                {{-- 2) Sudah menerima --}}
+                @if ($applicant->status === 'Menerima Offering')
+                    <p class="text-zinc-800 text-md">
+                        Selamat! Anda telah menerima offering dari kami. Apabila terdapat pertanyaan lebih lanjut, mohon hubungi Contact Person.
+                    </p>
+                @endif
+
+                {{-- 3) Sudah menolak --}}
+                @if ($applicant->status === 'Menolak Offering')
+                    <p class="text-zinc-800 text-md">
+                        Kamu telah menolak offering. Terima kasih sudah mengikuti kesempatan ini.
+                    </p>
+                @endif
             </section>
             @endif
 
@@ -566,6 +639,34 @@
                 document.addEventListener('keydown', onEsc);
             }
         });
+
+        function confirmOffering(applicantId, action) {
+            const form  = document.getElementById(`offeringForm-${applicantId}`);
+            const input = document.getElementById(`offeringAction-${applicantId}`);
+
+            if (!form || !input) {
+                console.error('Form / input not found', { applicantId, action });
+                return;
+            }
+
+            Swal.fire({
+                title: action === 'accept' ? 'Konfirmasi Offering' : 'Tolak Offering?',
+                text: action === 'accept'
+                    ? 'Pastikan Anda sudah mempelajari offering dan melengkapi semua berkas'
+                    : 'Anda akan dianggap mengundurkan diri dari proses seleksi',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: action === 'accept' ? '#009DA9' : '#d33',
+                confirmButtonText: action === 'accept' ? 'Ya, Terima' : 'Ya, Tolak',
+                cancelButtonText: 'Batal',
+                reverseButtons: true,
+            }).then((res) => {
+                if (res.isConfirmed) {
+                    input.value = action;
+                    form.submit();
+                }
+            });
+        }
     </script>
 
     @push('scripts')

@@ -176,6 +176,10 @@ class LowonganController extends Controller
     {
         $position->load('batch');
 
+        $currentApplicantsCount = Applicant::where('position_id', $position->id)->count();
+        $quota = $position->quota;
+        $isQuotaFull = ($quota > 0) && ($currentApplicantsCount >= $quota);
+
         $appliedBatchIds = Applicant::where('user_id', auth()->id())
             ->pluck('batch_id')
             ->toArray();
@@ -183,6 +187,6 @@ class LowonganController extends Controller
         // Ambil user beserta profil-nya
         $user = User::with('profile')->find(auth()->id());
 
-        return view('jobdetail', compact('position', 'appliedBatchIds', 'user'));
+        return view('jobdetail', compact('position', 'appliedBatchIds', 'user', 'isQuotaFull'));
     }
 }
