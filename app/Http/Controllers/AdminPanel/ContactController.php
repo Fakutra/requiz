@@ -23,7 +23,6 @@ class ContactController extends Controller
             });
         }
 
-        // ⬇️ FIX: nggak pakai priority lagi
         $contacts = $q->orderByDesc('is_active')
                     ->orderByDesc('updated_at')
                     ->paginate(10);
@@ -36,7 +35,6 @@ class ContactController extends Controller
         return $q->where('is_active', true); 
     }
 
-    // hitung aktif sekarang
     protected function activeCount(): int
     {
         return Contact::where('is_active', true)->count();
@@ -44,81 +42,108 @@ class ContactController extends Controller
 
     public function store(Request $request)
     {
-        $data = $this->validated($request);
+        try {
+            $data = $this->validated($request);
 
-        DB::transaction(function () use (&$data) {
-            if (!empty($data['is_active'])) {
-                if ($this->activeCount() >= 3) {
-                    // sudah 3 aktif → tolak mengaktifkan yang baru
-                    throw \Illuminate\Validation\ValidationException::withMessages([
-                        'is_active' => 'Maksimal 3 kontak boleh aktif. Nonaktifkan salah satu sebelum mengaktifkan yang baru.',
-                    ]);
+            DB::transaction(function () use (&$data) {
+                if (!empty($data['is_active'])) {
+                    if ($this->activeCount() >= 3) {
+                        throw ValidationException::withMessages([
+                            'is_active' => 'Maksimal 3 kontak boleh aktif. Nonaktifkan salah satu sebelum mengaktifkan yang baru.',
+                        ]);
+                    }
                 }
-            }
-            Contact::create($data);
-        });
+                Contact::create($data);
+            });
 
-        $this->bustFooterCache();
+            $this->bustFooterCache();
+            return back()->with('ok', 'Kontak ditambahkan.');
 
-        return back()->with('ok', 'Kontak ditambahkan.');
+        } catch (ValidationException $e) {
+            return back()->withErrors($e->errors())
+                         ->withInput()
+                         ->with('err', 'Gagal menambahkan kontak.');
+        } catch (\Throwable $e) {
+            report($e);
+            return back()->withInput()->with('err', 'Terjadi kesalahan saat menambahkan kontak.');
+        }
     }
 
 
     public function update(Request $request, Contact $contact)
     {
-        $data = $this->validated($request);
+        try {
+            $data = $this->validated($request);
 
-        DB::transaction(function () use (&$data, $contact) {
-            $willActivate   = !empty($data['is_active']);
-            $currentlyActive = (bool) $contact->is_active;
+            DB::transaction(function () use (&$data, $contact) {
+                $willActivate = !empty($data['is_active']);
+                $currentlyActive = (bool) $contact->is_active;
 
-            if ($willActivate && !$currentlyActive) {
-                // mau mengaktifkan yang tadinya nonaktif
-                if ($this->activeCount() >= 3) {
-                    throw \Illuminate\Validation\ValidationException::withMessages([
-                        'is_active' => 'Maksimal 3 kontak boleh aktif. Nonaktifkan salah satu sebelum mengaktifkan yang baru.',
-                    ]);
+                if ($willActivate && !$currentlyActive) {
+                    if ($this->activeCount() >= 3) {
+                        throw ValidationException::withMessages([
+                            'is_active' => 'Maksimal 3 kontak boleh aktif. Nonaktifkan salah satu sebelum mengaktifkan yang baru.',
+                        ]);
+                    }
                 }
-            }
-            // Catatan: kalau mau nonaktifkan, langsung update aja (gak ada batas minimum)
-            $contact->update($data);
-        });
 
-        $this->bustFooterCache();
+                $contact->update($data);
+            });
 
-        return back()->with('ok', 'Kontak diperbarui.');
+            $this->bustFooterCache();
+            return back()->with('ok', 'Kontak diperbarui.');
+
+        } catch (ValidationException $e) {
+            return back()->withErrors($e->errors())
+                         ->withInput()
+                         ->with('err', 'Gagal memperbarui kontak.');
+        } catch (\Throwable $e) {
+            report($e);
+            return back()->withInput()->with('err', 'Terjadi kesalahan saat memperbarui kontak.');
+        }
     }
 
 
     public function destroy(Contact $contact)
     {
-        if ($contact->is_active &&
-            !Contact::where('id','!=',$contact->id)->where('is_active', true)->exists()) {
-            return back()->with('err','Aktif tidak bisa dihapus. Nonaktifkan terlebih dahulu.');
+        try {
+            if ($contact->is_active &&
+                !Contact::where('id','!=',$contact->id)->where('is_active', true)->exists()) {
+                return back()->with('err','Kontak aktif tidak bisa dihapus. Nonaktifkan dulu.');
+            }
+
+            $contact->delete();
+            $this->bustFooterCache();
+
+            return back()->with('ok','Kontak dihapus.');
+
+        } catch (\Throwable $e) {
+            report($e);
+            return back()->with('err','Terjadi kesalahan saat menghapus kontak.');
         }
-
-        $contact->delete();
-        $this->bustFooterCache();
-
-        return back()->with('ok','Kontak dihapus.');
     }
 
-    // Action ringkas untuk tombol "Jadikan Aktif"
+
     public function setActive(Contact $contact)
     {
-        if ($contact->is_active) {
-            return back()->with('ok','Kontak ini sudah aktif.');
+        try {
+            if ($contact->is_active) {
+                return back()->with('ok','Kontak ini sudah aktif.');
+            }
+
+            if ($this->activeCount() >= 3) {
+                return back()->with('err','Maksimal 3 kontak boleh aktif. Nonaktifkan salah satu dulu.');
+            }
+
+            $contact->update(['is_active' => true]);
+            $this->bustFooterCache();
+
+            return back()->with('ok','Kontak dijadikan aktif.');
+
+        } catch (\Throwable $e) {
+            report($e);
+            return back()->with('err', 'Terjadi kesalahan saat mengaktifkan kontak.');
         }
-
-        if ($this->activeCount() >= 3) {
-            return back()->with('err','Maksimal 3 kontak boleh aktif. Nonaktifkan salah satu dulu.');
-        }
-
-        $contact->update(['is_active' => true]);
-
-        $this->bustFooterCache();
-
-        return back()->with('ok','Kontak dijadikan aktif.');
     }
 
 
@@ -133,7 +158,6 @@ class ContactController extends Controller
             'is_active'  => ['sometimes','boolean'],
         ]);
     }
-
 
     protected function bustFooterCache(): void
     {

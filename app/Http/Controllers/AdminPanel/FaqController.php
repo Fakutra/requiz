@@ -5,7 +5,7 @@ namespace App\Http\Controllers\AdminPanel;
 use App\Http\Controllers\Controller;
 use App\Models\Faq;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Validator;
 
 class FaqController extends Controller
 {
@@ -31,44 +31,95 @@ class FaqController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->validate([
+        // 🔍 VALIDASI MANUAL
+        $validator = Validator::make($request->all(), [
             'question'  => ['required', 'string', 'max:255'],
             'answer'    => ['required', 'string'],
             'is_active' => ['nullable', 'boolean'],
         ]);
 
-        // default aktif jika tidak dikirim
-        $data['is_active'] = (bool) ($data['is_active'] ?? true);
+        if ($validator->fails()) {
+            return back()
+                ->withErrors($validator)
+                ->withInput()
+                ->with('error', 'Gagal menambahkan FAQ. Periksa kembali input kamu.');
+        }
 
-        Faq::create($data);
+        try {
+            $data = $validator->validated();
 
-        return redirect()->route('admin.faq.index')->with('success', 'FAQ berhasil ditambahkan.');
+            // default active
+            $data['is_active'] = (bool) ($data['is_active'] ?? true);
+
+            Faq::create($data);
+
+            return redirect()
+                ->route('admin.faq.index')
+                ->with('success', 'FAQ berhasil ditambahkan.');
+
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()
+                ->withInput()
+                ->with('error', 'Terjadi kesalahan saat menyimpan FAQ. Silakan coba lagi.');
+        }
     }
 
     public function update(Request $request, Faq $faq)
     {
-        $data = $request->validate([
+        // 🔍 VALIDASI MANUAL
+        $validator = Validator::make($request->all(), [
             'question'  => ['required', 'string', 'max:255'],
             'answer'    => ['required', 'string'],
             'is_active' => ['nullable', 'boolean'],
         ]);
 
-        // jika checkbox tidak dicentang, field tidak terkirim → false
-        $data['is_active'] = (bool) ($data['is_active'] ?? false);
+        if ($validator->fails()) {
+            return back()
+                ->withErrors($validator)
+                ->withInput()
+                ->with('error', 'Gagal memperbarui FAQ. Periksa kembali data yang diinput.');
+        }
 
-        $faq->update($data);
+        try {
+            $data = $validator->validated();
 
-        return redirect()->route('admin.faq.index')->with('success', 'FAQ berhasil diperbarui.');
+            // checkbox unchecked berarti false
+            $data['is_active'] = (bool) ($data['is_active'] ?? false);
+
+            $faq->update($data);
+
+            return redirect()
+                ->route('admin.faq.index')
+                ->with('success', 'FAQ berhasil diperbarui.');
+
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()
+                ->withInput()
+                ->with('error', 'Terjadi kesalahan saat memperbarui FAQ. Silakan coba lagi.');
+        }
     }
-
 
     /**
      * Delete
      */
     public function destroy(Faq $faq)
     {
-        $faq->delete();
+        try {
+            $faq->delete();
 
-        return redirect()->route('admin.faq.index')->with('success', 'FAQ berhasil dihapus.');
+            return redirect()
+                ->route('admin.faq.index')
+                ->with('success', 'FAQ berhasil dihapus.');
+
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()
+                ->with('error', 'Gagal menghapus FAQ. Silakan coba lagi.');
+        }
     }
 }

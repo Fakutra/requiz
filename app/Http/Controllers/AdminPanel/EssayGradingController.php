@@ -10,6 +10,7 @@ use App\Models\TestResult;
 use App\Models\TestSectionResult;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class EssayGradingController extends Controller
 {
@@ -84,7 +85,7 @@ class EssayGradingController extends Controller
             ->latest('finished_at')
             ->latest('started_at')
             ->paginate(10)
-            ->withQueryString();
+            ->appends(request()->query());
 
         // Ringkasan global
         $counts = [
@@ -101,10 +102,24 @@ class EssayGradingController extends Controller
      */
     public function updateResult(Request $request, TestResult $testResult)
     {
-        $request->validate([
+        // 🔍 VALIDASI MANUAL BIAR BISA KASIH NOTIF ERROR
+        $validator = Validator::make($request->all(), [
             'scores'   => 'array',
             'scores.*' => 'nullable|integer|min:0|max:100',
+        ], [
+            'scores.*.integer' => 'Nilai harus berupa angka.',
+            'scores.*.min'     => 'Nilai minimal 0.',
+            'scores.*.max'     => 'Nilai maksimal 100.',
         ]);
+
+        if ($validator->fails()) {
+            return back()
+                ->withErrors($validator)
+                ->withInput()
+                ->with('error', 'Gagal menyimpan penilaian essay. Periksa kembali nilai yang diinput.');
+        }
+
+        $data = $validator->validated();
 
         // Ambil semua SectionResult milik TestResult ini
         $testResult->load(['sectionResults']);
@@ -118,47 +133,62 @@ class EssayGradingController extends Controller
         // Map answerId -> sectionResultId untuk validasi
         $answerMap = $essayAnswers->pluck('test_section_result_id', 'id');
 
-        DB::transaction(function () use ($request, $essayAnswers, $answerMap, $testResult) {
-            $updatedSectionResultIds = [];
+        try {
+            DB::transaction(function () use ($data, $essayAnswers, $answerMap, $testResult) {
+                $updatedSectionResultIds = [];
 
-            foreach ($request->input('scores', []) as $answerId => $score) {
-                // skip kosong
-                if ($score === '' || $score === null) continue;
+                foreach ($data['scores'] ?? [] as $answerId => $score) {
+                    // skip jika kosong
+                    if ($score === '' || $score === null) {
+                        continue;
+                    }
 
-                $answerId = (int) $answerId;
-                if (! $answerMap->has($answerId)) continue;
+                    $answerId = (int) $answerId;
+                    if (! $answerMap->has($answerId)) {
+                        continue; // jawaban bukan milik test result ini
+                    }
 
-                $score = (int) $score;
+                    $score = (int) $score;
 
-                // update nilai answer
-                $answer = $essayAnswers->firstWhere('id', $answerId);
-                if (! $answer) continue;
+                    // update nilai answer
+                    $answer = $essayAnswers->firstWhere('id', $answerId);
+                    if (! $answer) {
+                        continue;
+                    }
 
-                $answer->score = $score;
-                $answer->save();
+                    $answer->score = $score;
+                    $answer->save();
 
-                $updatedSectionResultIds[$answer->test_section_result_id] = true;
-            }
-
-            // Recalc skor per SectionResult yang terdampak
-            $updatedSectionResultIds = array_keys($updatedSectionResultIds);
-            if (!empty($updatedSectionResultIds)) {
-                foreach ($updatedSectionResultIds as $srId) {
-                    $sum = Answer::where('test_section_result_id', $srId)
-                                 ->whereNotNull('score') // hindari NULL
-                                 ->sum('score');
-                    TestSectionResult::where('id', $srId)->update(['score' => $sum]);
+                    $updatedSectionResultIds[$answer->test_section_result_id] = true;
                 }
-            }
 
-            // Recalc total skor TestResult (dari semua SectionResult)
-            $newTotal = TestSectionResult::where('test_result_id', $testResult->id)
-                                         ->whereNotNull('score')
-                                         ->sum('score');
-            $testResult->score = $newTotal;
-            $testResult->save();
-        });
+                // Recalc skor per SectionResult yang terdampak
+                $updatedSectionResultIds = array_keys($updatedSectionResultIds);
+                if (!empty($updatedSectionResultIds)) {
+                    foreach ($updatedSectionResultIds as $srId) {
+                        $sum = Answer::where('test_section_result_id', $srId)
+                                     ->whereNotNull('score') // hindari NULL
+                                     ->sum('score');
+                        TestSectionResult::where('id', $srId)->update(['score' => $sum]);
+                    }
+                }
 
-        return back()->with('status', 'Penilaian essay peserta berhasil disimpan.');
+                // Recalc total skor TestResult (dari semua SectionResult)
+                $newTotal = TestSectionResult::where('test_result_id', $testResult->id)
+                                             ->whereNotNull('score')
+                                             ->sum('score');
+                $testResult->score = $newTotal;
+                $testResult->save();
+            });
+
+            return back()->with('success', 'Penilaian essay peserta berhasil disimpan.');
+
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()
+                ->withInput()
+                ->with('error', 'Terjadi kesalahan saat menyimpan penilaian essay. Silakan coba lagi.');
+        }
     }
 }

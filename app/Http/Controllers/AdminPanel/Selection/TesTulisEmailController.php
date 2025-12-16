@@ -23,18 +23,15 @@ class TesTulisEmailController extends Controller
             'position'      => 'nullable|exists:positions,id',
             'type'          => 'required|in:lolos,tidak_lolos,selected',
             'subject'       => 'required|string',
-            'message'       => 'required|string', // HTML (Trix/CKEditor)
+            'message'       => 'required|string',
             'attachments'   => 'nullable|array',
-            'attachments.*' => 'file|max:5120',   // 5MB/file
-            'ids'           => 'nullable|string', // only for "selected"
+            'attachments.*' => 'file|max:5120',
+            'ids'           => 'nullable|string',
         ]);
 
-        // =========================
-        // Tentukan target applicants
-        // =========================
         $selectedIds = [];
         if ($data['type'] === 'selected') {
-            $selectedIds = array_values(array_filter(explode(',', (string)($data['ids'] ?? ''))));
+            $selectedIds = array_values(array_filter(array_map('trim', explode(',', (string)($data['ids'] ?? '')))));
             $applicants = Applicant::with(['user:id,name,email'])
                 ->whereIn('id', $selectedIds)
                 ->get();
@@ -47,7 +44,6 @@ class TesTulisEmailController extends Controller
             }
 
             if ($data['type'] === 'lolos') {
-                // yang dianggap "Lolos Tes Tulis" (konsisten dengan UI)
                 $query->whereIn('status', [
                     'Technical Test',
                     'Interview',
@@ -58,21 +54,18 @@ class TesTulisEmailController extends Controller
                     'Menolak Offering',
                 ]);
             } else {
-                // tab "Tidak Lolos"
                 $query->where('status', 'Tidak Lolos Tes Tulis');
             }
 
             $applicants = $query->get();
         }
 
-        // =========================
-        // Kirim email + catat log
-        // =========================
+        $total        = $applicants->count();
         $successCount = 0;
         $failCount    = 0;
+        $failSamples  = [];
 
         foreach ($applicants as $a) {
-            // prioritas email di tabel applicants; fallback ke relasi user
             $recipient = trim((string) ($a->email ?? $a->user?->email ?? ''));
 
             if ($recipient === '') {
@@ -84,12 +77,13 @@ class TesTulisEmailController extends Controller
                     'success'      => false,
                     'error'        => 'Missing recipient email',
                 ]);
+
                 $failCount++;
+                if (count($failSamples) < 10) $failSamples[] = ($a->name ?? "ID {$a->id}") . " (email kosong)";
                 continue;
             }
 
             try {
-                // compose mail
                 $mail = new SelectionResultMail(
                     $data['subject'],
                     $data['message'],
@@ -98,7 +92,6 @@ class TesTulisEmailController extends Controller
                     $a
                 );
 
-                // attachments (opsional)
                 if ($request->hasFile('attachments')) {
                     foreach ($request->file('attachments') as $file) {
                         $mail->attach($file->getRealPath(), [
@@ -108,10 +101,8 @@ class TesTulisEmailController extends Controller
                     }
                 }
 
-                // kirim
                 Mail::to($recipient)->send($mail);
 
-                // log sukses
                 EmailLog::create([
                     'applicant_id' => $a->id,
                     'email'        => $recipient,
@@ -123,7 +114,8 @@ class TesTulisEmailController extends Controller
 
                 $successCount++;
             } catch (Throwable $e) {
-                // log gagal
+                report($e);
+
                 EmailLog::create([
                     'applicant_id' => $a->id,
                     'email'        => $recipient,
@@ -132,14 +124,12 @@ class TesTulisEmailController extends Controller
                     'success'      => false,
                     'error'        => $e->getMessage(),
                 ]);
+
                 $failCount++;
+                if (count($failSamples) < 10) $failSamples[] = ($a->name ?? "ID {$a->id}") . " (" . $e->getMessage() . ")";
             }
         }
 
-        // =========================
-        // Activity Logger
-        // =========================
-        $total    = $applicants->count();
         $action   = match ($data['type']) {
             'lolos'       => 'send_email_lolos',
             'tidak_lolos' => 'send_email_tidak_lolos',
@@ -164,6 +154,22 @@ class TesTulisEmailController extends Controller
             $targetInfo
         );
 
-        return back()->with('success', "Email berhasil dikirim ke {$successCount} peserta dari total {$total}");
+        $response = back();
+
+        if ($total === 0) {
+            return $response->with('error', 'Tidak ada peserta yang cocok dengan filter/target yang dipilih.');
+        }
+
+        if ($successCount > 0) {
+            $response = $response->with('success', "Email berhasil dikirim ke {$successCount} peserta dari total {$total}.");
+        }
+
+        if ($failCount > 0) {
+            $sampleText = implode(', ', $failSamples);
+            $suffix = ($failCount > count($failSamples)) ? ' (dan lainnya)' : '';
+            $response = $response->with('error', "Ada {$failCount} email yang gagal dikirim: {$sampleText}{$suffix}. Cek Email Log untuk detail.");
+        }
+
+        return $response;
     }
 }

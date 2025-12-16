@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Models\Vendor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use App\Services\ActivityLogger;
 
@@ -32,18 +33,14 @@ class UserController extends Controller
             $sort      = $request->query('sort', 'name');
             $direction = $request->query('direction', 'asc');
 
-            // kolom yang boleh di-sort
             $allowedSorts = ['id', 'name', 'email', 'role'];
-
             if (! in_array($sort, $allowedSorts, true)) {
                 $sort = 'name';
             }
-
-            // normalisasi direction
             $direction = strtolower($direction) === 'desc' ? 'desc' : 'asc';
 
             $users = User::query()
-                ->where('role', 'user') // hanya role 'user' di tab Registered
+                ->where('role', 'user')
                 ->when($search, function ($q) use ($search) {
                     $q->where(function ($qq) use ($search) {
                         $qq->where('name', 'ILIKE', "%{$search}%")
@@ -58,27 +55,23 @@ class UserController extends Controller
                 'tab'        => $tab,
                 'users'      => $users,
                 'search'     => $search,
-                // supaya view tidak error saat akses variabel di tab lain
                 'applicants' => collect(),
                 'positions'  => collect(),
                 'batches'    => collect(),
             ]);
         }
 
-
         /**
          * =========================
          * TAB: APPLICANT USER
          * =========================
          */
-        // parameter dari query string
-        $search    = trim((string) $request->query('search'));
-        $batchId   = $request->query('batch');     // filter batch
-        $positionId= $request->query('position');  // filter posisi
-        $sort      = $request->query('sort', 'name');
-        $direction = $request->query('direction', 'asc');
+        $search     = trim((string) $request->query('search'));
+        $batchId    = $request->query('batch');
+        $positionId = $request->query('position');
+        $sort       = $request->query('sort', 'name');
+        $direction  = $request->query('direction', 'asc');
 
-        // whitelist kolom yang boleh di-sort
         $allowedSorts = [
             'name',
             'email',
@@ -94,40 +87,32 @@ class UserController extends Controller
             $sort = 'name';
         }
 
-        // normalisasi direction
         $direction = strtolower($direction) === 'desc' ? 'desc' : 'asc';
 
         $applicantsQuery = Applicant::with(['position', 'batch', 'user'])
-            // SEARCH: Nama / Email / Jurusan / Posisi
             ->when($search, function ($q) use ($search) {
                 $q->where(function ($qq) use ($search) {
-                    // jika kolom name/email ada di tabel applicants
                     $qq->where('name', 'ILIKE', "%{$search}%")
                         ->orWhere('email', 'ILIKE', "%{$search}%")
                         ->orWhere('jurusan', 'ILIKE', "%{$search}%")
-                        // cari dari relasi position
                         ->orWhereHas('position', function ($qp) use ($search) {
                             $qp->where('name', 'ILIKE', "%{$search}%");
                         });
                 });
             })
-            // FILTER: Batch
             ->when($batchId, function ($q) use ($batchId) {
                 $q->where('batch_id', $batchId);
             })
-            // FILTER: Position
             ->when($positionId, function ($q) use ($positionId) {
                 $q->where('position_id', $positionId);
             });
 
-        // SORTING
         $applicantsQuery->orderBy($sort, $direction);
 
         $applicants = $applicantsQuery
             ->paginate(15)
             ->appends($request->query());
 
-        // data referensi untuk filter di modal
         $positions = Position::orderBy('name')->get();
         $batches   = Batch::orderBy('name')->get();
 
@@ -141,13 +126,10 @@ class UserController extends Controller
         ]);
     }
 
-
     public function admin(Request $request)
     {
-        // tab: 'admin', 'user', atau 'vendor' (default: admin)
         $tab = $request->query('tab', 'admin');
 
-        // mapping tab -> role
         $role = match ($tab) {
             'user'   => 'user',
             'vendor' => 'vendor',
@@ -160,7 +142,7 @@ class UserController extends Controller
             ->when($search, fn ($q) =>
                 $q->where(function ($q) use ($search) {
                     $q->where('name', 'ILIKE', "%{$search}%")
-                    ->orWhere('email', 'ILIKE', "%{$search}%");
+                      ->orWhere('email', 'ILIKE', "%{$search}%");
                 })
             )
             ->when($role === 'vendor', fn ($q) => $q->with('vendor'))
@@ -175,118 +157,167 @@ class UserController extends Controller
 
     /**
      * Tambah admin baru.
-     * (Hanya dipakai di TAB "Kelola Admin"; role dipaksa 'admin')
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             'name'     => 'required|string|max:255',
             'email'    => 'required|email|unique:users,email',
             'password' => 'required|min:6|confirmed',
         ]);
 
-        $user = User::create([
-            'name'              => $validated['name'],
-            'email'             => $validated['email'],
-            'password'          => Hash::make($validated['password']),
-            'role'              => 'admin', // selalu admin dari halaman ini
-            'email_verified_at' => now(),
-        ]);
+        if ($validator->fails()) {
+            return back()
+                ->withErrors($validator)
+                ->withInput()
+                ->with('error', 'Gagal menambahkan admin. Periksa kembali data yang diinput.');
+        }
 
-        ActivityLogger::log(
-            'create',
-            'User',
-            auth()->user()->name . " menambahkan user baru '{$user->name}' (role: {$user->role}, email: {$user->email})",
-            "User ID: {$user->id}"
-        );
+        try {
+            $validated = $validator->validated();
 
-        return back()->with('success', 'Admin berhasil ditambahkan.');
+            $user = User::create([
+                'name'              => $validated['name'] ?? null,
+                'email'             => $validated['email'] ?? null,
+                'password'          => Hash::make($validated['password'] ?? ''),
+                'role'              => 'admin',
+                'email_verified_at' => now(),
+            ]);
+
+            ActivityLogger::log(
+                'create',
+                'User',
+                auth()->user()->name . " menambahkan user baru '{$user->name}' (role: {$user->role}, email: {$user->email})",
+                "User ID: {$user->id}"
+            );
+
+            return back()->with('success', 'Admin berhasil ditambahkan.');
+
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()
+                ->withInput()
+                ->with('error', 'Terjadi kesalahan saat menambahkan admin. Silakan coba lagi.');
+        }
     }
 
     /**
-     * Tambah vendor baru.
-     * (Dipakai di TAB "Vendor"; role dipaksa 'vendor')
+     * Tambah vendor baru (user dengan role vendor).
      */
     public function storeVendor(Request $request)
     {
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             'name'          => 'required|string|max:255',
             'email'         => 'required|email|unique:users,email',
-            'phone_number'  => 'required|string|max:20',      // nomor telp
-            'vendor_id'     => 'required|exists:vendors,id',  // pastiin vendor ada
+            'phone_number'  => 'required|string|max:20',
+            'vendor_id'     => 'required|exists:vendors,id',
             'password'      => 'required|min:6|confirmed',
         ]);
 
-        $user = User::create([
-            'name'              => $validated['name'],
-            'email'             => $validated['email'],
-            'phone_number'      => $validated['phone_number'],
-            'vendor_id'         => $validated['vendor_id'],
-            'password'          => Hash::make($validated['password']),
-            'role'              => 'vendor', // selalu vendor dari halaman ini
-            'email_verified_at' => now(),
-        ]);
+        if ($validator->fails()) {
+            return back()
+                ->withErrors($validator)
+                ->withInput()
+                ->with('error', 'Gagal menambahkan admin eksternal. Periksa kembali data yang diinput.');
+        }
 
-        ActivityLogger::log(
-            'create',
-            'User',
-            auth()->user()->name . " menambahkan user vendor '{$user->name}' (role: {$user->role}, email: {$user->email})",
-            "User ID: {$user->id}"
-        );
+        try {
+            $validated = $validator->validated();
 
-        return back()->with('success', 'Vendor berhasil ditambahkan.');
+            $user = User::create([
+                'name'              => $validated['name'] ?? null,
+                'email'             => $validated['email'] ?? null,
+                'phone_number'      => $validated['phone_number'] ?? null,
+                'vendor_id'         => $validated['vendor_id'] ?? null,
+                'password'          => Hash::make($validated['password'] ?? ''),
+                'role'              => 'vendor',
+                'email_verified_at' => now(),
+            ]);
+
+            ActivityLogger::log(
+                'create',
+                'User',
+                auth()->user()->name . " menambahkan user vendor '{$user->name}' (role: {$user->role}, email: {$user->email})",
+                "User ID: {$user->id}"
+            );
+
+            return back()->with('success', 'Vendor berhasil ditambahkan.');
+
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()
+                ->withInput()
+                ->with('error', 'Terjadi kesalahan saat menambahkan admin eksternal. Silakan coba lagi.');
+        }
     }
 
     /**
      * Update user (nama, email, password opsional).
-     * Dipakai dari kedua tab (admin & user).
      */
     public function update(Request $request, User $user)
     {
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             'name'     => 'required|string|max:255',
             'email'    => ['required', 'email', Rule::unique('users')->ignore($user->id)],
             'password' => 'nullable|min:6|confirmed',
         ]);
 
-        $oldData = $user->only(['name', 'email']);
-
-        $user->update([
-            'name'     => $validated['name'],
-            'email'    => $validated['email'],
-            // role TIDAK diubah di halaman ini
-            'password' => $validated['password']
-                ? Hash::make($validated['password'])
-                : $user->password,
-        ]);
-
-        ActivityLogger::logUpdate(
-            'User',
-            $user,
-            $oldData,
-            $user->only(['name', 'email'])
-        );
-
-        if (!empty($validated['password'])) {
-            ActivityLogger::log(
-                'update',
-                'User',
-                auth()->user()->name . " mengubah password user '{$user->name}'",
-                "User ID: {$user->id}"
-            );
+        if ($validator->fails()) {
+            return back()
+                ->withErrors($validator)
+                ->withInput()
+                ->with('error', 'Gagal memperbarui user. Periksa kembali data yang diinput.');
         }
 
-        return back()->with('success', 'User berhasil diperbarui.');
+        try {
+            $validated = $validator->validated();
+
+            $oldData = $user->only(['name', 'email']);
+
+            $user->update([
+                'name'     => $validated['name'],
+                'email'    => $validated['email'],
+                'password' => $validated['password']
+                    ? Hash::make($validated['password'])
+                    : $user->password,
+            ]);
+
+            ActivityLogger::logUpdate(
+                'User',
+                $user,
+                $oldData,
+                $user->only(['name', 'email'])
+            );
+
+            if (!empty($validated['password'])) {
+                ActivityLogger::log(
+                    'update',
+                    'User',
+                    auth()->user()->name . " mengubah password user '{$user->name}'",
+                    "User ID: {$user->id}"
+                );
+            }
+
+            return back()->with('success', 'User berhasil diperbarui.');
+
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()
+                ->withInput()
+                ->with('error', 'Terjadi kesalahan saat memperbarui user. Silakan coba lagi.');
+        }
     }
 
     public function updateVendor(Request $request, User $user)
     {
-        // pastikan yang di-edit emang vendor
         if ($user->role !== 'vendor') {
             abort(404);
         }
 
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             'name'         => 'required|string|max:255',
             'email'        => [
                 'required',
@@ -298,39 +329,56 @@ class UserController extends Controller
             'password'     => 'nullable|min:6|confirmed',
         ]);
 
-        $oldData = $user->only(['name', 'email', 'phone_number', 'vendor_id']);
-
-        $data = [
-            'name'         => $validated['name'],
-            'email'        => $validated['email'],
-            'phone_number' => $validated['phone_number'],
-            'vendor_id'    => $validated['vendor_id'],
-            // role tetap 'vendor'
-        ];
-
-        if (!empty($validated['password'])) {
-            $data['password'] = Hash::make($validated['password']);
+        if ($validator->fails()) {
+            return back()
+                ->withErrors($validator)
+                ->withInput()
+                ->with('error', 'Gagal memperbarui admin eksternal. Periksa kembali data yang diinput.');
         }
 
-        $user->update($data);
+        try {
+            $validated = $validator->validated();
 
-        ActivityLogger::logUpdate(
-            'User',
-            $user,
-            $oldData,
-            $user->only(['name', 'email', 'phone_number', 'vendor_id'])
-        );
+            $oldData = $user->only(['name', 'email', 'phone_number', 'vendor_id']);
 
-        if (!empty($validated['password'])) {
-            ActivityLogger::log(
-                'update',
+            $data = [
+                'name'         => $validated['name'],
+                'email'        => $validated['email'],
+                'phone_number' => $validated['phone_number'],
+                'vendor_id'    => $validated['vendor_id'],
+            ];
+
+            if (!empty($validated['password'])) {
+                $data['password'] = Hash::make($validated['password']);
+            }
+
+            $user->update($data);
+
+            ActivityLogger::logUpdate(
                 'User',
-                auth()->user()->name . " mengubah password user vendor '{$user->name}'",
-                "User ID: {$user->id}, Vendor ID: {$user->vendor_id}"
+                $user,
+                $oldData,
+                $user->only(['name', 'email', 'phone_number', 'vendor_id'])
             );
-        }
 
-        return back()->with('success', 'Admin eksternal berhasil diperbarui.');
+            if (!empty($validated['password'])) {
+                ActivityLogger::log(
+                    'update',
+                    'User',
+                    auth()->user()->name . " mengubah password user vendor '{$user->name}'",
+                    "User ID: {$user->id}, Vendor ID: {$user->vendor_id}"
+                );
+            }
+
+            return back()->with('success', 'Admin eksternal berhasil diperbarui.');
+
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()
+                ->withInput()
+                ->with('error', 'Terjadi kesalahan saat memperbarui admin eksternal. Silakan coba lagi.');
+        }
     }
 
     /**
@@ -338,25 +386,32 @@ class UserController extends Controller
      */
     public function destroy(User $user)
     {
-        // optional: cegah user hapus dirinya sendiri
         if ($user->id === auth()->id()) {
             return back()->with('error', 'Anda tidak dapat menghapus akun Anda sendiri.');
         }
 
-        $userName  = $user->name;
-        $userEmail = $user->email;
-        $userRole  = $user->role;
-        $userId    = $user->id;
+        try {
+            $userName  = $user->name;
+            $userEmail = $user->email;
+            $userRole  = $user->role;
+            $userId    = $user->id;
 
-        $user->delete();
+            $user->delete();
 
-        ActivityLogger::log(
-            'delete',
-            'User',
-            auth()->user()->name . " menghapus user '{$userName}' (role: {$userRole}, email: {$userEmail})",
-            "User ID: {$userId}"
-        );
+            ActivityLogger::log(
+                'delete',
+                'User',
+                auth()->user()->name . " menghapus user '{$userName}' (role: {$userRole}, email: {$userEmail})",
+                "User ID: {$userId}"
+            );
 
-        return back()->with('success', 'User berhasil dihapus.');
+            return back()->with('success', 'User berhasil dihapus.');
+
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()
+                ->with('error', 'Terjadi kesalahan saat menghapus user. Silakan coba lagi.');
+        }
     }
 }

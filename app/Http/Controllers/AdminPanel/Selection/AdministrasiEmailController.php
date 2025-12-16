@@ -30,8 +30,9 @@ class AdministrasiEmailController extends Controller
         ]);
 
         // ========== Tentukan target applicants ==========
+        $ids = [];
         if ($data['type'] === 'selected') {
-            $ids = array_filter(explode(',', $data['ids'] ?? ''));
+            $ids = array_filter(array_map('trim', explode(',', $data['ids'] ?? '')));
             $applicants = Applicant::whereIn('id', $ids)->get();
         } else {
             $query = Applicant::query()
@@ -39,7 +40,6 @@ class AdministrasiEmailController extends Controller
                 ->when($data['position'] ?? null, fn ($q, $p) => $q->where('position_id', $p));
 
             if ($data['type'] === 'lolos') {
-                // dianggap “Lolos Administrasi” (sudah lanjut min. Tes Tulis)
                 $lolosAdminStatuses = [
                     'Tes Tulis',
                     'Technical Test',
@@ -59,11 +59,14 @@ class AdministrasiEmailController extends Controller
             $applicants = $query->get();
         }
 
+        $total        = $applicants->count();
         $successCount = 0;
         $failCount    = 0;
 
+        // buat teaser biar admin tau yang gagal siapa (max 10 biar ga spam)
+        $failSamples = [];
+
         foreach ($applicants as $a) {
-            // Email langsung dari kolom applicants
             $targetEmail = $a->email ?: null;
 
             try {
@@ -76,20 +79,20 @@ class AdministrasiEmailController extends Controller
                         'success'      => false,
                         'error'        => 'Applicant email is empty',
                     ]);
+
                     $failCount++;
+                    if (count($failSamples) < 10) $failSamples[] = ($a->name ?? "ID {$a->id}")." (email kosong)";
                     continue;
                 }
 
-                // ✉️ compose mail
                 $mail = new SelectionResultMail(
                     $data['subject'],
                     $data['message'],
                     $this->stage,
                     $data['type'],
-                    $a // mailable bisa pakai $a->name langsung
+                    $a
                 );
 
-                // attachments (opsional, multi-file)
                 if ($request->hasFile('attachments')) {
                     foreach ($request->file('attachments') as $file) {
                         $mail->attach($file->getRealPath(), [
@@ -99,10 +102,8 @@ class AdministrasiEmailController extends Controller
                     }
                 }
 
-                // kirim
                 Mail::to($targetEmail)->send($mail);
 
-                // log sukses
                 EmailLog::create([
                     'applicant_id' => $a->id,
                     'email'        => $targetEmail,
@@ -114,7 +115,8 @@ class AdministrasiEmailController extends Controller
 
                 $successCount++;
             } catch (Throwable $e) {
-                // log gagal
+                report($e);
+
                 EmailLog::create([
                     'applicant_id' => $a->id,
                     'email'        => $targetEmail,
@@ -123,12 +125,13 @@ class AdministrasiEmailController extends Controller
                     'success'      => false,
                     'error'        => $e->getMessage(),
                 ]);
+
                 $failCount++;
+                if (count($failSamples) < 10) $failSamples[] = ($a->name ?? "ID {$a->id}")." (".$e->getMessage().")";
             }
         }
 
         // ===== Activity log per tab =====
-        $total   = $applicants->count();
         $action  = match ($data['type']) {
             'lolos'       => 'send_email_lolos',
             'tidak_lolos' => 'send_email_tidak_lolos',
@@ -145,10 +148,35 @@ class AdministrasiEmailController extends Controller
             'Seleksi Administrasi',
             Auth::user()->name." mengirim email hasil {$tabLabel} ke {$successCount} dari {$total} peserta (gagal: {$failCount})",
             ($data['type'] === 'selected')
-                ? ('Selected IDs: '.implode(',', $ids ?? []))
+                ? ('Selected IDs: '.implode(',', $ids))
                 : ('Batch ID: '.($data['batch'] ?? '-').', Position ID: '.($data['position'] ?? '-'))
         );
 
-        return back()->with('success', "Email berhasil dikirim ke {$successCount} peserta dari total {$total}");
+        // ===== Flash notif success + error =====
+        $response = back();
+
+        if ($successCount > 0) {
+            $response = $response->with(
+                'success',
+                "Email berhasil dikirim ke {$successCount} peserta dari total {$total}."
+            );
+        }
+
+        if ($failCount > 0) {
+            $sampleText = implode(', ', $failSamples);
+            $suffix = ($failCount > count($failSamples)) ? ' (dan lainnya)' : '';
+
+            $response = $response->with(
+                'error',
+                "Ada {$failCount} email yang gagal dikirim: {$sampleText}{$suffix}. Cek Email Log untuk detail."
+            );
+        }
+
+        // kalau total = 0 juga kasih info biar ga bingung
+        if ($total === 0) {
+            $response = $response->with('error', 'Tidak ada peserta yang cocok dengan filter/target yang dipilih.');
+        }
+
+        return $response;
     }
 }
