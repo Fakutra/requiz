@@ -190,6 +190,8 @@
                                 class="w-full rounded-lg bg-gray-200 text-gray-500 font-semibold px-4 py-3 cursor-not-allowed">
                                 Batas lamaran telah berakhir
                             </button>
+                        @elseif ($isQuotaFull)
+                            <button type="button" class="w-full rounded-lg bg-gray-200 text-gray-500 font-semibold px-4 py-3 cursor-not-allowed">Kuota saat ini sudah penuh</button>
                         @else
                             <button type="button"
                                 @click="isAuth ? (showApply = true) : window.location.href='{{ route('login', ['redirectTo' => request()->fullUrl()]) }}'"
