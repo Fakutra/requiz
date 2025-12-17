@@ -275,7 +275,7 @@
           {{-- Bidang --}}
           <div>
             <label class="block text-sm">Bidang</label>
-            <select name="field_id" class="border rounded w-full px-3 py-2">
+            <select name="field_id" class="border rounded w-full px-3 py-2" required>
               <option value="">-- Pilih Bidang --</option>
               @foreach($fields as $field)
                 <option value="{{ $field->id }}" 
@@ -289,7 +289,7 @@
           {{-- Sub Bidang --}}
           <div>
             <label class="block text-sm">Sub Bidang</label>
-            <select name="sub_field_id" class="border rounded w-full px-3 py-2">
+            <select name="sub_field_id" class="border rounded w-full px-3 py-2" required>
               <option value="">-- Pilih Sub Bidang --</option>
               @foreach($subfields as $sf)
                 <option value="{{ $sf->id }}" 
@@ -304,7 +304,7 @@
           {{-- Jabatan --}}
           <div>
             <label class="block text-sm">Jabatan</label>
-            <select name="job_id" class="border rounded w-full px-3 py-2">
+            <select name="job_id" class="border rounded w-full px-3 py-2" required>
               <option value="">-- Pilih Jabatan --</option>
               @foreach($jobs as $job)
                 <option value="{{ $job->id }}" {{ optional($a->offering)->job_id == $job->id ? 'selected' : '' }}>
@@ -317,7 +317,7 @@
           {{-- Penempatan --}}
           <div>
             <label class="block text-sm">Penempatan</label>
-            <select name="placement_id" class="border rounded w-full px-3 py-2">
+            <select name="placement_id" class="border rounded w-full px-3 py-2" required>
               <option value="">-- Pilih Penempatan --</option>
               @foreach($placements as $place)
                 <option value="{{ $place->id }}" {{ optional($a->offering)->placement_id == $place->id ? 'selected' : '' }}>
@@ -332,27 +332,27 @@
             <div>
               <label class="block text-sm">Gaji</label>
               <input type="number" name="gaji" class="border rounded w-full px-3 py-2"
-                    value="{{ old('gaji', $a->offering->gaji ?? '') }}">
+                    value="{{ old('gaji', $a->offering->gaji ?? '') }}" required>
             </div>
             <div>
               <label class="block text-sm">Uang Makan</label>
               <input type="number" name="uang_makan" class="border rounded w-full px-3 py-2"
-                    value="{{ old('uang_makan', $a->offering->uang_makan ?? '') }}">
+                    value="{{ old('uang_makan', $a->offering->uang_makan ?? '') }}" required>
             </div>
             <div>
               <label class="block text-sm">Uang Transport</label>
               <input type="number" name="uang_transport" class="border rounded w-full px-3 py-2"
-                    value="{{ old('uang_transport', $a->offering->uang_transport ?? '') }}">
+                    value="{{ old('uang_transport', $a->offering->uang_transport ?? '') }}" required>
             </div>
             <div>
               <label class="block text-sm">Tanggal Kontrak Mulai</label>
               <input type="date" name="kontrak_mulai" class="border rounded w-full px-3 py-2"
-                    value="{{ old('kontrak_mulai', optional(optional($a->offering)->kontrak_mulai)->format('Y-m-d')) }}">
+                    value="{{ old('kontrak_mulai', optional(optional($a->offering)->kontrak_mulai)->format('Y-m-d')) }}" required>
             </div>
             <div>
               <label class="block text-sm">Tanggal Kontrak Selesai</label>
               <input type="date" name="kontrak_selesai" class="border rounded w-full px-3 py-2"
-                    value="{{ old('kontrak_selesai', optional(optional($a->offering)->kontrak_selesai)->format('Y-m-d')) }}">
+                    value="{{ old('kontrak_selesai', optional(optional($a->offering)->kontrak_selesai)->format('Y-m-d')) }}" required>
             </div>
           </div>
 
@@ -360,17 +360,17 @@
           <div>
             <label class="block text-sm">Link PKWT</label>
             <input type="text" name="link_pkwt" class="border rounded w-full px-3 py-2"
-                  value="{{ old('link_pkwt', $a->offering->link_pkwt ?? '') }}">
+                  value="{{ old('link_pkwt', $a->offering->link_pkwt ?? '') }}" required>
           </div>
           <div>
             <label class="block text-sm">Link Berkas</label>
             <input type="url" name="link_berkas" class="border rounded w-full px-3 py-2"
-                  value="{{ old('link_berkas', $a->offering->link_berkas ?? '') }}">
+                  value="{{ old('link_berkas', $a->offering->link_berkas ?? '') }}" required>
           </div>
           <div>
             <label class="block text-sm">Link Form Pelamar</label>
             <input type="url" name="link_form_pelamar" class="border rounded w-full px-3 py-2"
-                  value="{{ old('link_form_pelamar', $a->offering->link_form_pelamar ?? '') }}">
+                  value="{{ old('link_form_pelamar', $a->offering->link_form_pelamar ?? '') }}" required>
           </div>
 
           <div class="flex justify-end gap-2 mt-4">

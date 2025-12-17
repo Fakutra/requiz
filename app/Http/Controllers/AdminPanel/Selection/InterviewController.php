@@ -17,6 +17,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use App\Services\ActivityLogger;
 use App\Models\Vendor;
 use App\Models\User;
+use App\Services\SelectionNotifier;
 
 class InterviewController extends Controller
 {
@@ -430,6 +431,7 @@ class InterviewController extends Controller
                 $oldStatus = $a->status;
                 $newStatus = $this->newStatus($data['bulk_action'], $a->status);
 
+                // 📝 SELECTION LOGGER
                 SelectionLogger::write($a, $this->stage, $data['bulk_action'], auth()->id());
 
                 $payload = ['status' => $newStatus];
@@ -440,10 +442,21 @@ class InterviewController extends Controller
 
                 $a->forceFill($payload)->save();
 
+                // 🔔 NOTIF KE PESERTA
+                SelectionNotifier::notify(
+                    $a,
+                    $this->stage,         // Seleksi Interview
+                    $data['bulk_action'], // lolos / tidak_lolos
+                    $newStatus
+                );
+
+                // 📊 ACTIVITY LOG
                 ActivityLogger::log(
                     $data['bulk_action'],
                     'Seleksi Interview',
-                    Auth::user()->name." mengubah status peserta {$a->name} — '{$oldStatus}' → '{$newStatus}'",
+                    Auth::user()->name
+                        ." mengubah status peserta {$a->name}"
+                        ." — '{$oldStatus}' → '{$newStatus}'",
                     "Applicant ID: {$a->id}"
                 );
 

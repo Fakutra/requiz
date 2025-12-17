@@ -20,6 +20,7 @@ use Illuminate\Database\QueryException;
 use App\Exports\OfferingApplicantsExport;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Services\ActivityLogger; // ✅ tambahkan
+use Illuminate\Support\Facades\DB;
 
 class OfferingController extends Controller
 {
@@ -163,83 +164,75 @@ class OfferingController extends Controller
     public function store(Request $request)
     {
         try {
-            // 1️⃣ VALIDASI
             $data = $request->validate([
-                'applicant_id'     => 'required|exists:applicants,id',
-                'field_id'         => 'nullable|exists:fields,id',
-                'sub_field_id'      => 'nullable|exists:sub_fields,id',
-                'job_id'           => 'nullable|exists:jobs,id',
-                'placement_id'     => 'nullable|exists:placements,id',
-                'gaji'             => 'nullable|numeric',
-                'uang_makan'       => 'nullable|numeric',
-                'uang_transport'   => 'nullable|numeric',
-                'kontrak_mulai'    => 'nullable|date',
-                'kontrak_selesai'  => 'nullable|date|after_or_equal:kontrak_mulai',
-                'link_pkwt'        => 'nullable|string',
-                'link_berkas'      => 'nullable|string',
-                'link_form_pelamar'=> 'nullable|string',
+                'applicant_id'      => 'required|exists:applicants,id',
+                'field_id'          => 'required|exists:fields,id',
+                'sub_field_id'      => 'required|exists:sub_fields,id',
+                'job_id'            => 'required|exists:jobs,id',
+                'placement_id'      => 'required|exists:placements,id',
+                'gaji'              => 'required|numeric',
+                'uang_makan'        => 'required|numeric',
+                'uang_transport'    => 'required|numeric',
+                'kontrak_mulai'     => 'required|date',
+                'kontrak_selesai'   => 'required|date|after_or_equal:kontrak_mulai',
+                'link_pkwt'         => 'required|string',
+                'link_berkas'       => 'required|string',
+                'link_form_pelamar' => 'required|string',
             ]);
 
-            // 2️⃣ AMBIL APPLICANT
-            $applicant = Applicant::findOrFail($data['applicant_id']);
+            $offering = DB::transaction(function () use ($data) {
+                $applicant = Applicant::findOrFail($data['applicant_id']);
+                $payload   = Arr::except($data, ['applicant_id']);
 
-            // 3️⃣ BUANG applicant_id DARI PAYLOAD
-            $payload = Arr::except($data, ['applicant_id']);
+                $offering = $applicant->offering()->updateOrCreate(
+                    ['applicant_id' => $applicant->id],
+                    $payload
+                );
 
-            // 4️⃣ SIMPAN / UPDATE OFFERING
-            $offering = $applicant->offering()->updateOrCreate(
-                ['applicant_id' => $applicant->id],
-                $payload
-            );
+                $applicant->update(['status' => 'Offering']);
 
-            // 5️⃣ UPDATE STATUS
-            $applicant->update(['status' => 'Offering']);
+                return $offering;
+            });
 
-            // 6️⃣ LOG AKTIVITAS (OPTIONAL)
-            ActivityLogger::log(
-                'save',
-                'Offering',
-                'Menyimpan offering untuk ' . $applicant->name,
-                $offering->toArray()
-            );
+            // ✅ Logger jangan boleh bikin gagal simpan
+            try {
+                // Kalau method log lo cuma nerima 3 argumen, cukup pakai ini:
+                ActivityLogger::log(
+                    'save',
+                    'Offering',
+                    'Menyimpan offering untuk applicant_id: ' . $data['applicant_id']
+                );
+
+                // Kalau ternyata log lo support detail, baru tambahin, tapi tetap di try-catch
+                // ActivityLogger::log('save','Offering','Menyimpan offering...', $offering->toArray());
+            } catch (\Throwable $e) {
+                Log::warning('Gagal mencatat ActivityLogger Offering: '.$e->getMessage());
+            }
 
             return back()->with('success', 'Data Offering berhasil disimpan.');
 
-        }
-        // ❌ VALIDATION ERROR (jarang kena karena validate di atas)
-        catch (ValidationException $e) {
-            return back()
-                ->withErrors($e->errors())
-                ->withInput();
-        }
-        // ❌ ERROR DATABASE (FK, TABLE, COLUMN, dll)
-        catch (QueryException $e) {
+        } catch (ValidationException $e) {
+            return back()->withErrors($e->errors())->withInput();
+
+        } catch (QueryException $e) {
             Log::error('Offering DB Error', [
                 'error' => $e->getMessage(),
-                'sql'   => $e->getSql(),
+                'sql' => $e->getSql(),
                 'bindings' => $e->getBindings(),
             ]);
 
-            return back()->with(
-                'error',
-                'Gagal menyimpan Offering (Database Error). Silakan hubungi admin.'
-            );
-        }
-        // ❌ ERROR LAINNYA (logic / model / typo)
-        catch (\Throwable $e) {
+            return back()->with('error', 'Gagal menyimpan Offering (Database Error). Silakan hubungi admin.');
+
+        } catch (\Throwable $e) {
             Log::error('Offering General Error', [
                 'error' => $e->getMessage(),
                 'file'  => $e->getFile(),
                 'line'  => $e->getLine(),
             ]);
 
-            return back()->with(
-                'error',
-                'Terjadi kesalahan sistem saat menyimpan Offering.'
-            );
+            return back()->with('error', 'Terjadi kesalahan sistem saat menyimpan Offering.');
         }
     }
-
 
     /**
      * BULK MARK (MENERIMA / MENOLAK OFFERING)
