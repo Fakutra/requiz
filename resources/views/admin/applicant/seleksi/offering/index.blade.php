@@ -160,15 +160,15 @@
                 </a>
               </th>
 
-              {{-- Penempatan --}}
+              {{-- Seksi --}}
               <th class="px-3 py-2 text-left whitespace-nowrap">
                 <a href="{{ request()->fullUrlWithQuery([
-                    'sort' => 'penempatan',
-                    'direction' => (request('sort') === 'penempatan' && request('direction') === 'asc') ? 'desc' : 'asc'
+                    'sort' => 'seksi',
+                    'direction' => (request('sort') === 'seksi' && request('direction') === 'asc') ? 'desc' : 'asc'
                 ]) }}" 
                   class="flex items-center gap-1 font-semibold text-gray-800 no-underline hover:text-gray-900">
-                  Penempatan
-                  <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'penempatan' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}" 
+                  Seksi
+                  <svg class="w-4 h-4 ml-1 transform {{ request('sort') === 'seksi' && request('direction','asc') === 'desc' ? 'rotate-180' : '' }}" 
                       fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
                   </svg>
@@ -206,7 +206,7 @@
                 <td class="px-3 py-2">{{ optional(optional($a->offering)->job)->name ?? '-' }}</td>
                 <td class="px-3 py-2">{{ optional(optional($a->offering)->field)->name ?? '-' }}</td>
                 <td class="px-3 py-2">{{ optional(optional($a->offering)->subfield)->name ?? '-' }}</td>
-                <td class="px-3 py-2">{{ optional(optional($a->offering)->placement)->name ?? '-' }}</td>
+                <td class="px-3 py-2">{{ optional(optional($a->offering)->seksi)->name ?? '-' }}</td>
                 <td class="px-3 py-2">{{ $a->status ?? '-' }}</td>
 
                 {{-- Status Email --}}
@@ -244,7 +244,16 @@
     @foreach($applicants as $a)
     <div id="offeringModal-{{ $a->id }}"
         class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div class="bg-white rounded-lg shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
+      <div 
+        x-data="offeringForm(
+        @js($fields),
+        @js($subfields),
+        @js($seksis),
+        {{ optional($a->offering)->field_id ?? 'null' }},
+        {{ optional($a->offering)->sub_field_id ?? 'null' }},
+        {{ optional($a->offering)->seksi_id ?? 'null' }}
+      )"
+      class="bg-white rounded-lg shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
         <div class="flex justify-between items-center border-b pb-2 mb-4">
           <h3 class="text-lg font-semibold">{{ $a->offering ? 'Edit' : 'Tambah' }} Offering - {{ $a->name }}</h3>
           <button type="button"
@@ -275,31 +284,32 @@
           {{-- Bidang --}}
           <div>
             <label class="block text-sm">Bidang</label>
-            <select name="field_id" class="border rounded w-full px-3 py-2" required>
+            <select name="field_id"
+                    x-model="fieldId"
+                    @change="onFieldChange"
+                    class="border rounded w-full px-3 py-2"
+                    required>
               <option value="">-- Pilih Bidang --</option>
-              @foreach($fields as $field)
-                <option value="{{ $field->id }}" 
-                  {{ optional($a->offering)->field_id == $field->id ? 'selected' : '' }}>
-                  {{ $field->name }}
-                </option>
-              @endforeach
+              <template x-for="f in fields" :key="f.id">
+                <option :value="f.id" x-text="f.name"></option>
+              </template>
             </select>
           </div>
 
           {{-- Sub Bidang --}}
           <div>
             <label class="block text-sm">Sub Bidang</label>
-            <select name="sub_field_id" class="border rounded w-full px-3 py-2" required>
+            <select name="sub_field_id"
+                    x-model="subFieldId"
+                    @change="onSubFieldChange"
+                    class="border rounded w-full px-3 py-2"
+                    required>
               <option value="">-- Pilih Sub Bidang --</option>
-              @foreach($subfields as $sf)
-                <option value="{{ $sf->id }}" 
-                  {{ optional($a->offering)->sub_field_id == $sf->id ? 'selected' : '' }}>
-                  {{ $sf->name }}
-                </option>
-              @endforeach
+              <template x-for="sf in filteredSubFields" :key="sf.id">
+                <option :value="sf.id" x-text="sf.name"></option>
+              </template>
             </select>
           </div>
-
 
           {{-- Jabatan --}}
           <div>
@@ -314,18 +324,20 @@
             </select>
           </div>
 
-          {{-- Penempatan --}}
+          {{-- Seksi --}}
           <div>
-            <label class="block text-sm">Penempatan</label>
-            <select name="placement_id" class="border rounded w-full px-3 py-2" required>
-              <option value="">-- Pilih Penempatan --</option>
-              @foreach($placements as $place)
-                <option value="{{ $place->id }}" {{ optional($a->offering)->placement_id == $place->id ? 'selected' : '' }}>
-                  {{ $place->name }}
-                </option>
-              @endforeach
+            <label class="block text-sm">Seksi</label>
+            <select name="seksi_id"
+                    x-model="seksiId"
+                    class="border rounded w-full px-3 py-2"
+                    required>
+              <option value="">-- Pilih Seksi --</option>
+              <template x-for="s in filteredSeksis" :key="s.id">
+                <option :value="s.id" x-text="s.name"></option>
+              </template>
             </select>
           </div>
+
 
           {{-- Gaji & Tanggal --}}
           <div class="grid grid-cols-2 gap-3">
@@ -556,55 +568,6 @@
     </div>
   </div>
 
-
-{{-- ✅ Modal Tambah Divisi --}}
-{{--<div id="addDivisionModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-  <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
-    <h3 class="text-lg font-semibold mb-4">Tambah Divisi</h3>
-    <form method="POST" action="{{ route('admin.applicant.seleksi.divisions.store') }}">
-      @csrf
-      <input type="text" name="name" class="border rounded w-full px-3 py-2 mb-3" placeholder="Nama Divisi" required>
-      <div class="flex justify-end gap-2">
-        <button type="button" onclick="document.getElementById('addDivisionModal').classList.add('hidden')"
-                class="px-4 py-2 border rounded">Batal</button>
-        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Simpan</button>
-      </div>
-    </form>
-  </div>
-</div>--}}
-
-{{-- ✅ Modal Tambah Jabatan --}}
-{{--<div id="addJobModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-  <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
-    <h3 class="text-lg font-semibold mb-4">Tambah Jabatan</h3>
-    <form method="POST" action="{{ route('admin.applicant.seleksi.jobs.store') }}">
-      @csrf
-      <input type="text" name="name" class="border rounded w-full px-3 py-2 mb-3" placeholder="Nama Jabatan" required>
-      <div class="flex justify-end gap-2">
-        <button type="button" onclick="document.getElementById('addJobModal').classList.add('hidden')"
-                class="px-4 py-2 border rounded">Batal</button>
-        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Simpan</button>
-      </div>
-    </form>
-  </div>
-</div>--}}
-
-{{-- ✅ Modal Tambah Penempatan --}}
-{{--<div id="addPlacementModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-  <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
-    <h3 class="text-lg font-semibold mb-4">Tambah Penempatan</h3>
-    <form method="POST" action="{{ route('admin.applicant.seleksi.placements.store') }}">
-      @csrf
-      <input type="text" name="name" class="border rounded w-full px-3 py-2 mb-3" placeholder="Nama Penempatan" required>
-      <div class="flex justify-end gap-2">
-        <button type="button" onclick="document.getElementById('addPlacementModal').classList.add('hidden')"
-                class="px-4 py-2 border rounded">Batal</button>
-        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Simpan</button>
-      </div>
-    </form>
-  </div>
-</div>--}}
-
 </x-app-admin>
 
 {{-- ✅ Script --}}
@@ -620,11 +583,13 @@
     if (this.checked) {
       subjectInput.value = "INFORMASI OFFERING - PLN ICON PLUS";
       trix.editor.loadHTML(`
-        Selamat! Anda <strong>dinyatakan terpilih untuk menerima penawaran kerja (Offering)</strong> 
-        dari <strong>PLN ICON PLUS</strong> untuk posisi 
-        <strong>{{job}}</strong> pada bidang <strong>{{field}}</strong> 
-        (sub bidang: <strong>{{subfield}}</strong>) dengan penempatan di 
-        <strong>{{placement}}</strong>.<br><br>
+        Selamat! Anda <strong>dinyatakan terpilih untuk menerima penawaran kerja (Offering)</strong>
+        dari <strong>PLN ICON PLUS</strong> untuk posisi
+        <strong>{{job}}</strong> pada
+        <strong>Bidang {{field}}</strong>,
+        <strong>Sub Bidang {{subfield}}</strong>,
+        dan ditempatkan pada
+        <strong>Seksi {{seksi}}</strong>.<br><br>
 
         Berikut adalah rincian penawaran yang kami sampaikan:<br>
         - Gaji Pokok: Rp{{gaji}}<br>
@@ -660,6 +625,48 @@
       document.getElementById(this.dataset.tab).classList.remove('hidden');
     });
   });
+
+  function offeringForm(fields, subfields, seksis, initField, initSubField, initSeksi) {
+    return {
+      fields,
+      subfields,
+      seksis,
+
+      fieldId: initField,
+      subFieldId: initSubField,
+      seksiId: initSeksi,
+
+      get filteredSubFields() {
+        if (!this.fieldId) return this.subfields;
+        return this.subfields.filter(sf => sf.field_id == this.fieldId);
+      },
+
+      get filteredSeksis() {
+        if (this.subFieldId) {
+          return this.seksis.filter(s => s.sub_field_id == this.subFieldId);
+        }
+
+        if (this.fieldId) {
+          const subIds = this.subfields
+            .filter(sf => sf.field_id == this.fieldId)
+            .map(sf => sf.id);
+
+          return this.seksis.filter(s => subIds.includes(s.sub_field_id));
+        }
+
+        return this.seksis;
+      },
+
+      onFieldChange() {
+        this.subFieldId = null;
+        this.seksiId = null;
+      },
+
+      onSubFieldChange() {
+        this.seksiId = null;
+      }
+    }
+  }
 
   // Confirm Modal
     let selectedAction = null;

@@ -11,7 +11,7 @@ use App\Models\Offering;
 use App\Models\Field;
 use App\Models\SubField;
 use App\Models\Job;
-use App\Models\Placement;
+use App\Models\Seksi;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth; // ✅ tambahkan
@@ -49,7 +49,7 @@ class OfferingController extends Controller
                 'offering.field',
                 'offering.subfield',
                 'offering.job',
-                'offering.placement',
+                'offering.seksi',
                 'interviewResults.user',
                 'pickedBy',
             ])
@@ -77,7 +77,7 @@ class OfferingController extends Controller
         $direction = $request->query('direction', 'asc');
 
         // Kolom yang boleh di-sort
-        $allowedSorts = ['name', 'email', 'posisi', 'penempatan', 'jabatan', 'bidang', 'subbidang', 'status'];
+        $allowedSorts = ['name', 'email', 'posisi', 'seksi', 'jabatan', 'bidang', 'subbidang', 'status'];
         if (!in_array($sort, $allowedSorts)) {
             $sort = 'name';
         }
@@ -85,7 +85,7 @@ class OfferingController extends Controller
         // Ambil semua data dulu (tanpa orderBy)
         $applicants = $q->get()->map(function ($a) {
             $a->posisi     = $a->position?->name;
-            $a->penempatan = $a->offering?->placement?->name;
+            $a->seksi    = $a->offering?->seksi?->name;
             $a->jabatan    = $a->offering?->job?->name;
             $a->bidang     = $a->offering?->field?->name;
             $a->subbidang     = $a->offering?->subfield?->name;
@@ -111,12 +111,12 @@ class OfferingController extends Controller
         $fields  = Field::orderBy('name')->get();
         $subfields  = SubField::orderBy('name')->get();
         $jobs       = Job::orderBy('name')->get();
-        $placements = Placement::orderBy('name')->get();
+        $seksis    = Seksi::orderBy('name')->get();
 
         return view('admin.applicant.seleksi.offering.index', compact(
             'batches','positions','batchId','positionId',
             'applicants','jurusan','allJurusan',
-            'fields','subfields','jobs','placements'
+            'fields','subfields','jobs','seksis'
         ));
     }
 
@@ -169,7 +169,7 @@ class OfferingController extends Controller
                 'field_id'          => 'required|exists:fields,id',
                 'sub_field_id'      => 'required|exists:sub_fields,id',
                 'job_id'            => 'required|exists:jobs,id',
-                'placement_id'      => 'required|exists:placements,id',
+                'seksi_id'          => 'required|exists:seksi,id',
                 'gaji'              => 'required|numeric',
                 'uang_makan'        => 'required|numeric',
                 'uang_transport'    => 'required|numeric',
