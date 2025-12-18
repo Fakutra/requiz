@@ -102,6 +102,7 @@
                     <div>
                         <label class="text-sm">Bidang</label>
                         <select name="field_id" required class="w-full rounded border px-3 py-2">
+                            <option value="">-- Pilih Bidang --</option>
                             @forelse ($fields as $field)
                                 <option value="{{ $field->id }}">{{ $field->name }}</option>
                             @empty

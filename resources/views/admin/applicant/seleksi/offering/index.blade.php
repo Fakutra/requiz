@@ -199,15 +199,15 @@
           <tbody>
             @forelse($applicants as $a)
               <tr>
-                <td class="px-3 py-2"><input type="checkbox" name="ids[]" value="{{ $a->id }}"></td>
-                <td class="px-3 py-2">{{ $a->name }}</td>
-                <td class="px-3 py-2">{{ $a->email }}</td>
-                <td class="px-3 py-2">{{ $a->position->name ?? '-' }}</td>
-                <td class="px-3 py-2">{{ optional(optional($a->offering)->job)->name ?? '-' }}</td>
-                <td class="px-3 py-2">{{ optional(optional($a->offering)->field)->name ?? '-' }}</td>
-                <td class="px-3 py-2">{{ optional(optional($a->offering)->subfield)->name ?? '-' }}</td>
-                <td class="px-3 py-2">{{ optional(optional($a->offering)->seksi)->name ?? '-' }}</td>
-                <td class="px-3 py-2">{{ $a->status ?? '-' }}</td>
+                <td class="px-3 py-2 whitespace-nowrap"><input type="checkbox" name="ids[]" value="{{ $a->id }}"></td>
+                <td class="px-3 py-2 whitespace-nowrap">{{ $a->name }}</td>
+                <td class="px-3 py-2 whitespace-nowrap">{{ $a->email }}</td>
+                <td class="px-3 py-2 whitespace-nowrap">{{ $a->position->name ?? '-' }}</td>
+                <td class="px-3 py-2 whitespace-nowrap">{{ optional(optional($a->offering)->job)->name ?? '-' }}</td>
+                <td class="px-3 py-2 whitespace-nowrap">{{ optional(optional($a->offering)->field)->name ?? '-' }}</td>
+                <td class="px-3 py-2 whitespace-nowrap">{{ optional(optional($a->offering)->subfield)->name ?? '-' }}</td>
+                <td class="px-3 py-2 whitespace-nowrap">{{ optional(optional($a->offering)->seksi)->name ?? '-' }}</td>
+                <td class="px-3 py-2 whitespace-nowrap">{{ $a->status ?? '-' }}</td>
 
                 {{-- Status Email --}}
                 <td class="px-3 py-2 text-center">
