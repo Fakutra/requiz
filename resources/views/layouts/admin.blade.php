@@ -385,11 +385,11 @@
                                         Jabatan
                                     </a>
 
-                                    {{-- Penempatan --}}
-                                    <a href="{{ route('admin.placements.index') }}"
+                                    {{-- Seksi --}}
+                                <a href="{{ route('admin.seksi.index') }}"
                                         class="block hover:text-blue-600 no-underline
-                                            {{ request()->routeIs('admin.placements.*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
-                                        Penempatan
+                                            {{ request()->routeIs('admin.seksi.*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                                        Seksi
                                     </a>
                                 </div>
                             </div>
