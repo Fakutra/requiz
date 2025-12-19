@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('field_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('sub_field_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('job_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('placement_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('seksi_id')->nullable()->constrained('seksi')->nullOnDelete();
 
             $table->decimal('gaji', 12, 2)->nullable();
             $table->decimal('uang_makan', 12, 2)->nullable();

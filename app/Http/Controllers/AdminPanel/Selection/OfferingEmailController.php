@@ -55,9 +55,9 @@ class OfferingEmailController extends Controller
                 $placeholders = [
                     '{{name}}'            => $a->name ?? '-',
                     '{{job}}'             => optional($offering->job ?? null)->name ?? '-',
-                    '{{field}}'        => optional($offering->field ?? null)->name ?? '-',
+                    '{{field}}'           => optional($offering->field ?? null)->name ?? '-',
                     '{{subfield}}'        => optional($offering->subfield ?? null)->name ?? '-',
-                    '{{placement}}'       => optional($offering->placement ?? null)->name ?? '-',
+                    '{{seksi}}'           => optional($offering->seksi ?? null)->name ?? '-',
                     '{{gaji}}'            => $offering ? number_format($offering->gaji, 0, ',', '.') : '-',
                     '{{uang_makan}}'      => $offering ? number_format($offering->uang_makan, 0, ',', '.') : '-',
                     '{{uang_transport}}'  => $offering ? number_format($offering->uang_transport, 0, ',', '.') : '-',

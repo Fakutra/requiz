@@ -38,11 +38,10 @@ use App\Http\Controllers\AdminPanel\AboutController;
 use App\Http\Controllers\AdminPanel\VendorController;
 use App\Http\Controllers\AdminPanel\ScheduleController;
 use App\Http\Controllers\AdminPanel\VendorPasswordController;
-use App\Http\Controllers\AdminPanel\DivisionController;
 use App\Http\Controllers\AdminPanel\FieldController;
 use App\Http\Controllers\AdminPanel\SubFieldController;
 use App\Http\Controllers\AdminPanel\JobController;
-use App\Http\Controllers\AdminPanel\PlacementController;
+use App\Http\Controllers\AdminPanel\SeksiController;
 
 
 // ====== Seleksi (baru, dipisah per tahap) ======
@@ -240,9 +239,6 @@ Route::middleware(['auth'])->group(function () {
             ->name('admin.')
             ->group(function () {
 
-                // Divisi (CRUD)
-                Route::resource('divisions', DivisionController::class);
-
                 // Bidang (CRUD)
                 Route::resource('fields', FieldController::class);
 
@@ -256,7 +252,7 @@ Route::middleware(['auth'])->group(function () {
                 Route::resource('jobs', JobController::class);
 
                 // Penempatan (CRUD)
-                Route::resource('placements', PlacementController::class);
+                Route::resource('seksi', SeksiController::class);
             });
 
     /**

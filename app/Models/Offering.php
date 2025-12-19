@@ -8,10 +8,20 @@ class Offering extends Model
 {
     // field yang bisa diisi mass-assignment
     protected $fillable = [
-        'applicant_id','position','job_id','placement_id','field_id','sub_field_id',
-        'gaji','uang_makan','uang_transport',
-        'kontrak_mulai','kontrak_selesai',
-        'link_pkwt','link_berkas','link_form_pelamar'
+        'applicant_id',
+        'position',
+        'field_id',
+        'sub_field_id',
+        'job_id',
+        'seksi_id',
+        'gaji',
+        'uang_makan',
+        'uang_transport',
+        'kontrak_mulai',
+        'kontrak_selesai',
+        'link_pkwt',
+        'link_berkas',
+        'link_form_pelamar',
     ];
 
     protected $casts = [
@@ -46,10 +56,10 @@ class Offering extends Model
         return $this->belongsTo(Job::class);
     }
 
-    // relasi ke Placement
-    public function placement()
+    // relasi ke Seksi
+    public function seksi()
     {
-        return $this->belongsTo(Placement::class);
+        return $this->belongsTo(Seksi::class);
     }
 
     public function field()

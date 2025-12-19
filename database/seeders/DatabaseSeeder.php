@@ -23,7 +23,6 @@ class DatabaseSeeder extends Seeder
             ApplicantSeeder::class,
             QuestionSeeder::class,
             JobSeeder::class,
-            PlacementSeeder::class,
             QuestionBundleSeeder::class,
             BundleQuestionSeeder::class,
             PersonalityRuleSeeder::class,
