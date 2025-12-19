@@ -377,20 +377,18 @@
                                             {{ request()->routeIs('admin.subfields.*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
                                         Sub Bidang
                                     </a>
-
+                                    {{-- Seksi --}}
+                                    <a href="{{ route('admin.seksi.index') }}"
+                                        class="block hover:text-blue-600 no-underline
+                                            {{ request()->routeIs('admin.seksi.*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                                        Seksi
+                                    </a>
                                     {{-- Jabatan --}}
                                     <a href="{{ route('admin.jobs.index') }}"
                                         class="block hover:text-blue-600 no-underline
                                             {{ request()->routeIs('admin.jobs.*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
                                         Jabatan
-                                    </a>
-
-                                    {{-- Seksi --}}
-                                <a href="{{ route('admin.seksi.index') }}"
-                                        class="block hover:text-blue-600 no-underline
-                                            {{ request()->routeIs('admin.seksi.*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
-                                        Seksi
-                                    </a>
+                                    </a>                                    
                                 </div>
                             </div>
 
