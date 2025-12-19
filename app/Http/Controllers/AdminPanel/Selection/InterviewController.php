@@ -419,9 +419,43 @@ class InterviewController extends Controller
         $failed  = 0;
         $failedNames = [];
 
+        if ($data['bulk_action'] === 'lolos') {
+            $invalidApplicants = Applicant::whereIn('id', $data['ids'])
+                ->whereDoesntHave('interviewResults', function ($q) {
+                    $q->whereNotNull('score');
+                })
+                ->exists();
+
+            if ($invalidApplicants) {
+                return back()->with(
+                    'error',
+                    'Maaf, ada peserta yang belum diberikan penilaian interview.'
+                );
+            }
+        }
+
         foreach ($data['ids'] as $id) {
             try {
                 $a = Applicant::find($id);
+
+                $finalInterviewStatuses = [
+                    'Offering',
+                    'Menerima Offering',
+                    'Menolak Offering',
+                    'Tidak Lolos Interview',
+                ];
+
+                $emailLocked =
+                    $a->latestEmailLog &&
+                    $a->latestEmailLog->stage === 'Interview' &&
+                    $a->latestEmailLog->success;
+
+                if (in_array($a->status, $finalInterviewStatuses, true) && $emailLocked) {
+                    $failed++;
+                    $failedNames[] = $a->name;
+                    continue;
+                }
+
                 if (!$a) {
                     $failed++;
                     $failedNames[] = "#{$id}";

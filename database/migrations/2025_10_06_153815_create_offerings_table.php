@@ -29,6 +29,9 @@ return new class extends Migration
             $table->string('link_berkas')->nullable();
             $table->string('link_form_pelamar')->nullable();
 
+            $table->dateTime('response_deadline')->nullable()->after('kontrak_selesai');
+            $table->dateTime('responded_at')->nullable()->after('response_deadline');
+
             $table->timestamps();
         });
 

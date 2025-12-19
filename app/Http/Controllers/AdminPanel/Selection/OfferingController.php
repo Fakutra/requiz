@@ -178,6 +178,7 @@ class OfferingController extends Controller
                 'link_pkwt'         => 'required|string',
                 'link_berkas'       => 'required|string',
                 'link_form_pelamar' => 'required|string',
+                'response_deadline' => 'required|date|after:now',
             ]);
 
             $offering = DB::transaction(function () use ($data) {

@@ -17,7 +17,16 @@ class Offering extends Model
     protected $casts = [
         'kontrak_mulai' => 'date',
         'kontrak_selesai' => 'date',
+        'response_deadline' => 'datetime',
+        'responded_at'      => 'datetime',
     ];
+
+    public function isExpired(): bool
+    {
+        return $this->response_deadline
+            && now()->greaterThan($this->response_deadline)
+            && !$this->responded_at;
+    }
 
 
     public function position()

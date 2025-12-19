@@ -159,7 +159,22 @@
           <tbody>
             @forelse($applicants as $a)
               <tr>
-                <td class="px-3 py-2"><input type="checkbox" name="ids[]" value="{{ $a->id }}"></td>
+                <td class="px-3 py-2">
+                  @php
+                    $finalStatuses = ['Tes Tulis', 'Tidak Lolos Seleksi Administrasi'];
+
+                    $emailLocked = $a->latestEmailLog
+                        && $a->latestEmailLog->stage === 'Seleksi Administrasi'
+                        && $a->latestEmailLog->success;
+
+                    $isLocked = in_array($a->status, $finalStatuses) && $emailLocked;
+                  @endphp
+
+                  <input type="checkbox"
+                        name="ids[]"
+                        value="{{ $a->id }}"
+                        {{ $isLocked ? 'disabled' : '' }}>
+                </td>
 
                 <td class="px-3 py-2 whitespace-nowrap">{{ $a->name ?? '-' }}</td>
                 <td class="px-3 py-2 whitespace-nowrap">{{ $a->email ?? '-' }}</td>
@@ -632,8 +647,10 @@
     }
 
     // Check All
-    document.getElementById('checkAll')?.addEventListener('change', function(e){
-      document.querySelectorAll('input[name="ids[]"]').forEach(cb => cb.checked = e.target.checked);
+    document.getElementById('checkAll').addEventListener('change', function(e){
+      document.querySelectorAll('input[name="ids[]"]').forEach(cb => {
+        if (!cb.disabled) cb.checked = e.target.checked;
+      });
     });
 
     // Tabs
@@ -649,27 +666,57 @@
 
     // Confirm Modal
     let selectedAction = null;
+
+    function getSelectedIds() {
+      return document.querySelectorAll('input[name="ids[]"]:checked');
+    }
+
     function openConfirmModal(action) {
+      const selected = getSelectedIds();
+
+      // 🚫 kalau ga ada yang dicentang
+      if (selected.length === 0) {
+        alert('Pilih peserta terlebih dahulu.');
+        return;
+      }
+
+      // ✅ lanjut normal
       selectedAction = action;
-      const msg = action === 'lolos' 
-        ? "Apakah Anda yakin ingin meloloskan peserta yang dipilih?" 
+
+      const msg = action === 'lolos'
+        ? "Apakah Anda yakin ingin meloloskan peserta yang dipilih?"
         : "Apakah Anda yakin ingin menggagalkan peserta yang dipilih?";
+
       document.getElementById('confirmMessage').innerText = msg;
       document.getElementById('confirmModal').classList.remove('hidden');
     }
+
     window.openConfirmModal = openConfirmModal;
 
-    document.getElementById('confirmYesBtn')?.addEventListener('click', function() {
-      if (selectedAction) {
-        const form = document.getElementById('bulkActionForm');
-        let input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = 'bulk_action';
-        input.value = selectedAction;
-        form.appendChild(input);
-        form.submit();
-      }
-    });
+    document.getElementById('confirmYesBtn')?.addEventListener('click', function () {
+    const selected = getSelectedIds();
+
+    if (selected.length === 0) {
+      alert('Tidak ada peserta yang dipilih.');
+      return;
+    }
+
+    // 🔒 stop kalau ada checkbox disabled yang somehow ke-select
+    if ([...selected].some(cb => cb.disabled)) {
+      alert('Ada peserta yang sudah final dan tidak bisa diproses ulang.');
+      return;
+    }
+
+    const form = document.getElementById('bulkActionForm');
+
+    let input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'bulk_action';
+    input.value = selectedAction;
+
+    form.appendChild(input);
+    form.submit();
+  });
   </script>
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">

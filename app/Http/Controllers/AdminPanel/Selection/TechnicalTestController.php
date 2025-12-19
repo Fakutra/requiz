@@ -124,16 +124,34 @@ class TechnicalTestController extends Controller
         $failedNames = [];
 
         foreach ($data['ids'] as $id) {
-            $a = null;
+            $a = Applicant::find($id);
+            if (!$a) {
+                $failed++;
+                $failedNames[] = "#{$id}";
+                continue;
+            }
+
+            // 🔒 FINAL LOCK (SAMA DENGAN ADMIN & TES TULIS)
+            $finalTechStatuses = [
+                'Interview',
+                'Offering',
+                'Menerima Offering',
+                'Tidak Lolos Technical Test',
+                'Tidak Lolos Interview',
+                'Menolak Offering',
+            ];
+
+            $emailLocked = $a->latestEmailLog
+                && $a->latestEmailLog->stage === $this->stage
+                && $a->latestEmailLog->success;
+
+            if (in_array($a->status, $finalTechStatuses, true) && $emailLocked) {
+                $failed++;
+                $failedNames[] = $a->name . ' (sudah final & email terkirim)';
+                continue;
+            }
 
             try {
-                $a = Applicant::find($id);
-                if (!$a) {
-                    $failed++;
-                    $failedNames[] = "#{$id}";
-                    continue;
-                }
-
                 $newStatus = $data['bulk_action'] === 'lolos'
                     ? 'Interview'
                     : 'Tidak Lolos Technical Test';
@@ -147,42 +165,29 @@ class TechnicalTestController extends Controller
                 ActivityLogger::log(
                     $data['bulk_action'],
                     'Technical Test',
-                    Auth::user()->name." menandai peserta {$a->name} sebagai '".strtoupper($data['bulk_action'])."' pada tahap Technical Test",
+                    Auth::user()->name." menandai {$a->name}",
                     "Applicant ID: {$a->id}"
                 );
 
                 $success++;
             } catch (Throwable $e) {
                 report($e);
-
                 $failed++;
-                $failedNames[] = $a->name ?? "#{$id}";
-
-                ActivityLogger::log(
-                    'error',
-                    'Technical Test',
-                    (Auth::user()?->name ?? 'System')." GAGAL memproses peserta ".($a->name ?? "#{$id}")." (bulk_action={$data['bulk_action']})",
-                    $e->getMessage()
-                );
-
-                continue;
+                $failedNames[] = $a->name;
             }
         }
 
         $resp = back();
 
-        if ($success > 0) {
-            $resp = $resp->with('success', "Status {$success} peserta berhasil diperbarui.");
+        if ($success) {
+            $resp = $resp->with('success', "{$success} peserta berhasil diproses.");
         }
 
-        if ($failed > 0) {
-            $names  = implode(', ', array_slice($failedNames, 0, 10));
-            $suffix = count($failedNames) > 10 ? ' (dan lainnya)' : '';
-            $resp = $resp->with('error', "Ada {$failed} peserta yang gagal diproses: {$names}{$suffix}. Coba ulang / cek log ya.");
-        }
-
-        if ($success === 0 && $failed > 0) {
-            $resp = $resp->with('error', "Semua proses gagal. Total gagal: {$failed}. Cek log server untuk detailnya.");
+        if ($failed) {
+            $resp = $resp->with(
+                'error',
+                "Ada {$failed} peserta gagal diproses: ".implode(', ', array_slice($failedNames, 0, 10))
+            );
         }
 
         return $resp;

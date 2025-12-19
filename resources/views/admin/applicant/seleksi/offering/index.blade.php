@@ -175,7 +175,6 @@
                 </a>
               </th>
 
-
               {{-- Status --}}
               <th class="px-3 py-2 text-left whitespace-nowrap">
                 <a href="{{ request()->fullUrlWithQuery([
@@ -190,7 +189,9 @@
                   </svg>
                 </a>
               </th>
-
+              <th class="px-3 py-2 text-left whitespace-nowrap">
+                Deadline Offering
+              </th>
               <th class="px-3 py-2 text-left">Status Email</th>
               <th class="px-3 py-2 text-left">Action</th>
             </tr>
@@ -199,7 +200,22 @@
           <tbody>
             @forelse($applicants as $a)
               <tr>
-                <td class="px-3 py-2"><input type="checkbox" name="ids[]" value="{{ $a->id }}"></td>
+                <td class="px-3 py-2">
+                  @php
+                    $offering = $a->offering;
+                    $isFinal = $offering
+                        && (
+                            $offering->responded_at
+                            || $offering->isExpired()
+                            || in_array($a->status, ['Menerima Offering','Menolak Offering'])
+                        );
+                  @endphp
+
+                  <input type="checkbox"
+                        name="ids[]"
+                        value="{{ $a->id }}"
+                        {{ $isFinal ? 'disabled' : '' }}>
+                </td>
                 <td class="px-3 py-2">{{ $a->name }}</td>
                 <td class="px-3 py-2">{{ $a->email }}</td>
                 <td class="px-3 py-2">{{ $a->position->name ?? '-' }}</td>
@@ -208,6 +224,24 @@
                 <td class="px-3 py-2">{{ optional(optional($a->offering)->subfield)->name ?? '-' }}</td>
                 <td class="px-3 py-2">{{ optional(optional($a->offering)->placement)->name ?? '-' }}</td>
                 <td class="px-3 py-2">{{ $a->status ?? '-' }}</td>
+
+                {{-- Deadline Offering --}}
+                <td class="px-3 py-2 whitespace-nowrap">
+                  @if(!$a->offering || !$a->offering->response_deadline)
+                    <span class="text-gray-400 text-sm">-</span>
+                  @elseif($a->offering->isExpired())
+                    <span class="text-red-600 text-xs font-semibold">
+                      Expired
+                    </span>
+                    <div class="text-[11px] text-gray-500">
+                      {{ $a->offering->response_deadline->format('d M Y H:i') }}
+                    </div>
+                  @else
+                    <span class="text-sm text-gray-800">
+                      {{ $a->offering->response_deadline->format('d M Y H:i') }}
+                    </span>
+                  @endif
+                </td>
 
                 {{-- Status Email --}}
                 <td class="px-3 py-2 text-center">
@@ -371,6 +405,28 @@
             <label class="block text-sm">Link Form Pelamar</label>
             <input type="url" name="link_form_pelamar" class="border rounded w-full px-3 py-2"
                   value="{{ old('link_form_pelamar', $a->offering->link_form_pelamar ?? '') }}" required>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium">
+              Batas Waktu Respon Offering
+            </label>
+
+            <input
+                type="datetime-local"
+                name="response_deadline"
+                class="border rounded w-full px-3 py-2"
+                value="{{ old(
+                    'response_deadline',
+                    $a->offering?->response_deadline?->format('Y-m-d\TH:i')
+                ) }}"
+                required
+            >
+
+            <p class="text-xs text-gray-500 mt-1">
+              Jika peserta tidak merespons sampai waktu ini, maka dianggap
+              <strong>menolak offering</strong>.
+            </p>
           </div>
 
           <div class="flex justify-end gap-2 mt-4">
@@ -556,55 +612,6 @@
     </div>
   </div>
 
-
-{{-- ✅ Modal Tambah Divisi --}}
-{{--<div id="addDivisionModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-  <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
-    <h3 class="text-lg font-semibold mb-4">Tambah Divisi</h3>
-    <form method="POST" action="{{ route('admin.applicant.seleksi.divisions.store') }}">
-      @csrf
-      <input type="text" name="name" class="border rounded w-full px-3 py-2 mb-3" placeholder="Nama Divisi" required>
-      <div class="flex justify-end gap-2">
-        <button type="button" onclick="document.getElementById('addDivisionModal').classList.add('hidden')"
-                class="px-4 py-2 border rounded">Batal</button>
-        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Simpan</button>
-      </div>
-    </form>
-  </div>
-</div>--}}
-
-{{-- ✅ Modal Tambah Jabatan --}}
-{{--<div id="addJobModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-  <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
-    <h3 class="text-lg font-semibold mb-4">Tambah Jabatan</h3>
-    <form method="POST" action="{{ route('admin.applicant.seleksi.jobs.store') }}">
-      @csrf
-      <input type="text" name="name" class="border rounded w-full px-3 py-2 mb-3" placeholder="Nama Jabatan" required>
-      <div class="flex justify-end gap-2">
-        <button type="button" onclick="document.getElementById('addJobModal').classList.add('hidden')"
-                class="px-4 py-2 border rounded">Batal</button>
-        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Simpan</button>
-      </div>
-    </form>
-  </div>
-</div>--}}
-
-{{-- ✅ Modal Tambah Penempatan --}}
-{{--<div id="addPlacementModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-  <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
-    <h3 class="text-lg font-semibold mb-4">Tambah Penempatan</h3>
-    <form method="POST" action="{{ route('admin.applicant.seleksi.placements.store') }}">
-      @csrf
-      <input type="text" name="name" class="border rounded w-full px-3 py-2 mb-3" placeholder="Nama Penempatan" required>
-      <div class="flex justify-end gap-2">
-        <button type="button" onclick="document.getElementById('addPlacementModal').classList.add('hidden')"
-                class="px-4 py-2 border rounded">Batal</button>
-        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Simpan</button>
-      </div>
-    </form>
-  </div>
-</div>--}}
-
 </x-app-admin>
 
 {{-- ✅ Script --}}
@@ -663,14 +670,51 @@
 
   // Confirm Modal
     let selectedAction = null;
+
+    function getSelectedIds() {
+      return document.querySelectorAll('input[name="ids[]"]:checked');
+    }
+
     function openConfirmModal(action) {
+      const selected = getSelectedIds();
+
+      // 🚫 TIDAK ADA YANG DICENTANG
+      if (selected.length === 0) {
+        alert('Pilih peserta terlebih dahulu.');
+        return;
+      }
+
+      // ✅ lanjut normal
       selectedAction = action;
-      const msg = action === 'accepted'
-        ? "Apakah Anda yakin ingin menerima peserta yang dipilih?"
-        : "Apakah Anda yakin ingin menolak peserta yang dipilih?";
+
+      const msg = action === 'lolos'
+        ? "Apakah Anda yakin ingin meloloskan peserta yang dipilih?"
+        : "Apakah Anda yakin ingin menggagalkan peserta yang dipilih?";
+
       document.getElementById('confirmMessage').innerText = msg;
       document.getElementById('confirmModal').classList.remove('hidden');
     }
+
+    document.getElementById('confirmYesBtn')?.addEventListener('click', function () {
+      const selected = getSelectedIds();
+
+      // 🔐 pengaman tambahan
+      if (selected.length === 0) {
+        alert('Tidak ada peserta yang dipilih.');
+        return;
+      }
+
+      const form = document.getElementById('bulkActionForm');
+
+      let input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'bulk_action';
+      input.value = selectedAction;
+
+      form.appendChild(input);
+      form.submit();
+    });
+    
     document.getElementById('confirmYesBtn').addEventListener('click', function() {
       if (selectedAction) {
         const form = document.getElementById('bulkActionForm');
@@ -692,8 +736,9 @@
     document.getElementById('selectedIdsOffering').value = ids.join(',');
   }
 
-  document.getElementById('checkAll')?.addEventListener('click', function() {
-    document.querySelectorAll('input[name="ids[]"]').forEach(cb => cb.checked = this.checked);
+  document.getElementById('checkAll')?.addEventListener('change', function () {
+    document.querySelectorAll('input[name="ids[]"]:not(:disabled)')
+      .forEach(cb => cb.checked = this.checked);
   });
 </script>
 @endverbatim

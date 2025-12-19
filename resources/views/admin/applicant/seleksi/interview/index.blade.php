@@ -202,12 +202,30 @@
               @endphp
               <tr>
                 <td class="px-3 py-2 whitespace-nowrap">
+                  @php
+                    $finalInterviewStatuses = [
+                      'Offering',
+                      'Menerima Offering',
+                      'Menolak Offering',
+                      'Tidak Lolos Interview',
+                    ];
+
+                    $emailLocked =
+                      $a->latestEmailLog &&
+                      $a->latestEmailLog->stage === 'Interview' &&
+                      $a->latestEmailLog->success;
+
+                    $isLocked = in_array($a->status, $finalInterviewStatuses, true) && $emailLocked;
+                  @endphp
+
                   <input
-                      type="checkbox"
-                      name="ids[]"
-                      value="{{ $a->id }}"
-                      data-potential-admins='@json($a->potential_admins)'
-                  ></td>
+                    type="checkbox"
+                    name="ids[]"
+                    value="{{ $a->id }}"
+                    data-has-score="{{ $a->interview_final !== null ? '1' : '0' }}"
+                    data-potential-admins='@json($a->potential_admins)'
+                    {{ $isLocked ? 'disabled' : '' }}>
+                </td>
                 <td class="px-3 py-2 whitespace-nowrap">{{ $a->name }}</td>
                 <td class="px-3 py-2 whitespace-nowrap">{{ $a->universitas ?? '-' }}</td>
                 <td class="px-3 py-2 whitespace-nowrap">{{ $a->jurusan ?? '-' }}</td>
@@ -680,64 +698,74 @@
     // Confirm Modal (safe)
     let selectedAction = null;
     function openConfirmModal(action) {
-      selectedAction = action;
-      const msg = action === 'lolos'
-        ? "Apakah Anda yakin ingin meloloskan peserta yang dipilih?"
-        : "Apakah Anda yakin ingin menggagalkan peserta yang dipilih?";
 
-      const cm = $('confirmMessage');
-      if (cm) cm.innerText = msg;
+    // ✅ INI SATU-SATUNYA TAMBAHAN
+    if (document.querySelectorAll('input[name="ids[]"]:checked').length === 0) {
+      alert('Pilih peserta terlebih dahulu.');
+      return;
+    }
 
-      const cmModal = $('confirmModal');
-      if (cmModal) cmModal.classList.remove('hidden');
+    // ❗ VALIDASI NILAI INTERVIEW (KHUSUS LOLOS)
+    if (action === 'lolos') {
+      const uncheckedScore = Array.from(
+        document.querySelectorAll('input[name="ids[]"]:checked')
+      ).some(cb => cb.dataset.hasScore !== '1');
 
-      const vendorWrapper   = $('vendorWrapper');
-      const vendorSelect    = $('vendorSelect');
-      const pickedByWrapper = $('pickedByWrapper');
-      const pickedBySelect  = $('pickedBySelect');
-      const confirmBtn      = $('confirmYesBtn');
-
-      if (!confirmBtn) return;
-
-      if (action === 'lolos') {
-        if (vendorWrapper) vendorWrapper.classList.remove('hidden');
-        if (pickedByWrapper) pickedByWrapper.classList.remove('hidden');
-        if (vendorSelect) vendorSelect.value = '';
-        if (pickedBySelect) pickedBySelect.value = '';
-
-        const updateConfirmState = () => {
-          const vendorOk = vendorSelect && vendorSelect.value;
-          const pickedOk = pickedBySelect && pickedBySelect.value && !pickedBySelect.disabled;
-          const allValid = vendorOk && pickedOk;
-
-          confirmBtn.disabled = !allValid;
-          confirmBtn.classList.toggle('opacity-50', !allValid);
-          confirmBtn.classList.toggle('cursor-not-allowed', !allValid);
-        };
-
-        // ⬇️⬇️⬇️ build list dari peserta yang dipilih
-        const countAdmins = buildPickedByOptionsFromChecked();
-        // if (countAdmins === 0) {
-        //   alert('Peserta yang dipilih belum punya admin potensial. Isi dulu checkbox "Potencial" di penilaian interview.');
-        //   const cmModal2 = $('confirmModal');
-        //   if (cmModal2) cmModal2.classList.add('hidden');
-        //   return;
-        // }
-
-        if (vendorSelect) vendorSelect.onchange = updateConfirmState;
-        if (pickedBySelect) pickedBySelect.onchange = updateConfirmState;
-
-        // awal: disabled sampai dua-duanya kepilih
-        updateConfirmState();
-      } else {
-        if (vendorWrapper) vendorWrapper.classList.add('hidden');
-        if (pickedByWrapper) pickedByWrapper.classList.add('hidden');
-        confirmBtn.disabled = false;
-        confirmBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      if (uncheckedScore) {
+        alert('Maaf, ada peserta yang belum diberikan penilaian.');
+        return;
       }
     }
 
+    // === KODE LAMA TIDAK DIUBAH ===
+    selectedAction = action;
+    const msg = action === 'lolos'
+      ? "Apakah Anda yakin ingin meloloskan peserta yang dipilih?"
+      : "Apakah Anda yakin ingin menggagalkan peserta yang dipilih?";
 
+    const cm = $('confirmMessage');
+    if (cm) cm.innerText = msg;
+
+    const cmModal = $('confirmModal');
+    if (cmModal) cmModal.classList.remove('hidden');
+
+    const vendorWrapper   = $('vendorWrapper');
+    const vendorSelect    = $('vendorSelect');
+    const pickedByWrapper = $('pickedByWrapper');
+    const pickedBySelect  = $('pickedBySelect');
+    const confirmBtn      = $('confirmYesBtn');
+
+    if (!confirmBtn) return;
+
+    if (action === 'lolos') {
+      if (vendorWrapper) vendorWrapper.classList.remove('hidden');
+      if (pickedByWrapper) pickedByWrapper.classList.remove('hidden');
+      if (vendorSelect) vendorSelect.value = '';
+      if (pickedBySelect) pickedBySelect.value = '';
+
+      const updateConfirmState = () => {
+        const vendorOk = vendorSelect && vendorSelect.value;
+        const pickedOk = pickedBySelect && pickedBySelect.value && !pickedBySelect.disabled;
+        const allValid = vendorOk && pickedOk;
+
+        confirmBtn.disabled = !allValid;
+        confirmBtn.classList.toggle('opacity-50', !allValid);
+        confirmBtn.classList.toggle('cursor-not-allowed', !allValid);
+      };
+
+      buildPickedByOptionsFromChecked();
+
+      if (vendorSelect) vendorSelect.onchange = updateConfirmState;
+      if (pickedBySelect) pickedBySelect.onchange = updateConfirmState;
+
+      updateConfirmState();
+    } else {
+      if (vendorWrapper) vendorWrapper.classList.add('hidden');
+      if (pickedByWrapper) pickedByWrapper.classList.add('hidden');
+      confirmBtn.disabled = false;
+      confirmBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+  }
 
     const confirmYesBtn = $('confirmYesBtn');
     if (confirmYesBtn) {
@@ -789,8 +817,10 @@
     // Check All (safe)
     const chkAll = $('checkAll');
     if (chkAll) {
-      chkAll.addEventListener('change', function(e){
-        document.querySelectorAll('input[name="ids[]"]').forEach(cb => cb.checked = e.target.checked);
+      chkAll.addEventListener('change', function (e) {
+        document
+          .querySelectorAll('input[name="ids[]"]:not(:disabled)')
+          .forEach(cb => cb.checked = e.target.checked);
       });
     }
 
@@ -908,42 +938,5 @@
 
       return map.size;
     }
-
-        // Auto save Picked By (AJAX)
-    // function handlePickedByChange(selectEl) {
-    //   const applicantId = selectEl.getAttribute('data-applicant-id');
-    //   const pickedById  = selectEl.value;
-
-    //   if (!applicantId || !pickedById) {
-    //     // kalau mau support clear, di sini bisa kirim request untuk null-in
-    //     return;
-    //   }
-
-    //   fetch("{{ route('admin.applicant.seleksi.interview.bulkSetPickedBy') }}", {
-    //     method: 'POST',
-    //     headers: {
-    //       'Content-Type': 'application/json',
-    //       'X-CSRF-TOKEN': '{{ csrf_token() }}',
-    //       'Accept': 'application/json',
-    //     },
-    //     body: JSON.stringify({
-    //       applicant_id: applicantId,
-    //       picked_by: pickedById,
-    //     }),
-    //   })
-    //   .then(res => {
-    //     if (!res.ok) throw new Error('Network error');
-    //     return res.json();
-    //   })
-    //   .then(data => {
-    //     // opsional: kasih feedback halus
-    //     console.log('Picked By updated:', data);
-    //     // bisa juga nanti pake toast kecil kalau mau
-    //   })
-    //   .catch(err => {
-    //     console.error(err);
-    //     alert('Gagal menyimpan Picked By. Silakan coba lagi.');
-    //   });
-    // }
   </script>
 </x-app-admin>

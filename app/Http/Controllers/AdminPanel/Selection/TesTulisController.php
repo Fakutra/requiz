@@ -238,6 +238,27 @@ class TesTulisController extends Controller
 
             try {
                 $a = Applicant::find($id);
+                $finalTesTulisStatuses = [
+                    'Technical Test',
+                    'Interview',
+                    'Offering',
+                    'Menerima Offering',
+                    'Tidak Lolos Tes Tulis',
+                    'Tidak Lolos Technical Test',
+                    'Tidak Lolos Interview',
+                    'Menolak Offering',
+                    ];
+
+                    $emailLocked = $a->latestEmailLog
+                        && $a->latestEmailLog->stage === $this->stage
+                        && $a->latestEmailLog->success;
+
+                    if (in_array($a->status, $finalTesTulisStatuses, true) && $emailLocked) {
+                        $failed++;
+                        $failedNames[] = $a->name . ' (sudah final & email terkirim)';
+                        continue;
+                    }
+
                 if (!$a) {
                     $failed++;
                     $failedNames[] = "#{$id}";

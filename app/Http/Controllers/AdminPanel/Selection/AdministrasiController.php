@@ -124,11 +124,31 @@ class AdministrasiController extends Controller
 
         foreach ($data['ids'] as $id) {
             try {
-                $a = Applicant::find($id);
+                $a = Applicant::with('latestEmailLog')->find($id);
 
                 if (!$a) {
                     $failed++;
                     $failedNames[] = "#{$id}";
+                    continue;
+                }
+
+                /**
+                 * 🔒 FINAL LOCK RULE
+                 * - status sudah final
+                 * - email seleksi administrasi SUKSES
+                 */
+                $finalStatuses = [
+                    'Tes Tulis',
+                    'Tidak Lolos Seleksi Administrasi',
+                ];
+
+                $emailLocked = $a->latestEmailLog
+                    && $a->latestEmailLog->stage === $this->stage
+                    && $a->latestEmailLog->success;
+
+                if (in_array($a->status, $finalStatuses, true) && $emailLocked) {
+                    $failed++;
+                    $failedNames[] = $a->name . ' (sudah final & email terkirim)';
                     continue;
                 }
 
@@ -139,7 +159,7 @@ class AdministrasiController extends Controller
                 $newStatus = $this->newStatus($data['bulk_action'], (string) $a->status);
                 $a->forceFill(['status' => $newStatus])->save();
 
-                // 3) notif ke peserta (email/wa/in-app dll)
+                // 3) notif ke peserta
                 SelectionNotifier::notify(
                     $a,
                     $this->stage,
@@ -160,38 +180,30 @@ class AdministrasiController extends Controller
                 $failed++;
                 $failedNames[] = $a->name ?? "#{$id}";
 
-                // log error biar kebaca di server log
                 report($e);
 
-                // activity log gagal (opsional tapi enak buat audit)
                 ActivityLogger::log(
                     'error',
                     'Seleksi Administrasi',
-                    Auth::user()->name." GAGAL memproses peserta ".($a->name ?? "#{$id}")." (bulk_action={$data['bulk_action']})",
+                    Auth::user()->name." GAGAL memproses peserta ".($a->name ?? "#{$id}"),
                     $e->getMessage()
                 );
 
-                // jangan throw lagi, biar lanjut yang lain
                 continue;
             }
         }
 
-        // flash message: success + error (kalau ada yang gagal)
         $resp = back();
 
         if ($success > 0) {
-            $resp = $resp->with('success', "Status {$success} peserta berhasil diperbarui.");
+            $resp = $resp->with('success', "{$success} peserta berhasil diproses.");
         }
 
         if ($failed > 0) {
-            $names = implode(', ', array_slice($failedNames, 0, 10));
-            $suffix = count($failedNames) > 10 ? ' (dan lainnya)' : '';
-            $resp = $resp->with('error', "Ada {$failed} peserta yang gagal diproses: {$names}{$suffix}. Coba ulang / cek log ya.");
-        }
-
-        // kalau semuanya gagal dan ga ada success, tetep kasih error biar kebaca
-        if ($success === 0 && $failed > 0) {
-            $resp = $resp->with('error', "Semua proses gagal. Total gagal: {$failed}. Cek log server untuk detailnya.");
+            $resp = $resp->with(
+                'error',
+                "Ada {$failed} peserta gagal diproses: ".implode(', ', array_slice($failedNames, 0, 10))
+            );
         }
 
         return $resp;
