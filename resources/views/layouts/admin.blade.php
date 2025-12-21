@@ -115,7 +115,7 @@
                     class="w-64 bg-white p-6 absolute z-30 inset-y-0 left-0 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 -translate-x-full shadow-md"
                     :class="{ '-translate-x-full': !sidebarOpen, 'translate-x-0': sidebarOpen }"
                     x-data="{
-                        masterOpen: {{ request()->is('admin/faq') || request()->is('admin/vendor') || request()->is('admin/contact*') || request()->is('admin/about*') || request()->is('admin/policy*') ? 'true' : 'false' }},
+                        masterOpen: {{ request()->is('admin/fields*') || request()->is('admin/subfields/index') || request()->is('admin/jobs/index') || request()->is('admin/seksi/index') ? 'true' : 'false' }},
                         userOpen: {{ request()->is('admin/admin*') || request()->is('admin/user*') ? 'true' : 'false' }},
                         jobOpen: {{ request()->is('admin/batch*') ? 'true' : 'false' }},
                         quizOpen: {{ request()->is('admin/test') || request()->is('admin/bundle*') || request()->is('admin/question*') ? 'true' : 'false' }},
@@ -377,20 +377,18 @@
                                             {{ request()->routeIs('admin.subfields.*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
                                         Sub Bidang
                                     </a>
-
+                                    {{-- Seksi --}}
+                                    <a href="{{ route('admin.seksi.index') }}"
+                                        class="block hover:text-blue-600 no-underline
+                                            {{ request()->routeIs('admin.seksi.*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
+                                        Seksi
+                                    </a>
                                     {{-- Jabatan --}}
                                     <a href="{{ route('admin.jobs.index') }}"
                                         class="block hover:text-blue-600 no-underline
                                             {{ request()->routeIs('admin.jobs.*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
                                         Jabatan
-                                    </a>
-
-                                    {{-- Penempatan --}}
-                                    <a href="{{ route('admin.placements.index') }}"
-                                        class="block hover:text-blue-600 no-underline
-                                            {{ request()->routeIs('admin.placements.*') ? 'font-semibold text-blue-500 bg-blue-50 rounded-md py-2 px-3' : 'text-gray-600' }}">
-                                        Penempatan
-                                    </a>
+                                    </a>                                    
                                 </div>
                             </div>
 

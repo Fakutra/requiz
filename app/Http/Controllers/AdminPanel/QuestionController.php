@@ -3,14 +3,12 @@
 namespace App\Http\Controllers\AdminPanel;
 
 use App\Models\Question;
-use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Imports\QuestionsImport;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use App\Services\ActivityLogger;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -247,12 +245,20 @@ class QuestionController extends Controller
 
     public function import(Request $request)
     {
-        $request->validate([
-            'excel_file' => 'required|mimes:xlsx,xls'
+        // pakai Validator biar bisa kasih notif gagal juga
+        $validator = Validator::make($request->all(), [
+            'excel_file' => 'required|mimes:xlsx,xls',
         ], [
             'excel_file.required' => 'File Excel wajib diupload.',
             'excel_file.mimes'    => 'Format file harus .xlsx atau .xls.',
         ]);
+
+        if ($validator->fails()) {
+            return back()
+                ->withErrors($validator)
+                ->withInput()
+                ->with('error', 'Gagal mengimpor soal. Periksa kembali file Excel kamu.');
+        }
 
         try {
             $importer = new QuestionsImport;
@@ -271,7 +277,7 @@ class QuestionController extends Controller
                 ->route('question.index')
                 ->with('success', "Berhasil mengimpor {$count} soal!");
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             report($e);
 
             return back()
@@ -290,7 +296,6 @@ class QuestionController extends Controller
         );
 
         if (!file_exists($filePath)) {
-            // daripada 404 page jelek, kirim notif error ke SweetAlert
             return redirect()
                 ->route('question.index')
                 ->with('error', 'Template file tidak ditemukan. Silakan hubungi admin.');

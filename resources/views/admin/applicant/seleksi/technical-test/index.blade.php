@@ -157,7 +157,30 @@
                 $ans = $latestAnswers[$a->id] ?? null;
               @endphp
               <tr>
-                <td class="px-3 py-2"><input type="checkbox" name="ids[]" value="{{ $a->id }}"></td>
+                <td class="px-3 py-2">
+                  @php
+                    $finalTechStatuses = [
+                      'Interview',
+                      'Offering',
+                      'Menerima Offering',
+                      'Tidak Lolos Technical Test',
+                      'Tidak Lolos Interview',
+                      'Menolak Offering',
+                    ];
+
+                    $emailLocked = $a->latestEmailLog
+                        && $a->latestEmailLog->stage === 'Technical Test'
+                        && $a->latestEmailLog->success;
+
+                    $isLocked = in_array($a->status, $finalTechStatuses, true) && $emailLocked;
+                  @endphp
+
+                  <input type="checkbox"
+                        name="ids[]"
+                        value="{{ $a->id }}"
+                        {{ $isLocked ? 'disabled' : '' }}>
+                </td>
+
                 <td class="px-3 py-2 whitespace-nowrap">{{ $a->name }}</td>
                 <td class="px-3 py-2 whitespace-nowrap">{{ $a->email }}</td>
 
@@ -612,7 +635,9 @@
   <script>
     // Check All
     document.getElementById('checkAll').addEventListener('change', function(e){
-      document.querySelectorAll('input[name="ids[]"]').forEach(cb => cb.checked = e.target.checked);
+      document.querySelectorAll('input[name="ids[]"]').forEach(cb => {
+        if (!cb.disabled) cb.checked = e.target.checked;
+      });
     });
 
     // Selected IDs (tab Terpilih)
@@ -640,14 +665,57 @@
 
     // Confirm Modal
     let selectedAction = null;
+
+    function getSelectedIds() {
+      return document.querySelectorAll('input[name="ids[]"]:checked');
+    }
+
     function openConfirmModal(action) {
+      const selected = getSelectedIds();
+
+      // 🚫 TIDAK ADA YANG DICENTANG
+      if (selected.length === 0) {
+        alert('Pilih peserta terlebih dahulu.');
+        return;
+      }
+
+      // ⛔ cegah kalau ada checkbox disabled ikut kepilih (defensive)
+      if ([...selected].some(cb => cb.disabled)) {
+        alert('Ada peserta yang sudah final dan tidak bisa diproses ulang.');
+        return;
+      }
+
+      // ✅ lanjut normal
       selectedAction = action;
+
       const msg = action === 'lolos'
         ? "Apakah Anda yakin ingin meloloskan peserta yang dipilih?"
         : "Apakah Anda yakin ingin menggagalkan peserta yang dipilih?";
+
       document.getElementById('confirmMessage').innerText = msg;
       document.getElementById('confirmModal').classList.remove('hidden');
     }
+
+    document.getElementById('confirmYesBtn')?.addEventListener('click', function () {
+      const selected = getSelectedIds();
+
+      // 🔐 pengaman tambahan
+      if (selected.length === 0) {
+        alert('Tidak ada peserta yang dipilih.');
+        return;
+      }
+
+      const form = document.getElementById('bulkActionForm');
+
+      let input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'bulk_action';
+      input.value = selectedAction;
+
+      form.appendChild(input);
+      form.submit();
+    });
+
     document.getElementById('confirmYesBtn').addEventListener('click', function() {
       if (selectedAction) {
         const form = document.getElementById('bulkActionForm');

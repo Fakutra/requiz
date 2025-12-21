@@ -107,10 +107,10 @@ class LowonganController extends Controller
             'thn_lulus.required'       => 'Tahun lulus wajib diisi (4 digit).',
             'ekspektasi_gaji.required' => 'Ekspektasi gaji wajib diisi.',
             'cv_document.required'     => 'CV wajib diunggah.',
-            'cv_document.mimes'        => 'CV harus berformat PDF.',
-            'cv_document.max'          => 'CV maksimal 1 MB.',
-            'doc_tambahan.mimes'       => 'Dokumen tambahan harus PDF.',
-            'doc_tambahan.max'         => 'Dokumen tambahan maksimal 5 MB.',
+            'cv_document.mimes'        => 'CV harus berupa file PDF.',
+            'cv_document.max'          => 'Ukuran file CV terlalu besar. Maksimal 500 KB.',
+            'doc_tambahan.max'         => 'Dokumen tambahan terlalu besar. Maksimal 5 MB.',
+            'doc_tambahan.mimes'       => 'Dokumen tambahan harus berupa file PDF.',
             'agreed.accepted'          => 'Centang persetujuan syarat & ketentuan.',
         ]);
 

@@ -1,45 +1,46 @@
 <x-app-admin>
     <div class="bg-white rounded-lg shadow-sm p-4"
          x-data="{
-            showCreate: false,
-            showEdit: false,
-            editId: null,
-            editName: '',
-            baseEditUrl: '{{ url('admin/sub-fields') }}'
+            showCreate:false,
+            showEdit:false,
+            editId:null,
+            editName:'',
+            editFieldId:null,
+            baseEditUrl:'{{ route('admin.subfields.update',['subfield'=>'__ID__']) }}'
          }"
          x-cloak>
 
+        {{-- HEADER --}}
         <div class="flex items-center justify-between mb-4">
             <h1 class="text-2xl font-bold text-blue-950">Master Sub Bidang</h1>
+
             <button type="button"
-               @click="showCreate = true"
-               class="inline-flex items-center px-4 py-2 rounded-full bg-blue-600 text-white text-sm hover:bg-blue-700">
+                @click="showCreate = true"
+                {{ $fields->isEmpty() ? 'disabled' : '' }}
+                class="inline-flex items-center px-4 py-2 rounded-full text-sm
+                    {{ $fields->isEmpty()
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        : 'bg-blue-600 text-white hover:bg-blue-700' }}">
                 + Tambah Sub Bidang
             </button>
         </div>
 
-        @if (session('success'))
-            <div class="mb-3 text-sm text-green-700 bg-green-100 border border-green-200 rounded-md px-3 py-2">
-                {{ session('success') }}
+        {{-- EMPTY STATE --}}
+        @if ($fields->isEmpty())
+            <div class="mb-4 rounded-lg bg-yellow-50 border border-yellow-200 p-4 text-sm text-yellow-800">
+                ⚠️ <strong>Data Bidang masih kosong.</strong><br>
+                Silakan isi <b>Bidang</b> terlebih dahulu sebelum menambahkan Sub Bidang.
             </div>
         @endif
 
-        @if ($errors->any())
-            <div class="mb-3 text-sm text-red-700 bg-red-100 border border-red-200 rounded-md px-3 py-2">
-                <ul class="list-disc list-inside">
-                    @foreach ($errors->all() as $err)
-                        <li>{{ $err }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
-
+        {{-- TABLE --}}
         <div class="overflow-x-auto">
             <table class="min-w-full text-sm border border-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-3 py-2 border-b text-left w-16">#</th>
-                        <th class="px-3 py-2 border-b text-left">Nama Sub Bidang</th>
+                        <th class="px-3 py-2 border-b w-16">#</th>
+                        <th class="px-3 py-2 border-b text-left">Sub Bidang</th>
+                        <th class="px-3 py-2 border-b text-left">Bidang</th>
                         <th class="px-3 py-2 border-b text-center w-40">Aksi</th>
                     </tr>
                 </thead>
@@ -48,24 +49,29 @@
                         <tr class="hover:bg-gray-50">
                             <td class="px-3 py-2 border-b">{{ $i + 1 }}</td>
                             <td class="px-3 py-2 border-b">{{ $subfield->name }}</td>
+                            <td class="px-3 py-2 border-b">
+                                {{ optional($subfield->field)->name }}
+                            </td>
                             <td class="px-3 py-2 border-b text-center">
                                 <div class="inline-flex gap-2">
                                     <button type="button"
-                                       @click="
-                                           showEdit = true;
-                                           editId = {{ $subfield->id }};
-                                           editName = '{{ e($subfield->name) }}';
-                                       "
-                                       class="px-3 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800 hover:bg-yellow-200">
+                                        @click="
+                                            showEdit = true;
+                                            editId = {{ $subfield->id }};
+                                            editName = '{{ e($subfield->name) }}';
+                                            editFieldId = {{ $subfield->field_id ?? 'null' }};
+                                        "
+                                        class="px-3 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800 hover:bg-yellow-200">
                                         Edit
                                     </button>
 
-                                    <form action="{{ route('admin.subfields.destroy', $subfield) }}" method="POST"
+                                    <form action="{{ route('admin.subfields.destroy',$subfield) }}"
+                                          method="POST"
                                           onsubmit="return confirm('Yakin ingin menghapus sub bidang ini?')">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit"
-                                                class="px-3 py-1 rounded-full text-xs bg-red-100 text-red-700 hover:bg-red-200">
+                                            class="px-3 py-1 rounded-full text-xs bg-red-100 text-red-700 hover:bg-red-200">
                                             Hapus
                                         </button>
                                     </form>
@@ -74,8 +80,8 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="3" class="px-3 py-4 text-center text-gray-500">
-                                Belum ada data sub bidang.
+                            <td colspan="4" class="px-3 py-4 text-center text-gray-500">
+                                Belum ada data Sub Bidang.
                             </td>
                         </tr>
                     @endforelse
@@ -84,46 +90,40 @@
         </div>
 
         {{-- MODAL CREATE --}}
-        <div x-show="showCreate"
-             x-transition.opacity
-             class="fixed inset-0 z-40 flex items-center justify-center bg-black/40">
-            <div @click.away="showCreate = false"
-                 class="bg-white rounded-2xl shadow-lg w-full max-w-md mx-4 p-6 relative">
+        <div x-show="showCreate" class="fixed inset-0 bg-black/40 flex items-center justify-center z-40">
+            <div @click.away="showCreate=false"
+                 class="bg-white rounded-xl p-6 w-full max-w-md">
 
-                <button type="button"
-                        class="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
-                        @click="showCreate = false">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none"
-                         stroke="currentColor" stroke-width="1.5">
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                              d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
+                <h2 class="text-lg font-semibold mb-4">Tambah Sub Bidang</h2>
 
-                <h2 class="text-lg font-semibold text-gray-800 mb-4">
-                    Tambah Sub Bidang
-                </h2>
-
-                <form action="{{ route('admin.subfields.store') }}" method="POST" class="space-y-4">
+                <form method="POST" action="{{ route('admin.subfields.store') }}" class="space-y-4">
                     @csrf
 
                     <div>
-                        <label for="name" class="block text-sm font-medium text-gray-700 mb-1">
-                            Nama Sub Bidang
-                        </label>
-                        <input type="text" name="name" id="name"
-                               class="w-full border-gray-300 rounded-lg text-sm px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-                               value="{{ old('name') }}" required>
+                        <label class="text-sm">Bidang</label>
+                        <select name="field_id" required class="w-full rounded border px-3 py-2">
+                            <option value="">-- Pilih Bidang --</option>
+                            @forelse ($fields as $field)
+                                <option value="{{ $field->id }}">{{ $field->name }}</option>
+                            @empty
+                                <option value="">Data Bidang belum tersedia</option>
+                            @endforelse
+                        </select>
                     </div>
 
-                    <div class="flex justify-end gap-2 pt-2">
-                        <button type="button"
-                                @click="showCreate = false"
-                                class="px-4 py-2 rounded-full text-sm border border-gray-300 text-gray-700 hover:bg-gray-100">
+                    <div>
+                        <label class="text-sm">Nama Sub Bidang</label>
+                        <input type="text" name="name" required
+                               class="w-full rounded border px-3 py-2">
+                    </div>
+
+                    <div class="flex justify-end gap-2">
+                        <button type="button" @click="showCreate=false"
+                                class="px-4 py-2 rounded border">
                             Batal
                         </button>
                         <button type="submit"
-                                class="px-4 py-2 rounded-full text-sm bg-blue-600 text-white hover:bg-blue-700">
+                                class="px-4 py-2 rounded bg-blue-600 text-white">
                             Simpan
                         </button>
                     </div>
@@ -131,49 +131,54 @@
             </div>
         </div>
 
-        {{-- MODAL EDIT --}}
+        {{-- MODAL EDIT SUB BIDANG --}}
         <div x-show="showEdit"
-             x-transition.opacity
-             class="fixed inset-0 z-40 flex items-center justify-center bg-black/40">
-            <div @click.away="showEdit = false"
-                 class="bg-white rounded-2xl shadow-lg w-full max-w-md mx-4 p-6 relative">
+            class="fixed inset-0 bg-black/40 flex items-center justify-center z-40">
 
-                <button type="button"
-                        class="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
-                        @click="showEdit = false">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none"
-                         stroke="currentColor" stroke-width="1.5">
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                              d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
+            <div @click.away="showEdit=false"
+                class="bg-white rounded-xl p-6 w-full max-w-md">
 
-                <h2 class="text-lg font-semibold text-gray-800 mb-4">
-                    Edit Sub Bidang
-                </h2>
+                <h2 class="text-lg font-semibold mb-4">Edit Sub Bidang</h2>
 
-                <form :action="baseEditUrl + '/' + editId" method="POST" class="space-y-4">
+                <form :action="baseEditUrl.replace('__ID__', editId)"
+                    method="POST"
+                    class="space-y-4">
                     @csrf
                     @method('PUT')
 
+                    {{-- BIDANG --}}
                     <div>
-                        <label for="edit_name" class="block text-sm font-medium text-gray-700 mb-1">
-                            Nama Sub Bidang
-                        </label>
-                        <input type="text" name="name" id="edit_name"
-                               x-model="editName"
-                               class="w-full border-gray-300 rounded-lg text-sm px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-                               required>
+                        <label class="text-sm">Bidang</label>
+                        <select name="field_id"
+                                x-model="editFieldId"
+                                required
+                                class="w-full rounded border px-3 py-2">
+                            @foreach ($fields as $field)
+                                <option value="{{ $field->id }}">
+                                    {{ $field->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    {{-- NAMA SUB BIDANG --}}
+                    <div>
+                        <label class="text-sm">Nama Sub Bidang</label>
+                        <input type="text"
+                            name="name"
+                            x-model="editName"
+                            required
+                            class="w-full rounded border px-3 py-2">
                     </div>
 
                     <div class="flex justify-end gap-2 pt-2">
                         <button type="button"
-                                @click="showEdit = false"
-                                class="px-4 py-2 rounded-full text-sm border border-gray-300 text-gray-700 hover:bg-gray-100">
+                                @click="showEdit=false"
+                                class="px-4 py-2 rounded border">
                             Batal
                         </button>
                         <button type="submit"
-                                class="px-4 py-2 rounded-full text-sm bg-blue-600 text-white hover:bg-blue-700">
+                                class="px-4 py-2 rounded bg-blue-600 text-white">
                             Simpan Perubahan
                         </button>
                     </div>

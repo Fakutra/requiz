@@ -11,7 +11,6 @@ class AboutController extends Controller
 {
     public function index()
     {
-        // urut paling lama -> terbaru by id ASC
         $items = AboutUs::orderBy('id')->get();
         return view('admin.about.index', compact('items'));
     }
@@ -24,13 +23,24 @@ class AboutController extends Controller
             'image'       => 'nullable|image|max:2048',
         ]);
 
-        if ($request->hasFile('image')) {
-            $data['image_path'] = $request->file('image')->store('about', 'public');
+        try {
+            if ($request->hasFile('image')) {
+                $data['image_path'] = $request->file('image')->store('about', 'public');
+            }
+
+            AboutUs::create($data);
+
+            return redirect()
+                ->route('admin.about.index')
+                ->with('success', 'Blok “Tentang Kami” berhasil dibuat.');
+
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()
+                ->withInput()
+                ->with('error', 'Gagal membuat blok Tentang Kami. Silakan coba lagi.');
         }
-
-        AboutUs::create($data);
-
-        return redirect()->route('admin.about.index')->with('success', 'Blok “Tentang Kami” dibuat ✅');
     }
 
     public function update(Request $request, AboutUs $about)
@@ -41,21 +51,46 @@ class AboutController extends Controller
             'image'       => 'nullable|image|max:2048',
         ]);
 
-        if ($request->hasFile('image')) {
-            if ($about->image_path && Storage::disk('public')->exists($about->image_path)) {
-                Storage::disk('public')->delete($about->image_path);
+        try {
+            if ($request->hasFile('image')) {
+                if ($about->image_path && Storage::disk('public')->exists($about->image_path)) {
+                    Storage::disk('public')->delete($about->image_path);
+                }
+
+                $data['image_path'] = $request->file('image')->store('about', 'public');
             }
-            $data['image_path'] = $request->file('image')->store('about', 'public');
+
+            $about->update($data);
+
+            return redirect()
+                ->route('admin.about.index')
+                ->with('success', 'Blok berhasil diperbarui.');
+
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()
+                ->withInput()
+                ->with('error', 'Gagal memperbarui blok. Silakan coba lagi.');
         }
-
-        $about->update($data);
-
-        return redirect()->route('admin.about.index')->with('success', 'Blok diperbarui ✅');
     }
 
-    public function destroy(AboutUs $about) {
-      if ($about->image_path) Storage::disk('public')->delete($about->image_path);
-      $about->delete();
-      return back()->with('success','Blok dihapus');
+    public function destroy(AboutUs $about)
+    {
+        try {
+            if ($about->image_path) {
+                Storage::disk('public')->delete($about->image_path);
+            }
+
+            $about->delete();
+
+            return back()->with('success', 'Blok berhasil dihapus.');
+
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()
+                ->with('error', 'Gagal menghapus blok. Silakan coba lagi.');
+        }
     }
 }

@@ -5,7 +5,8 @@
             showEdit: false,
             editId: null,
             editName: '',
-            baseEditUrl: '{{ url('admin/jobs') }}'
+            // ✅ jangan rakit URL manual — pakai route helper biar pasti bener
+            baseUpdateUrl: '{{ route('admin.jobs.update', ['job' => '__ID__']) }}'
          }"
          x-cloak>
 
@@ -18,7 +19,7 @@
             </button>
         </div>
 
-        @if (session('success'))
+        {{-- @if (session('success'))
             <div class="mb-3 text-sm text-green-700 bg-green-100 border border-green-200 rounded-md px-3 py-2">
                 {{ session('success') }}
             </div>
@@ -32,7 +33,7 @@
                     @endforeach
                 </ul>
             </div>
-        @endif
+        @endif --}}
 
         <div class="overflow-x-auto">
             <table class="min-w-full text-sm border border-gray-200">
@@ -54,7 +55,8 @@
                                        @click="
                                            showEdit = true;
                                            editId = {{ $job->id }};
-                                           editName = '{{ e($job->name) }}';
+                                           // ✅ aman dari kutip / karakter aneh
+                                           editName = @js($job->name);
                                        "
                                        class="px-3 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800 hover:bg-yellow-200">
                                         Edit
@@ -152,7 +154,8 @@
                     Edit Jabatan
                 </h2>
 
-                <form :action="baseEditUrl + '/' + editId" method="POST" class="space-y-4">
+                {{-- ✅ action dibikin dari route() biar ga salah path --}}
+                <form :action="baseUpdateUrl.replace('__ID__', editId)" method="POST" class="space-y-4">
                     @csrf
                     @method('PUT')
 

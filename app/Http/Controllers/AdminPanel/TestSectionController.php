@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\TestSection;
 use App\Models\Test;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use App\Services\ActivityLogger;
 use Cviebrock\EloquentSluggable\Services\SlugService;
@@ -14,97 +15,134 @@ class TestSectionController extends Controller
 {
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             'test_id'            => 'required|exists:tests,id',
             'name'               => 'required|string|max:255',
-            'category'           => ['required', Rule::in(TestSection::CATEGORIES)], // ⬅️ kategori wajib & terkontrol
+            'category'           => ['required', Rule::in(TestSection::CATEGORIES)],
             'question_bundle_id' => 'nullable|exists:question_bundles,id',
             'duration_minutes'   => 'required|integer|min:1',
             'shuffle_questions'  => 'sometimes|boolean',
             'shuffle_options'    => 'sometimes|boolean',
         ]);
-        
-        $validated['shuffle_questions'] = $request->has('shuffle_questions');
-        $validated['shuffle_options']   = $request->has('shuffle_options');
 
-        // --- HITUNG ORDER (urutan tampil di quiz) ---
-        $maxOrder = TestSection::where('test_id', $validated['test_id'])->max('order');
-        $validated['order'] = ($maxOrder ?? 0) + 1;
+        // ❌ VALIDATION FAIL
+        if ($validator->fails()) {
+            return back()
+                ->withErrors($validator)
+                ->withInput()
+                ->with('error', 'Gagal menambahkan section. Periksa kembali data yang diinput.');
+        }
 
-        // --- CREATE SECTION ---
-        $section = TestSection::create($validated);
-        $test    = Test::find($validated['test_id']);
+        try {
+            $validated = $validator->validated();
 
-        // ✅ LOG CREATE
-        ActivityLogger::log(
-            'create',
-            'Test Section',
-            auth()->user()->name . " menambahkan section baru '{$section->name}' pada Test '{$test->name}'",
-            "Section ID: {$section->id}"
-        );
+            $validated['shuffle_questions'] = $request->has('shuffle_questions');
+            $validated['shuffle_options']   = $request->has('shuffle_options');
 
-        return redirect()
-            ->route('test.show', $test)
-            ->with('success', 'Section baru berhasil ditambahkan!');
+            // hitung urutan otomatis
+            $maxOrder = TestSection::where('test_id', $validated['test_id'])->max('order');
+            $validated['order'] = ($maxOrder ?? 0) + 1;
+
+            $section = TestSection::create($validated);
+            $test    = Test::find($validated['test_id']);
+
+            ActivityLogger::log(
+                'create',
+                'Test Section',
+                auth()->user()->name . " menambahkan section baru '{$section->name}' pada Test '{$test->name}'",
+                "Section ID: {$section->id}"
+            );
+
+            return redirect()
+                ->route('test.show', $test)
+                ->with('success', 'Section baru berhasil ditambahkan!');
+
+        } catch (\Throwable $e) {
+            report($e);
+            return back()
+                ->withInput()
+                ->with('error', 'Terjadi kesalahan saat menambahkan section. Silakan coba lagi.');
+        }
     }
 
     public function update(Request $request, TestSection $section)
     {
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             'name'               => 'required|string|max:255',
-            'category'           => ['required', Rule::in(TestSection::CATEGORIES)], // ⬅️ bisa ganti kategori
+            'category'           => ['required', Rule::in(TestSection::CATEGORIES)],
             'question_bundle_id' => 'nullable|exists:question_bundles,id',
             'duration_minutes'   => 'required|integer|min:1',
             'shuffle_questions'  => 'sometimes|boolean',
             'shuffle_options'    => 'sometimes|boolean',
-            'order'              => 'required|integer|min:1', // urutan pengerjaan di quiz
+            'order'              => 'required|integer|min:1',
         ]);
-        
-        $validated['shuffle_questions'] = $request->has('shuffle_questions');
-        $validated['shuffle_options']   = $request->has('shuffle_options');
 
-        // ✅ LOG DATA LAMA
-        $oldData = $section->toArray();
+        // ❌ VALIDATION FAIL
+        if ($validator->fails()) {
+            return back()
+                ->withErrors($validator)
+                ->withInput()
+                ->with('error', 'Gagal memperbarui section. Periksa kembali data yang diinput.');
+        }
 
-        // UPDATE
-        $section->update($validated);
-        $section->refresh();
+        try {
+            $validated = $validator->validated();
 
-        // ✅ LOG DATA BARU
-        $newData = $section->toArray();
+            $validated['shuffle_questions'] = $request->has('shuffle_questions');
+            $validated['shuffle_options']   = $request->has('shuffle_options');
 
-        // ✅ LOG UPDATE
-        ActivityLogger::logUpdate(
-            'Test Section',
-            $section,
-            $oldData,
-            $newData
-        );
+            // simpan data lama untuk log
+            $oldData = $section->toArray();
 
-        return redirect()
-            ->route('test.show', $section->test)
-            ->with('success', 'Section berhasil diperbarui!');
+            $section->update($validated);
+            $section->refresh();
+
+            ActivityLogger::logUpdate(
+                'Test Section',
+                $section,
+                $oldData,
+                $section->toArray()
+            );
+
+            return redirect()
+                ->route('test.show', $section->test)
+                ->with('success', 'Section berhasil diperbarui!');
+
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()
+                ->withInput()
+                ->with('error', 'Terjadi kesalahan saat memperbarui section. Silakan coba lagi.');
+        }
     }
 
     public function destroy(TestSection $section)
     {
-        $test = $section->test;
-        $name = $section->name;
-        $id   = $section->id;
+        try {
+            $test = $section->test;
+            $name = $section->name;
+            $id   = $section->id;
 
-        $section->delete();
+            $section->delete();
 
-        // ✅ LOG DELETE
-        ActivityLogger::log(
-            'delete',
-            'Test Section',
-            auth()->user()->name . " menghapus section '{$name}' dari Test '{$test->name}'",
-            "Section ID: {$id}"
-        );
+            ActivityLogger::log(
+                'delete',
+                'Test Section',
+                auth()->user()->name . " menghapus section '{$name}' dari Test '{$test->name}'",
+                "Section ID: {$id}"
+            );
 
-        return redirect()
-            ->route('test.show', $test)
-            ->with('success', 'Section berhasil dihapus!');
+            return redirect()
+                ->route('test.show', $test)
+                ->with('success', 'Section berhasil dihapus!');
+
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()
+                ->with('error', 'Terjadi kesalahan saat menghapus section. Silakan coba lagi.');
+        }
     }
 
     public function checkSlug(Request $request)

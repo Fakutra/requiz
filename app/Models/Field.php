@@ -8,9 +8,14 @@ class Field extends Model
 {
     protected $fillable = ['name'];
 
-    // Relasi ke Offering
+    public function subFields()
+    {
+        return $this->hasMany(SubField::class);
+    }
+
     public function offerings()
     {
         return $this->hasMany(Offering::class);
     }
 }
+

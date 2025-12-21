@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('slug');
-            $table->enum('status', ['Active', 'Closed'])->default('Closed');
+            $table->enum('status', ['Active', 'Closed']);
             $table->date('start_date')->nullable();
             $table->date('end_date')->nullable();
             $table->timestamps();

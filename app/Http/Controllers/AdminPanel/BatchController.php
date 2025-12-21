@@ -27,9 +27,9 @@ class BatchController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name'       => 'required|string|max:255',
-            // 'status'     => 'required',
-            'start_date' => 'nullable|date',
-            'end_date'   => 'nullable|date',
+            'status'     => 'required',
+            'start_date' => 'required|date',
+            'end_date'   => 'required|date',
         ]);
 
         if ($validator->fails()) {

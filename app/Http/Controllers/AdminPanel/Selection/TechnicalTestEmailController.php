@@ -23,24 +23,20 @@ class TechnicalTestEmailController extends Controller
             'position'      => 'nullable|exists:positions,id',
             'type'          => 'required|in:lolos,tidak_lolos,selected',
             'subject'       => 'required|string',
-            'message'       => 'required|string', // HTML dari Trix/CKEditor
+            'message'       => 'required|string',
             'attachments'   => 'nullable|array',
             'attachments.*' => 'file|max:5120',
-            'ids'           => 'nullable|string', // hanya untuk selected
+            'ids'           => 'nullable|string',
         ]);
 
-        // =========================
-        // Tentukan target applicants
-        // =========================
         $selectedIds = [];
         if ($data['type'] === 'selected') {
-            $selectedIds = array_values(array_filter(explode(',', (string)($data['ids'] ?? ''))));
+            $selectedIds = array_values(array_filter(array_map('trim', explode(',', (string)($data['ids'] ?? '')))));
             if (empty($selectedIds)) {
                 return back()->with('error', 'Silakan pilih peserta terlebih dahulu.');
             }
             $applicants = Applicant::with('user')->whereIn('id', $selectedIds)->get();
         } else {
-            // kandidat yang relevan di stage Technical Test
             $query = Applicant::with('user')->where('batch_id', $data['batch']);
 
             if (!empty($data['position'])) {
@@ -48,7 +44,6 @@ class TechnicalTestEmailController extends Controller
             }
 
             if ($data['type'] === 'lolos') {
-                // dianggap "Lolos Technical Test" bila sudah lanjut / melewati tahap ini
                 $query->whereIn('status', [
                     'Interview',
                     'Offering',
@@ -57,25 +52,21 @@ class TechnicalTestEmailController extends Controller
                     'Menolak Offering',
                 ]);
             } else {
-                // tab "Tidak Lolos" utk stage ini
                 $query->where('status', 'Tidak Lolos Technical Test');
             }
 
             $applicants = $query->get();
         }
 
-        // =========================
-        // Kirim email + catat log
-        // =========================
+        $total        = $applicants->count();
         $successCount = 0;
         $failCount    = 0;
+        $failSamples  = [];
 
         foreach ($applicants as $a) {
-            // fallback aman: applicant.email -> user.email
             $recipient = trim((string) ($a->email ?? $a->user?->email ?? ''));
 
             if ($recipient === '') {
-                // log gagal khusus: email kosong
                 EmailLog::create([
                     'applicant_id' => $a->id,
                     'email'        => '(missing)',
@@ -84,7 +75,9 @@ class TechnicalTestEmailController extends Controller
                     'success'      => false,
                     'error'        => 'Missing recipient email',
                 ]);
+
                 $failCount++;
+                if (count($failSamples) < 10) $failSamples[] = ($a->name ?? "ID {$a->id}")." (email kosong)";
                 continue;
             }
 
@@ -119,22 +112,22 @@ class TechnicalTestEmailController extends Controller
 
                 $successCount++;
             } catch (Throwable $e) {
+                report($e);
+
                 EmailLog::create([
                     'applicant_id' => $a->id,
-                    'email'        => $recipient, // tetap simpan string valid
+                    'email'        => $recipient,
                     'stage'        => $this->stage,
                     'subject'      => $data['subject'],
                     'success'      => false,
                     'error'        => $e->getMessage(),
                 ]);
+
                 $failCount++;
+                if (count($failSamples) < 10) $failSamples[] = ($a->name ?? "ID {$a->id}")." (".$e->getMessage().")";
             }
         }
 
-        // =========================
-        // Activity Logger
-        // =========================
-        $total    = $applicants->count();
         $action   = match ($data['type']) {
             'lolos'       => 'send_email_lolos',
             'tidak_lolos' => 'send_email_tidak_lolos',
@@ -159,6 +152,22 @@ class TechnicalTestEmailController extends Controller
             $targetInfo
         );
 
-        return back()->with('success', "Email berhasil dikirim ke {$successCount} peserta dari total {$total}");
+        $response = back();
+
+        if ($total === 0) {
+            return $response->with('error', 'Tidak ada peserta yang cocok dengan filter/target yang dipilih.');
+        }
+
+        if ($successCount > 0) {
+            $response = $response->with('success', "Email berhasil dikirim ke {$successCount} peserta dari total {$total}.");
+        }
+
+        if ($failCount > 0) {
+            $sampleText = implode(', ', $failSamples);
+            $suffix = ($failCount > count($failSamples)) ? ' (dan lainnya)' : '';
+            $response = $response->with('error', "Ada {$failCount} email yang gagal dikirim: {$sampleText}{$suffix}. Cek Email Log untuk detail.");
+        }
+
+        return $response;
     }
 }

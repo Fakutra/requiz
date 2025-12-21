@@ -11,9 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('placements', function (Blueprint $table) {
+        Schema::create('seksi', function (Blueprint $table) {
             $table->id();
-            $table->string('name')->unique();
+            $table->foreignId('sub_field_id')
+                ->constrained('sub_fields')
+                ->cascadeOnDelete();
+            $table->string('name');
             $table->timestamps();
         });
     }
@@ -23,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('placements');
+        Schema::dropIfExists('seksi');
     }
 };

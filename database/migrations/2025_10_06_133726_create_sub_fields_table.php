@@ -10,7 +10,10 @@ return new class extends Migration
     {
         Schema::create('sub_fields', function (Blueprint $table) {
             $table->id();
-            $table->string('name')->unique();
+            $table->foreignId('field_id')
+                ->constrained('fields')
+                ->cascadeOnDelete();
+            $table->string('name');
             $table->timestamps();
         });
     }

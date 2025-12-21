@@ -19,48 +19,56 @@ class ReportController extends Controller
      */
     public function index(Request $request)
     {
-        $batchId = $request->query('batch');
-        $search  = trim((string) $request->query('search'));
-
-        $batches = Batch::orderBy('id')->get();
-
-        $positions = Position::query()
-            ->withCount([
-                'applicants as total_pendaftar',
-                'applicants as lolos_administrasi' => fn($q) => $q->whereIn('status', [
-                    'Tes Tulis', 'Technical Test', 'Interview', 'Offering', 'Menerima Offering', 'Menolak Offering'
-                ]),
-                'applicants as lolos_tes_tulis' => fn($q) => $q->whereIn('status', [
-                    'Technical Test', 'Interview', 'Offering', 'Menerima Offering', 'Menolak Offering'
-                ]),
-                'applicants as lolos_technical' => fn($q) => $q->whereIn('status', [
-                    'Interview', 'Offering', 'Menerima Offering', 'Menolak Offering'
-                ]),
-                'applicants as lolos_interview' => fn($q) => $q->whereIn('status', [
-                    'Offering', 'Menerima Offering', 'Menolak Offering'
-                ]),
-            ])
-            ->when($batchId, fn($q) => $q->where('batch_id', $batchId))
-            ->when($search !== '', fn($q) => $q->where('name', 'ilike', "%$search%"))
-            ->orderBy('batch_id')
-            ->get();
-
-        // ✅ Catat log akses halaman laporan
         try {
-            $user = Auth::user()?->name ?? 'System';
-            $batchLabel = $batchId ? "Batch ID {$batchId}" : "Semua Batch";
-            $searchLabel = $search ? "dengan pencarian '{$search}'" : 'tanpa filter pencarian';
+            $batchId = $request->query('batch');
+            $search  = trim((string) $request->query('search'));
 
-            ActivityLogger::log(
-                'view',
-                'Report',
-                "{$user} mengakses halaman laporan seleksi ({$batchLabel}, {$searchLabel})"
-            );
+            $batches = Batch::orderBy('id')->get();
+
+            $positions = Position::query()
+                ->withCount([
+                    'applicants as total_pendaftar',
+                    'applicants as lolos_administrasi' => fn($q) => $q->whereIn('status', [
+                        'Tes Tulis', 'Technical Test', 'Interview', 'Offering', 'Menerima Offering', 'Menolak Offering'
+                    ]),
+                    'applicants as lolos_tes_tulis' => fn($q) => $q->whereIn('status', [
+                        'Technical Test', 'Interview', 'Offering', 'Menerima Offering', 'Menolak Offering'
+                    ]),
+                    'applicants as lolos_technical' => fn($q) => $q->whereIn('status', [
+                        'Interview', 'Offering', 'Menerima Offering', 'Menolak Offering'
+                    ]),
+                    'applicants as lolos_interview' => fn($q) => $q->whereIn('status', [
+                        'Offering', 'Menerima Offering', 'Menolak Offering'
+                    ]),
+                ])
+                ->when($batchId, fn($q) => $q->where('batch_id', $batchId))
+                ->when($search !== '', fn($q) => $q->where('name', 'ilike', "%$search%"))
+                ->orderBy('batch_id')
+                ->get();
+
+            // log access
+            try {
+                $user = Auth::user()?->name ?? 'System';
+                $batchLabel  = $batchId ? "Batch ID {$batchId}" : "Semua Batch";
+                $searchLabel = $search ? "dengan pencarian '{$search}'" : 'tanpa filter pencarian';
+
+                ActivityLogger::log(
+                    'view',
+                    'Report',
+                    "{$user} mengakses halaman laporan seleksi ({$batchLabel}, {$searchLabel})"
+                );
+            } catch (\Throwable $e) {
+                Log::warning('Gagal mencatat log view Report: ' . $e->getMessage());
+            }
+
+            return view('admin.report.index', compact('batches', 'positions', 'batchId', 'search'));
+
         } catch (\Throwable $e) {
-            Log::warning('Gagal mencatat log view Report: ' . $e->getMessage());
-        }
+            Log::error('Gagal memuat Report: ' . $e->getMessage());
 
-        return view('admin.report.index', compact('batches', 'positions', 'batchId', 'search'));
+            return back()
+                ->with('error', 'Gagal memuat data laporan. Silakan coba lagi nanti.');
+        }
     }
 
     /**
@@ -68,10 +76,17 @@ class ReportController extends Controller
      */
     public function export(Request $request)
     {
-        $batchId = $request->query('batch');
-        $fileName = 'Laporan_Seleksi_' . now()->format('Ymd_His') . '.xlsx';
+        try {
+            $batchId = $request->query('batch');
+            $fileName = 'Laporan_Seleksi_' . now()->format('Ymd_His') . '.xlsx';
 
-        // 🧹 Log export dihapus dari sini karena sudah dicatat di ReportExport.php
-        return Excel::download(new ReportExport($batchId), $fileName);
+            return Excel::download(new ReportExport($batchId), $fileName);
+
+        } catch (\Throwable $e) {
+            Log::error('Gagal export laporan: ' . $e->getMessage());
+
+            return back()
+                ->with('error', 'Gagal mengekspor laporan. Periksa kembali data atau coba beberapa saat lagi.');
+        }
     }
 }

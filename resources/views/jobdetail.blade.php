@@ -237,13 +237,6 @@
                 </div>
 
                 <div class="p-5 flex-1 overflow-y-auto">
-                    {{-- error summary --}}
-                    <template x-if="Object.keys(errors).length">
-                        <div class="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700">
-                            Ada beberapa field yang belum valid. Silahkan diperiksa kembali.
-                        </div>
-                    </template>
-
                     <div class="flex items-center gap-2 mb-4">
                         <h3 class="text-base font-semibold text-gray-800 whitespace-nowrap">
                             Data Pribadi
@@ -435,30 +428,42 @@
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label for="cv" class="block text-sm font-medium text-gray-700">CV (PDF • Max 500KB)</label>
+                                <label for="cv" class="block text-sm font-medium text-gray-700">
+                                    CV (PDF • Max 500KB)
+                                </label>
+
                                 <input id="cv" name="cv_document" type="file" accept=".pdf"
+                                    :class="errors.cv_document ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300'"
                                     class="mt-1 block w-full text-sm rounded-lg
-                                focus:border-[#009DA9] focus:ring-[#009DA9]
-                                file:mr-4 file:py-2 file:px-3
-                                file:rounded-lg file:border file:border-[#009DA9]
-                                file:text-[#009DA9] file:bg-white
-                                hover:file:bg-[#009DA9]/10 hover:file:text-[#007C85]" />
-                                @error('cv_document')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
+                                    focus:border-[#009DA9] focus:ring-[#009DA9]
+                                    file:mr-4 file:py-2 file:px-3
+                                    file:rounded-lg file:border file:border-[#009DA9]
+                                    file:text-[#009DA9] file:bg-white
+                                    hover:file:bg-[#009DA9]/10 hover:file:text-[#007C85]" />
+
+                                <p class="mt-1 text-sm text-red-600"
+                                    x-show="errors.cv_document"
+                                    x-text="errors.cv_document?.[0]">
+                                </p>
                             </div>
                             <div>
-                                <label for="doc_tambahan" class="block text-sm font-medium text-gray-700">Dokumen Tambahan (PDF • Max 5 MB)</label>
+                                <label for="doc_tambahan" class="block text-sm font-medium text-gray-700">
+                                    Dokumen Tambahan (PDF • Max 5 MB)
+                                </label>
+
                                 <input id="doc_tambahan" name="doc_tambahan" type="file" accept=".pdf"
+                                    :class="errors.doc_tambahan ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300'"
                                     class="mt-1 block w-full text-sm rounded-lg
-                                focus:border-[#009DA9] focus:ring-[#009DA9]
-                                file:mr-4 file:py-2 file:px-3
-                                file:rounded-lg file:border file:border-[#009DA9]
-                                file:text-[#009DA9] file:bg-white
-                                hover:file:bg-[#009DA9]/10 hover:file:text-[#007C85]" />
-                                @error('doc_tambahan')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
+                                    focus:border-[#009DA9] focus:ring-[#009DA9]
+                                    file:mr-4 file:py-2 file:px-3
+                                    file:rounded-lg file:border file:border-[#009DA9]
+                                    file:text-[#009DA9] file:bg-white
+                                    hover:file:bg-[#009DA9]/10 hover:file:text-[#007C85]" />
+
+                                <p class="mt-1 text-sm text-red-600"
+                                    x-show="errors.doc_tambahan"
+                                    x-text="errors.doc_tambahan?.[0]">
+                                </p>
                             </div>
                         </div>
                     </div>

@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('field_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('sub_field_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('job_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('placement_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('seksi_id')->nullable()->constrained('seksi')->nullOnDelete();
 
             $table->decimal('gaji', 12, 2)->nullable();
             $table->decimal('uang_makan', 12, 2)->nullable();
@@ -28,6 +28,9 @@ return new class extends Migration
             $table->string('link_pkwt')->nullable();
             $table->string('link_berkas')->nullable();
             $table->string('link_form_pelamar')->nullable();
+
+            $table->dateTime('response_deadline')->nullable()->after('kontrak_selesai');
+            $table->dateTime('responded_at')->nullable()->after('response_deadline');
 
             $table->timestamps();
         });

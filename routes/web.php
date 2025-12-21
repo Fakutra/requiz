@@ -38,11 +38,10 @@ use App\Http\Controllers\AdminPanel\AboutController;
 use App\Http\Controllers\AdminPanel\VendorController;
 use App\Http\Controllers\AdminPanel\ScheduleController;
 use App\Http\Controllers\AdminPanel\VendorPasswordController;
-use App\Http\Controllers\AdminPanel\DivisionController;
 use App\Http\Controllers\AdminPanel\FieldController;
 use App\Http\Controllers\AdminPanel\SubFieldController;
 use App\Http\Controllers\AdminPanel\JobController;
-use App\Http\Controllers\AdminPanel\PlacementController;
+use App\Http\Controllers\AdminPanel\SeksiController;
 
 
 // ====== Seleksi (baru, dipisah per tahap) ======
@@ -210,29 +209,7 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/mark', [StageActionController::class, 'mark'])->name('mark');
         });
 
-        // Master
-        Route::middleware(['auth', 'role:admin'])
-            ->prefix('admin')
-            ->name('admin.')
-            ->group(function () {
-
-                // Divisi (CRUD)
-                Route::resource('divisions', DivisionController::class);
-
-                // Bidang (CRUD)
-                Route::resource('fields', FieldController::class);
-
-                // Sub Bidang (CRUD)
-                Route::resource('sub-fields', SubFieldController::class)
-                    ->names('subfields'); 
-                    // supaya route name menjadi admin.subfields.* 
-
-                // Jabatan (CRUD)
-                Route::resource('jobs', JobController::class);
-
-                // Penempatan (CRUD)
-                Route::resource('placements', PlacementController::class);
-            });
+        
 
         Route::post('admin/applicant/seleksi/update-status', [ActionsController::class, 'updateStatus'])
             ->name('admin.applicant.seleksi.updateStatus');
@@ -255,6 +232,28 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('admin/interview-schedule/{schedule}', [InterviewScheduleController::class, 'destroy'])->name('interview-schedule.destroy');
     });
 
+
+    // Master
+        Route::middleware(['auth', 'role:admin'])
+            ->prefix('admin')
+            ->name('admin.')
+            ->group(function () {
+
+                // Bidang (CRUD)
+                Route::resource('fields', FieldController::class);
+
+                // Sub Bidang (CRUD)
+                Route::resource('sub-fields', SubFieldController::class)
+                    ->names('subfields')
+                    ->parameters(['sub-fields' => 'subfield']);
+                    // supaya route name menjadi admin.subfields.* 
+
+                // Jabatan (CRUD)
+                Route::resource('jobs', JobController::class);
+
+                // Penempatan (CRUD)
+                Route::resource('seksi', SeksiController::class);
+            });
 
     /**
      * ========== ADMIN ONLY (role: admin) ==========

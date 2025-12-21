@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\AdminPanel;
 
 use App\Http\Controllers\Controller;
+use App\Models\Field;
 use App\Models\SubField;
 use Illuminate\Http\Request;
 
@@ -10,15 +11,17 @@ class SubFieldController extends Controller
 {
     public function index()
     {
-        $subfields = SubField::orderBy('name')->get();
+        $subfields = SubField::with('field')->orderBy('name')->get();
+        $fields = Field::orderBy('name')->get(); // ⬅️ WAJIB
 
-        return view('admin.master.subfields.index', compact('subfields'));
+        return view('admin.master.subfields.index', compact('subfields', 'fields'));
     }
 
     public function create()
     {
         return view('admin.master.subfields.form', [
             'subfield' => new SubField(),
+            'fields' => Field::orderBy('name')->get(),
             'mode' => 'create',
         ]);
     }
@@ -26,7 +29,8 @@ class SubFieldController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:sub_fields,name',
+            'field_id' => 'required|exists:fields,id',
+            'name' => 'required|string|max:255',
         ]);
 
         SubField::create($validated);
@@ -40,6 +44,7 @@ class SubFieldController extends Controller
     {
         return view('admin.master.subfields.form', [
             'subfield' => $subfield,
+            'fields' => Field::orderBy('name')->get(),
             'mode' => 'edit',
         ]);
     }
@@ -47,7 +52,8 @@ class SubFieldController extends Controller
     public function update(Request $request, SubField $subfield)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:sub_fields,name,' . $subfield->id,
+            'field_id' => 'required|exists:fields,id',
+            'name' => 'required|string|max:255',
         ]);
 
         $subfield->update($validated);

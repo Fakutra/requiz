@@ -10,6 +10,7 @@ use App\Models\TechnicalTestAnswer;
 use App\Models\TechnicalTestSchedule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 
 class TechnicalTestAnswerController extends Controller
 {
@@ -18,15 +19,29 @@ class TechnicalTestAnswerController extends Controller
      */
     public function store(Request $request, TechnicalTestSchedule $schedule)
     {
-        $validated = $request->validate([
-            'applicant_id'      => ['nullable','integer','exists:applicants,id'],
-            'answer_pdf'        => ['required','file','mimes:pdf','max:1024'], // 1MB
-            'screen_record_url' => ['required','url'],
-        ], [
-            'answer_pdf.mimes'  => 'File jawaban harus berformat PDF.',
-            'answer_pdf.max'    => 'Ukuran file maksimal 1MB.',
-            'screen_record_url.required' => 'Link rekaman layar wajib diisi.',
-        ]);
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'applicant_id'      => ['nullable','integer','exists:applicants,id'],
+                'answer_pdf'        => ['required','file','mimes:pdf','max:1024'], // 1MB
+                'screen_record_url' => ['required','url'],
+            ],
+            [
+                'answer_pdf.mimes'  => 'File jawaban harus berformat PDF.',
+                'answer_pdf.max'    => 'Ukuran file maksimal 1MB.',
+                'screen_record_url.required' => 'Link rekaman layar wajib diisi.',
+            ]
+        );
+
+        // ❌ VALIDATION FAIL
+        if ($validator->fails()) {
+            return back()
+                ->withErrors($validator)
+                ->withInput()
+                ->with('error', 'Gagal mengunggah jawaban. Periksa kembali data yang diinput.');
+        }
+
+        $validated = $validator->validated();
 
         // Tentukan applicant milik user & sesuai posisi schedule
         $applicant = null;
@@ -45,44 +60,71 @@ class TechnicalTestAnswerController extends Controller
         }
 
         if (!$applicant) {
-            return back()->withErrors(['applicant_id' => 'Data pelamar untuk posisi jadwal ini tidak ditemukan.']);
+            return back()
+                ->withErrors(['applicant_id' => 'Data pelamar untuk posisi jadwal ini tidak ditemukan.'])
+                ->withInput()
+                ->with('error', 'Gagal mengunggah jawaban karena data pelamar tidak ditemukan.');
         }
 
         if ((int)$applicant->position_id !== (int)$schedule->position_id) {
-            return back()->withErrors(['applicant_id' => 'Pelamar tidak sesuai dengan posisi jadwal.']);
+            return back()
+                ->withErrors(['applicant_id' => 'Pelamar tidak sesuai dengan posisi jadwal.'])
+                ->withInput()
+                ->with('error', 'Gagal mengunggah jawaban karena pelamar tidak sesuai dengan posisi jadwal.');
         }
 
         if (!is_null($schedule->upload_deadline) && now()->gt($schedule->upload_deadline)) {
-            return back()->withErrors(['answer_pdf' => 'Batas waktu upload sudah lewat.']);
+            return back()
+                ->withErrors(['answer_pdf' => 'Batas waktu upload sudah lewat.'])
+                ->withInput()
+                ->with('error', 'Gagal mengunggah jawaban karena batas waktu upload sudah lewat.');
         }
 
-        $path = $request->file('answer_pdf')->store('technical_test_answers/'.$applicant->id, 'public');
+        $path = null; // ← FIX: declare dulu biar intelephense gak error
 
-        TechnicalTestAnswer::updateOrCreate(
-            [
-                'technical_test_schedule_id' => $schedule->id,
-                'applicant_id'               => $applicant->id,
-            ],
-            [
-                'answer_path'       => $path,
-                'screen_record_url' => $validated['screen_record_url'],
-                'submitted_at'      => now(),
-            ]
-        );
+        try {
+            // upload file
+            $path = $request->file('answer_pdf')->store(
+                'technical_test_answers/'.$applicant->id,
+                'public'
+            );
 
-        return back()->with('success', 'Jawaban berhasil diunggah.');
+            TechnicalTestAnswer::updateOrCreate(
+                [
+                    'technical_test_schedule_id' => $schedule->id,
+                    'applicant_id'               => $applicant->id,
+                ],
+                [
+                    'answer_path'       => $path,
+                    'screen_record_url' => $validated['screen_record_url'],
+                    'submitted_at'      => now(),
+                ]
+            );
+
+            return back()->with('success', 'Jawaban berhasil diunggah.');
+
+        } catch (\Throwable $e) {
+
+            // hapus file kalau sempat terupload
+            if ($path) {
+                Storage::disk('public')->delete($path);
+            }
+
+            report($e);
+
+            return back()
+                ->withInput()
+                ->with('error', 'Terjadi kesalahan saat menyimpan jawaban. Silakan coba lagi.');
+        }
     }
 
     /**
      * ADMIN: Daftar jawaban + filter by batch/position + search.
-     * (Filter schedule DIHAPUS; diganti filter batch)
      */
     public function index(Request $request)
     {
-        // Daftar batch untuk filter
         $batches = Batch::orderByDesc('start_date')->orderBy('name')->get();
 
-        // Daftar posisi; jika batch dipilih, batasi ke batch tsb
         $positions = Position::when($request->filled('batch_id'), function ($q) use ($request) {
                 $q->where('batch_id', $request->batch_id);
             })
@@ -92,21 +134,18 @@ class TechnicalTestAnswerController extends Controller
         $answers = TechnicalTestAnswer::query()
             ->with([
                 'applicant',
-                'applicant.position',     // posisi applicant (punya batch_id)
+                'applicant.position',
                 'schedule',
                 'schedule.position',
             ])
-            // Filter batch via applicant.position.batch_id
             ->when($request->filled('batch_id'), function ($q) use ($request) {
                 $q->whereHas('applicant.position', fn($qq) =>
                     $qq->where('batch_id', $request->batch_id)
                 );
             })
-            // Filter posisi (opsional)
             ->when($request->filled('position_id'), function ($q) use ($request) {
                 $q->whereHas('applicant', fn($qq) => $qq->where('position_id', $request->position_id));
             })
-            // Pencarian nama/email
             ->when($request->filled('q'), function ($q) use ($request) {
                 $s = strtolower($request->q);
                 $q->whereHas('applicant', function ($w) use ($s) {
@@ -132,18 +171,39 @@ class TechnicalTestAnswerController extends Controller
      */
     public function update(Request $request, TechnicalTestAnswer $answer)
     {
-        $validated = $request->validate([
-            'score'      => ['required', 'numeric', 'min:0', 'max:100'],
-            'keterangan' => ['nullable', 'string', 'max:2000'],
-        ], [
-            'score.required' => 'Nilai wajib diisi.',
-            'score.numeric'  => 'Nilai harus angka.',
-            'score.min'      => 'Nilai minimal 0.',
-            'score.max'      => 'Nilai maksimal 100.',
-        ]);
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'score'      => ['required', 'numeric', 'min:0', 'max:100'],
+                'keterangan' => ['nullable', 'string', 'max:2000'],
+            ],
+            [
+                'score.required' => 'Nilai wajib diisi.',
+                'score.numeric'  => 'Nilai harus angka.',
+                'score.min'      => 'Nilai minimal 0.',
+                'score.max'      => 'Nilai maksimal 100.',
+            ]
+        );
 
-        $answer->update($validated);
+        // ❌ VALIDATION FAIL
+        if ($validator->fails()) {
+            return back()
+                ->withErrors($validator)
+                ->withInput()
+                ->with('error', 'Gagal menyimpan nilai. Periksa kembali data yang diinput.');
+        }
 
-        return back()->with('success', 'Nilai berhasil disimpan.');
+        try {
+            $answer->update($validator->validated());
+
+            return back()->with('success', 'Nilai berhasil disimpan.');
+
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()
+                ->withInput()
+                ->with('error', 'Terjadi kesalahan saat menyimpan nilai. Silakan coba lagi.');
+        }
     }
 }

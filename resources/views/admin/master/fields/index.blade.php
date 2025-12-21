@@ -18,13 +18,13 @@
             </button>
         </div>
 
-        @if (session('success'))
+        {{-- @if (session('success'))
             <div class="mb-3 text-sm text-green-700 bg-green-100 border border-green-200 rounded-md px-3 py-2">
                 {{ session('success') }}
             </div>
-        @endif
+        @endif --}}
 
-        @if ($errors->any())
+        {{-- @if ($errors->any())
             <div class="mb-3 text-sm text-red-700 bg-red-100 border border-red-200 rounded-md px-3 py-2">
                 <ul class="list-disc list-inside">
                     @foreach ($errors->all() as $err)
@@ -32,7 +32,7 @@
                     @endforeach
                 </ul>
             </div>
-        @endif
+        @endif --}}
 
         <div class="overflow-x-auto">
             <table class="min-w-full text-sm border border-gray-200">

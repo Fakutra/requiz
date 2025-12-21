@@ -13,14 +13,12 @@ use App\Exports\AdministrasiApplicantsExport;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Services\SelectionNotifier;
 use App\Services\ActivityLogger;
+use Throwable;
 
 class AdministrasiController extends Controller
 {
     protected string $stage = 'Seleksi Administrasi';
 
-    /**
-     * Halaman daftar peserta tahap Administrasi
-     */
     public function index(Request $request)
     {
         $batchId    = $request->query('batch');
@@ -29,7 +27,6 @@ class AdministrasiController extends Controller
         $jurusan    = trim((string) $request->query('jurusan'));
         $status     = trim((string) $request->query('status'));
 
-        // ✅ sort langsung via applicants.* atau via accessor age
         $sort      = $request->query('sort', 'name');
         $direction = $request->query('direction', 'asc');
         $allowedSorts = ['name', 'email', 'jurusan', 'position_id', 'age'];
@@ -50,7 +47,6 @@ class AdministrasiController extends Controller
         if ($batchId)    $q->where('batch_id', $batchId);
         if ($positionId) $q->where('position_id', $positionId);
 
-        // 🔎 search: applicants.name, applicants.email, applicants.jurusan, positions.name
         if ($search !== '') {
             $needle = '%'.mb_strtolower($search).'%';
             $q->where(function ($w) use ($needle) {
@@ -67,7 +63,6 @@ class AdministrasiController extends Controller
             $q->whereRaw('LOWER(applicants.jurusan) LIKE ?', ['%'.mb_strtolower($jurusan).'%']);
         }
 
-        // 🟨 filter status opsional (tetep sama)
         if ($status !== '') {
             if ($status === 'Seleksi Administrasi') {
                 $q->where('status', 'Seleksi Administrasi');
@@ -82,10 +77,6 @@ class AdministrasiController extends Controller
             }
         }
 
-        // ===== Sorting =====
-        // name/email: bisa order di DB
-        // jurusan/position_id: juga bisa di DB
-        // age: perlu accessor → sort di collection
         if ($sort === 'age') {
             $collection = $q->get()->sortBy(fn ($a) => $a->age ?? -1, SORT_NATURAL, $direction === 'desc');
 
@@ -99,7 +90,6 @@ class AdministrasiController extends Controller
                 ['path' => $request->url(), 'query' => $request->query()]
             );
         } else {
-            // map kolom sort → kolom DB
             $orderCol = match ($sort) {
                 'name'        => 'applicants.name',
                 'email'       => 'applicants.email',
@@ -120,9 +110,6 @@ class AdministrasiController extends Controller
         ));
     }
 
-    /**
-     * Bulk update hasil seleksi (lolos / gagal)
-     */
     public function bulkMark(Request $r)
     {
         $data = $r->validate([
@@ -131,39 +118,97 @@ class AdministrasiController extends Controller
             'bulk_action' => 'required|in:lolos,tidak_lolos',
         ]);
 
+        $success = 0;
+        $failed  = 0;
+        $failedNames = [];
+
         foreach ($data['ids'] as $id) {
-            $a = Applicant::find($id);
+            try {
+                $a = Applicant::with('latestEmailLog')->find($id);
 
-            // 1️⃣ log internal seleksi
-            SelectionLogger::write($a, $this->stage, $data['bulk_action'], Auth::id());
+                if (!$a) {
+                    $failed++;
+                    $failedNames[] = "#{$id}";
+                    continue;
+                }
 
-            // 2️⃣ update status pelamar
-            $newStatus = $this->newStatus($data['bulk_action'], (string) $a->status);
-            $a->forceFill(['status' => $newStatus])->save();
+                /**
+                 * 🔒 FINAL LOCK RULE
+                 * - status sudah final
+                 * - email seleksi administrasi SUKSES
+                 */
+                $finalStatuses = [
+                    'Tes Tulis',
+                    'Tidak Lolos Seleksi Administrasi',
+                ];
 
-            // 3️⃣ kirim notifikasi ke peserta
-            SelectionNotifier::notify(
-                $a,
-                $this->stage,
-                $data['bulk_action'],
-                $newStatus
-            );
+                $emailLocked = $a->latestEmailLog
+                    && $a->latestEmailLog->stage === $this->stage
+                    && $a->latestEmailLog->success;
 
-            // 4️⃣ Activity log (pakai kolom applicants.name)
-            ActivityLogger::log(
-                $data['bulk_action'],
-                'Seleksi Administrasi',
-                Auth::user()->name." menandai peserta {$a->name} sebagai '".strtoupper($data['bulk_action'])."'",
-                "Applicant ID: {$a->id}"
+                if (in_array($a->status, $finalStatuses, true) && $emailLocked) {
+                    $failed++;
+                    $failedNames[] = $a->name . ' (sudah final & email terkirim)';
+                    continue;
+                }
+
+                // 1) log internal seleksi
+                SelectionLogger::write($a, $this->stage, $data['bulk_action'], Auth::id());
+
+                // 2) update status
+                $newStatus = $this->newStatus($data['bulk_action'], (string) $a->status);
+                $a->forceFill(['status' => $newStatus])->save();
+
+                // 3) notif ke peserta
+                SelectionNotifier::notify(
+                    $a,
+                    $this->stage,
+                    $data['bulk_action'],
+                    $newStatus
+                );
+
+                // 4) activity log
+                ActivityLogger::log(
+                    $data['bulk_action'],
+                    'Seleksi Administrasi',
+                    Auth::user()->name." menandai peserta {$a->name} sebagai '".strtoupper($data['bulk_action'])."'",
+                    "Applicant ID: {$a->id}"
+                );
+
+                $success++;
+            } catch (Throwable $e) {
+                $failed++;
+                $failedNames[] = $a->name ?? "#{$id}";
+
+                report($e);
+
+                ActivityLogger::log(
+                    'error',
+                    'Seleksi Administrasi',
+                    Auth::user()->name." GAGAL memproses peserta ".($a->name ?? "#{$id}"),
+                    $e->getMessage()
+                );
+
+                continue;
+            }
+        }
+
+        $resp = back();
+
+        if ($success > 0) {
+            $resp = $resp->with('success', "{$success} peserta berhasil diproses.");
+        }
+
+        if ($failed > 0) {
+            $resp = $resp->with(
+                'error',
+                "Ada {$failed} peserta gagal diproses: ".implode(', ', array_slice($failedNames, 0, 10))
             );
         }
 
-        return back()->with('success', 'Status '.count($data['ids']).' peserta diperbarui.');
+        return $resp;
     }
 
-    /**
-     * Tentukan status baru applicant berdasarkan hasil
-     */
     private function newStatus(string $result, string $current): string
     {
         return $result === 'lolos'
@@ -171,9 +216,6 @@ class AdministrasiController extends Controller
             : 'Tidak Lolos Seleksi Administrasi';
     }
 
-    /**
-     * Export Excel khusus tahap Administrasi
-     */
     public function export(Request $r)
     {
         return Excel::download(
@@ -186,36 +228,37 @@ class AdministrasiController extends Controller
         );
     }
 
-    /**
-     * Simpan selected IDs di session (kirim email massal)
-     */
     public function setSelectedIds(Request $r)
     {
         $data = $r->validate([
-            'ids'     => 'required|string', // daftar id dipisahkan koma
+            'ids'     => 'required|string',
             'subject' => 'required|string',
             'message' => 'required|string',
         ]);
 
-        $ids = array_filter(array_map('trim', explode(',', $data['ids'])));
-        $applicants = Applicant::whereIn('id', $ids)->get();
+        try {
+            $ids = array_filter(array_map('trim', explode(',', $data['ids'])));
+            $applicants = Applicant::whereIn('id', $ids)->get();
 
-        // Contoh kirim email (diaktifin sesuai implementation lu)
-        // foreach ($applicants as $a) {
-        //     Mail::to($a->email)->send(new SeleksiEmail(
-        //         subject: $data['subject'],
-        //         message: $data['message'],
-        //         applicant: $a
-        //     ));
-        // }
+            ActivityLogger::log(
+                'send_email',
+                'Seleksi Administrasi',
+                Auth::user()->name.' mengirim email ke '.count($applicants).' peserta',
+                implode(',', $ids)
+            );
 
-        ActivityLogger::log(
-            'send_email',
-            'Seleksi Administrasi',
-            Auth::user()->name.' mengirim email ke '.count($applicants).' peserta',
-            implode(',', $ids)
-        );
+            return back()->with('success', 'Email terkirim ke '.count($applicants).' peserta terpilih.');
+        } catch (Throwable $e) {
+            report($e);
 
-        return back()->with('success', 'Email terkirim ke '.count($applicants).' peserta terpilih.');
+            ActivityLogger::log(
+                'error',
+                'Seleksi Administrasi',
+                Auth::user()->name.' GAGAL kirim email (selected ids)',
+                $e->getMessage()
+            );
+
+            return back()->with('error', 'Gagal mengirim email. Coba lagi, atau cek log server.');
+        }
     }
 }

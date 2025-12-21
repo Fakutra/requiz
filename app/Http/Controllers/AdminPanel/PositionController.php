@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use App\Models\Position;
 use App\Services\ActivityLogger;
 use Cviebrock\EloquentSluggable\Services\SlugService;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
 class PositionController extends Controller
@@ -18,35 +19,21 @@ class PositionController extends Controller
         return view('admin.batch.position.index', compact('positions'));
     }
 
-    /**
-     * Helper: parse multiline / comma-separated text into clean array.
-     * - support newline and comma separators
-     * - trim, remove leading bullets (-, *, •, >)
-     * - normalize spaces
-     * - dedupe case-insensitive while preserving order
-     */
     private function parseListToArray(?string $text): array
     {
         if (!$text) return [];
 
-        // pecah hanya berdasarkan ENTER
         $parts = preg_split('/\r\n|\r|\n/', $text);
         $clean = [];
 
         foreach ($parts as $p) {
             $p = trim($p);
             if ($p === '') continue;
-
-            // hapus bullet: -, *, •, >
             $p = preg_replace('/^[\-\*\•\>\s]+/u', '', $p);
-
-            // rapikan spasi berlebih
             $p = preg_replace('/\s+/', ' ', $p);
-
             $clean[] = $p;
         }
 
-        // dedupe case-insensitive
         $seen = [];
         $result = [];
         foreach ($clean as $item) {
@@ -61,7 +48,7 @@ class PositionController extends Controller
 
     public function store(Request $request, Batch $batch)
     {
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             'name'               => 'required|string|max:255',
             'quota'              => 'required|integer|min:1',
             'status'             => 'required|string|in:Active,Inactive',
@@ -73,47 +60,52 @@ class PositionController extends Controller
             'deadline'           => 'nullable|date',
         ]);
 
-        // parse multiline inputs -> array
-        $descArr   = $this->parseListToArray($validated['descriptions']);
-        $skillsArr = $this->parseListToArray($validated['skills'] ?? null);
-        $reqArr    = $this->parseListToArray($validated['requirements'] ?? null);
-        $majorsArr = $this->parseListToArray($validated['majors'] ?? null);
+        if ($validator->fails()) {
+            return back()
+                ->withErrors($validator)
+                ->withInput()
+                ->with('error', 'Gagal menambahkan posisi. Periksa kembali data yang diinput.');
+        }
 
-        $position = $batch->position()->create([
-            'name'               => $validated['name'],
-            'slug'               => Str::slug($validated['name']) . '-' . uniqid(),
-            'quota'              => $validated['quota'],
-            'status'             => $validated['status'],
-            'pendidikan_minimum' => $validated['pendidikan_minimum'],
-            // ⬇ langsung array, TANPA json_encode
-            'description'        => $descArr,
-            'skills'             => $skillsArr,
-            'requirements'       => $reqArr,
-            'majors'             => $majorsArr,
-            'deadline'           => $validated['deadline'] ?? null,
-        ]);
+        try {
+            $validated = $validator->validated();
 
-        // Logging (optional: ubah array jadi string biar log lebih enak dibaca)
-        $details = collect($validated)->map(function ($v, $k) {
-            if (is_array($v)) $v = implode(' | ', $v);
-            return "{$k}='{$v}'";
-        })->implode(', ');
+            $position = $batch->position()->create([
+                'name'               => $validated['name'],
+                'slug'               => Str::slug($validated['name']) . '-' . uniqid(),
+                'quota'              => $validated['quota'],
+                'status'             => $validated['status'],
+                'pendidikan_minimum' => $validated['pendidikan_minimum'],
+                'description'        => $this->parseListToArray($validated['descriptions']),
+                'skills'             => $this->parseListToArray($validated['skills'] ?? null),
+                'requirements'       => $this->parseListToArray($validated['requirements'] ?? null),
+                'majors'             => $this->parseListToArray($validated['majors'] ?? null),
+                'deadline'           => $validated['deadline'] ?? null,
+            ]);
 
-        ActivityLogger::log(
-            'create',
-            'Position',
-            auth()->user()->name . " menambahkan posisi baru pada Batch '{$batch->name}' dengan data: {$details}",
-            "Posisi: {$position->name}"
-        );
+            ActivityLogger::log(
+                'create',
+                'Position',
+                auth()->user()->name . " menambahkan posisi baru '{$position->name}' pada batch '{$batch->name}'",
+                "Position ID: {$position->id}"
+            );
 
-        return redirect()
-            ->route('batch.show', $batch)
-            ->with('success', 'Posisi baru telah berhasil ditambahkan!');
+            return redirect()
+                ->route('batch.show', $batch)
+                ->with('success', 'Posisi baru telah berhasil ditambahkan!');
+
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()
+                ->withInput()
+                ->with('error', 'Terjadi kesalahan saat menambahkan posisi. Silakan coba lagi.');
+        }
     }
 
     public function update(Request $request, Position $position)
     {
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             'name'               => 'required|string|max:255',
             'quota'              => 'required|integer|min:1',
             'status'             => 'required|string|in:Active,Inactive',
@@ -125,58 +117,72 @@ class PositionController extends Controller
             'deadline'           => 'nullable|date',
         ]);
 
-        $oldData = $position->only([
-            'name','quota','status','pendidikan_minimum',
-            'description','skills','requirements','majors','deadline'
-        ]);
+        if ($validator->fails()) {
+            return back()
+                ->withErrors($validator)
+                ->withInput()
+                ->with('error', 'Gagal memperbarui posisi. Periksa kembali data yang diinput.');
+        }
 
-        // parse ke array
-        $descArr   = $this->parseListToArray($validated['descriptions']);
-        $skillsArr = $this->parseListToArray($validated['skills'] ?? null);
-        $reqArr    = $this->parseListToArray($validated['requirements'] ?? null);
-        $majorsArr = $this->parseListToArray($validated['majors'] ?? null);
+        try {
+            $validated = $validator->validated();
 
-        $position->update([
-            'name'               => $validated['name'],
-            'slug'               => Str::slug($validated['name']) . '-' . uniqid(),
-            'quota'              => $validated['quota'],
-            'status'             => $validated['status'],
-            'pendidikan_minimum' => $validated['pendidikan_minimum'],
-            // ⬇ langsung array lagi
-            'description'        => $descArr,
-            'skills'             => $skillsArr,
-            'requirements'       => $reqArr,
-            'majors'             => $majorsArr,
-            'deadline'           => $validated['deadline'] ?? null,
-        ]);
+            $oldData = $position->toArray();
 
-        $newData = $position->only([
-            'name','quota','status','pendidikan_minimum',
-            'description','skills','requirements','majors','deadline'
-        ]);
+            $position->update([
+                'name'               => $validated['name'],
+                'slug'               => Str::slug($validated['name']) . '-' . uniqid(),
+                'quota'              => $validated['quota'],
+                'status'             => $validated['status'],
+                'pendidikan_minimum' => $validated['pendidikan_minimum'],
+                'description'        => $this->parseListToArray($validated['descriptions']),
+                'skills'             => $this->parseListToArray($validated['skills'] ?? null),
+                'requirements'       => $this->parseListToArray($validated['requirements'] ?? null),
+                'majors'             => $this->parseListToArray($validated['majors'] ?? null),
+                'deadline'           => $validated['deadline'] ?? null,
+            ]);
 
-        ActivityLogger::logUpdate('Position', $position, $oldData, $newData);
+            ActivityLogger::logUpdate('Position', $position, $oldData, $position->toArray());
 
-        return redirect()
-            ->route('batch.show', $position->batch)
-            ->with('success', 'Posisi telah berhasil diperbarui!');
+            return redirect()
+                ->route('batch.show', $position->batch)
+                ->with('success', 'Posisi telah berhasil diperbarui!');
+
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()
+                ->withInput()
+                ->with('error', 'Terjadi kesalahan saat memperbarui posisi. Silakan coba lagi.');
+        }
     }
 
     public function destroy($id)
     {
-        $position = Position::findOrFail($id);
-        $batch = $position->batch;
-        $name = $position->name;
-        $position->delete();
+        try {
+            $position = Position::findOrFail($id);
+            $batch = $position->batch;
+            $name = $position->name;
 
-        ActivityLogger::log(
-            'delete',
-            'Position',
-            auth()->user()->name . " menghapus posisi {$name} dari Batch '{$batch->name}'",
-            "Posisi: {$name}"
-        );
+            $position->delete();
 
-        return redirect()->route('batch.show', $batch)->with('success', 'Posisi telah berhasil dihapus!');
+            ActivityLogger::log(
+                'delete',
+                'Position',
+                auth()->user()->name . " menghapus posisi '{$name}' dari batch '{$batch->name}'",
+                "Position ID: {$position->id}"
+            );
+
+            return redirect()
+                ->route('batch.show', $batch)
+                ->with('success', 'Posisi telah berhasil dihapus!');
+
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()
+                ->with('error', 'Terjadi kesalahan saat menghapus posisi. Silakan coba lagi.');
+        }
     }
 
     public function checkSlug(Request $request)

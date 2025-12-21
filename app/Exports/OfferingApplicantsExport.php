@@ -32,7 +32,7 @@ class OfferingApplicantsExport implements FromCollection, WithHeadings
                 'offering.field',
                 'offering.subfield',
                 'offering.job',
-                'offering.placement',
+                'offering.seksi',
             ])
             ->whereIn('status', ['Offering', 'Menerima Offering', 'Menolak Offering']);
 
@@ -90,7 +90,7 @@ class OfferingApplicantsExport implements FromCollection, WithHeadings
                 'Bidang'          => optional(optional($off)->field)->name ?? '-',
                 'Sub Bidang'      => optional(optional($off)->subfield)->name ?? '-',
                 'Jabatan'         => optional(optional($off)->job)->name ?? '-',
-                'Penempatan'      => optional(optional($off)->placement)->name ?? '-',
+                'Seksi'           => optional($off?->seksi)->name ?? '-',
                 'Status'          => $a->status ?? '-',
                 'Tanggal Mulai'   => optional($off?->kontrak_mulai)?->format('d-m-Y') ?? '-',
                 'Tanggal Selesai' => optional($off?->kontrak_selesai)?->format('d-m-Y') ?? '-',
@@ -109,7 +109,7 @@ class OfferingApplicantsExport implements FromCollection, WithHeadings
             'Bidang',
             'Sub Bidang',
             'Jabatan',
-            'Penempatan',
+            'Seksi',
             'Status',
             'Tanggal Mulai',
             'Tanggal Selesai',

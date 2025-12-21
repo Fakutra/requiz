@@ -11,10 +11,11 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Storage;
 use App\Exports\ApplicantsExport;
 use Maatwebsite\Excel\Facades\Excel;
-use App\Services\ActivityLogger; // ✅ tambahkan ini
+use App\Services\ActivityLogger;
 use Illuminate\Support\Facades\DB;
 use App\Models\User;
 use App\Models\Profile;
+use Illuminate\Support\Facades\Validator;
 
 class ApplicantController extends Controller
 {
@@ -90,10 +91,10 @@ class ApplicantController extends Controller
             'Menerima Offering','Menolak Offering',
         ];
 
-        $data = $request->validate([
-            // langsung ke applicants.*
+        // pakai manual validator biar bisa kasih notif gagal
+        $validator = Validator::make($request->all(), [
             'name'            => ['required','string','max:255'],
-            'email'           => ['required','email','max:255'], // kalau mau unique: Rule::unique('applicants','email')->ignore($applicant->id)
+            'email'           => ['required','email','max:255'],
             'nik'             => ['nullable','string','max:32'],
             'no_telp'         => ['nullable','string','max:32'],
             'tpt_lahir'       => ['nullable','string','max:255'],
@@ -111,56 +112,78 @@ class ApplicantController extends Controller
             'skills'          => ['nullable','string','max:5000'],
 
             'cv_document'     => ['nullable','file','mimes:pdf','max:1024'],
-            'doc_tambahan'    => ['nullable','file','mimes:pdf','max:5120'], // atau tambah jpg,jpeg,png kalau dibutuhkan
+            'doc_tambahan'    => ['nullable','file','mimes:pdf','max:5120'],
         ]);
 
-        // normalisasi gaji
-        $data['ekspektasi_gaji'] = (int) str_replace(['.', ',', ' '], '', (string) $data['ekspektasi_gaji']);
-
-        // file: CV
-        if ($request->hasFile('cv_document')) {
-            if ($applicant->cv_document) Storage::disk('public')->delete($applicant->cv_document);
-            $data['cv_document'] = $request->file('cv_document')
-                ->store("cv-applicant/{$applicant->id}", 'public');
-        } else {
-            unset($data['cv_document']);
+        if ($validator->fails()) {
+            return back()
+                ->withErrors($validator)
+                ->withInput()
+                ->with('error', 'Gagal memperbarui data pelamar. Periksa kembali data yang diinput.');
         }
 
-        // file: Dokumen tambahan
-        if ($request->hasFile('doc_tambahan')) {
-            if ($applicant->doc_tambahan) Storage::disk('public')->delete($applicant->doc_tambahan);
-            $data['doc_tambahan'] = $request->file('doc_tambahan')
-                ->store("doc-applicant/{$applicant->id}", 'public');
-        } else {
-            unset($data['doc_tambahan']);
+        try {
+            $data = $validator->validated();
+
+            // normalisasi gaji
+            $data['ekspektasi_gaji'] = (int) str_replace(['.', ',', ' '], '', (string) $data['ekspektasi_gaji']);
+
+            // file: CV
+            if ($request->hasFile('cv_document')) {
+                if ($applicant->cv_document) {
+                    Storage::disk('public')->delete($applicant->cv_document);
+                }
+                $data['cv_document'] = $request->file('cv_document')
+                    ->store("cv-applicant/{$applicant->id}", 'public');
+            } else {
+                unset($data['cv_document']);
+            }
+
+            // file: Dokumen tambahan
+            if ($request->hasFile('doc_tambahan')) {
+                if ($applicant->doc_tambahan) {
+                    Storage::disk('public')->delete($applicant->doc_tambahan);
+                }
+                $data['doc_tambahan'] = $request->file('doc_tambahan')
+                    ->store("doc-applicant/{$applicant->id}", 'public');
+            } else {
+                unset($data['doc_tambahan']);
+            }
+
+            // map ke kolom applicants
+            $applicant->update([
+                'name'          => $data['name'],
+                'email'         => $data['email'],
+                'identity_num'  => $data['nik']       ?? $applicant->identity_num,
+                'phone_number'  => $data['no_telp']   ?? $applicant->phone_number,
+                'birthplace'    => $data['tpt_lahir'] ?? $applicant->birthplace,
+                'birthdate'     => $data['tgl_lahir'] ?? $applicant->birthdate,
+                'address'       => $data['alamat']    ?? $applicant->address,
+
+                'pendidikan'      => $data['pendidikan']   ?? $applicant->pendidikan,
+                'universitas'     => $data['universitas']  ?? $applicant->universitas,
+                'jurusan'         => $data['jurusan']      ?? $applicant->jurusan,
+                'thn_lulus'       => $data['thn_lulus']    ?? $applicant->thn_lulus,
+                'position_id'     => $data['position_id'],
+                'batch_id'        => $data['batch_id']     ?? $applicant->batch_id,
+                'ekspektasi_gaji' => $data['ekspektasi_gaji'],
+                'status'          => $data['status']       ?? $applicant->status,
+                'skills'          => $data['skills']       ?? $applicant->skills,
+                'cv_document'     => $data['cv_document']  ?? $applicant->cv_document,
+                'doc_tambahan'    => $data['doc_tambahan'] ?? $applicant->doc_tambahan,
+            ]);
+
+            return redirect()
+                ->route('admin.applicant.index', $request->only('search','position','batch','page'))
+                ->with('success','Data pelamar berhasil diperbarui.');
+
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()
+                ->withInput()
+                ->with('error', 'Terjadi kesalahan saat memperbarui data pelamar. Silakan coba lagi.');
         }
-
-        // map ke kolom applicants
-        $applicant->update([
-            'name'          => $data['name'],
-            'email'         => $data['email'],
-            'identity_num'  => $data['nik']       ?? null,
-            'phone_number'  => $data['no_telp']   ?? null,
-            'birthplace'    => $data['tpt_lahir'] ?? null,
-            'birthdate'     => $data['tgl_lahir'] ?: null,
-            'address'       => $data['alamat']    ?? null,
-
-            'pendidikan'      => $data['pendidikan']   ?? $applicant->pendidikan,
-            'universitas'     => $data['universitas']  ?? $applicant->universitas,
-            'jurusan'         => $data['jurusan']      ?? $applicant->jurusan,
-            'thn_lulus'       => $data['thn_lulus']    ?? $applicant->thn_lulus,
-            'position_id'     => $data['position_id'],
-            'batch_id'        => $data['batch_id']     ?? $applicant->batch_id,
-            'ekspektasi_gaji' => $data['ekspektasi_gaji'],
-            'status'          => $data['status']       ?? $applicant->status,
-            'skills'          => $data['skills']       ?? $applicant->skills,
-            'cv_document'     => $data['cv_document']  ?? $applicant->cv_document,
-            'doc_tambahan'    => $data['doc_tambahan'] ?? $applicant->doc_tambahan,
-        ]);
-
-        return redirect()
-            ->route('admin.applicant.index', $request->only('search','position','batch','page'))
-            ->with('success','Data pelamar berhasil diperbarui.');
     }
 
     /**
@@ -168,25 +191,35 @@ class ApplicantController extends Controller
      */
     public function destroy(Applicant $applicant)
     {
-        $name = $applicant->name;
+        try {
+            $name = $applicant->name;
 
-        if ($applicant->cv_document) {
-            Storage::disk('public')->delete($applicant->cv_document);
+            if ($applicant->cv_document) {
+                Storage::disk('public')->delete($applicant->cv_document);
+            }
+            if ($applicant->doc_tambahan) {
+                Storage::disk('public')->delete($applicant->doc_tambahan);
+            }
+
+            $applicant->delete();
+
+            ActivityLogger::log(
+                'delete',
+                'Data Pelamar',
+                auth()->user()->name." menghapus data pelamar {$name}",
+                "Nama: {$name}"
+            );
+
+            return redirect()
+                ->route('admin.applicant.index')
+                ->with('success','Data pelamar berhasil dihapus.');
+
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()
+                ->with('error', 'Terjadi kesalahan saat menghapus data pelamar. Silakan coba lagi.');
         }
-        if ($applicant->doc_tambahan) {
-            Storage::disk('public')->delete($applicant->doc_tambahan);
-        }
-        $applicant->delete();
-
-        // ✅ Log penghapusan data
-        ActivityLogger::log(
-            'delete',
-            'Data Pelamar',
-            auth()->user()->name." menghapus data pelamar {$name}",
-            "Nama: {$name}"
-        );
-
-        return redirect()->route('admin.applicant.index')->with('success','Data pelamar berhasil dihapus.');
     }
 
     /**
@@ -200,17 +233,24 @@ class ApplicantController extends Controller
 
         $fileName = 'data-pelamar-' . now()->format('Y-m-d') . '.xlsx';
 
-        // ✅ Log export data
-        ActivityLogger::log(
-            'export',
-            'Data Pelamar',
-            auth()->user()->name.' mengekspor data pelamar ke file Excel',
-            "File: {$fileName}"
-        );
+        try {
+            ActivityLogger::log(
+                'export',
+                'Data Pelamar',
+                auth()->user()->name.' mengekspor data pelamar ke file Excel',
+                "File: {$fileName}"
+            );
 
-        return Excel::download(
-            new ApplicantsExport($search, $positionId, $batchId),
-            $fileName
-        );
+            return Excel::download(
+                new ApplicantsExport($search, $positionId, $batchId),
+                $fileName
+            );
+
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()
+                ->with('error', 'Gagal mengekspor data pelamar. Silakan coba lagi.');
+        }
     }
 }

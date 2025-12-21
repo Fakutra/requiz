@@ -29,26 +29,50 @@ class InterviewEmailController extends Controller
             'attachments.*' => 'file|max:5120',
         ]);
 
+        $ids = [];
         if ($data['type'] === 'selected') {
-            $ids = array_filter(explode(',', $data['ids'] ?? ''));
+            $ids = array_filter(array_map('trim', explode(',', $data['ids'] ?? '')));
+            if (empty($ids)) {
+                return back()->with('error', 'Silakan pilih peserta terlebih dahulu.');
+            }
             $applicants = Applicant::whereIn('id', $ids)->get();
         } else {
             $query = Applicant::where('batch_id', $data['batch']);
             if ($data['position']) $query->where('position_id', $data['position']);
 
-            if ($data['type'] === 'lolos') {
-                $query->where('status', 'Offering');
-            } else {
-                $query->where('status', 'Tidak Lolos Interview');
-            }
+            $query->where(
+                'status',
+                $data['type'] === 'lolos' ? 'Offering' : 'Tidak Lolos Interview'
+            );
 
             $applicants = $query->get();
         }
 
-        $successCount = 0;
-        $failCount = 0;
+        $total = $applicants->count();
+        $success = 0;
+        $failed  = 0;
+        $failSamples = [];
 
         foreach ($applicants as $a) {
+            $email = trim((string) $a->email);
+
+            if ($email === '') {
+                EmailLog::create([
+                    'applicant_id' => $a->id,
+                    'email'        => '(missing)',
+                    'stage'        => $this->stage,
+                    'subject'      => $data['subject'],
+                    'success'      => false,
+                    'error'        => 'Email kosong',
+                ]);
+
+                $failed++;
+                if (count($failSamples) < 10) {
+                    $failSamples[] = ($a->name ?? "ID {$a->id}") . ' (email kosong)';
+                }
+                continue;
+            }
+
             try {
                 $mail = new SelectionResultMail(
                     $data['subject'],
@@ -67,52 +91,59 @@ class InterviewEmailController extends Controller
                     }
                 }
 
-                Mail::to($a->email)->send($mail);
+                Mail::to($email)->send($mail);
 
                 EmailLog::create([
                     'applicant_id' => $a->id,
-                    'email'        => $a->email,
+                    'email'        => $email,
                     'stage'        => $this->stage,
                     'subject'      => $data['subject'],
                     'success'      => true,
                 ]);
 
-                $successCount++;
+                $success++;
             } catch (Throwable $e) {
+                report($e);
+
                 EmailLog::create([
                     'applicant_id' => $a->id,
-                    'email'        => $a->email,
+                    'email'        => $email,
                     'stage'        => $this->stage,
                     'subject'      => $data['subject'],
                     'success'      => false,
                     'error'        => $e->getMessage(),
                 ]);
 
-                $failCount++;
+                $failed++;
+                if (count($failSamples) < 10) {
+                    $failSamples[] = ($a->name ?? "ID {$a->id}") . ' (' . $e->getMessage() . ')';
+                }
             }
         }
-
-        // ✅ Log pengiriman email
-        $total = count($applicants);
-        $tabLabel = match ($data['type']) {
-            'lolos'       => 'Lolos Interview',
-            'tidak_lolos' => 'Tidak Lolos Interview',
-            'selected'    => 'Peserta Terpilih',
-            default       => 'Interview'
-        };
 
         ActivityLogger::log(
             'send_email',
             'Seleksi Interview',
-            Auth::user()->name." mengirim email hasil {$tabLabel} ke {$successCount} dari {$total} peserta (gagal: {$failCount})",
+            Auth::user()->name." kirim email Interview: {$success} sukses, {$failed} gagal",
             $data['type'] === 'selected'
-                ? 'Selected IDs: '.implode(',', $ids ?? [])
+                ? 'Selected IDs: '.implode(',', $ids)
                 : 'Batch ID: '.$data['batch']
         );
 
-        return back()->with(
-            'success',
-            "Email berhasil dikirim ke {$successCount} peserta dari total {$total}"
-        );
+        $resp = back();
+
+        if ($success > 0) {
+            $resp = $resp->with('success', "Email berhasil dikirim ke {$success} peserta dari total {$total}.");
+        }
+
+        if ($failed > 0) {
+            $resp = $resp->with(
+                'error',
+                "Ada {$failed} email gagal dikirim: ".implode(', ', $failSamples)
+            );
+        }
+
+        return $resp;
     }
 }
+
