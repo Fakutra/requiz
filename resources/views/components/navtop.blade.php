@@ -123,6 +123,7 @@
             </div>
 
             <div class="flex flex-row gap-3 sm:hidden">
+                @auth
                 {{-- ======================== NOTIFICATION DESKTOP ======================== --}}
                 <div
                     x-data="notifDropdown()"
@@ -178,6 +179,7 @@
                         </ul>
                     </div>
                 </div>
+                @endauth
 
                 {{-- HAMBURGER MOBILE --}}
                 <button @click="open = !open" class="text-gray-600">
