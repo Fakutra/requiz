@@ -2,7 +2,7 @@
     <div class="py-12">
         <div class="max-w-7xl mx-auto px-6 sm:px-6 lg:px-8">
 
-            <h1 class="mb-4 font-bold sm:text-4xl text-3xl">Riwayat Lamaran</h1>
+            <h1 class="mb-4 font-bold text-3xl md:text-4xl">Riwayat Lamaran</h1>
 
             {{-- BANNER: Status --}}
             @if (session('status'))
@@ -27,9 +27,10 @@
                 @forelse ($applicants as $applicant)
 
                 {{-- ===== CARD ===== --}}
-                <article class="rounded-2xl border border-zinc-200 bg-white shadow-sm p-6">
+
+                <article class="rounded-2xl border bg-white p-6">
                     {{-- HEADER --}}
-                    <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4 border-b border-zinc-100">
+                    <header class="flex flex-row sm:items-center justify-between gap-3 pb-4 mb-4 border-b border-zinc-100">
                         <div>
                             <h3 class="text-xl font-bold text-zinc-900">
                                 {{ $applicant->position->name ?? 'Posisi Dihapus' }}
@@ -57,86 +58,93 @@
                         $badgeClass = $badgeMap[$status] ?? 'bg-sky-100 text-sky-800 ring-1 ring-inset ring-sky-200';
                         @endphp
 
-                        <span class="inline-flex items-center px-3 py-1 text-sm font-medium rounded-full {{ $badgeClass }}">
+                        <span class="inline-flex items-center px-3 py-1 text-xs sm:text-sm font-medium rounded-full max-w-[160px] truncate {{ $badgeClass }}">
                             {{ $status }}
                         </span>
                     </header>
-                    
-                    {{-- PROGRESS TRACKER --}}
-                    @php
-                    $stageMapping = [
-                    'Seleksi Administrasi' => ['index' => 0, 'result' => 'pending'],
-                    'Tidak Lolos Seleksi Administrasi' => ['index' => 0, 'result' => 'failed'],
 
-                    'Tes Tulis' => ['index' => 1, 'result' => 'pending'],
-                    'Tidak Lolos Tes Tulis' => ['index' => 1, 'result' => 'failed'],
+                    {{-- COLLAPSIBLE --}}
+                    <details class="group" open>
+                        <summary class="flex cursor-pointer items-center justify-between list-none">
+                            <h4 class="text-sm font-semibold text-zinc-700 mb-4 tracking-wide">PROSES SELEKSI</h4>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5 text-zinc-500 transition-transform duration-300 group-[open]:rotate-180">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                            </svg>
+                        </summary>
 
-                    'Technical Test' => ['index' => 2, 'result' => 'pending'],
-                    'Seleksi Tes Praktek' => ['index' => 2, 'result' => 'pending'],
-                    'Tidak Lolos Technical Test' => ['index' => 2, 'result' => 'failed'],
+                        {{-- PROGRESS TRACKER --}}
+                        @php
+                        $stageMapping = [
+                        'Seleksi Administrasi' => ['index' => 0, 'result' => 'pending'],
+                        'Tidak Lolos Seleksi Administrasi' => ['index' => 0, 'result' => 'failed'],
 
-                    'Interview' => ['index' => 3, 'result' => 'pending'],
-                    'Tidak Lolos Interview' => ['index' => 3, 'result' => 'failed'],
+                        'Tes Tulis' => ['index' => 1, 'result' => 'pending'],
+                        'Tidak Lolos Tes Tulis' => ['index' => 1, 'result' => 'failed'],
 
-                    'Offering' => ['index' => 4, 'result' => 'pending'],
-                    'Menolak Offering' => ['index' => 4, 'result' => 'failed'],
-                    'Menerima Offering' => ['index' => 4, 'result' => 'passed'],
-                    ];
-                    $info = $stageMapping[$applicant->status] ?? ['index' => -1, 'result' => 'unknown'];
-                    $currentIndex = $info['index'];
-                    $currentResult = $info['result'];
-                    $stages = ['Seleksi Administrasi','Tes Tulis','Technical Test','Interview','Offering'];
-                    @endphp
+                        'Technical Test' => ['index' => 2, 'result' => 'pending'],
+                        'Seleksi Tes Praktek' => ['index' => 2, 'result' => 'pending'],
+                        'Tidak Lolos Technical Test' => ['index' => 2, 'result' => 'failed'],
 
-                    <section class="mb-5">
-                        <h4 class="text-sm font-semibold text-zinc-700 mb-4 tracking-wide">PROSES SELEKSI</h4>
+                        'Interview' => ['index' => 3, 'result' => 'pending'],
+                        'Tidak Lolos Interview' => ['index' => 3, 'result' => 'failed'],
 
-                        <div class="flex sm:items-center sm:flex-row flex-col gap-3 sm:gap-4">
-                            @foreach ($stages as $i => $name)
-                            @php
-                            $isPassed = $i < $currentIndex || ($i===$currentIndex && $currentResult==='passed' );
-                                $isCurrent=$i===$currentIndex && $currentResult==='pending' ;
-                                $isFailed=$i===$currentIndex && $currentResult==='failed' ;
-                                $active=$isPassed || $isCurrent;
+                        'Offering' => ['index' => 4, 'result' => 'pending'],
+                        'Menolak Offering' => ['index' => 4, 'result' => 'failed'],
+                        'Menerima Offering' => ['index' => 4, 'result' => 'passed'],
+                        ];
+                        $info = $stageMapping[$applicant->status] ?? ['index' => -1, 'result' => 'unknown'];
+                        $currentIndex = $info['index'];
+                        $currentResult = $info['result'];
+                        $stages = ['Seleksi Administrasi','Tes Tulis','Technical Test','Interview','Offering'];
+                        @endphp
 
-                                $highlight=$isCurrent ? 'shadow-[0_0_0_6px_rgba(2,132,199,.12)] animate-pulse' : '' ;
-                                @endphp
+                        <section class="mb-5">
+                            <div class="flex sm:items-center sm:flex-row flex-col gap-3 sm:gap-4">
+                                @foreach ($stages as $i => $name)
+                                @php
+                                $isPassed = $i < $currentIndex || ($i===$currentIndex && $currentResult==='passed' );
+                                    $isCurrent=$i===$currentIndex && $currentResult==='pending' ;
+                                    $isFailed=$i===$currentIndex && $currentResult==='failed' ;
+                                    $active=$isPassed || $isCurrent;
 
-                                {{-- Node --}}
-                                <div class="flex min-w-0 flex-col items-center">
-                                <div class="grid place-items-center w-10 h-10 rounded-full transition-all duration-300 {{ $highlight }}
+                                    $highlight=$isCurrent ? 'shadow-[0_0_0_6px_rgba(2,132,199,.12)] animate-pulse' : '' ;
+                                    @endphp
+
+                                    {{-- Node --}}
+                                    <div class="flex min-w-0 flex-col items-center">
+                                    <div class="grid place-items-center w-10 h-10 rounded-full transition-all duration-300 {{ $highlight }}
                                         @if($isFailed) bg-rose-500 text-white
                                         @elseif($isPassed) bg-emerald-500 text-white
                                         @elseif($isCurrent) bg-[#009DA9] text-white ring-4 ring-[#009DA9]/15
                                         @else bg-zinc-200 text-zinc-500 @endif"
-                                    @if($isCurrent) aria-current="step" @endif
-                                    aria-label="{{ $name }}: {{ $isFailed ? 'gagal' : ($isPassed ? 'selesai' : ($isCurrent ? 'berjalan' : 'belum')) }}">
-                                    @if ($isFailed)
-                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                    @elseif ($isPassed)
-                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                                    </svg>
-                                    @else
-                                    <span class="text-sm font-semibold">{{ $i + 1 }}</span>
-                                    @endif
-                                </div>
-                                <p class="mt-2 w-24 text-center text-xs leading-snug
+                                        @if($isCurrent) aria-current="step" @endif
+                                        aria-label="{{ $name }}: {{ $isFailed ? 'gagal' : ($isPassed ? 'selesai' : ($isCurrent ? 'berjalan' : 'belum')) }}">
+                                        @if ($isFailed)
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                        @elseif ($isPassed)
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        @else
+                                        <span class="text-sm font-semibold">{{ $i + 1 }}</span>
+                                        @endif
+                                    </div>
+                                    <p class="mt-2 w-24 text-center text-xs leading-snug
                                         @if($isFailed) text-rose-600 font-semibold
                                         @elseif($isPassed) text-zinc-600
                                         @elseif($isCurrent) text-[#009DA9] font-bold
                                         @else text-zinc-400 @endif">
-                                    {{ $name }}
-                                </p>
-                        </div>
+                                        {{ $name }}
+                                    </p>
+                            </div>
 
-                        {{-- Connector --}}
-                        @unless ($loop->last)
-                        <div class="flex-1 h-0.5 @if($active) bg-[#009DA9] @else bg-zinc-200 @endif"></div>
-                        @endunless
-                        @endforeach
+                            {{-- Connector --}}
+                            @unless ($loop->last)
+                            <div class="flex-1 h-0.5 @if($active) bg-[#009DA9] @else bg-zinc-200 @endif"></div>
+                            @endunless
+                            @endforeach
             </div>
             </section>
 
@@ -147,18 +155,18 @@
                 <h4 class="text-sm font-semibold text-[#009DA9] mb-3">Seleksi Administrasi</h4>
 
                 <div class="text-sm text-zinc-700 leading-relaxed">
-                        Lamaran Anda sedang dalam proses verifikasi berkas oleh tim rekrutmen. Hasil seleksi administrasi akan diperbarui pada halaman Riwayat Lamaran dan diumumkan melalui
-                        <strong>email resmi</strong> yang terdaftar pada akun Anda. Harap periksa kotak masuk secara berkala — termasuk folder <em>Spam/Promotions</em>.
-                    </div>
+                    Lamaran Anda sedang dalam proses verifikasi berkas oleh tim rekrutmen. Hasil seleksi administrasi akan diperbarui pada halaman Riwayat Lamaran dan diumumkan melalui
+                    <strong>email resmi</strong> yang terdaftar pada akun Anda. Harap periksa kotak masuk secara berkala — termasuk folder <em>Spam/Promotions</em>.
+                </div>
 
             </section>
             @endif
 
             @php
-                // flags per section
-                $showQuiz = ($applicant->status === 'Tes Tulis') && optional($applicant->position)->test;
-                $showTech = in_array($applicant->status, ['Technical Test','Seleksi Tes Praktek']) && $applicant->position;
-                $showInterview = ($applicant->status === 'Interview') && $applicant->position;
+            // flags per section
+            $showQuiz = ($applicant->status === 'Tes Tulis') && optional($applicant->position)->test;
+            $showTech = in_array($applicant->status, ['Technical Test','Seleksi Tes Praktek']) && $applicant->position;
+            $showInterview = ($applicant->status === 'Interview') && $applicant->position;
             @endphp
 
             {{-- TES TULIS: Belum dibuat --}}
@@ -177,39 +185,39 @@
 
                 {{-- ===== QUIZ / TES TULIS ===== --}}
                 @if ($showQuiz)
-                    @php
-                        $test = $applicant->position->test;
-                        $now  = now();
-                        $open = $test->test_date;
-                        $close = $test->test_closed;
-                        $end  = $test->test_end;
+                @php
+                $test = $applicant->position->test;
+                $now = now();
+                $open = $test->test_date;
+                $close = $test->test_closed;
+                $end = $test->test_end;
 
-                        // ambil sesi tes tulis (test_results)
-                        $tr = \App\Models\TestResult::where('applicant_id', $applicant->id)
-                                ->where('test_id', $test->id)
-                                ->latest('id') // kalau bisa ambil yang paling baru
-                                ->first();
+                // ambil sesi tes tulis (test_results)
+                $tr = \App\Models\TestResult::where('applicant_id', $applicant->id)
+                ->where('test_id', $test->id)
+                ->latest('id') // kalau bisa ambil yang paling baru
+                ->first();
 
-                        // sudah mulai kalau sudah ada session + sudah mulai salah satu section
-                        $hasStarted = $tr && (
-                            $tr->started_at ||
-                            \App\Models\TestSectionResult::where('test_result_id', $tr->id)
-                                ->whereNotNull('started_at')
-                                ->exists()
-                        );
+                // sudah mulai kalau sudah ada session + sudah mulai salah satu section
+                $hasStarted = $tr && (
+                $tr->started_at ||
+                \App\Models\TestSectionResult::where('test_result_id', $tr->id)
+                ->whereNotNull('started_at')
+                ->exists()
+                );
 
-                        // ✅ dianggap selesai kalau finished_at KEISI
-                        $isFinished = $tr && $tr->finished_at;
+                // ✅ dianggap selesai kalau finished_at KEISI
+                $isFinished = $tr && $tr->finished_at;
 
-                        // window waktu tes
-                        $inWindow   = ($open && $close) ? $now->between($open, $close, true) : false;
-                        $beforeEnd  = $end ? $now->lt($end) : true;
+                // window waktu tes
+                $inWindow = ($open && $close) ? $now->between($open, $close, true) : false;
+                $beforeEnd = $end ? $now->lt($end) : true;
 
-                        // ✅ hanya bisa masuk kalau BELUM selesai
-                        $canEnter = !$isFinished && ($inWindow || ($hasStarted && $beforeEnd));
+                // ✅ hanya bisa masuk kalau BELUM selesai
+                $canEnter = !$isFinished && ($inWindow || ($hasStarted && $beforeEnd));
 
-                        $startUrl = URL::signedRoute('quiz.intro', ['slug' => $test->slug]);
-                    @endphp
+                $startUrl = URL::signedRoute('quiz.intro', ['slug' => $test->slug]);
+                @endphp
 
                 <div>
                     <h4 class="text-sm font-semibold text-[#009DA9] mb-3">Tes Tulis (Online Quiz)</h4>
@@ -240,13 +248,13 @@
                         </a>
 
                         @if(!$canEnter && !$isFinished)
-                            <span class="text-xs text-zinc-500">
-                                Tombol aktif saat periode dibuka.
-                            </span>
+                        <span class="text-xs text-zinc-500">
+                            Tombol aktif saat periode dibuka.
+                        </span>
                         @elseif($isFinished)
-                            <span class="text-xs text-zinc-500">
-                                Anda telah menyelesaikan Tes Tulis.
-                            </span>
+                        <span class="text-xs text-zinc-500">
+                            Anda telah menyelesaikan Tes Tulis.
+                        </span>
                         @endif
                     </div>
                 </div>
@@ -314,53 +322,53 @@
                     </div>
 
                     @if ($latestTech)
-                        <div class="mt-5 text-sm text-gray-700">
-                            <div class="font-medium">Upload Terbaru:</div>
-                            <div>PDF:
-                                <a class="text-blue-600 hover:underline"
-                                    href="{{ '/storage/'.$latestTech->answer_path }}"
-                                    target="_blank" rel="noopener noreferrer">
-                                        Lihat berkas
-                                </a>
-                            </div>
-
-                            @if (!empty($latestTech->screen_record_url))
-                                <div>Rekaman Layar:
-                                    <a class="text-blue-600 hover:underline"
-                                    href="{{ $latestTech->screen_record_url }}"
-                                    target="_blank" rel="noopener noreferrer">
-                                        Buka tautan
-                                    </a>
-                                </div>
-                            @endif
-
-                            <div class="text-gray-500">
-                                Dikumpulkan: {{ $latestTech->submitted_at?->translatedFormat('d F Y, H:i') ?? '—' }}
-                            </div>
+                    <div class="mt-5 text-sm text-gray-700">
+                        <div class="font-medium">Upload Terbaru:</div>
+                        <div>PDF:
+                            <a class="text-blue-600 hover:underline"
+                                href="{{ '/storage/'.$latestTech->answer_path }}"
+                                target="_blank" rel="noopener noreferrer">
+                                Lihat berkas
+                            </a>
                         </div>
+
+                        @if (!empty($latestTech->screen_record_url))
+                        <div>Rekaman Layar:
+                            <a class="text-blue-600 hover:underline"
+                                href="{{ $latestTech->screen_record_url }}"
+                                target="_blank" rel="noopener noreferrer">
+                                Buka tautan
+                            </a>
+                        </div>
+                        @endif
+
+                        <div class="text-gray-500">
+                            Dikumpulkan: {{ $latestTech->submitted_at?->translatedFormat('d F Y, H:i') ?? '—' }}
+                        </div>
+                    </div>
                     @endif
 
                     <div class="mt-6 flex flex-wrap items-center gap-2">
                         @if (!empty($techSched->zoom_link))
-                            @php
-                                // tombol zoom hanya aktif kalau belum lewat upload_deadline
-                                $canJoinTechZoom = $withinDeadline;
-                            @endphp
+                        @php
+                        // tombol zoom hanya aktif kalau belum lewat upload_deadline
+                        $canJoinTechZoom = $withinDeadline;
+                        @endphp
 
-                            <button type="button"
-                                @if ($canJoinTechZoom)
-                                    onclick="window.open('{{ $techSched->zoom_link }}', '_blank', 'noopener,noreferrer')"
-                                @else
-                                    disabled
-                                @endif
-                                class="px-4 h-10 rounded-lg border border-[#009DA9] text-[#009DA9] text-sm font-medium hover:bg-[#009DA9]/10 inline-flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                                </svg>
-                                Buka Link Zoom
-                            </button>
+                        <button type="button"
+                            @if ($canJoinTechZoom)
+                            onclick="window.open('{{ $techSched->zoom_link }}', '_blank', 'noopener,noreferrer')"
+                            @else
+                            disabled
+                            @endif
+                            class="px-4 h-10 rounded-lg border border-[#009DA9] text-[#009DA9] text-sm font-medium hover:bg-[#009DA9]/10 inline-flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                            </svg>
+                            Buka Link Zoom
+                        </button>
                         @else
-                            <span class="text-gray-500">Belum ada link</span>
+                        <span class="text-gray-500">Belum ada link</span>
                         @endif
 
                         <button type="button"
@@ -415,30 +423,30 @@
 
                 {{-- divider --}}
                 @if (($showTech && $showInterview) || (!$showTech && $showQuiz && $showInterview))
-                    <div class="border-t border-[#009DA9]/20 my-4"></div>
+                <div class="border-t border-[#009DA9]/20 my-4"></div>
                 @endif
 
                 {{-- ===== INTERVIEW ===== --}}
                 @if ($showInterview)
                 @php
-                    $iSch = optional($applicant->position->interviewSchedules ?? collect())
-                        ->sortByDesc('schedule_start')
-                        ->first();
+                $iSch = optional($applicant->position->interviewSchedules ?? collect())
+                ->sortByDesc('schedule_start')
+                ->first();
 
-                    $now   = now();
-                    $start = $iSch?->schedule_start;
-                    $end   = $iSch?->schedule_end;
+                $now = now();
+                $start = $iSch?->schedule_start;
+                $end = $iSch?->schedule_end;
 
-                    $earlyMinutes = 10;
+                $earlyMinutes = 10;
 
-                    // waktu mulai join: 10 menit sebelum jadwal
-                    $joinOpenAt = $start ? $start->copy()->subMinutes($earlyMinutes) : null;
+                // waktu mulai join: 10 menit sebelum jadwal
+                $joinOpenAt = $start ? $start->copy()->subMinutes($earlyMinutes) : null;
 
-                    // boleh join HANYA antara (start - 10 menit) s/d end
-                    $canJoin = false;
-                    if ($iSch && $iSch->zoom_link && $joinOpenAt && $end) {
-                        $canJoin = $now->between($joinOpenAt, $end, true);
-                    }
+                // boleh join HANYA antara (start - 10 menit) s/d end
+                $canJoin = false;
+                if ($iSch && $iSch->zoom_link && $joinOpenAt && $end) {
+                $canJoin = $now->between($joinOpenAt, $end, true);
+                }
                 @endphp
 
                 @if ($iSch)
@@ -463,31 +471,31 @@
 
                     <div class="mt-6">
                         @if ($iSch->zoom_id || $iSch->zoom_passcode)
-                            <div class="text-gray-500 mt-2">ID: {{ $iSch->zoom_id ?? '—' }}</div>
-                            <div class="text-gray-500">Passcode: {{ $iSch->zoom_passcode ?? '—' }}</div>
+                        <div class="text-gray-500 mt-2">ID: {{ $iSch->zoom_id ?? '—' }}</div>
+                        <div class="text-gray-500">Passcode: {{ $iSch->zoom_passcode ?? '—' }}</div>
                         @endif
 
                         @if ($iSch->zoom_link)
-                            <button type="button"
-                                @if ($canJoin)
-                                    onclick="window.open('{{ $iSch->zoom_link }}', '_blank', 'noopener,noreferrer')"
-                                @else
-                                    disabled
-                                @endif
-                                class="px-5 h-10 mt-4 inline-flex items-center rounded-lg bg-[#009DA9] text-white text-sm font-medium hover:bg-[#008a95] disabled:opacity-50 disabled:cursor-not-allowed">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                                </svg>
-                                Buka Link Zoom
-                            </button>
-
-                            @if (!$canJoin)
-                                <p class="mt-2 text-xs text-gray-500">
-                                    Link Zoom hanya aktif saat jadwal interview berlangsung.
-                                </p>
+                        <button type="button"
+                            @if ($canJoin)
+                            onclick="window.open('{{ $iSch->zoom_link }}', '_blank', 'noopener,noreferrer')"
+                            @else
+                            disabled
                             @endif
+                            class="px-5 h-10 mt-4 inline-flex items-center rounded-lg bg-[#009DA9] text-white text-sm font-medium hover:bg-[#008a95] disabled:opacity-50 disabled:cursor-not-allowed">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                            </svg>
+                            Buka Link Zoom
+                        </button>
+
+                        @if (!$canJoin)
+                        <p class="mt-2 text-xs text-gray-500">
+                            Link Zoom hanya aktif saat jadwal interview berlangsung.
+                        </p>
+                        @endif
                         @else
-                            <span class="text-gray-500">Belum ada link</span>
+                        <span class="text-gray-500">Belum ada link</span>
                         @endif
                     </div>
 
@@ -515,77 +523,153 @@
 
                 {{-- 1) Belum pilih: tampil tombol --}}
                 @if ($applicant->status === 'Offering')
-                    <p class="text-zinc-800 text-md mb-4">
-                        Selamat! Anda mendapatkan offering dari kami. Berikut rinciannya:
-                    </p>
+                <p class="text-zinc-800 text-md mb-4">
+                    Selamat! Anda mendapatkan offering dari kami. Berikut rinciannya:
+                </p>
 
-                    <p><strong>Bidang:</strong> {{ $offering?->field?->name ?? '-' }}</p>
-                    <p><strong>Sub Bidang:</strong> {{ $offering?->subField?->name ?? '-' }}</p>
-                    <p><strong>Jabatan:</strong> {{ $offering?->job?->name ?? '-' }}</p>
-                    <p><strong>Penempatan:</strong> {{ $offering?->placement?->name ?? '-' }}</p>
-                    <p><strong>Gaji Pokok:</strong> Rp {{ number_format((float)($offering?->gaji ?? 0), 0, ',', '.') }}</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                    {{-- KIRI: Detail Posisi --}}
+                    <div class="space-y-2">
+                        <p class="flex flex-col">
+                            <span class="text-gray-500">Bidang</span>
+                            <span class="font-medium text-zinc-900">{{ $offering?->field?->name ?? '-' }}</span>
+                        </p>
+                        <p class="flex flex-col">
+                            <span class="text-gray-500">Sub Bidang</span>
+                            <span class="font-medium text-zinc-900">{{ $offering?->subField?->name ?? '-' }}</span>
+                        </p>
+                        <p class="flex flex-col">
+                            <span class="text-gray-500">Seksi</span>
+                            <span class="font-medium text-zinc-900">{{ $offering?->placement?->name ?? '-' }}</span>
+                        </p>
+                        <p class="flex flex-col">
+                            <span class="text-gray-500">Posisi</span>
+                            <span class="font-medium text-zinc-900">{{ $offering?->job?->name ?? '-' }}</span>
+                        </p>
+                        <p class="flex flex-col">
+                            <span class="text-gray-500">Gaji Pokok</span>
+                            <span class="font-medium text-zinc-900">Rp {{ number_format((float)($offering?->gaji ?? 0), 0, ',', '.') }}</span>
+                        </p>
+                    </div>
 
-                    <br>
+                    {{-- KANAN: Dokumen & Link --}}
+                    <div class="space-y-2">
+                        <p class="flex flex-col">
+                            <span class="text-gray-500">Link PKWT</span>
+                            @if(!$applicant->isOfferingExpired)
+                            <a href="{{ $offering->link_pkwt }}" target="_blank" rel="noopener noreferrer"
+                                class="text-[#009DA9] underline inline-flex items-center gap-1 break-all">
+                                Lihat PKWT
+                                <svg xmlns="http://www.w3.org/2000/svg" class="size-4" fill="none"
+                                    viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                        d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                                </svg>
+                            </a>
+                            @else
+                            <span class="text-gray-400 cursor-not-allowed flex items-center gap-1">
+                                Lihat PKWT
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+                                </svg>
+                            </span>
+                            @endif
+                        </p>
 
-                    <p>
-                        <strong>Link PKWT:</strong> 
-                        <a href="{{ $offering->link_pkwt }}" target="_blank" rel="noopener noreferrer" style="color: #009DA9; text-decoration: underline; display: inline-flex; align-items: center; gap: 4px;">
-                            {{ $offering->link_pkwt }}
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                            </svg>
-                        </a>
-                    </p>
-                    <p>
-                        <strong>Link Berkas:</strong> 
-                        <a href="{{ $offering->link_berkas }}" target="_blank" rel="noopener noreferrer" style="color: #009DA9; text-decoration: underline; display: inline-flex; align-items: center; gap: 4px;">
-                            {{ $offering->link_berkas }}
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                            </svg>
-                        </a>
-                    </p>
-                    <p>
-                        <strong>Formulir Pelamar:</strong> 
-                        <a href="{{ $offering->link_form_pelamar }}" target="_blank" rel="noopener noreferrer" style="color: #009DA9; text-decoration: underline; display: inline-flex; align-items: center; gap: 4px;">
-                            {{ $offering->link_form_pelamar }}
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                            </svg>
-                        </a>
-                    </p>
-                    
-                    <form id="offeringForm-{{ $applicant->id }}" method="POST" action="{{ route('offering.response', $applicant->offering->id) }}">
-                        <input type="hidden" name="action" id="offeringAction-{{ $applicant->id }}">
-                    
-                        @csrf
-                        <button type="button" onclick="confirmOffering({{ $applicant->id }},'accept')"
-                            class="px-5 h-10 mt-4 inline-flex items-center rounded-lg bg-[#009DA9] text-white text-sm font-medium hover:bg-[#008a95] disabled:opacity-50 disabled:cursor-not-allowed">
-                            Terima Offering
-                        </button>
+                        <p class="flex flex-col">
+                            <span class="text-gray-500">Link Berkas</span>
+                            @if(!$applicant->isOfferingExpired)
+                            <a href="{{ $offering->link_berkas }}" target="_blank" rel="noopener noreferrer"
+                                class="text-[#009DA9] underline inline-flex items-center gap-1 break-all">
+                                Lihat Berkas
+                                <svg xmlns="http://www.w3.org/2000/svg" class="size-4" fill="none"
+                                    viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                        d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                                </svg>
+                            </a>
+                            @else
+                            <span class="text-gray-400 cursor-not-allowed flex items-center gap-1">
+                                Lihat Berkas
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+                                </svg>
+                            </span>
+                            @endif
+                        </p>
 
-                        <button type="button" onclick="confirmOffering({{ $applicant->id }}, 'decline')"
-                            class="px-4 h-10 rounded-lg border border-[#009DA9] text-[#009DA9] text-sm font-medium hover:bg-[#009DA9]/10 inline-flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                            Tolak
-                        </button>
-                    </form>
+                        <p class="flex flex-col">
+                            <span class="text-gray-500">Formulir Pelamar</span>
+                            @if(!$applicant->isOfferingExpired)
+                            <a href="{{ $offering->link_form_pelamar }}" target="_blank" rel="noopener noreferrer"
+                                class="text-[#009DA9] underline inline-flex items-center gap-1 break-all">
+                                Isi Formulir
+                                <svg xmlns="http://www.w3.org/2000/svg" class="size-4" fill="none"
+                                    viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                        d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                                </svg>
+                            </a>
+                            @else
+                            <span class="text-gray-400 cursor-not-allowed flex items-center gap-1">
+                                Isi Formulir
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+                                </svg>
+                            </span>
+                            @endif
+                        </p>
+                    </div>
+
+                </div>
+                <br>
+                @if(!$applicant->isOfferingExpired)
+                <p>
+                    <strong>Batas respon</strong> offering maksimal 5 hari kerja pada tanggal <strong>{{ $applicant->deadlineDate->translatedFormat('d F Y') }}</strong>. Jika melewati batas waktu tersebut, maka kami anggap mengundurkan diri.
+                </p>
+                @else
+                <p>
+                    <span>Saat ini Offering sudah kadaluarsa. Silakan hubungi contact person kami jika Anda memiliki pertanyaan.</span>
+                </p>
+                @endif
+
+                <form id="offeringForm-{{ $applicant->id }}" method="POST" action="{{ route('offering.response', $applicant->offering->id) }}" class="mt-4">
+                    <input type="hidden" name="action" id="offeringAction-{{ $applicant->id }}">
+                    @csrf
+                    <button type="button"
+                        onclick="confirmOffering({{ $applicant->id }},'accept')"
+                        {{ $applicant->isOfferingExpired ? 'disabled' : '' }}
+                        class="px-5 h-10 inline-flex items-center rounded-lg bg-[#009DA9] text-white text-sm font-medium hover:bg-[#008a95] 
+                        disabled:opacity-50 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors">
+                        {{ $applicant->isOfferingExpired ? 'Offering sudah kadaluarsa' : 'Terima Offering' }}
+                    </button>
+
+                    @if(!$applicant->isOfferingExpired)
+                    <button type="button"
+                        onclick="confirmOffering({{ $applicant->id }}, 'decline')"
+                        class="px-4 h-10 rounded-lg border border-[#009DA9] text-[#009DA9] text-sm font-medium hover:bg-[#009DA9]/10 inline-flex items-center gap-2">
+                        Tolak
+                    </button>
+                    @endif
+                </form>
                 @endif
 
                 {{-- 2) Sudah menerima --}}
                 @if ($applicant->status === 'Menerima Offering')
-                    <p class="text-zinc-800 text-md">
-                        Selamat! Anda telah menerima offering dari kami. Apabila terdapat pertanyaan lebih lanjut, mohon hubungi Contact Person.
-                    </p>
+                <p class="text-zinc-800 text-md">
+                    Selamat! Anda telah menerima offering dari kami. Apabila terdapat pertanyaan lebih lanjut, mohon hubungi Contact Person.
+                </p>
                 @endif
 
                 {{-- 3) Sudah menolak --}}
                 @if ($applicant->status === 'Menolak Offering')
-                    <p class="text-zinc-800 text-md">
-                        Kamu telah menolak offering. Terima kasih sudah mengikuti kesempatan ini.
-                    </p>
+                <p class="text-zinc-800 text-md">
+                    Offering telah ditolak. Terima kasih telah mengikuti proses seleksi ini.
+                </p>
                 @endif
             </section>
             @endif
+            </details>
 
             </article>
 
@@ -641,19 +725,21 @@
         });
 
         function confirmOffering(applicantId, action) {
-            const form  = document.getElementById(`offeringForm-${applicantId}`);
+            const form = document.getElementById(`offeringForm-${applicantId}`);
             const input = document.getElementById(`offeringAction-${applicantId}`);
 
             if (!form || !input) {
-                console.error('Form / input not found', { applicantId, action });
+                console.error('Form / input not found', {
+                    applicantId,
+                    action
+                });
                 return;
             }
 
             Swal.fire({
                 title: action === 'accept' ? 'Konfirmasi Offering' : 'Tolak Offering?',
-                text: action === 'accept'
-                    ? 'Pastikan Anda sudah mempelajari offering dan melengkapi semua berkas'
-                    : 'Anda akan dianggap mengundurkan diri dari proses seleksi',
+                text: action === 'accept' ?
+                    'Pastikan Anda sudah mempelajari offering dan melengkapi semua berkas' : 'Anda akan dianggap mengundurkan diri dari proses seleksi',
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonColor: action === 'accept' ? '#009DA9' : '#d33',
@@ -670,17 +756,17 @@
     </script>
 
     @push('scripts')
-        @if (session('success'))
-        <script>
-            window.addEventListener('load', () => {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Berhasil!',
-                    text: "{{ session('success') }}",
-                    confirmButtonColor: '#009DA9'
-                });
+    @if (session('success'))
+    <script>
+        window.addEventListener('load', () => {
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil!',
+                text: "{{ session('success') }}",
+                confirmButtonColor: '#009DA9'
             });
-        </script>
-        @endif
+        });
+    </script>
+    @endif
     @endpush
 </x-guest-layout>
