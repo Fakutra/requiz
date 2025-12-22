@@ -227,19 +227,12 @@
 
                 {{-- Deadline Offering --}}
                 <td class="px-3 py-2 whitespace-nowrap">
-                  @if(!$a->offering || !$a->offering->response_deadline)
-                    <span class="text-gray-400 text-sm">-</span>
-                  @elseif($a->offering->isExpired())
-                    <span class="text-red-600 text-xs font-semibold">
-                      Expired
-                    </span>
-                    <div class="text-[11px] text-gray-500">
-                      {{ $a->offering->response_deadline->format('d M Y H:i') }}
-                    </div>
-                  @else
+                  @if($a->offering && $a->offering->response_deadline)
                     <span class="text-sm text-gray-800">
                       {{ $a->offering->response_deadline->format('d M Y H:i') }}
                     </span>
+                  @else
+                    <span class="text-gray-400 text-sm">-</span>
                   @endif
                 </td>
 
@@ -318,30 +311,28 @@
           {{-- Bidang --}}
           <div>
             <label class="block text-sm">Bidang</label>
-            <select name="field_id"
-                    x-model="fieldId"
-                    @change="onFieldChange"
-                    class="border rounded w-full px-3 py-2"
-                    required>
+            <select name="field_id" class="border rounded w-full px-3 py-2" required>
               <option value="">-- Pilih Bidang --</option>
-              <template x-for="f in fields" :key="f.id">
-                <option :value="f.id" x-text="f.name"></option>
-              </template>
+              @foreach($fields as $field)
+                <option value="{{ $field->id }}"
+                  {{ optional($a->offering)->field_id == $field->id ? 'selected' : '' }}>
+                  {{ $field->name }}
+                </option>
+              @endforeach
             </select>
           </div>
 
           {{-- Sub Bidang --}}
           <div>
             <label class="block text-sm">Sub Bidang</label>
-            <select name="sub_field_id"
-                    x-model="subFieldId"
-                    @change="onSubFieldChange"
-                    class="border rounded w-full px-3 py-2"
-                    required>
+            <select name="sub_field_id" class="border rounded w-full px-3 py-2" required>
               <option value="">-- Pilih Sub Bidang --</option>
-              <template x-for="sf in filteredSubFields" :key="sf.id">
-                <option :value="sf.id" x-text="sf.name"></option>
-              </template>
+              @foreach($subfields as $sf)
+                <option value="{{ $sf->id }}"
+                  {{ optional($a->offering)->sub_field_id == $sf->id ? 'selected' : '' }}>
+                  {{ $sf->name }}
+                </option>
+              @endforeach
             </select>
           </div>
 
@@ -361,17 +352,16 @@
           {{-- Seksi --}}
           <div>
             <label class="block text-sm">Seksi</label>
-            <select name="seksi_id"
-                    x-model="seksiId"
-                    class="border rounded w-full px-3 py-2"
-                    required>
+            <select name="seksi_id" class="border rounded w-full px-3 py-2" required>
               <option value="">-- Pilih Seksi --</option>
-              <template x-for="s in filteredSeksis" :key="s.id">
-                <option :value="s.id" x-text="s.name"></option>
-              </template>
+              @foreach($seksis as $s)
+                <option value="{{ $s->id }}"
+                  {{ optional($a->offering)->seksi_id == $s->id ? 'selected' : '' }}>
+                  {{ $s->name }}
+                </option>
+              @endforeach
             </select>
           </div>
-
 
           {{-- Gaji & Tanggal --}}
           <div class="grid grid-cols-2 gap-3">

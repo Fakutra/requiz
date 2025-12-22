@@ -508,113 +508,152 @@
 
             {{-- ===== OFFERING ===== --}}
             @if (in_array($applicant->status, ['Offering', 'Menerima Offering', 'Menolak Offering']))
-            <section class="mt-6 rounded-xl border border-[#009DA9] p-4" style="background-color:#EFFEFF;">
+            <section class="mt-6 rounded-xl border border-[#009DA9] p-4 bg-[#EFFEFF]">
+
                 <h4 class="text-md font-semibold text-[#009DA9] mb-2">Offering</h4>
 
-                @php $offering = $applicant->offering; @endphp
+                @php
+                    $offering = $applicant->offering;
+                @endphp
 
-                {{-- Kalau status Offering tapi admin belum isi offering --}}
+                {{-- =========================
+                    OFFERING BELUM DIINPUT
+                ========================== --}}
                 @if ($applicant->status === 'Offering' && ! $offering)
-                    <p class="text-zinc-700 text-sm leading-relaxed">
-                        Kamu sudah masuk tahap <strong>Offering</strong>, tapi detail penawaran masih belum diinput oleh admin.
-                        Silakan cek lagi nanti ya (atau pantau email).
+                    <p class="text-zinc-700 text-sm">
+                        Kamu sudah masuk tahap <strong>Offering</strong>, namun detail penawaran
+                        masih belum diinput oleh admin.
+                        <br>Silakan cek kembali nanti.
                     </p>
                 @endif
 
-                {{-- 1) Belum pilih: tampil detail + tombol --}}
+                {{-- =========================
+                    DEADLINE
+                ========================== --}}
+                @if ($offering?->response_deadline)
+                    <p class="text-sm mb-3
+                        {{ $offering->isExpired() ? 'text-rose-600 font-semibold' : 'text-zinc-700' }}">
+                        Batas waktu respon:
+                        <strong>
+                            {{ $offering->response_deadline->translatedFormat('l, d F Y, H:i') }}
+                        </strong>
+                    </p>
+                @endif
+
+                {{-- =========================
+                    STATUS: OFFERING (BELUM RESPON)
+                ========================== --}}
                 @if ($applicant->status === 'Offering' && $offering)
-                    <p class="text-zinc-800 text-md mb-4">
-                        Selamat! Anda mendapatkan offering dari kami. Berikut rinciannya:
+
+                    <p class="text-zinc-800 mb-3">
+                        Selamat! Anda mendapatkan offering dari kami dengan detail berikut:
                     </p>
 
-                    <p><strong>Bidang:</strong> {{ $offering?->field?->name ?? '-' }}</p>
-                    <p><strong>Sub Bidang:</strong> {{ $offering?->subField?->name ?? $offering?->subfield?->name ?? '-' }}</p>
-                    <p><strong>Jabatan:</strong> {{ $offering?->job?->name ?? '-' }}</p>
-                    <p><strong>Penempatan:</strong> {{ $offering?->placement?->name ?? '-' }}</p>
-                    <p><strong>Gaji Pokok:</strong> Rp {{ number_format((float)($offering?->gaji ?? 0), 0, ',', '.') }}</p>
+                    <ul class="text-sm text-zinc-800 space-y-1">
+                        <li><strong>Bidang:</strong> {{ $offering->field?->name ?? '-' }}</li>
+                        <li><strong>Sub Bidang:</strong> {{ $offering->subfield?->name ?? '-' }}</li>
+                        <li><strong>Jabatan:</strong> {{ $offering->job?->name ?? '-' }}</li>
+                        <li>
+                            <strong>Gaji Pokok:</strong>
+                            Rp {{ number_format((float)($offering->gaji ?? 0), 0, ',', '.') }}
+                        </li>
+                    </ul>
 
-                    <br>
-
-                    {{-- Link PKWT --}}
-                    <p>
-                        <strong>Link PKWT:</strong>
-                        @if(!empty($offering?->link_pkwt))
-                            <a href="{{ $offering->link_pkwt }}" target="_blank" rel="noopener noreferrer"
-                            class="text-[#009DA9] underline inline-flex items-center gap-1">
-                                {{ $offering->link_pkwt }}
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                                </svg>
-                            </a>
-                        @else
-                            <span class="text-zinc-500">-</span>
-                        @endif
-                    </p>
-
-                    {{-- Link Berkas --}}
-                    <p>
-                        <strong>Link Berkas:</strong>
-                        @if(!empty($offering?->link_berkas))
-                            <a href="{{ $offering->link_berkas }}" target="_blank" rel="noopener noreferrer"
-                            class="text-[#009DA9] underline inline-flex items-center gap-1">
-                                {{ $offering->link_berkas }}
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                                </svg>
-                            </a>
-                        @else
-                            <span class="text-zinc-500">-</span>
-                        @endif
-                    </p>
-
-                    {{-- Link Form Pelamar --}}
-                    <p>
-                        <strong>Formulir Pelamar:</strong>
-                        @if(!empty($offering?->link_form_pelamar))
-                            <a href="{{ $offering->link_form_pelamar }}" target="_blank" rel="noopener noreferrer"
-                            class="text-[#009DA9] underline inline-flex items-center gap-1">
-                                {{ $offering->link_form_pelamar }}
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                                </svg>
-                            </a>
-                        @else
-                            <span class="text-zinc-500">-</span>
-                        @endif
-                    </p>
-
-                    <form id="offeringForm-{{ $applicant->id }}" method="POST"
-                        action="{{ route('offering.response', $offering->id) }}">
+                    {{-- ===== TOMBOL AKSI ===== --}}
+                    @if (! $offering->isExpired() && ! $offering->responded_at)
+                    <form id="offeringForm-{{ $applicant->id }}"
+                        method="POST"
+                        action="{{ route('offering.response', $offering->id) }}"
+                        class="mt-4 flex flex-wrap gap-3">
                         @csrf
                         <input type="hidden" name="action" id="offeringAction-{{ $applicant->id }}">
 
-                        <button type="button" onclick="confirmOffering({{ $applicant->id }},'accept')"
-                            class="px-5 h-10 mt-4 inline-flex items-center rounded-lg bg-[#009DA9] text-white text-sm font-medium hover:bg-[#008a95]">
+                        <button type="button"
+                                onclick="confirmOffering({{ $applicant->id }}, 'accept')"
+                                class="px-5 h-10 rounded-lg bg-[#009DA9] text-white text-sm font-medium hover:bg-[#008a95]">
                             Terima Offering
                         </button>
 
-                        <button type="button" onclick="confirmOffering({{ $applicant->id }}, 'decline')"
-                            class="px-4 h-10 rounded-lg border border-[#009DA9] text-[#009DA9] text-sm font-medium hover:bg-[#009DA9]/10 inline-flex items-center gap-2">
+                        <button type="button"
+                                onclick="confirmOffering({{ $applicant->id }}, 'decline')"
+                                class="px-4 h-10 rounded-lg border border-[#009DA9]
+                                    text-[#009DA9] text-sm font-medium hover:bg-[#009DA9]/10">
                             Tolak
                         </button>
                     </form>
+                    @endif
+
+                    {{-- ===== EXPIRED ===== --}}
+                    @if ($offering->isExpired())
+                        <div class="mt-4 rounded-lg bg-rose-50 border border-rose-200 p-3 text-sm text-rose-700">
+                            Batas waktu respon offering telah berakhir.
+                            <br>
+                            Anda dianggap <strong>menolak offering</strong>.
+                        </div>
+                    @endif
                 @endif
 
-                {{-- 2) Sudah menerima --}}
-                @if ($applicant->status === 'Menerima Offering')
-                    <p class="text-zinc-800 text-md">
-                        Selamat! Anda telah menerima offering dari kami. Apabila terdapat pertanyaan lebih lanjut, mohon hubungi Contact Person.
+                {{-- =========================
+                    STATUS: MENERIMA OFFERING
+                ========================== --}}
+                @if ($applicant->status === 'Menerima Offering' && $offering)
+
+                    <p class="text-zinc-800 mb-4">
+                        Selamat! Anda telah <strong>menerima offering</strong>.
+                        Silakan lengkapi dokumen berikut:
                     </p>
+
+                    <div class="space-y-2 text-sm">
+
+                        {{-- PKWT --}}
+                        <p>
+                            <strong>PKWT:</strong>
+                            @if($offering->link_pkwt)
+                                <a href="{{ $offering->link_pkwt }}" target="_blank"
+                                class="text-[#009DA9] underline">Buka PKWT</a>
+                            @else
+                                <span class="text-zinc-500">Belum tersedia</span>
+                            @endif
+                        </p>
+
+                        {{-- BERKAS --}}
+                        <p>
+                            <strong>Berkas:</strong>
+                            @if($offering->link_berkas)
+                                <a href="{{ $offering->link_berkas }}" target="_blank"
+                                class="text-[#009DA9] underline">Buka Berkas</a>
+                            @else
+                                <span class="text-zinc-500">Belum tersedia</span>
+                            @endif
+                        </p>
+
+                        {{-- FORM --}}
+                        <p>
+                            <strong>Formulir Pelamar:</strong>
+                            @if($offering->link_form_pelamar)
+                                <a href="{{ $offering->link_form_pelamar }}" target="_blank"
+                                class="text-[#009DA9] underline">Isi Form</a>
+                            @else
+                                <span class="text-zinc-500">Belum tersedia</span>
+                            @endif
+                        </p>
+
+                    </div>
                 @endif
 
-                {{-- 3) Sudah menolak --}}
+                {{-- =========================
+                    STATUS: MENOLAK OFFERING
+                ========================== --}}
                 @if ($applicant->status === 'Menolak Offering')
-                    <p class="text-zinc-800 text-md">
-                        Kamu telah menolak offering. Terima kasih sudah mengikuti kesempatan ini.
+                    <p class="text-zinc-800">
+                        Anda telah <strong>menolak offering</strong>.
+                        Terima kasih telah mengikuti proses seleksi ini.
                     </p>
                 @endif
+
             </section>
             @endif
+
 
             </article>
 

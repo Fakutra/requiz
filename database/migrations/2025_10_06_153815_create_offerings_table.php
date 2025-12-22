@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('applicant_id')->constrained()->onDelete('cascade');
 
-            $table->string('position')->nullable();
+            // $table->string('position')->nullable();
             $table->foreignId('field_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('sub_field_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('job_id')->nullable()->constrained()->nullOnDelete();

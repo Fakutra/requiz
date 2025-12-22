@@ -22,6 +22,8 @@ class Offering extends Model
         'link_pkwt',
         'link_berkas',
         'link_form_pelamar',
+        'response_deadline',
+        'responded_at',
     ];
 
     protected $casts = [

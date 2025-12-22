@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Applicant;
 use App\Models\TestResult;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class HistoryController extends Controller
 {
@@ -13,44 +14,60 @@ class HistoryController extends Controller
     {
         $userId = Auth::id();
 
-        // Ambil semua applicant.id milik user ini (dipakai untuk filter eager load answers)
-        $userApplicantIds = Applicant::where('user_id', $userId)->pluck('id');
-
+        // Ambil semua applicant milik user
         $applicants = Applicant::with([
                 'position.test',
-                // Jadwal Technical Test untuk posisi (urut terbaru)
                 'position.technicalSchedules' => fn ($q) => $q->orderByDesc('schedule_date'),
-                // Eager load answers milik user saja -> hemat query & data
-                'position.technicalSchedules.answers' => fn ($q) => $q->whereIn('applicant_id', $userApplicantIds),
-                // Jadwal Interview untuk posisi (urut terbaru)
                 'position.interviewSchedules' => fn ($q) => $q->orderByDesc('schedule_start'),
                 'offering',
             ])
             ->where('user_id', $userId)
             ->latest()
             ->get();
-        
+
+        /**
+         * 🔐 FALLBACK AUTO-REJECT OFFERING
+         * Kalau offering sudah expired tapi status masih "Offering"
+         */
+        $applicants->each(function ($applicant) {
+            $offering = $applicant->offering;
+
+            if (
+                $offering &&
+                $offering->isExpired() &&
+                $applicant->status === 'Offering'
+            ) {
+                DB::transaction(function () use ($offering, $applicant) {
+                    $offering->update([
+                        'responded_at' => now(),
+                    ]);
+
+                    $applicant->update([
+                        'status' => 'Menolak Offering',
+                    ]);
+                });
+            }
+        });
+
+        /**
+         * ===== STATUS TES TULIS =====
+         */
         $applicants->each(function ($applicant) {
             $test = $applicant->position?->test;
 
-            // Kalau posisinya gak punya tes tulis
             if (!$test) {
                 $applicant->hasStartedWrittenTest  = false;
                 $applicant->hasFinishedWrittenTest = false;
                 return;
             }
 
-            // Ambil test_result terbaru untuk applicant + test ini
             $latestResult = TestResult::where('applicant_id', $applicant->id)
                 ->where('test_id', $test->id)
                 ->latest('id')
                 ->first();
 
-            $hasStarted  = $latestResult && !is_null($latestResult->started_at);
-            $hasFinished = $latestResult && !is_null($latestResult->finished_at);
-
-            $applicant->hasStartedWrittenTest  = $hasStarted;
-            $applicant->hasFinishedWrittenTest = $hasFinished;
+            $applicant->hasStartedWrittenTest  = $latestResult && $latestResult->started_at;
+            $applicant->hasFinishedWrittenTest = $latestResult && $latestResult->finished_at;
         });
 
         return response()
