@@ -219,21 +219,19 @@
 
           <tbody>
             @forelse($applicants as $a)
+              @php
+                $offering = $a->offering;
+                $hasOffering = !empty($offering);
+              @endphp
               <tr>
                 <td class="px-3 py-2">
-                  @php
-                    $offering = $a->offering;
-
-                    // FINAL hanya jika TIDAK ingin diubah lagi sama sekali
-                    // (misalnya sudah masuk tahap onboarding, kontrak ditandatangani, dll)
-                    $isFinal = false;
-                  @endphp
-
                   <input type="checkbox"
                         name="ids[]"
                         value="{{ $a->id }}"
                         data-status="{{ $a->status }}"
-                        {{ $isFinal ? 'disabled' : '' }}>
+                        data-has-offering="{{ $hasOffering ? '1' : '0' }}"
+                        data-applicant-name="{{ $a->name }}"
+                        title="{{ !$hasOffering ? '⚠ Data offering belum diisi' : '' }}">
                 </td>
                 <td class="px-3 py-2 whitespace-nowrap">{{ $a->name }}</td>
                 <td class="px-3 py-2 whitespace-nowrap">{{ $a->email }}</td>
@@ -350,7 +348,8 @@
                       const modal = document.getElementById('offeringModal-{{ $a->id }}');
                       modal.classList.remove('hidden');
                       modal.querySelector('[x-data]').__x.$data.reset();
-                    ">
+                    "
+                     title="{{ $hasOffering ? 'Edit Offering' : 'Buat Offering' }}">
                   </i>
                 </td>
               </tr>  
@@ -610,6 +609,7 @@
 
     <div class="mt-4">{{ $applicants->links() }}</div>
   </div>
+
 {{-- ✅ Modal Email Offering --}}
 <div id="emailModalOffering" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
   <div class="bg-white rounded-lg shadow-lg w-full max-w-2xl p-5">
@@ -668,20 +668,23 @@
 
     {{-- Tab Terpilih --}}
     <div id="tabTerpilihOffering" class="tab-content-off hidden">
-      <form method="POST" action="{{ route('admin.applicant.seleksi.offering.sendEmail') }}" enctype="multipart/form-data">
+      <form method="POST" action="{{ route('admin.applicant.seleksi.offering.sendEmail') }}" 
+            enctype="multipart/form-data"
+            onsubmit="return validateSelectedOfferingEmail()">
         @csrf
         <input type="hidden" name="type" value="selected">
         <input type="hidden" name="ids" id="selectedIdsOffering">
 
         <div class="mb-3">
-          <label class="block text-sm font-medium">Subjek</label>
-          <input type="text" name="subject" class="border rounded w-full px-2 py-1" required>
+          <label class="block text-sm font-medium">Subjek <span class="text-red-500">*</span></label>
+          <input type="text" name="subject" class="border rounded w-full px-3 py-2" required>
         </div>
 
         <div class="mb-3">
-          <label class="block text-sm font-medium">Isi Email</label>
+          <label class="block text-sm font-medium">Isi Email <span class="text-red-500">*</span></label>
           <input id="messageSelectedOffering" type="hidden" name="message">
-          <trix-editor input="messageSelectedOffering" class="trix-content border rounded w-full"></trix-editor>
+          <trix-editor input="messageSelectedOffering" 
+                      class="trix-content border rounded w-full h-48"></trix-editor>
         </div>
 
         <div class="mb-3">
@@ -690,9 +693,15 @@
         </div>
 
         <div class="flex justify-end gap-2">
-          <button type="button" onclick="document.getElementById('emailModalOffering').classList.add('hidden')"
-                  class="px-3 py-1 border rounded">Batal</button>
-          <button type="submit" onclick="setSelectedIdsOffering()" class="px-3 py-1 rounded bg-blue-600 text-white">Kirim</button>
+          <button type="button" 
+                  onclick="document.getElementById('emailModalOffering').classList.add('hidden')"
+                  class="px-4 py-2 border rounded hover:bg-gray-50">
+            Batal
+          </button>
+          <button type="submit" 
+                  class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+            <i class="fas fa-paper-plane mr-1"></i> Kirim Email
+          </button>
         </div>
       </form>
     </div>
@@ -795,7 +804,7 @@
 <script>
   document.getElementById('useTemplateOffering')?.addEventListener('change', function() {
     const trix = document.querySelector("trix-editor[input=messageOffering]");
-    const subjectInput = document.getElementById('subjectOffering'); // ✅ tambahkan baris ini
+    const subjectInput = document.getElementById('subjectOffering');
 
     if (this.checked) {
       subjectInput.value = "INFORMASI OFFERING - PLN ICON PLUS";
@@ -840,6 +849,11 @@
       this.classList.add('border-blue-600','text-blue-600');
       document.querySelectorAll('.tab-content-off').forEach(c => c.classList.add('hidden'));
       document.getElementById(this.dataset.tab).classList.remove('hidden');
+      
+      // Update summary jika buka tab Terpilih
+      if (this.dataset.tab === 'tabTerpilihOffering') {
+        setTimeout(updateEmailSelectionSummary, 100);
+      }
     });
   });
 
@@ -970,111 +984,250 @@
       }
   }
 
-  // Confirm Modal
-    let selectedAction = null;
-
-    function getSelectedIds() {
-      return document.querySelectorAll('input[name="ids[]"]:checked');
-    }
-
-    function openConfirmModal(action) {
-      const selected = getSelectedIds();
-
-      if (selected.length === 0) {
-        alert('Pilih peserta terlebih dahulu.');
-        return;
+  // ============================================
+  // EMAIL VALIDATION FUNCTIONS
+  // ============================================
+  
+  // Function untuk validasi email di tab Terpilih
+  function validateSelectedOfferingEmail() {
+    const event = window.event || arguments.callee.caller.arguments[0];
+    let selectedIds = [];
+    let noOfferingData = [];
+    
+    // Ambil semua checkbox yang tercentang
+    document.querySelectorAll('input[name="ids[]"]:checked').forEach(cb => {
+      const hasOffering = cb.getAttribute('data-has-offering') === '1';
+      const applicantName = cb.getAttribute('data-applicant-name') || `ID: ${cb.value}`;
+      
+      if (hasOffering) {
+        selectedIds.push(cb.value);
+      } else {
+        noOfferingData.push(applicantName);
       }
-
-      selectedAction = action;
-
-      let msg = '';
-      if (action === 'accepted') {
-        msg = "Apakah Anda yakin ingin MENERIMA offering untuk peserta yang dipilih?";
-      } else if (action === 'decline') {
-        msg = "Apakah Anda yakin ingin MENOLAK offering untuk peserta yang dipilih?";
-      }
-
-      document.getElementById('confirmMessage').innerText = msg;
-      document.getElementById('confirmModal').classList.remove('hidden');
-    }
-
-    document.getElementById('confirmYesBtn')?.addEventListener('click', function () {
-      const selected = getSelectedIds();
-
-      // 🔐 pengaman tambahan
-      if (selected.length === 0) {
-        alert('Tidak ada peserta yang dipilih.');
-        return;
-      }
-
-      const form = document.getElementById('bulkActionForm');
-
-      let input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = 'bulk_action';
-      input.value = selectedAction;
-
-      form.appendChild(input);
-      form.submit();
     });
     
-    document.getElementById('confirmYesBtn')?.addEventListener('click', function () {
-      const selected = getSelectedIds();
-
-      if (selected.length === 0) {
-        alert('Tidak ada peserta yang dipilih.');
-        return;
-      }
-
-      const form = document.getElementById('bulkActionForm');
-
-      // hapus input lama jika ada
-      form.querySelectorAll('input[name="bulk_action"]').forEach(el => el.remove());
-
-      let input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = 'bulk_action';
-      input.value = selectedAction;
-
-      form.appendChild(input);
-      form.submit();
-    });
-
-  function setSelectedIdsOffering() {
-    let ids = [];
-    let hasUnfinalized = false;
-
-    document.querySelectorAll('input[name="ids[]"]:checked').forEach(cb => {
-      ids.push(cb.value);
-
-      // 🔴 RULE OFFERING
-      if (
-        cb.dataset.status !== 'Menerima Offering' &&
-        cb.dataset.status !== 'Menolak Offering'
-      ) {
-        hasUnfinalized = true;
-      }
-    });
-
-    if (!ids.length) {
-      alert("Silakan pilih peserta terlebih dahulu.");
-      event.preventDefault();
+    // CASE 1: Tidak ada yang dipilih
+    if (selectedIds.length === 0 && noOfferingData.length === 0) {
+      alert('Silakan pilih minimal 1 peserta terlebih dahulu.');
+      if (event) event.preventDefault();
       return false;
     }
-
-    if (hasUnfinalized) {
-      alert("Terdapat peserta yang belum menerima atau menolak offering.");
-      event.preventDefault();
+    
+    // CASE 2: Ada yang dipilih tapi tidak punya data offering
+    if (noOfferingData.length > 0) {
+      // Tampilkan daftar nama yang bermasalah
+      let errorMessage = '❌ TIDAK DAPAT MENGIRIM EMAIL!\n\n';
+      errorMessage += 'Pelamar berikut data Offeringnya belum diisi:\n\n';
+      
+      // Tampilkan maksimal 5 nama
+      const displayNames = noOfferingData.slice(0, 5);
+      displayNames.forEach(name => {
+        errorMessage += `• ${name}\n`;
+      });
+      
+      if (noOfferingData.length > 5) {
+        errorMessage += `• ... dan ${noOfferingData.length - 5} lainnya\n`;
+      }
+      
+      errorMessage += '\n⚠️ Silakan lengkapi data offering terlebih dahulu ';
+      errorMessage += 'melalui tombol edit (ikon pensil) di kolom Action.';
+      
+      alert(errorMessage);
+      
+      // Highlight rows yang bermasalah
+      document.querySelectorAll('input[name="ids[]"]:checked').forEach(cb => {
+        if (cb.getAttribute('data-has-offering') === '0') {
+          const row = cb.closest('tr');
+          row.classList.add('bg-red-50', 'border-l-4', 'border-l-red-500');
+          
+          // Auto-remove highlight setelah 3 detik
+          setTimeout(() => {
+            row.classList.remove('bg-red-50', 'border-l-4', 'border-l-red-500');
+          }, 3000);
+        }
+      });
+      
+      if (event) event.preventDefault();
       return false;
     }
-
-    document.getElementById('selectedIdsOffering').value = ids.join(',');
+    
+    // CASE 3: Semua valid - set hidden input value
+    document.getElementById('selectedIdsOffering').value = selectedIds.join(',');
     return true;
   }
+  
+  // Function untuk update summary di modal
+  function updateEmailSelectionSummary() {
+    const checkedBoxes = document.querySelectorAll('input[name="ids[]"]:checked');
+    const withOffering = Array.from(checkedBoxes).filter(cb => 
+      cb.getAttribute('data-has-offering') === '1'
+    );
+    const withoutOffering = Array.from(checkedBoxes).filter(cb => 
+      cb.getAttribute('data-has-offering') === '0'
+    );
+    
+    const summaryElement = document.getElementById('selectionSummary');
+    if (!summaryElement) return;
+    
+    if (checkedBoxes.length === 0) {
+      summaryElement.innerHTML = '<span class="text-gray-500">Belum ada peserta terpilih</span>';
+    } else {
+      let html = `<div class="flex flex-col gap-1">`;
+      
+      if (withOffering.length > 0) {
+        html += `<span class="text-green-600 font-medium">✅ ${withOffering.length} peserta siap dikirim email</span>`;
+      }
+      
+      if (withoutOffering.length > 0) {
+        html += `<span class="text-red-600 font-medium">❌ ${withoutOffering.length} peserta tanpa data offering</span>`;
+        html += `<span class="text-xs text-gray-600">(Tidak akan dikirimi email)</span>`;
+      }
+      
+      html += `</div>`;
+      summaryElement.innerHTML = html;
+    }
+  }
 
+  // ============================================
+  // BULK ACTION FUNCTIONS
+  // ============================================
+  
+  // Confirm Modal
+  // ============================================
+// BULK ACTION FUNCTIONS - SIMPLE ALERT VERSION
+// ============================================
+
+// Confirm Modal
+  let selectedAction = null;
+
+  function getSelectedIds() {
+    return document.querySelectorAll('input[name="ids[]"]:checked');
+  }
+
+  function openConfirmModal(action) {
+    const selected = getSelectedIds();
+
+    if (selected.length === 0) {
+      alert('Pilih peserta terlebih dahulu.');
+      return;
+    }
+
+    // ✅ CEK: Apakah ada yang tidak punya data offering?
+    let noOfferingData = [];
+    let hasInvalid = false;
+    
+    selected.forEach(cb => {
+      const hasOffering = cb.getAttribute('data-has-offering') === '1';
+      const applicantName = cb.getAttribute('data-applicant-name') || `ID: ${cb.value}`;
+      
+      if (!hasOffering) {
+        noOfferingData.push(applicantName);
+        hasInvalid = true;
+      }
+    });
+    
+    // 🔴 JIKA ADA YANG TIDAK PUNYA DATA OFFERING
+    if (hasInvalid) {
+      // Buat pesan alert
+      let errorMessage = '❌ TIDAK DAPAT MELAKUKAN AKSI!\n\n';
+      
+      if (action === 'accepted') {
+        errorMessage += 'Terdapat peserta yang belum memiliki data Offering:\n\n';
+      } else if (action === 'decline') {
+        errorMessage += 'Terdapat peserta yang belum memiliki data Offering:\n\n';
+      }
+      
+      // Tampilkan maksimal 3 nama
+      const displayNames = noOfferingData.slice(0, 3);
+      displayNames.forEach(name => {
+        errorMessage += `• ${name}\n`;
+      });
+      
+      if (noOfferingData.length > 3) {
+        errorMessage += `• ... dan ${noOfferingData.length - 3} lainnya\n`;
+      }
+      
+      errorMessage += '\n⚠️ Silakan lengkapi data offering terlebih dahulu.';
+      
+      // Tampilkan alert
+      alert(errorMessage);
+      
+      // Highlight rows yang bermasalah
+      selected.forEach(cb => {
+        if (cb.getAttribute('data-has-offering') === '0') {
+          const row = cb.closest('tr');
+          row.classList.add('bg-red-50', 'border-l-4', 'border-l-red-500');
+          
+          // Auto-remove highlight setelah 3 detik
+          setTimeout(() => {
+            row.classList.remove('bg-red-50', 'border-l-4', 'border-l-red-500');
+          }, 3000);
+        }
+      });
+      
+      return; // STOP, jangan lanjut ke modal konfirmasi
+    }
+
+    // ✅ SEMUA VALID - Lanjut ke modal konfirmasi
+    selectedAction = action;
+
+    let msg = '';
+    if (action === 'accepted') {
+      msg = "Apakah Anda yakin ingin MENERIMA offering untuk " + selected.length + " peserta yang dipilih?";
+    } else if (action === 'decline') {
+      msg = "Apakah Anda yakin ingin MENOLAK offering untuk " + selected.length + " peserta yang dipilih?";
+    }
+
+    document.getElementById('confirmMessage').innerText = msg;
+    document.getElementById('confirmModal').classList.remove('hidden');
+  }
+
+  // Event listener untuk modal konfirmasi
+  document.getElementById('confirmYesBtn')?.addEventListener('click', function () {
+    const selected = getSelectedIds();
+
+    if (selected.length === 0) {
+      alert('Tidak ada peserta yang dipilih.');
+      return;
+    }
+
+    const form = document.getElementById('bulkActionForm');
+
+    // hapus input lama jika ada
+    form.querySelectorAll('input[name="bulk_action"]').forEach(el => el.remove());
+
+    let input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'bulk_action';
+    input.value = selectedAction;
+
+    form.appendChild(input);
+    form.submit();
+  });
+  
+  // ============================================
+  // EVENT LISTENERS
+  // ============================================
+  
+  // Update summary saat checkbox berubah
+  document.addEventListener('change', function(e) {
+    if (e.target.matches('input[name="ids[]"]')) {
+      // Jika modal email terbuka, update summary
+      if (!document.getElementById('emailModalOffering').classList.contains('hidden')) {
+        updateEmailSelectionSummary();
+      }
+    }
+  });
+  
+  // Check All checkbox
   document.getElementById('checkAll')?.addEventListener('change', function () {
-    document.querySelectorAll('input[name="ids[]"]:not(:disabled)')
+    document.querySelectorAll('input[name="ids[]"]')
       .forEach(cb => cb.checked = this.checked);
+    
+    // Update summary jika modal terbuka
+    if (!document.getElementById('emailModalOffering').classList.contains('hidden')) {
+      updateEmailSelectionSummary();
+    }
   });
 </script>
 @endverbatim

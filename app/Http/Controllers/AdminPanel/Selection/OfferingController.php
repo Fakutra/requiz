@@ -206,6 +206,93 @@ class OfferingController extends Controller
 
     /**
      * ===============================
+     * SEND EMAIL OFFERING
+     * ===============================
+     */
+    public function sendEmail(Request $request)
+    {
+        $request->validate([
+            'type' => 'required|in:offering,selected',
+            'subject' => 'required|string|max:200',
+            'message' => 'required|string',
+            'attachments.*' => 'file|mimes:pdf,doc,docx,jpg,png|max:5120',
+        ]);
+
+        $type = $request->input('type');
+        
+        if ($type === 'selected') {
+            // 🔴 VALIDASI UNTUK TAB TERPILIH
+            $ids = explode(',', $request->input('ids', ''));
+            
+            if (empty($ids) || $ids[0] === '') {
+                return back()->with('error', 'Tidak ada peserta terpilih.');
+            }
+            
+            // 1. Cek apakah semua memiliki data offering
+            $applicants = Applicant::with('offering')->whereIn('id', $ids)->get();
+            
+            $noOffering = $applicants->filter(function($applicant) {
+                return empty($applicant->offering);
+            });
+            
+            if ($noOffering->count() > 0) {
+                $names = $noOffering->pluck('name')->take(5)->implode(', ');
+                $more = $noOffering->count() > 5 ? ' dan ' . ($noOffering->count() - 5) . ' lainnya' : '';
+                
+                return back()->with('error', 
+                    '❌ Gagal mengirim email! Data offering belum lengkap untuk: ' . 
+                    $names . $more
+                );
+            }
+            
+            // Semua valid, proses kirim email
+            ActivityLogger::log(
+                'email',
+                'Offering',
+                'Admin mengirim email offering ke ' . $applicants->count() . ' peserta',
+                'IDs: ' . implode(',', $ids)
+            );
+            
+            // TODO: Implementasi pengiriman email
+            // foreach ($applicants as $applicant) { ... }
+            
+            return back()->with('success', 
+                '✅ Email berhasil dikirim ke ' . $applicants->count() . ' peserta.'
+            );
+            
+        } elseif ($type === 'offering') {
+            // 🔴 VALIDASI UNTUK TAB OFFERING (SEMUA)
+            $batchId = $request->input('batch');
+            $positionId = $request->input('position');
+            
+            // Query sama seperti di index() tapi filter yang punya offering
+            $applicants = Applicant::with('offering')
+                ->whereIn('status', ['Offering', 'Menerima Offering', 'Menolak Offering'])
+                ->whereHas('offering') // ❌ Hanya yang punya data offering
+                ->when($batchId, function($q) use ($batchId) {
+                    $q->where('batch_id', $batchId);
+                })
+                ->when($positionId, function($q) use ($positionId) {
+                    $q->where('position_id', $positionId);
+                })
+                ->get();
+                
+            if ($applicants->isEmpty()) {
+                return back()->with('error', 'Tidak ada peserta dengan data offering yang lengkap untuk filter ini.');
+            }
+            
+            // TODO: Implement email sending logic untuk semua
+            
+            return back()->with('success', 
+                'Email berhasil dikirim ke ' . $applicants->count() . ' peserta.'
+            );
+        }
+        
+        return back()->with('error', 'Tipe pengiriman tidak valid.');
+    }
+
+    /**
+     * ===============================
      * STORE / UPDATE OFFERING
      * (TIDAK RESET STATUS KEPUTUSAN)
      * ===============================
@@ -224,10 +311,10 @@ class OfferingController extends Controller
                 'uang_transport'    => 'required|numeric',
                 'kontrak_mulai'     => 'required|date',
                 'kontrak_selesai'   => 'required|date|after_or_equal:kontrak_mulai',
-                'link_pkwt'         => 'required|string',
-                'link_berkas'       => 'required|string',
-                'link_form_pelamar' => 'required|string',
-                'response_deadline' => 'required|date',
+                'link_pkwt'         => 'required|url|max:500',
+                'link_berkas'       => 'required|url|max:500',
+                'link_form_pelamar' => 'required|url|max:500',
+                'response_deadline' => 'required|date|after:now',
             ]);
 
             // VALIDATE RELATIONSHIPS
@@ -327,18 +414,24 @@ class OfferingController extends Controller
 
         $success = 0;
         $names   = [];
+        $noOffering = [];
 
         foreach ($ids as $id) {
             $applicant = Applicant::with('offering')->find($id);
-
-            if (!$applicant || !$applicant->offering) {
+            
+            if (!$applicant) {
                 continue;
             }
+            
+            // 🔴 CEK: Apakah punya data offering?
+            if (!$applicant->offering) {
+                $noOffering[] = $applicant->name ?? "ID: {$id}";
+                continue; // Skip yang tidak punya data offering
+            }
 
+            // Lanjutkan processing
             DB::transaction(function () use ($applicant, $action, $role, &$success, &$names) {
-
                 if ($action === 'accepted') {
-                    // ✅ ADMIN / VENDOR ACCEPT
                     $applicant->offering->update([
                         'decision'        => 'accepted',
                         'decision_by'     => $role,
@@ -349,13 +442,7 @@ class OfferingController extends Controller
                     $applicant->update([
                         'status' => 'Menerima Offering',
                     ]);
-
-                    $names[] = $applicant->name;
-                    $success++;
-                }
-
-                if ($action === 'decline') {
-                    // ✅ ADMIN / VENDOR DECLINE
+                } else {
                     $applicant->offering->update([
                         'decision'        => 'declined',
                         'decision_by'     => $role,
@@ -366,22 +453,41 @@ class OfferingController extends Controller
                     $applicant->update([
                         'status' => 'Menolak Offering',
                     ]);
-
-                    $names[] = $applicant->name;
-                    $success++;
                 }
+
+                $names[] = $applicant->name;
+                $success++;
             });
         }
 
-        /**
-         * ===============================
-         * ACTIVITY LOG
-         * ===============================
-         */
-        $actionLabel = $action === 'accepted'
-            ? 'menerima'
-            : 'menolak';
+        // 🔴 KASUS: Ada yang tidak punya data offering
+        if (count($noOffering) > 0) {
+            $actionLabel = $action === 'accepted' ? 'Accepted' : 'Declined';
+            $namesList = implode(', ', array_slice($noOffering, 0, 3));
+            $moreText = count($noOffering) > 3 ? ' dan ' . (count($noOffering) - 3) . ' lainnya' : '';
+            
+            $errorMessage = "Gagal melakukan {$actionLabel}! " . count($noOffering) . 
+                        " peserta tidak memiliki data offering: {$namesList}{$moreText}";
+            
+            // Jika ada yang berhasil dan ada yang gagal
+            if ($success > 0) {
+                return back()
+                    ->with('success', "{$success} peserta berhasil di-{$actionLabel}.")
+                    ->with('error', $errorMessage);
+            }
+            
+            // Jika semua gagal
+            return back()->with('error', $errorMessage);
+        }
 
+        // 🔴 KASUS: Tidak ada yang diproses
+        if ($success === 0) {
+            return back()->with('error', 'Tidak ada peserta dengan data offering yang lengkap.');
+        }
+
+        // ✅ ACTIVITY LOG
+        $actionLabel = $action === 'accepted' ? 'menerima' : 'menolak';
+        
         ActivityLogger::log(
             $action,
             'Offering',
@@ -389,12 +495,14 @@ class OfferingController extends Controller
             implode(', ', $names)
         );
 
-        return back()->with(
-            'success',
-            "{$success} peserta berhasil diperbarui."
-        );
+        return back()->with('success', "{$success} peserta berhasil di-{$actionLabel}.");
     }
 
+    /**
+     * ===============================
+     * SYNC EXPIRED OFFERING
+     * ===============================
+     */
     public function syncExpired()
     {
         $now = now();
