@@ -171,9 +171,10 @@
                   @endphp
 
                   <input type="checkbox"
-                        name="ids[]"
-                        value="{{ $a->id }}"
-                        {{ $isLocked ? 'disabled' : '' }}>
+                    name="ids[]"
+                    value="{{ $a->id }}"
+                    data-status="{{ $a->status }}"
+                    {{ $isLocked ? 'disabled' : '' }}>
                 </td>
 
                 <td class="px-3 py-2 whitespace-nowrap">{{ $a->name ?? '-' }}</td>
@@ -587,7 +588,11 @@
           <div class="flex justify-end gap-2">
             <button type="button" onclick="document.getElementById('emailModal').classList.add('hidden')"
                     class="px-3 py-1 border rounded">Batal</button>
-            <button type="submit" onclick="setSelectedIds()" class="px-3 py-1 rounded bg-blue-600 text-white">Kirim</button>
+            <button type="submit"
+              onclick="setSelectedIds(event)"
+              class="px-3 py-1 rounded bg-blue-600 text-white">
+              Kirim
+            </button>
           </div>
         </form>
       </div>
@@ -635,14 +640,30 @@
       }
     });
 
-    function setSelectedIds() {
+    function setSelectedIds(event) {
       let ids = [];
-      document.querySelectorAll('input[name="ids[]"]:checked').forEach(cb => ids.push(cb.value));
+      let hasUnprocessed = false;
+
+      document.querySelectorAll('input[name="ids[]"]:checked').forEach(cb => {
+        ids.push(cb.value);
+
+        if (cb.dataset.status === 'Seleksi Administrasi') {
+          hasUnprocessed = true;
+        }
+      });
+
       if (ids.length === 0) {
         alert("Silakan pilih peserta terlebih dahulu.");
         event.preventDefault();
         return false;
       }
+
+      if (hasUnprocessed) {
+        alert("Terdapat peserta yang belum diloloskan atau digagalkan.");
+        event.preventDefault();
+        return false;
+      }
+
       document.getElementById('selectedIds').value = ids.join(',');
     }
 

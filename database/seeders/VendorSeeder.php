@@ -15,7 +15,7 @@ class VendorSeeder extends Seeder
     {
         DB::table('vendors')->insert([
             [
-                'id' => 1,
+                // 'id' => 1,
                 'nama_vendor' => 'DPP',
                 'nomor_telepon' => '082123456789',
                 'alamat' => 'Jl. DPP',
@@ -24,7 +24,7 @@ class VendorSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
-                'id' => 2,
+                // 'id' => 2,
                 'nama_vendor' => 'MUST',
                 'nomor_telepon' => '082123456789',
                 'alamat' => 'Jl. MUST',

@@ -28,7 +28,7 @@ class OfferingResponseController extends Controller
         abort_unless($applicant->user_id === Auth::id(), 403);
 
         // ==========================
-        // GUARD: SUDAH DIRESPON
+        // GUARD: SUDAH FINAL
         // ==========================
         if ($offering->responded_at) {
             return redirect()
@@ -38,12 +38,15 @@ class OfferingResponseController extends Controller
 
         // ==========================
         // GUARD: OFFERING EXPIRED
-        // (sinkron dengan HistoryController)
         // ==========================
         if ($offering->response_deadline && now()->greaterThan($offering->response_deadline)) {
+
             DB::transaction(function () use ($offering, $applicant) {
                 $offering->update([
-                    'responded_at' => now(), // ✅ CATAT
+                    'decision'        => 'declined',
+                    'decision_by'     => 'system',
+                    'decision_reason' => 'expired',
+                    'responded_at'    => now(),
                 ]);
 
                 $applicant->update([
@@ -61,13 +64,17 @@ class OfferingResponseController extends Controller
         // ==========================
         DB::transaction(function () use ($request, $offering, $applicant) {
 
-            // 🔴 INI YANG HILANG SEBELUMNYA
+            $isAccept = $request->action === 'accept';
+
             $offering->update([
-                'responded_at' => now(), // ✅ TERISI
+                'decision'        => $isAccept ? 'accepted' : 'declined',
+                'decision_by'     => 'user',
+                'decision_reason' => 'manual',
+                'responded_at'    => now(),
             ]);
 
             $applicant->update([
-                'status' => $request->action === 'accept'
+                'status' => $isAccept
                     ? 'Menerima Offering'
                     : 'Menolak Offering',
             ]);

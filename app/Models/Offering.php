@@ -24,6 +24,9 @@ class Offering extends Model
         'link_form_pelamar',
         'response_deadline',
         'responded_at',
+        'decision',
+        'decision_by',
+        'decision_reason',
     ];
 
     protected $casts = [

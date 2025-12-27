@@ -15,21 +15,21 @@ class SubFieldsSeeder extends Seeder
     {
         DB::table('sub_fields')->insert([
             [
-                'id' => 1,
+                // 'id' => 1,
                 'field_id' => 1,
                 'name' => 'Penyediaan Data dan Support Aplikasi',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
-                'id' => 2,
+                // 'id' => 2,
                 'field_id' => 2,
                 'name' => 'Sub Bidang A',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
-                'id' => 3,
+                // 'id' => 3,
                 'field_id' => 3,
                 'name' => 'Sub Bidang B',
                 'created_at' => now(),

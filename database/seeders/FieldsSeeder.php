@@ -15,19 +15,19 @@ class FieldsSeeder extends Seeder
     {
         DB::table('fields')->insert([
             [
-                'id' => 1,
+                // 'id' => 1,
                 'name' => 'Pengelolaan Layanan PLN',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
-                'id' => 2,
+                // 'id' => 2,
                 'name' => 'Bidang A',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
-                'id' => 3,
+                // 'id' => 3,
                 'name' => 'Bidang B',
                 'created_at' => now(),
                 'updated_at' => now(),

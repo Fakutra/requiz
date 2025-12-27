@@ -203,6 +203,7 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('/export', [OfferingController::class, 'export'])->name('export');
                 Route::post('/bulk-mark', [OfferingController::class, 'bulkMark'])->name('bulkMark');
                 Route::post('/send-email', [OfferingEmailController::class, 'send'])->name('sendEmail');
+                Route::post('/sync-expired', [OfferingController::class, 'syncExpired'])->name('sync-expired');
             });
 
             // Aksi generik: mark lolos/tidak

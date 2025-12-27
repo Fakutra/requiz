@@ -13,9 +13,9 @@ class SubField extends Model
         return $this->belongsTo(Field::class);
     }
 
-    public function seksi()
+    public function seksis()
     {
-        return $this->hasMany(Seksi::class);
+        return $this->hasMany(Seksi::class, 'sub_field_id');
     }
 
     public function offerings()

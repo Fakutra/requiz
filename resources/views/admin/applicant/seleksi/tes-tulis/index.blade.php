@@ -212,9 +212,10 @@
                   @endphp
 
                   <input type="checkbox"
-                        name="ids[]"
-                        value="{{ $a->id }}"
-                        {{ $isLocked ? 'disabled' : '' }}>
+                    name="ids[]"
+                    value="{{ $a->id }}"
+                    data-status="{{ $a->status }}"
+                    {{ $isLocked ? 'disabled' : '' }}>
                 </td>
 
                 {{-- NAMA pakai kolom applicants --}}
@@ -884,11 +885,25 @@
     // Set selected IDs untuk tab "Terpilih"
     function setSelectedIds() {
       let ids = [];
-      document.querySelectorAll('input[name="ids[]"]:checked')
-        .forEach(cb => ids.push(cb.value));
+      let hasUnprocessed = false;
 
-      if (ids.length === 0) { 
-        alert("Silakan pilih peserta terlebih dahulu."); 
+      document.querySelectorAll('input[name="ids[]"]:checked')
+        .forEach(cb => {
+          ids.push(cb.value);
+
+          // 🔴 RULE TES TULIS
+          if (cb.dataset.status === 'Tes Tulis') {
+            hasUnprocessed = true;
+          }
+        });
+
+      if (ids.length === 0) {
+        alert("Silakan pilih peserta terlebih dahulu.");
+        return false;
+      }
+
+      if (hasUnprocessed) {
+        alert("Terdapat peserta yang belum diloloskan atau digagalkan.");
         return false;
       }
 

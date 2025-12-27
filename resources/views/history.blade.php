@@ -639,18 +639,21 @@
                         @endif
                     </div>
 
-
                     <br>
 
+                    {{-- ✅ PERBAIKAN: Tampilkan deadline dari response_deadline --}}
                     @if ($applicant->status === 'Offering')
                         @if(!$applicant->isOfferingExpired)
                         <p>
-                            <strong>Batas respon offering</strong>  {{ $offering->response_deadline->translatedFormat('l, d F Y, H:i') }}.<br>
+                            <strong>Batas respon offering:</strong>  
+                            {{ $offering->response_deadline->translatedFormat('l, d F Y, H:i') }} (WIB).<br>
                             Jika melewati batas waktu tersebut, maka kami anggap Menolak Offering.
                         </p>
                         @else
-                        <p>
-                            <span>Saat ini Offering sudah kadaluarsa. Silakan hubungi contact person kami jika Anda memiliki pertanyaan.</span>
+                        <p class="text-red-600 font-medium">
+                            <i class="fas fa-exclamation-triangle mr-1"></i>
+                            Offering sudah kadaluarsa sejak 
+                            {{ $offering->response_deadline->translatedFormat('l, d F Y, H:i') }} (WIB).
                         </p>
                         @endif
                     @endif
@@ -668,7 +671,7 @@
                             onclick="confirmOffering({{ $applicant->id }},'accept')"
                             {{ $applicant->isOfferingExpired ? 'disabled' : '' }}
                             class="px-5 h-10 inline-flex items-center rounded-lg bg-[#009DA9] text-white text-sm font-medium hover:bg-[#008a95]
-                            disabled:opacity-50 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors">
+                            {{ $applicant->isOfferingExpired ? 'opacity-50 bg-gray-400 cursor-not-allowed' : '' }} transition-colors">
                             {{ $applicant->isOfferingExpired ? 'Offering sudah kadaluarsa' : 'Terima Offering' }}
                         </button>
 
@@ -691,20 +694,24 @@
 
                     {{-- STATUS: MENOLAK OFFERING --}}
                     @if ($applicant->status === 'Menolak Offering')
+                        @php
+                            $isExpiredDecline =
+                                $applicant->offering
+                                && $applicant->offering->decision === 'declined'
+                                && $applicant->offering->decision_reason === 'expired';
+                        @endphp
 
-                        {{-- MENOLAK KARENA EXPIRED --}}
-                        @if ($applicant->isOfferingExpired)
-                        <p class="text-zinc-800 text-md">
-                            Sudah melewatkan batas waktu respon offering, kami anggap anda Menolak Offering. Terima kasih telah mengikuti proses seleksi ini.
-                        </p>
-
-                        {{-- MENOLAK MANUAL --}}
+                        @if ($isExpiredDecline)
+                            <p class="text-zinc-800 text-md">
+                                Anda tidak memberikan respon hingga batas waktu yang ditentukan,
+                                sehingga offering ini otomatis dianggap ditolak.
+                            </p>
                         @else
-                        <p class="text-zinc-800 text-md">
-                            Anda telah menolak offering dari kami. Terima kasih telah mengikuti proses seleksi ini.
-                        </p>
+                            <p class="text-zinc-800 text-md">
+                                Offering ini telah ditolak.
+                                Terima kasih telah mengikuti proses seleksi ini.
+                            </p>
                         @endif
-
                     @endif
 
                     @else

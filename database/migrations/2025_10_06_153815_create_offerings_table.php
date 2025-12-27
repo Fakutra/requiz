@@ -10,31 +10,54 @@ return new class extends Migration
     {
         Schema::create('offerings', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('applicant_id')->constrained()->onDelete('cascade');
 
-            // $table->string('position')->nullable();
+            $table->foreignId('applicant_id')
+                ->constrained()
+                ->onDelete('cascade');
+
+            // RELASI STRUKTURAL
             $table->foreignId('field_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('sub_field_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('job_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('seksi_id')->nullable()->constrained('seksi')->nullOnDelete();
 
+            // KOMPENSASI
             $table->decimal('gaji', 12, 2)->nullable();
             $table->decimal('uang_makan', 12, 2)->nullable();
             $table->decimal('uang_transport', 12, 2)->nullable();
 
+            // KONTRAK
             $table->date('kontrak_mulai')->nullable();
             $table->date('kontrak_selesai')->nullable();
 
+            // LINK DOKUMEN
             $table->string('link_pkwt')->nullable();
             $table->string('link_berkas')->nullable();
             $table->string('link_form_pelamar')->nullable();
 
-            $table->dateTime('response_deadline')->nullable()->after('kontrak_selesai');
-            $table->dateTime('responded_at')->nullable()->after('response_deadline');
+            // DEADLINE & RESPONSE
+            $table->dateTime('response_deadline')->nullable();
+            $table->dateTime('responded_at')->nullable();
+
+            /**
+             * =========================
+             * METADATA KEPUTUSAN OFFERING
+             * =========================
+             */
+            $table->enum('decision', ['accepted', 'declined'])
+                ->nullable()
+                ->comment('Keputusan akhir offering');
+
+            $table->enum('decision_by', ['user', 'admin', 'vendor', 'system'])
+                ->nullable()
+                ->comment('Siapa yang mengambil keputusan');
+
+            $table->string('decision_reason')
+                ->nullable()
+                ->comment('Alasan keputusan: manual, expired, revoked, legacy, dll');
 
             $table->timestamps();
         });
-
     }
 
     public function down(): void

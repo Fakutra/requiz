@@ -178,6 +178,7 @@
                   <input type="checkbox"
                         name="ids[]"
                         value="{{ $a->id }}"
+                        data-status="{{ $a->status }}"
                         {{ $isLocked ? 'disabled' : '' }}>
                 </td>
 
@@ -643,11 +644,27 @@
     // Selected IDs (tab Terpilih)
     function setSelectedIds() {
       let ids = [];
-      document.querySelectorAll('input[name="ids[]"]:checked').forEach(cb => ids.push(cb.value));
+      let hasUnprocessed = false;
+
+      document.querySelectorAll('input[name="ids[]"]:checked').forEach(cb => {
+        ids.push(cb.value);
+
+        // 🔴 RULE TECHNICAL TEST
+        if (cb.dataset.status === 'Technical Test') {
+          hasUnprocessed = true;
+        }
+      });
+
       if (ids.length === 0) {
         alert("Silakan pilih peserta terlebih dahulu.");
         return false;
       }
+
+      if (hasUnprocessed) {
+        alert("Terdapat peserta yang belum diloloskan atau digagalkan.");
+        return false;
+      }
+
       document.getElementById('selectedIds').value = ids.join(',');
       return true;
     }

@@ -240,6 +240,19 @@ class AdministrasiController extends Controller
             $ids = array_filter(array_map('trim', explode(',', $data['ids'])));
             $applicants = Applicant::whereIn('id', $ids)->get();
 
+            // 🔴 TAMBAHAN VALIDASI (INTI PERUBAHAN)
+            $hasUnprocessed = $applicants->contains(fn ($a) =>
+                $a->status === 'Seleksi Administrasi'
+            );
+
+            if ($hasUnprocessed) {
+                return back()->with(
+                    'error',
+                    'Terdapat peserta yang belum diloloskan atau digagalkan.'
+                );
+            }
+
+            // ✅ KODE LAMA TETAP BERJALAN
             ActivityLogger::log(
                 'send_email',
                 'Seleksi Administrasi',
@@ -247,7 +260,10 @@ class AdministrasiController extends Controller
                 implode(',', $ids)
             );
 
-            return back()->with('success', 'Email terkirim ke '.count($applicants).' peserta terpilih.');
+            return back()->with(
+                'success',
+                'Email terkirim ke '.count($applicants).' peserta terpilih.'
+            );
         } catch (Throwable $e) {
             report($e);
 
@@ -258,7 +274,10 @@ class AdministrasiController extends Controller
                 $e->getMessage()
             );
 
-            return back()->with('error', 'Gagal mengirim email. Coba lagi, atau cek log server.');
+            return back()->with(
+                'error',
+                'Gagal mengirim email. Coba lagi, atau cek log server.'
+            );
         }
     }
 }

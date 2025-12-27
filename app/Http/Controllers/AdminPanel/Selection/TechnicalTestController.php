@@ -124,34 +124,43 @@ class TechnicalTestController extends Controller
         $failedNames = [];
 
         foreach ($data['ids'] as $id) {
-            $a = Applicant::find($id);
-            if (!$a) {
-                $failed++;
-                $failedNames[] = "#{$id}";
-                continue;
-            }
-
-            // 🔒 FINAL LOCK (SAMA DENGAN ADMIN & TES TULIS)
-            $finalTechStatuses = [
-                'Interview',
-                'Offering',
-                'Menerima Offering',
-                'Tidak Lolos Technical Test',
-                'Tidak Lolos Interview',
-                'Menolak Offering',
-            ];
-
-            $emailLocked = $a->latestEmailLog
-                && $a->latestEmailLog->stage === $this->stage
-                && $a->latestEmailLog->success;
-
-            if (in_array($a->status, $finalTechStatuses, true) && $emailLocked) {
-                $failed++;
-                $failedNames[] = $a->name . ' (sudah final & email terkirim)';
-                continue;
-            }
-
             try {
+                $a = Applicant::with('latestEmailLog')->find($id);
+
+                if (!$a) {
+                    $failed++;
+                    $failedNames[] = "#{$id}";
+                    continue;
+                }
+
+                // 🔴 RULE BARU: hanya boleh proses jika masih Technical Test
+                if ($a->status !== 'Technical Test') {
+                    $failed++;
+                    $failedNames[] = $a->name . ' (status bukan Technical Test)';
+                    continue;
+                }
+
+                // 🔒 FINAL LOCK
+                $finalTechStatuses = [
+                    'Interview',
+                    'Offering',
+                    'Menerima Offering',
+                    'Tidak Lolos Technical Test',
+                    'Tidak Lolos Interview',
+                    'Menolak Offering',
+                ];
+
+                $emailLocked = $a->latestEmailLog
+                    && $a->latestEmailLog->stage === $this->stage
+                    && $a->latestEmailLog->success;
+
+                if (in_array($a->status, $finalTechStatuses, true) && $emailLocked) {
+                    $failed++;
+                    $failedNames[] = $a->name . ' (sudah final & email terkirim)';
+                    continue;
+                }
+
+                // ✅ FLOW LAMA (AMAN)
                 $newStatus = $data['bulk_action'] === 'lolos'
                     ? 'Interview'
                     : 'Tidak Lolos Technical Test';
@@ -173,17 +182,17 @@ class TechnicalTestController extends Controller
             } catch (Throwable $e) {
                 report($e);
                 $failed++;
-                $failedNames[] = $a->name;
+                $failedNames[] = $a->name ?? "#{$id}";
             }
         }
 
         $resp = back();
 
-        if ($success) {
+        if ($success > 0) {
             $resp = $resp->with('success', "{$success} peserta berhasil diproses.");
         }
 
-        if ($failed) {
+        if ($failed > 0) {
             $resp = $resp->with(
                 'error',
                 "Ada {$failed} peserta gagal diproses: ".implode(', ', array_slice($failedNames, 0, 10))

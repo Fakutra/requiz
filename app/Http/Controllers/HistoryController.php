@@ -22,39 +22,49 @@ class HistoryController extends Controller
         $applicants = Applicant::with([
             'position.test',
 
-            // Jadwal Technical Test untuk posisi (urut terbaru)
             'position.technicalSchedules' => fn ($q) =>
                 $q->orderByDesc('schedule_date'),
 
-            // 🔐 Ambil jawaban technical test HANYA milik user
             'position.technicalSchedules.answers' => fn ($q) =>
                 $q->whereIn('applicant_id', $userApplicantIds),
 
-            // Jadwal Interview untuk posisi (urut terbaru)
             'position.interviewSchedules' => fn ($q) =>
                 $q->orderByDesc('schedule_start'),
 
             'offering',
+            'offering.field',
+            'offering.subfield',
+            'offering.job',
+            'offering.seksi',
         ])
             ->where('user_id', $userId)
             ->latest()
             ->get();
 
         /**
-         * 🔐 FALLBACK AUTO-REJECT OFFERING
-         * Kalau offering sudah expired tapi status masih "Offering"
+         * 🔐 AUTO-REJECT OFFERING (SYSTEM)
+         * HANYA JIKA:
+         * - offering ada
+         * - BELUM ADA keputusan
+         * - deadline terlewati
+         * - status masih Offering
          */
         $applicants->each(function ($applicant) {
             $offering = $applicant->offering;
 
             if (
                 $offering &&
-                $offering->isExpired() &&
+                is_null($offering->decision) && // ✅ lebih aman
+                $offering->response_deadline &&
+                now()->greaterThan($offering->response_deadline) &&
                 $applicant->status === 'Offering'
             ) {
                 DB::transaction(function () use ($offering, $applicant) {
                     $offering->update([
-                        'responded_at' => now(),
+                        'decision'         => 'declined',
+                        'decision_by'      => 'system',
+                        'decision_reason'  => 'expired',
+                        'responded_at'     => now(),
                     ]);
 
                     $applicant->update([
@@ -65,7 +75,7 @@ class HistoryController extends Controller
         });
 
         /**
-         * ===== STATUS TES TULIS =====
+         * ===== STATUS TES TULIS & OFFERING EXPIRED CHECK =====
          */
         $applicants->each(function ($applicant) {
             $test = $applicant->position?->test;
@@ -73,37 +83,28 @@ class HistoryController extends Controller
             if (!$test) {
                 $applicant->hasStartedWrittenTest  = false;
                 $applicant->hasFinishedWrittenTest = false;
-                return;
+            } else {
+                $latestResult = TestResult::where('applicant_id', $applicant->id)
+                    ->where('test_id', $test->id)
+                    ->latest('id')
+                    ->first();
+
+                $applicant->hasStartedWrittenTest  = $latestResult && $latestResult->started_at;
+                $applicant->hasFinishedWrittenTest = $latestResult && $latestResult->finished_at;
             }
 
-            $latestResult = TestResult::where('applicant_id', $applicant->id)
-                ->where('test_id', $test->id)
-                ->latest('id')
-                ->first();
-
-            $applicant->hasStartedWrittenTest  = $latestResult && $latestResult->started_at;
-            $applicant->hasFinishedWrittenTest = $latestResult && $latestResult->finished_at;
-            $hasStarted  = $latestResult && !is_null($latestResult->started_at);
-            $hasFinished = $latestResult && !is_null($latestResult->finished_at);
-
-            // $applicant->hasStartedWrittenTest  = $hasStarted;
-            // $applicant->hasFinishedWrittenTest = $hasFinished;
-
-
-            // Set default
+            // ✅ PERBAIKAN: Gunakan response_deadline langsung dari database
             $applicant->isOfferingExpired = false;
-
+            
             if ($applicant->offering) {
-                // Ambil waktu dibuatnya offering
-                $createdAt = $applicant->offering->created_at;
-
-                // 2. Tentukan Deadline (Tambah 5 hari kerja)
-                // Menggunakan addWeekdays(5) secara otomatis melompati Sabtu & Minggu
-                $applicant->deadlineDate = $createdAt->copy()->addWeekdays(5)->endOfDay();
-
-                // 3. Tentukan apakah sudah expired
-                // Cukup bandingkan waktu sekarang dengan deadlineDate
-                $applicant->isOfferingExpired = now()->greaterThan($applicant->deadlineDate);
+                // Ambil deadline langsung dari response_deadline
+                $applicant->deadlineDate = $applicant->offering->response_deadline;
+                
+                // Tentukan apakah expired
+                $applicant->isOfferingExpired = 
+                    $applicant->deadlineDate && 
+                    now()->greaterThan($applicant->deadlineDate) &&
+                    $applicant->status === 'Offering';
             }
         });
 
