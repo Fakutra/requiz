@@ -245,6 +245,18 @@ class TesTulisController extends Controller
                     continue;
                 }
 
+                // 🔴 VALIDASI BARU: Untuk action LOLOS, cek apakah memiliki nilai
+                if ($data['bulk_action'] === 'lolos') {
+                    // Cek melalui final_total_score yang sudah dihitung di index()
+                    $testResult = $a->latestTestResult;
+                    
+                    if (!$testResult || is_null($testResult->score)) {
+                        $failed++;
+                        $failedNames[] = $a->name . ' (belum memiliki nilai)';
+                        continue;
+                    }
+                }
+
                 // 🔴 RULE BARU: hanya boleh diproses jika masih Tes Tulis
                 if ($a->status !== 'Tes Tulis') {
                     $failed++;
@@ -252,6 +264,7 @@ class TesTulisController extends Controller
                     continue;
                 }
 
+                // 🔒 FINAL LOCK (existing code)
                 $finalTesTulisStatuses = [
                     'Technical Test',
                     'Interview',
@@ -267,7 +280,6 @@ class TesTulisController extends Controller
                     && $a->latestEmailLog->stage === $this->stage
                     && $a->latestEmailLog->success;
 
-                // 🔒 FINAL LOCK (tetap dipertahankan)
                 if (in_array($a->status, $finalTesTulisStatuses, true) && $emailLocked) {
                     $failed++;
                     $failedNames[] = $a->name . ' (sudah final & email terkirim)';

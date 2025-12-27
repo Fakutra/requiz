@@ -287,7 +287,7 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                         <div>
-                            <div class="text-zinc-600">Dijadwalkan pada</div>
+                            <div class="text-zinc-600">Dijadwalkan pada:</div>
                             <div class="font-medium text-zinc-900">
                                 {{ $techSched->schedule_date?->translatedFormat('l, d F Y, H:i') ?? '—' }}
                             </div>
@@ -301,10 +301,20 @@
                         </div>
 
                         <div>
-                            <div class="text-zinc-600">Batas Upload</div>
+                            <div class="text-zinc-600">Batas Upload:</div>
                             <div class="font-medium {{ ($techSched->upload_deadline && $now->gt($techSched->upload_deadline)) ? 'text-rose-600' : 'text-zinc-900' }}">
                                 {{ $techSched->upload_deadline?->translatedFormat('l, d F Y, H:i') ?? '—' }}
                             </div>
+
+                            {{-- ✅ TAMBAHKAN KETERANGAN/NOTE DI SINI --}}
+                            @if($techSched->keterangan)
+                            <div class="mt-2">
+                                <div class="text-zinc-600">Keterangan:</div>
+                                <div class="font-medium text-zinc-900 mt-1">
+                                    {{ $techSched->keterangan }}
+                                </div>
+                            </div>
+                            @endif
                         </div>
 
                         @if (!empty($techSched->module_url) || !empty($techSched->module_path))
@@ -388,7 +398,7 @@
                                 @csrf
                                 <input type="hidden" name="applicant_id" value="{{ $applicant->id }}">
                                 <div>
-                                    <label class="block text-sm font-medium text-zinc-700">File Jawaban (PDF)</label>
+                                    <label class="block text-sm font-medium text-zinc-700">File Jawaban</label>
                                     <input type="file" name="answer_pdf" accept="application/pdf" required
                                         class="mt-1 block w-full text-sm rounded-lg border border-zinc-300 p-2">
                                     <p class="mt-1 text-xs text-zinc-500">Maks 1MB. Format PDF.</p>

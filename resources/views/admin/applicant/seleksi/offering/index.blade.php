@@ -249,15 +249,49 @@
                             && $a->offering
                             && $a->offering->decision === 'declined'
                             && $a->offering->decision_reason === 'expired';
+                        
+                        $status = $a->status ?? '-';
+                        $badgeClass = 'px-2 py-1 text-xs rounded ';
+                        
+                        // Warna berdasarkan status offering
+                        if ($status === 'Menerima Offering') {
+                            $badgeClass .= 'bg-[#69FFA0] text-[#2C6C44]'; // Hijau
+                        } elseif ($status === 'Menolak Offering') {
+                            if ($isExpiredDecline) {
+                                $badgeClass .= 'bg-red-100 text-red-800 border border-red-300'; // Merah khusus expired
+                            } else {
+                                $badgeClass .= 'bg-[#FFDDDD] text-[#FF2525]'; // Merah regular
+                            }
+                        } elseif ($status === 'Offering') {
+                            $badgeClass .= 'bg-yellow-100 text-yellow-700'; // Kuning
+                        } else {
+                            // Untuk status lainnya, gunakan logika existing
+                            $isLolos = \Illuminate\Support\Str::startsWith($status, 'Lolos');
+                            $isTidak = \Illuminate\Support\Str::startsWith($status, 'Tidak Lolos');
+                            
+                            if ($isLolos) {
+                                $badgeClass .= 'bg-[#69FFA0] text-[#2C6C44]';
+                            } elseif ($isTidak) {
+                                $badgeClass .= 'bg-[#FFDDDD] text-[#FF2525]';
+                            } else {
+                                $badgeClass .= 'bg-gray-100 text-gray-700'; // Default
+                            }
+                        }
                     @endphp
 
                     @if ($isExpiredDecline)
-                        <span class="text-gray-900">
-                            Menolak Offering
-                            <span class="text-red-600 font-medium">(Expired)</span>
-                        </span>
+                        <div class="inline-flex flex-col">
+                            <span class="{{ $badgeClass }} mb-1">
+                                Menolak Offering
+                            </span>
+                            <span class="text-xs text-red-600 font-medium bg-red-50 px-2 py-1 rounded border border-red-200">
+                                <i class="fas fa-clock mr-1"></i> Expired
+                            </span>
+                        </div>
                     @else
-                        {{ $a->status ?? '-' }}
+                        <span class="{{ $badgeClass }}">
+                            {{ $status }}
+                        </span>
                     @endif
                 </td>
 

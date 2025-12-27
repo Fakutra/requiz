@@ -12,7 +12,10 @@ class RekapController extends Controller
 {
     public function index(Request $request)
     {
-        $batches = Batch::orderBy('id')->get();
+        // 🔹 URUTKAN DARI BATCH TERBARU KE TERLAMA (DESCENDING)
+        $batches = Batch::orderBy('id', 'desc')->get();
+        
+        // 🔹 DEFAULT: Ambil batch terbaru (pertama dalam list descending)
         $currentBatchId = $request->query('batch') ?: ($batches->first()->id ?? null);
 
         // 🔹 default kosong biar view nggak error

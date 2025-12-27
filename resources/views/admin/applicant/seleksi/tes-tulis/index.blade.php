@@ -209,12 +209,16 @@
                         && $a->latestEmailLog->success;
 
                     $isLocked = in_array($a->status, $finalTesTulisStatuses, true) && $emailLocked;
+                    
+                    // ✅ TAMBAH: Cek apakah peserta memiliki minimal 1 nilai
+                    $hasAnyScore = isset($a->final_total_score) && $a->final_total_score !== null;
                   @endphp
 
                   <input type="checkbox"
                     name="ids[]"
                     value="{{ $a->id }}"
                     data-status="{{ $a->status }}"
+                    data-has-score="{{ $hasAnyScore ? '1' : '0' }}" {{-- ✅ ATRIBUT BARU --}}
                     {{ $isLocked ? 'disabled' : '' }}>
                 </td>
 
@@ -882,20 +886,25 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/trix/2.0.8/trix.min.css"/>
 
   <script>
-    // Set selected IDs untuk tab "Terpilih"
+    // Fungsi untuk tab Terpilih di modal email
     function setSelectedIds() {
       let ids = [];
       let hasUnprocessed = false;
+      let hasNoScore = false; // ✅ TAMBAH VARIABLE BARU
 
-      document.querySelectorAll('input[name="ids[]"]:checked')
-        .forEach(cb => {
-          ids.push(cb.value);
+      document.querySelectorAll('input[name="ids[]"]:checked').forEach(cb => {
+        ids.push(cb.value);
 
-          // 🔴 RULE TES TULIS
-          if (cb.dataset.status === 'Tes Tulis') {
-            hasUnprocessed = true;
-          }
-        });
+        // 🔴 RULE TES TULIS
+        if (cb.dataset.status === 'Tes Tulis') {
+          hasUnprocessed = true;
+        }
+
+        // ✅ VALIDASI TAMBAHAN: Cek apakah memiliki nilai
+        if (cb.dataset.hasScore === '0') {
+          hasNoScore = true;
+        }
+      });
 
       if (ids.length === 0) {
         alert("Silakan pilih peserta terlebih dahulu.");
@@ -904,6 +913,12 @@
 
       if (hasUnprocessed) {
         alert("Terdapat peserta yang belum diloloskan atau digagalkan.");
+        return false;
+      }
+
+      // 🔴 TAMBAH VALIDASI: Untuk email terpilih
+      if (hasNoScore) {
+        alert("Terdapat peserta yang belum memiliki nilai.");
         return false;
       }
 
@@ -932,12 +947,14 @@
     // Modal Konfirmasi (bulk action)
     let selectedAction = null;
 
+    // Fungsi helper untuk mendapatkan checkbox yang tercentang
     function getSelectedIds() {
       return document.querySelectorAll('input[name="ids[]"]:checked');
     }
 
+    // Fungsi untuk membuka modal konfirmasi dengan validasi baru
     function openConfirmModal(action) {
-      const selected = document.querySelectorAll('input[name="ids[]"]:checked');
+      const selected = getSelectedIds();
 
       // 🚫 TIDAK ADA YANG DICENTANG
       if (selected.length === 0) {
@@ -945,13 +962,38 @@
         return;
       }
 
-      // ⛔ cegah kalau ada checkbox disabled ikut kepilih (defensive)
+      // ⛔ Cek jika ada checkbox disabled ikut kepilih
       if ([...selected].some(cb => cb.disabled)) {
         alert('Ada peserta yang sudah final dan tidak bisa diproses ulang.');
         return;
       }
 
-      // ✅ lanjut normal
+      // 🔴 VALIDASI BARU: Untuk tombol LOLOS, cek apakah semua yang dipilih memiliki minimal 1 nilai
+      if (action === 'lolos') {
+        const unscoredParticipants = [];
+        
+        selected.forEach(cb => {
+          if (cb.dataset.hasScore === '0') { // 0 = belum memiliki nilai sama sekali
+            const row = cb.closest('tr');
+            const nameCell = row.querySelector('td:nth-child(2)'); // Kolom nama
+            if (nameCell) {
+              unscoredParticipants.push(nameCell.textContent.trim());
+            }
+          }
+        });
+
+        if (unscoredParticipants.length > 0) {
+          let message = 'Terdapat peserta yang belum memiliki nilai:\n\n';
+          unscoredParticipants.forEach((name, index) => {
+            message += `${index + 1}. ${name}\n`;
+          });
+          message += '\nHarap berikan nilai terlebih dahulu sebelum meloloskan.';
+          alert(message);
+          return;
+        }
+      }
+
+      // ✅ SEMUA VALIDASI BERHASIL
       selectedAction = action;
 
       const msg = action === 'lolos'

@@ -133,6 +133,19 @@ class TechnicalTestController extends Controller
                     continue;
                 }
 
+                // 🔴 VALIDASI BARU: Untuk action LOLOS, cek apakah sudah dinilai
+                if ($data['bulk_action'] === 'lolos') {
+                    $latestAnswer = TechnicalTestAnswer::where('applicant_id', $id)
+                        ->orderBy('submitted_at', 'desc')
+                        ->first();
+                    
+                    if (!$latestAnswer || is_null($latestAnswer->score)) {
+                        $failed++;
+                        $failedNames[] = $a->name . ' (belum dinilai)';
+                        continue;
+                    }
+                }
+
                 // 🔴 RULE BARU: hanya boleh proses jika masih Technical Test
                 if ($a->status !== 'Technical Test') {
                     $failed++;
