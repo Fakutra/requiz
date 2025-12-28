@@ -12,13 +12,13 @@ class JobSeeder extends Seeder
         DB::table('jobs')->insert([
             [
                 'id' => 1,
-                'name' => 'Technical Support',
+                'name' => 'Junior Technical Support',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
                 'id' => 2,
-                'name' => 'Technical Writer',
+                'name' => 'Junior Technical Writer',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],

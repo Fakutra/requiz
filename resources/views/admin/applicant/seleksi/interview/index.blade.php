@@ -222,6 +222,7 @@
                     type="checkbox"
                     name="ids[]"
                     value="{{ $a->id }}"
+                    data-status="{{ $a->status }}"
                     data-has-score="{{ $a->interview_final !== null ? '1' : '0' }}"
                     data-potential-admins='@json($a->potential_admins)'
                     {{ $isLocked ? 'disabled' : '' }}>
@@ -827,12 +828,29 @@
     // Set selected IDs for "Terpilih" (safe)
     function setSelectedIdsInterview(evt) {
       let ids = [];
-      document.querySelectorAll('input[name="ids[]"]:checked').forEach(cb => ids.push(cb.value));
+      let hasUnprocessed = false;
+
+      document.querySelectorAll('input[name="ids[]"]:checked').forEach(cb => {
+        ids.push(cb.value);
+
+        // 🔴 RULE INTERVIEW
+        if (cb.dataset.status === 'Interview') {
+          hasUnprocessed = true;
+        }
+      });
+
       if (ids.length === 0) {
         alert("Silakan pilih peserta terlebih dahulu.");
-        if (evt && typeof evt.preventDefault === 'function') evt.preventDefault();
+        evt?.preventDefault();
         return false;
       }
+
+      if (hasUnprocessed) {
+        alert("Terdapat peserta yang belum diloloskan atau digagalkan.");
+        evt?.preventDefault();
+        return false;
+      }
+
       const target = $('selectedIdsInterview');
       if (target) target.value = ids.join(',');
       return true;

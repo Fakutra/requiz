@@ -12,7 +12,7 @@ class Seksi extends Model
 
     public function subField()
     {
-        return $this->belongsTo(SubField::class);
+        return $this->belongsTo(SubField::class, 'sub_field_id');
     }
 
     public function offerings()

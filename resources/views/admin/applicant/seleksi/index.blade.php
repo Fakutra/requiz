@@ -1,12 +1,19 @@
 <x-app-admin>
-  {{-- Header --}}
   <div class="bg-white rounded-lg shadow-sm border p-4 mb-5">
     <div class="grid grid-cols-3 items-center">
       <div class="flex items-center gap-2">
         <span class="text-sm font-semibold text-gray-700 tracking-wide">BATCH :</span>
         <select id="batchSelect" class="h-8 text-sm border rounded px-2 w-24">
           @foreach ($batches as $b)
-            @php $label = is_numeric($b->name ?? null) ? $b->name : ($loop->iteration); @endphp
+            @php 
+              // 🔹 Tampilkan batch number atau nama
+              // Jika batch punya field 'number', gunakan itu
+              // Jika tidak, gunakan id
+              $label = $b->number ?? $b->id;
+              
+              // 🔹 Debug: Pastikan urutan benar
+              // {{-- dd($batches) --}} // (hapus komentar untuk debug)
+            @endphp
             <option value="{{ $b->id }}" {{ (string)$currentBatchId === (string)$b->id ? 'selected' : '' }}>
               {{ $label }}
             </option>

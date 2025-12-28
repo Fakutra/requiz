@@ -287,7 +287,7 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                         <div>
-                            <div class="text-zinc-600">Dijadwalkan pada</div>
+                            <div class="text-zinc-600">Dijadwalkan pada:</div>
                             <div class="font-medium text-zinc-900">
                                 {{ $techSched->schedule_date?->translatedFormat('l, d F Y, H:i') ?? '—' }}
                             </div>
@@ -301,10 +301,20 @@
                         </div>
 
                         <div>
-                            <div class="text-zinc-600">Batas Upload</div>
+                            <div class="text-zinc-600">Batas Upload:</div>
                             <div class="font-medium {{ ($techSched->upload_deadline && $now->gt($techSched->upload_deadline)) ? 'text-rose-600' : 'text-zinc-900' }}">
                                 {{ $techSched->upload_deadline?->translatedFormat('l, d F Y, H:i') ?? '—' }}
                             </div>
+
+                            {{-- ✅ TAMBAHKAN KETERANGAN/NOTE DI SINI --}}
+                            @if($techSched->keterangan)
+                            <div class="mt-2">
+                                <div class="text-zinc-600">Keterangan:</div>
+                                <div class="font-medium text-zinc-900 mt-1">
+                                    {{ $techSched->keterangan }}
+                                </div>
+                            </div>
+                            @endif
                         </div>
 
                         @if (!empty($techSched->module_url) || !empty($techSched->module_path))
@@ -388,7 +398,7 @@
                                 @csrf
                                 <input type="hidden" name="applicant_id" value="{{ $applicant->id }}">
                                 <div>
-                                    <label class="block text-sm font-medium text-zinc-700">File Jawaban (PDF)</label>
+                                    <label class="block text-sm font-medium text-zinc-700">File Jawaban</label>
                                     <input type="file" name="answer_pdf" accept="application/pdf" required
                                         class="mt-1 block w-full text-sm rounded-lg border border-zinc-300 p-2">
                                     <p class="mt-1 text-xs text-zinc-500">Maks 1MB. Format PDF.</p>
@@ -514,162 +524,217 @@
             </section>
             @endif
 
-            {{-- ===== OFFERING ===== --}}
-            @if (in_array($applicant->status, ['Offering', 'Menerima Offering', 'Menolak Offering']))
-            <section class="mt-6 rounded-xl border border-[#009DA9] p-4" style="background-color:#EFFEFF;">
-                <h4 class="text-md font-semibold text-[#009DA9] mb-2">Offering</h4>
+                {{-- ===== OFFERING ===== --}}
+                @if (in_array($applicant->status, ['Offering', 'Menerima Offering', 'Menolak Offering']))
+                <section class="mt-6 rounded-xl border border-[#009DA9] p-4 bg-[#EFFEFF]">
 
-                @php $offering = $applicant->offering; @endphp
+                    <h4 class="text-md font-semibold text-[#009DA9] mb-2">Offering</h4>
 
-                {{-- 1) Belum pilih: tampil tombol --}}
-                @if ($applicant->status === 'Offering')
-                <p class="text-zinc-800 text-md mb-4">
-                    Selamat! Anda mendapatkan offering dari kami. Berikut rinciannya:
-                </p>
+                    @php
+                        $offering = $applicant->offering;
+                    @endphp
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-                    {{-- KIRI: Detail Posisi --}}
-                    <div class="space-y-2">
-                        <p class="flex flex-col">
-                            <span class="text-gray-500">Bidang</span>
-                            <span class="font-medium text-zinc-900">{{ $offering?->field?->name ?? '-' }}</span>
-                        </p>
-                        <p class="flex flex-col">
-                            <span class="text-gray-500">Sub Bidang</span>
-                            <span class="font-medium text-zinc-900">{{ $offering?->subField?->name ?? '-' }}</span>
-                        </p>
-                        <p class="flex flex-col">
-                            <span class="text-gray-500">Seksi</span>
-                            <span class="font-medium text-zinc-900">{{ $offering?->placement?->name ?? '-' }}</span>
-                        </p>
-                        <p class="flex flex-col">
-                            <span class="text-gray-500">Posisi</span>
-                            <span class="font-medium text-zinc-900">{{ $offering?->job?->name ?? '-' }}</span>
-                        </p>
-                        <p class="flex flex-col">
-                            <span class="text-gray-500">Gaji Pokok</span>
-                            <span class="font-medium text-zinc-900">Rp {{ number_format((float)($offering?->gaji ?? 0), 0, ',', '.') }}</span>
-                        </p>
-                    </div>
+                    {{-- GUARD: offering belum ada --}}
+                    @if ($offering)
+                    @php
+                        $canAccessAcceptedOfferingDocs =
+                            $applicant->status === 'Menerima Offering'
+                            && $offering;
+                    @endphp
 
-                    {{-- KANAN: Dokumen & Link --}}
-                    <div class="space-y-2">
-                        <p class="flex flex-col">
-                            <span class="text-gray-500">Link PKWT</span>
-                            @if(!$applicant->isOfferingExpired)
-                            <a href="{{ $offering->link_pkwt }}" target="_blank" rel="noopener noreferrer"
-                                class="text-[#009DA9] underline inline-flex items-center gap-1 break-all">
-                                Lihat PKWT
-                                <svg xmlns="http://www.w3.org/2000/svg" class="size-4" fill="none"
-                                    viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                        d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                                </svg>
-                            </a>
-                            @else
-                            <span class="text-gray-400 cursor-not-allowed flex items-center gap-1">
-                                Lihat PKWT
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
-                                </svg>
-                            </span>
-                            @endif
-                        </p>
-
-                        <p class="flex flex-col">
-                            <span class="text-gray-500">Link Berkas</span>
-                            @if(!$applicant->isOfferingExpired)
-                            <a href="{{ $offering->link_berkas }}" target="_blank" rel="noopener noreferrer"
-                                class="text-[#009DA9] underline inline-flex items-center gap-1 break-all">
-                                Lihat Berkas
-                                <svg xmlns="http://www.w3.org/2000/svg" class="size-4" fill="none"
-                                    viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                        d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                                </svg>
-                            </a>
-                            @else
-                            <span class="text-gray-400 cursor-not-allowed flex items-center gap-1">
-                                Lihat Berkas
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
-                                </svg>
-                            </span>
-                            @endif
-                        </p>
-
-                        <p class="flex flex-col">
-                            <span class="text-gray-500">Formulir Pelamar</span>
-                            @if(!$applicant->isOfferingExpired)
-                            <a href="{{ $offering->link_form_pelamar }}" target="_blank" rel="noopener noreferrer"
-                                class="text-[#009DA9] underline inline-flex items-center gap-1 break-all">
-                                Isi Formulir
-                                <svg xmlns="http://www.w3.org/2000/svg" class="size-4" fill="none"
-                                    viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                        d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                                </svg>
-                            </a>
-                            @else
-                            <span class="text-gray-400 cursor-not-allowed flex items-center gap-1">
-                                Isi Formulir
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
-                                </svg>
-                            </span>
-                            @endif
-                        </p>
-                    </div>
-
-                </div>
-                <br>
-                @if(!$applicant->isOfferingExpired)
-                <p>
-                    <strong>Batas respon</strong> offering maksimal 5 hari kerja pada tanggal <strong>{{ $applicant->deadlineDate?->translatedFormat('d F Y') ?? 'Belum ada jadwal' }}</strong>. Jika melewati batas waktu tersebut, maka kami anggap mengundurkan diri.
-                </p>
-                @else
-                <p>
-                    <span>Saat ini Offering sudah kadaluarsa. Silakan hubungi contact person kami jika Anda memiliki pertanyaan.</span>
-                </p>
-                @endif
-
-                <form id="offeringForm-{{ $applicant->id }}" method="POST" action="{{ route('offering.response', $applicant->offering->id) }}" class="mt-4">
-                    <input type="hidden" name="action" id="offeringAction-{{ $applicant->id }}">
-                    @csrf
-                    <button type="button"
-                        onclick="confirmOffering({{ $applicant->id }},'accept')"
-                        {{ $applicant->isOfferingExpired ? 'disabled' : '' }}
-                        class="px-5 h-10 inline-flex items-center rounded-lg bg-[#009DA9] text-white text-sm font-medium hover:bg-[#008a95] 
-                        disabled:opacity-50 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors">
-                        {{ $applicant->isOfferingExpired ? 'Offering sudah kadaluarsa' : 'Terima Offering' }}
-                    </button>
-
-                    @if(!$applicant->isOfferingExpired)
-                    <button type="button"
-                        onclick="confirmOffering({{ $applicant->id }}, 'decline')"
-                        class="px-4 h-10 rounded-lg border border-[#009DA9] text-[#009DA9] text-sm font-medium hover:bg-[#009DA9]/10 inline-flex items-center gap-2">
-                        Tolak
-                    </button>
+                    {{-- TEXT STATUS OFFERING --}}
+                    @if ($applicant->status === 'Offering')
+                    <p class="text-zinc-800 text-md mb-4">
+                        Selamat! Anda mendapatkan offering dari kami. Berikut rinciannya:
+                    </p>
                     @endif
-                </form>
+
+                    {{-- GRID DETAIL (SELALU TAMPIL UNTUK OFFERING & MENERIMA OFFERING) --}}
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
+                        {{-- KIRI --}}
+                        <div class="space-y-2">
+                            <p class="flex flex-col">
+                                <span class="text-gray-500">Bidang</span>
+                                <span class="font-medium text-zinc-900">{{ $offering?->field?->name ?? '-' }}</span>
+                            </p>
+                            <p class="flex flex-col">
+                                <span class="text-gray-500">Sub Bidang</span>
+                                <span class="font-medium text-zinc-900">{{ $offering?->subField?->name ?? '-' }}</span>
+                            </p>
+                            <p class="flex flex-col">
+                                <span class="text-gray-500">Seksi</span>
+                                <span class="font-medium text-zinc-900">{{ $offering?->seksi?->name ?? '-' }}</span>
+                            </p>
+                            <p class="flex flex-col">
+                                <span class="text-gray-500">Posisi</span>
+                                <span class="font-medium text-zinc-900">{{ $offering?->job?->name ?? '-' }}</span>
+                            </p>
+                        </div>
+
+                        {{-- TENGAH --}}
+                        <div class="space-y-2">
+                            <p class="flex flex-col">
+                                <span class="text-gray-500">Gaji Pokok</span>
+                                <span class="font-medium text-zinc-900">
+                                    Rp {{ number_format((float)($offering?->gaji ?? 0), 0, ',', '.') }}
+                                </span>
+                            </p>
+                            <p class="flex flex-col">
+                                <span class="text-gray-500">Uang Makan</span>
+                                <span class="font-medium text-zinc-900">
+                                    Rp {{ number_format((float)($offering?->uang_makan ?? 0), 0, ',', '.') }}
+                                </span>
+                            </p>
+                            <p class="flex flex-col">
+                                <span class="text-gray-500">Uang Transport</span>
+                                <span class="font-medium text-zinc-900">
+                                    Rp {{ number_format((float)($offering?->uang_transport ?? 0), 0, ',', '.') }}
+                                </span>
+                            </p>
+                            <p class="flex flex-col">
+                                <span class="text-gray-500">Periode Kontrak</span>
+                                <span class="font-medium text-zinc-900">
+                                    {{ $offering?->kontrak_mulai?->translatedFormat('d F Y') ?? '-' }}
+                                    —
+                                    {{ $offering?->kontrak_selesai?->translatedFormat('d F Y') ?? '-' }}
+                                </span>
+                            </p>
+                        </div>
+
+                        {{-- KANAN --}}
+                        @if ($applicant->status === 'Menerima Offering')
+                        <div class="space-y-2">
+                            <p class="flex flex-col">
+                                <span class="text-gray-500">Link PKWT</span>
+                                @if($offering?->link_pkwt)
+                                <a href="{{ $offering->link_pkwt }}" target="_blank" rel="noopener noreferrer"
+                                    class="text-[#009DA9] underline inline-flex items-center gap-1 break-all">
+                                    Lihat PKWT
+                                </a>
+                                @else
+                                <span class="text-gray-400 cursor-not-allowed flex items-center gap-1">
+                                    Lihat PKWT
+                                </span>
+                                @endif
+                            </p>
+
+                            <p class="flex flex-col">
+                                <span class="text-gray-500">Link Berkas</span>
+                                @if($offering?->link_berkas)
+                                <a href="{{ $offering->link_berkas }}" target="_blank" rel="noopener noreferrer"
+                                    class="text-[#009DA9] underline inline-flex items-center gap-1 break-all">
+                                    Lihat Berkas
+                                </a>
+                                @else
+                                <span class="text-gray-400 cursor-not-allowed flex items-center gap-1">
+                                    Lihat Berkas
+                                </span>
+                                @endif
+                            </p>
+
+                            <p class="flex flex-col">
+                                <span class="text-gray-500">Formulir Pelamar</span>
+                                @if($offering?->link_form_pelamar)
+                                <a href="{{ $offering->link_form_pelamar }}" target="_blank" rel="noopener noreferrer"
+                                    class="text-[#009DA9] underline inline-flex items-center gap-1 break-all">
+                                    Isi Formulir
+                                </a>
+                                @else
+                                <span class="text-gray-400 cursor-not-allowed flex items-center gap-1">
+                                    Isi Formulir
+                                </span>
+                                @endif
+                            </p>
+                        </div>
+                        @endif
+                    </div>
+
+                    <br>
+
+                    {{-- ✅ PERBAIKAN: Tampilkan deadline dari response_deadline --}}
+                    @if ($applicant->status === 'Offering')
+                        @if(!$applicant->isOfferingExpired)
+                        <p>
+                            <strong>Batas respon offering:</strong>  
+                            {{ $offering->response_deadline->translatedFormat('l, d F Y, H:i') }} (WIB).<br>
+                            Jika melewati batas waktu tersebut, maka kami anggap Menolak Offering.
+                        </p>
+                        @else
+                        <p class="text-red-600 font-medium">
+                            <i class="fas fa-exclamation-triangle mr-1"></i>
+                            Offering sudah kadaluarsa sejak 
+                            {{ $offering->response_deadline->translatedFormat('l, d F Y, H:i') }} (WIB).
+                        </p>
+                        @endif
+                    @endif
+
+                    {{-- FORM HANYA SAAT OFFERING --}}
+                    @if ($applicant->status === 'Offering')
+                    <form id="offeringForm-{{ $applicant->id }}"
+                        method="POST"
+                        action="{{ route('offering.response', $offering->id) }}"
+                        class="mt-4">
+                        @csrf
+                        <input type="hidden" name="action" id="offeringAction-{{ $applicant->id }}">
+
+                        <button type="button"
+                            onclick="confirmOffering({{ $applicant->id }},'accept')"
+                            {{ $applicant->isOfferingExpired ? 'disabled' : '' }}
+                            class="px-5 h-10 inline-flex items-center rounded-lg bg-[#009DA9] text-white text-sm font-medium hover:bg-[#008a95]
+                            {{ $applicant->isOfferingExpired ? 'opacity-50 bg-gray-400 cursor-not-allowed' : '' }} transition-colors">
+                            {{ $applicant->isOfferingExpired ? 'Offering sudah kadaluarsa' : 'Terima Offering' }}
+                        </button>
+
+                        @if(!$applicant->isOfferingExpired)
+                        <button type="button"
+                            onclick="confirmOffering({{ $applicant->id }}, 'decline')"
+                            class="px-4 h-10 rounded-lg border border-[#009DA9] text-[#009DA9] text-sm font-medium hover:bg-[#009DA9]/10 inline-flex items-center gap-2">
+                            Tolak
+                        </button>
+                        @endif
+                    </form>
+                    @endif
+
+                    {{-- 2) Sudah menerima --}}
+                    @if ($applicant->status === 'Menerima Offering')
+                    <p class="text-zinc-800 text-md mt-4">
+                        Selamat! Anda telah menerima offering dari kami. Apabila terdapat pertanyaan lebih lanjut, mohon hubungi Contact Person.
+                    </p>
+                    @endif
+
+                    {{-- STATUS: MENOLAK OFFERING --}}
+                    @if ($applicant->status === 'Menolak Offering')
+                        @php
+                            $isExpiredDecline =
+                                $applicant->offering
+                                && $applicant->offering->decision === 'declined'
+                                && $applicant->offering->decision_reason === 'expired';
+                        @endphp
+
+                        @if ($isExpiredDecline)
+                            <p class="text-zinc-800 text-md">
+                                Anda tidak memberikan respon hingga batas waktu yang ditentukan,
+                                sehingga offering ini otomatis dianggap ditolak.
+                            </p>
+                        @else
+                            <p class="text-zinc-800 text-md">
+                                Offering ini telah ditolak.
+                                Terima kasih telah mengikuti proses seleksi ini.
+                            </p>
+                        @endif
+                    @endif
+
+                    @else
+                    <p class="text-zinc-800 text-md">
+                        Data offering belum tersedia. Silakan menunggu informasi selanjutnya.
+                    </p>
+                    @endif
+
+                </section>
                 @endif
 
-                {{-- 2) Sudah menerima --}}
-                @if ($applicant->status === 'Menerima Offering')
-                <p class="text-zinc-800 text-md">
-                    Selamat! Anda telah menerima offering dari kami. Apabila terdapat pertanyaan lebih lanjut, mohon hubungi Contact Person.
-                </p>
-                @endif
-
-                {{-- 3) Sudah menolak --}}
-                @if ($applicant->status === 'Menolak Offering')
-                <p class="text-zinc-800 text-md">
-                    Offering telah ditolak. Terima kasih telah mengikuti proses seleksi ini.
-                </p>
-                @endif
-            </section>
-            @endif
             </details>
+
 
             </article>
 

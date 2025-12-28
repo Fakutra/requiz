@@ -12,7 +12,7 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        $schedule->command('offering:auto-reject')->hourly();
+        $schedule->command('offering:auto-reject')->everyMinute();
     }
 
     protected $commands = [

@@ -237,7 +237,34 @@ class TesTulisController extends Controller
             $a = null;
 
             try {
-                $a = Applicant::find($id);
+                $a = Applicant::with('latestEmailLog')->find($id);
+
+                if (!$a) {
+                    $failed++;
+                    $failedNames[] = "#{$id}";
+                    continue;
+                }
+
+                // 🔴 VALIDASI BARU: Untuk action LOLOS, cek apakah memiliki nilai
+                if ($data['bulk_action'] === 'lolos') {
+                    // Cek melalui final_total_score yang sudah dihitung di index()
+                    $testResult = $a->latestTestResult;
+                    
+                    if (!$testResult || is_null($testResult->score)) {
+                        $failed++;
+                        $failedNames[] = $a->name . ' (belum memiliki nilai)';
+                        continue;
+                    }
+                }
+
+                // 🔴 RULE BARU: hanya boleh diproses jika masih Tes Tulis
+                if ($a->status !== 'Tes Tulis') {
+                    $failed++;
+                    $failedNames[] = $a->name . ' (status bukan Tes Tulis)';
+                    continue;
+                }
+
+                // 🔒 FINAL LOCK (existing code)
                 $finalTesTulisStatuses = [
                     'Technical Test',
                     'Interview',
@@ -247,24 +274,19 @@ class TesTulisController extends Controller
                     'Tidak Lolos Technical Test',
                     'Tidak Lolos Interview',
                     'Menolak Offering',
-                    ];
+                ];
 
-                    $emailLocked = $a->latestEmailLog
-                        && $a->latestEmailLog->stage === $this->stage
-                        && $a->latestEmailLog->success;
+                $emailLocked = $a->latestEmailLog
+                    && $a->latestEmailLog->stage === $this->stage
+                    && $a->latestEmailLog->success;
 
-                    if (in_array($a->status, $finalTesTulisStatuses, true) && $emailLocked) {
-                        $failed++;
-                        $failedNames[] = $a->name . ' (sudah final & email terkirim)';
-                        continue;
-                    }
-
-                if (!$a) {
+                if (in_array($a->status, $finalTesTulisStatuses, true) && $emailLocked) {
                     $failed++;
-                    $failedNames[] = "#{$id}";
+                    $failedNames[] = $a->name . ' (sudah final & email terkirim)';
                     continue;
                 }
 
+                // ✅ FLOW LAMA (TIDAK DIUBAH)
                 SelectionLogger::write($a, $this->stage, $data['bulk_action'], Auth::id());
 
                 $newStatus = $this->newStatus($data['bulk_action'], (string) $a->status);
@@ -289,11 +311,12 @@ class TesTulisController extends Controller
                 ActivityLogger::log(
                     'error',
                     'Tes Tulis',
-                    (Auth::user()?->name ?? 'System')." GAGAL memproses peserta ".($a->name ?? "#{$id}")." (bulk_action={$data['bulk_action']})",
+                    (Auth::user()?->name ?? 'System')
+                    . " GAGAL memproses peserta "
+                    . ($a->name ?? "#{$id}")
+                    . " (bulk_action={$data['bulk_action']})",
                     $e->getMessage()
                 );
-
-                continue;
             }
         }
 
@@ -306,11 +329,17 @@ class TesTulisController extends Controller
         if ($failed > 0) {
             $names = implode(', ', array_slice($failedNames, 0, 10));
             $suffix = count($failedNames) > 10 ? ' (dan lainnya)' : '';
-            $resp = $resp->with('error', "Ada {$failed} peserta yang gagal diproses: {$names}{$suffix}. Coba ulang / cek log ya.");
+            $resp = $resp->with(
+                'error',
+                "Ada {$failed} peserta yang gagal diproses: {$names}{$suffix}."
+            );
         }
 
         if ($success === 0 && $failed > 0) {
-            $resp = $resp->with('error', "Semua proses gagal. Total gagal: {$failed}. Cek log server untuk detailnya.");
+            $resp = $resp->with(
+                'error',
+                "Semua proses gagal. Total gagal: {$failed}. Cek log server untuk detailnya."
+            );
         }
 
         return $resp;

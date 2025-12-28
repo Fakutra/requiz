@@ -14,14 +14,14 @@ class OfferingApplicantsExport implements FromCollection, WithHeadings
     protected $batchId;
     protected $positionId;
     protected $search;
-    protected $jurusan;
+    protected $status; // Ganti jurusan menjadi status
 
-    public function __construct($batchId, $positionId, $search, $jurusan)
+    public function __construct($batchId, $positionId, $search, $status)
     {
         $this->batchId    = $batchId;
         $this->positionId = $positionId;
         $this->search     = $search;
-        $this->jurusan    = $jurusan;
+        $this->status     = $status; // Ganti jurusan menjadi status
     }
 
     public function collection()
@@ -44,17 +44,31 @@ class OfferingApplicantsExport implements FromCollection, WithHeadings
             $q->where('position_id', $this->positionId);
         }
 
-        if ($this->jurusan) {
-            $needle = "%".mb_strtolower($this->jurusan)."%";
-            $q->whereRaw('LOWER(jurusan) LIKE ?', [$needle]);
+        if ($this->status) {
+            $q->where('status', $this->status); // Filter berdasarkan status
         }
 
+        // 🔥 PERBAIKAN SEARCH: Sama seperti di Controller
         if ($this->search) {
-            $needle = "%".mb_strtolower($this->search)."%";
+            $needle = "%" . mb_strtolower($this->search) . "%";
             $q->where(function ($w) use ($needle) {
                 $w->whereRaw('LOWER(name) LIKE ?', [$needle])
                   ->orWhereRaw('LOWER(email) LIKE ?', [$needle])
-                  ->orWhereRaw('LOWER(jurusan) LIKE ?', [$needle]);
+                  ->orWhereHas('position', function($p) use ($needle) {
+                      $p->whereRaw('LOWER(name) LIKE ?', [$needle]);
+                  })
+                  ->orWhereHas('offering.job', function($j) use ($needle) {
+                      $j->whereRaw('LOWER(name) LIKE ?', [$needle]);
+                  })
+                  ->orWhereHas('offering.field', function($f) use ($needle) {
+                      $f->whereRaw('LOWER(name) LIKE ?', [$needle]);
+                  })
+                  ->orWhereHas('offering.subfield', function($sf) use ($needle) {
+                      $sf->whereRaw('LOWER(name) LIKE ?', [$needle]);
+                  })
+                  ->orWhereHas('offering.seksi', function($s) use ($needle) {
+                      $s->whereRaw('LOWER(name) LIKE ?', [$needle]);
+                  });
             });
         }
 
@@ -65,13 +79,13 @@ class OfferingApplicantsExport implements FromCollection, WithHeadings
             $userName = Auth::user()?->name ?? 'System';
             $batchInfo = $this->batchId ? "Batch ID {$this->batchId}" : "Semua Batch";
             $positionInfo = $this->positionId ? "Posisi ID {$this->positionId}" : "Semua Posisi";
-            $jurusanInfo = $this->jurusan ? "Jurusan: {$this->jurusan}" : "Semua Jurusan";
+            $statusInfo = $this->status ? "Status: {$this->status}" : "Semua Status";
             $count = $data->count();
 
             ActivityLogger::log(
                 'export',
                 'Offering',
-                "{$userName} mengekspor data peserta Offering ({$count} baris, {$batchInfo}, {$positionInfo}, {$jurusanInfo})",
+                "{$userName} mengekspor data peserta Offering ({$count} baris, {$batchInfo}, {$positionInfo}, {$statusInfo})",
                 "Jumlah Data: {$count}"
             );
         } catch (\Throwable $e) {
@@ -82,18 +96,20 @@ class OfferingApplicantsExport implements FromCollection, WithHeadings
             $off = $a->offering;
 
             return [
-                'Nama'            => $a->name,
-                'Email'           => $a->email,
-                'Jurusan'         => $a->jurusan ?? '-',
-                'Batch'           => optional($a->batch)->name ?? '-',
-                'Posisi Dilamar'  => optional($a->position)->name ?? '-',
-                'Bidang'          => optional(optional($off)->field)->name ?? '-',
-                'Sub Bidang'      => optional(optional($off)->subfield)->name ?? '-',
-                'Jabatan'         => optional(optional($off)->job)->name ?? '-',
-                'Seksi'           => optional($off?->seksi)->name ?? '-',
-                'Status'          => $a->status ?? '-',
-                'Tanggal Mulai'   => optional($off?->kontrak_mulai)?->format('d-m-Y') ?? '-',
-                'Tanggal Selesai' => optional($off?->kontrak_selesai)?->format('d-m-Y') ?? '-',
+                'Nama'              => $a->name,
+                'Email'             => $a->email,
+                'Jurusan'           => $a->jurusan ?? '-',
+                'Batch'             => optional($a->batch)->name ?? '-',
+                'Posisi Dilamar'    => optional($a->position)->name ?? '-',
+                'Bidang'            => optional(optional($off)->field)->name ?? '-',
+                'Sub Bidang'        => optional(optional($off)->subfield)->name ?? '-',
+                'Jabatan'           => optional(optional($off)->job)->name ?? '-',
+                'Seksi'             => optional($off?->seksi)->name ?? '-',
+                'Status'            => $a->status ?? '-',
+                'By'                => $this->formatDecisionBy($off?->decision_by), // Kolom baru
+                'Tanggal Mulai'     => optional($off?->kontrak_mulai)?->format('d-m-Y') ?? '-',
+                'Tanggal Selesai'   => optional($off?->kontrak_selesai)?->format('d-m-Y') ?? '-',
+                'Deadline Offering' => optional($off?->response_deadline)?->format('d-m-Y H:i') ?? '-', // Kolom baru
             ];
         });
     }
@@ -111,8 +127,29 @@ class OfferingApplicantsExport implements FromCollection, WithHeadings
             'Jabatan',
             'Seksi',
             'Status',
+            'By', // Kolom baru
             'Tanggal Mulai',
             'Tanggal Selesai',
+            'Deadline Offering', // Kolom baru
         ];
+    }
+
+    /**
+     * Format decision_by untuk kolom "By"
+     */
+    private function formatDecisionBy($decisionBy)
+    {
+        if (!$decisionBy) {
+            return '-';
+        }
+
+        $mapping = [
+            'system' => 'System',
+            'user' => 'Pelamar',
+            'admin' => 'Admin',
+            'vendor' => 'Vendor',
+        ];
+
+        return $mapping[$decisionBy] ?? ucfirst($decisionBy);
     }
 }

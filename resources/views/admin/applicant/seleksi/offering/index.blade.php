@@ -17,13 +17,27 @@
       <form method="GET" action="{{ route('admin.applicant.seleksi.offering.index') }}" class="flex gap-2 flex-1">
         <input type="hidden" name="batch" value="{{ request('batch') }}">
         <input type="hidden" name="position" value="{{ request('position') }}">
+        <input type="hidden" name="status" value="{{ request('status') }}">
 
         <input type="text" name="search" value="{{ request('search') }}"
-               placeholder="Cari nama/email/jurusan..."
-               class="border rounded px-3 py-2 flex-1 text-sm">
+               placeholder="Cari nama, email, posisi, jabatan, bidang, sub bidang, atau seksi..."
+               class="border rounded px-3 py-2 flex-1 text-sm"
+               title="Cari berdasarkan: Nama, Email, Posisi, Jabatan, Bidang, Sub Bidang, atau Seksi">
       </form>
 
       <div class="flex gap-2">
+        {{-- 🔄 Sinkronisasi Expired --}}
+        <form method="POST" action="{{ route('admin.applicant.seleksi.offering.sync-expired') }}"
+              onsubmit="return confirm('Sinkronkan semua offering yang sudah melewati deadline?')">
+          @csrf
+          <button
+            type="submit"
+            class="px-3 py-2 border rounded bg-amber-500 hover:bg-amber-600 text-white"
+            title="Sinkronkan Offering Expired">
+            <i class="fas fa-sync-alt"></i>
+          </button>
+        </form>
+
         {{-- Filter --}}
         <button type="button"
                 onclick="document.getElementById('filterModalOffering').classList.remove('hidden')"
@@ -189,9 +203,15 @@
                   </svg>
                 </a>
               </th>
+
+              <th class="px-3 py-2 text-left whitespace-nowrap">
+                  By
+              </th>
+
               <th class="px-3 py-2 text-left whitespace-nowrap">
                 Deadline Offering
               </th>
+
               <th class="px-3 py-2 text-left">Status Email</th>
               <th class="px-3 py-2 text-left">Action</th>
             </tr>
@@ -199,22 +219,19 @@
 
           <tbody>
             @forelse($applicants as $a)
+              @php
+                $offering = $a->offering;
+                $hasOffering = !empty($offering);
+              @endphp
               <tr>
                 <td class="px-3 py-2">
-                  @php
-                    $offering = $a->offering;
-                    $isFinal = $offering
-                        && (
-                            $offering->responded_at
-                            || $offering->isExpired()
-                            || in_array($a->status, ['Menerima Offering','Menolak Offering'])
-                        );
-                  @endphp
-
                   <input type="checkbox"
                         name="ids[]"
                         value="{{ $a->id }}"
-                        {{ $isFinal ? 'disabled' : '' }}>
+                        data-status="{{ $a->status }}"
+                        data-has-offering="{{ $hasOffering ? '1' : '0' }}"
+                        data-applicant-name="{{ $a->name }}"
+                        title="{{ !$hasOffering ? '⚠ Data offering belum diisi' : '' }}">
                 </td>
                 <td class="px-3 py-2 whitespace-nowrap">{{ $a->name }}</td>
                 <td class="px-3 py-2 whitespace-nowrap">{{ $a->email }}</td>
@@ -223,23 +240,87 @@
                 <td class="px-3 py-2 whitespace-nowrap">{{ optional(optional($a->offering)->field)->name ?? '-' }}</td>
                 <td class="px-3 py-2 whitespace-nowrap">{{ optional(optional($a->offering)->subfield)->name ?? '-' }}</td>
                 <td class="px-3 py-2 whitespace-nowrap">{{ optional(optional($a->offering)->seksi)->name ?? '-' }}</td>
-                <td class="px-3 py-2 whitespace-nowrap">{{ $a->status ?? '-' }}</td>
+                <td class="px-3 py-2 whitespace-nowrap">
+                    @php
+                        $isExpiredDecline =
+                            $a->status === 'Menolak Offering'
+                            && $a->offering
+                            && $a->offering->decision === 'declined'
+                            && $a->offering->decision_reason === 'expired';
+                        
+                        $status = $a->status ?? '-';
+                        $badgeClass = 'px-2 py-1 text-xs rounded ';
+                        
+                        // Warna berdasarkan status offering
+                        if ($status === 'Menerima Offering') {
+                            $badgeClass .= 'bg-[#69FFA0] text-[#2C6C44]'; // Hijau
+                        } elseif ($status === 'Menolak Offering') {
+                            if ($isExpiredDecline) {
+                                $badgeClass .= 'bg-red-100 text-red-800 border border-red-300'; // Merah khusus expired
+                            } else {
+                                $badgeClass .= 'bg-[#FFDDDD] text-[#FF2525]'; // Merah regular
+                            }
+                        } elseif ($status === 'Offering') {
+                            $badgeClass .= 'bg-yellow-100 text-yellow-700'; // Kuning
+                        } else {
+                            // Untuk status lainnya, gunakan logika existing
+                            $isLolos = \Illuminate\Support\Str::startsWith($status, 'Lolos');
+                            $isTidak = \Illuminate\Support\Str::startsWith($status, 'Tidak Lolos');
+                            
+                            if ($isLolos) {
+                                $badgeClass .= 'bg-[#69FFA0] text-[#2C6C44]';
+                            } elseif ($isTidak) {
+                                $badgeClass .= 'bg-[#FFDDDD] text-[#FF2525]';
+                            } else {
+                                $badgeClass .= 'bg-gray-100 text-gray-700'; // Default
+                            }
+                        }
+                    @endphp
+
+                    @if ($isExpiredDecline)
+                        <div class="inline-flex flex-col">
+                            <span class="{{ $badgeClass }} mb-1">
+                                Menolak Offering
+                            </span>
+                            <span class="text-xs text-red-600 font-medium bg-red-50 px-2 py-1 rounded border border-red-200">
+                                <i class="fas fa-clock mr-1"></i> Expired
+                            </span>
+                        </div>
+                    @else
+                        <span class="{{ $badgeClass }}">
+                            {{ $status }}
+                        </span>
+                    @endif
+                </td>
+
+                <td class="px-3 py-2 whitespace-nowrap text-sm">
+                    @php
+                        $by = $a->offering?->decision_by;
+                    @endphp
+
+                    @if (!$by)
+                        <span class="text-gray-400">-</span>
+                    @elseif ($by === 'system')
+                        <span class="text-gray-500 italic">System</span>
+                    @elseif ($by === 'user')
+                        <span class="text-sky-700 font-medium">Pelamar</span>
+                    @elseif (in_array($by, ['admin','vendor']))
+                        <span class="text-indigo-700 font-medium text-capitalize">
+                            {{ ucfirst($by) }}
+                        </span>
+                    @else
+                        <span class="text-gray-700">{{ ucfirst($by) }}</span>
+                    @endif
+                </td>
 
                 {{-- Deadline Offering --}}
                 <td class="px-3 py-2 whitespace-nowrap">
-                  @if(!$a->offering || !$a->offering->response_deadline)
-                    <span class="text-gray-400 text-sm">-</span>
-                  @elseif($a->offering->isExpired())
-                    <span class="text-red-600 text-xs font-semibold">
-                      Expired
-                    </span>
-                    <div class="text-[11px] text-gray-500">
-                      {{ $a->offering->response_deadline->format('d M Y H:i') }}
-                    </div>
-                  @else
+                  @if($a->offering && $a->offering->response_deadline)
                     <span class="text-sm text-gray-800">
                       {{ $a->offering->response_deadline->format('d M Y H:i') }}
                     </span>
+                  @else
+                    <span class="text-gray-400 text-sm">-</span>
                   @endif
                 </td>
 
@@ -263,7 +344,13 @@
                 {{-- Action --}}
                 <td class="px-3 py-2 text-center">
                   <i class="fas fa-pen text-blue-600 cursor-pointer hover:text-blue-800"
-                     onclick="document.getElementById('offeringModal-{{ $a->id }}').classList.remove('hidden')"></i>
+                     onclick="
+                      const modal = document.getElementById('offeringModal-{{ $a->id }}');
+                      modal.classList.remove('hidden');
+                      modal.querySelector('[x-data]').__x.$data.reset();
+                    "
+                     title="{{ $hasOffering ? 'Edit Offering' : 'Buat Offering' }}">
+                  </i>
                 </td>
               </tr>  
             @empty
@@ -276,185 +363,253 @@
 
     {{-- Semua Modal Offering dipindah ke luar form bulk --}}
     @foreach($applicants as $a)
-    <div id="offeringModal-{{ $a->id }}"
-        class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div 
-        x-data="offeringForm(
-        @js($fields),
-        @js($subfields),
-        @js($seksis),
-        {{ optional($a->offering)->field_id ?? 'null' }},
-        {{ optional($a->offering)->sub_field_id ?? 'null' }},
-        {{ optional($a->offering)->seksi_id ?? 'null' }}
-      )"
-      class="bg-white rounded-lg shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
-        <div class="flex justify-between items-center border-b pb-2 mb-4">
-          <h3 class="text-lg font-semibold">{{ $a->offering ? 'Edit' : 'Tambah' }} Offering - {{ $a->name }}</h3>
-          <button type="button"
-                  onclick="document.getElementById('offeringModal-{{ $a->id }}').classList.add('hidden')"
-                  class="text-gray-500 hover:text-gray-700">&times;</button>
-        </div>
+      {{-- Modal offering untuk setiap applicant --}}
+      <div id="offeringModal-{{ $a->id }}"
+          class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
 
-        <form method="POST" action="{{ route('admin.applicant.seleksi.offering.store') }}" class="space-y-3">
-          @csrf
-          <input type="hidden" name="applicant_id" value="{{ $a->id }}">
+          {{-- PERBAIKAN BESAR: Gunakan x-data dengan init yang benar --}}
+          <div x-data="offeringForm()"
+              x-init="
+                  initData(
+                      {{ $a->offering->field_id ?? 'null' }},
+                      {{ $a->offering->sub_field_id ?? 'null' }},
+                      {{ $a->offering->seksi_id ?? 'null' }},
+                      {{ json_encode($fieldsArray) }},
+                      {{ json_encode($subfieldsArray) }},
+                      {{ json_encode($seksisArray) }}
+                  )"
+              class="bg-white rounded-lg shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
 
-          <div>
-            <label class="block text-sm font-medium">Picked By</label>
-            <input type="text" class="border rounded w-full px-3 py-2 bg-gray-100 text-gray-700"
-                  value="{{ optional($a->pickedBy)->name ?? '-' }}"
-                  readonly>
+              {{-- DEBUG: Tampilkan data untuk testing --}}
+              <div class="hidden">
+                  <p>Field ID: {{ $a->offering->field_id ?? 'null' }}</p>
+                  <p>Sub Field ID: {{ $a->offering->sub_field_id ?? 'null' }}</p>
+                  <p>Seksi ID: {{ $a->offering->seksi_id ?? 'null' }}</p>
+                  <p>Fields Count: {{ count($fieldsArray) }}</p>
+                  <p>Subfields Count: {{ count($subfieldsArray) }}</p>
+                  <p>Seksis Count: {{ count($seksisArray) }}</p>
+              </div>
+              
+              <div class="flex justify-between items-center border-b pb-2 mb-4">
+                  <h3 class="text-lg font-semibold">{{ $a->offering ? 'Edit' : 'Tambah' }} Offering - {{ $a->name }}</h3>
+                  <button type="button"
+                          onclick="document.getElementById('offeringModal-{{ $a->id }}').classList.add('hidden')"
+                          class="text-gray-500 hover:text-gray-700">&times;</button>
+              </div>
+
+              <form method="POST" action="{{ route('admin.applicant.seleksi.offering.store') }}" class="space-y-4">
+                @csrf
+                <input type="hidden" name="applicant_id" value="{{ $a->id }}">
+
+                  {{-- Picked By (Readonly) --}}
+                  <div>
+                      <label class="block text-sm font-medium mb-1">Picked By</label>
+                      <input type="text" 
+                            class="border rounded w-full px-3 py-2 bg-gray-100 text-gray-700 cursor-not-allowed"
+                            value="{{ optional($a->pickedBy)->name ?? '-' }}"
+                            readonly>
+                  </div>
+
+                  {{-- Posisi (Readonly) --}}
+                  <div>
+                      <label class="block text-sm font-medium mb-1">Posisi yang Diharapkan</label>
+                      <input type="text"
+                            class="border rounded w-full px-3 py-2 bg-gray-100 text-gray-700 cursor-not-allowed"
+                            value="{{ $a->position->name ?? '-' }}"
+                            readonly>
+                  </div>
+
+                  {{-- BIDANG --}}
+                  <div>
+                      <label class="block text-sm font-medium mb-1">Bidang <span class="text-red-500">*</span></label>
+                      <select
+                          name="field_id"
+                          x-model="selectedFieldId"
+                          @change="onFieldChange"
+                          class="border rounded w-full px-3 py-2"
+                          required>
+                          <option value="">-- Pilih Bidang --</option>
+                          <template x-for="field in fields" :key="field.id">
+                              <option :value="field.id" x-text="field.name" 
+                                      :selected="field.id == selectedFieldId"></option>
+                          </template>
+                      </select>
+                  </div>
+                  
+                  {{-- SUB BIDANG --}}
+                  <div>
+                      <label class="block text-sm font-medium mb-1">Sub Bidang <span class="text-red-500">*</span></label>
+                      <select
+                          name="sub_field_id"
+                          x-model="selectedSubFieldId"
+                          @change="onSubFieldChange"
+                          :disabled="!selectedFieldId || filteredSubFields.length === 0"
+                          class="border rounded w-full px-3 py-2 disabled:bg-gray-100"
+                          required>
+                          <option value="">-- Pilih Sub Bidang --</option>
+                          <template x-for="subField in filteredSubFields" :key="subField.id">
+                              <option :value="subField.id" x-text="subField.name"
+                                      :selected="subField.id == selectedSubFieldId"></option>
+                          </template>
+                      </select>
+                      
+                      <div x-show="selectedFieldId && filteredSubFields.length === 0" 
+                          class="mt-1 text-sm text-amber-600">
+                          Tidak ada Sub Bidang untuk bidang ini
+                      </div>
+                  </div>
+                  
+                  {{-- SEKSI --}}
+                  <div>
+                      <label class="block text-sm font-medium mb-1">Seksi <span class="text-red-500">*</span></label>
+                      <select
+                          name="seksi_id"
+                          x-model="selectedSeksiId"
+                          :disabled="!selectedSubFieldId || filteredSeksis.length === 0"
+                          class="border rounded w-full px-3 py-2 disabled:bg-gray-100"
+                          required>
+                          <option value="">-- Pilih Seksi --</option>
+                          <template x-for="seksi in filteredSeksis" :key="seksi.id">
+                              <option :value="seksi.id" x-text="seksi.name"
+                                      :selected="seksi.id == selectedSeksiId"></option>
+                          </template>
+                      </select>
+                      
+                      <div x-show="selectedSubFieldId && filteredSeksis.length === 0" 
+                          class="mt-1 text-sm text-amber-600">
+                          Tidak ada Seksi untuk sub bidang ini
+                      </div>
+                  </div>
+                  
+                  {{-- JABATAN (tetap sama) --}}
+                  <div>
+                      <label class="block text-sm font-medium mb-1">Jabatan <span class="text-red-500">*</span></label>
+                      <select name="job_id" class="border rounded w-full px-3 py-2" required>
+                          <option value="">-- Pilih Jabatan --</option>
+                          @foreach($jobs as $job)
+                              <option value="{{ $job->id }}" {{ optional($a->offering)->job_id == $job->id ? 'selected' : '' }}>
+                                  {{ $job->name }}
+                              </option>
+                          @endforeach
+                      </select>
+                  </div>
+                  
+                  {{-- Gaji & Tanggal --}}
+                  <div class="grid grid-cols-2 gap-3">
+                      <div>
+                          <label class="block text-sm font-medium mb-1">Gaji <span class="text-red-500">*</span></label>
+                          <input type="number" 
+                                name="gaji" 
+                                class="border rounded w-full px-3 py-2"
+                                value="{{ old('gaji', $a->offering->gaji ?? '') }}" 
+                                min="0"
+                                required>
+                      </div>
+                      <div>
+                          <label class="block text-sm font-medium mb-1">Uang Makan <span class="text-red-500">*</span></label>
+                          <input type="number" 
+                                name="uang_makan" 
+                                class="border rounded w-full px-3 py-2"
+                                value="{{ old('uang_makan', $a->offering->uang_makan ?? '') }}" 
+                                min="0"
+                                required>
+                      </div>
+                      <div>
+                          <label class="block text-sm font-medium mb-1">Uang Transport <span class="text-red-500">*</span></label>
+                          <input type="number" 
+                                name="uang_transport" 
+                                class="border rounded w-full px-3 py-2"
+                                value="{{ old('uang_transport', $a->offering->uang_transport ?? '') }}" 
+                                min="0"
+                                required>
+                      </div>
+                      <div>
+                          <label class="block text-sm font-medium mb-1">Tanggal Kontrak Mulai <span class="text-red-500">*</span></label>
+                          <input type="date" 
+                                name="kontrak_mulai" 
+                                class="border rounded w-full px-3 py-2"
+                                value="{{ old('kontrak_mulai', optional(optional($a->offering)->kontrak_mulai)->format('Y-m-d')) }}" 
+                                required>
+                      </div>
+                      <div>
+                          <label class="block text-sm font-medium mb-1">Tanggal Kontrak Selesai <span class="text-red-500">*</span></label>
+                          <input type="date" 
+                                name="kontrak_selesai" 
+                                class="border rounded w-full px-3 py-2"
+                                value="{{ old('kontrak_selesai', optional(optional($a->offering)->kontrak_selesai)->format('Y-m-d')) }}" 
+                                required>
+                      </div>
+                  </div>
+
+                  {{-- Link --}}
+                  <div>
+                      <label class="block text-sm font-medium mb-1">Link PKWT <span class="text-red-500">*</span></label>
+                      <input type="text" 
+                            name="link_pkwt" 
+                            class="border rounded w-full px-3 py-2"
+                            value="{{ old('link_pkwt', $a->offering->link_pkwt ?? '') }}" 
+                            placeholder="https://..."
+                            required>
+                  </div>
+                  <div>
+                      <label class="block text-sm font-medium mb-1">Link Berkas <span class="text-red-500">*</span></label>
+                      <input type="url" 
+                            name="link_berkas" 
+                            class="border rounded w-full px-3 py-2"
+                            value="{{ old('link_berkas', $a->offering->link_berkas ?? '') }}" 
+                            placeholder="https://..."
+                            required>
+                  </div>
+                  <div>
+                      <label class="block text-sm font-medium mb-1">Link Form Pelamar <span class="text-red-500">*</span></label>
+                      <input type="url" 
+                            name="link_form_pelamar" 
+                            class="border rounded w-full px-3 py-2"
+                            value="{{ old('link_form_pelamar', $a->offering->link_form_pelamar ?? '') }}" 
+                            placeholder="https://..."
+                            required>
+                  </div>
+
+                  {{-- Deadline Response --}}
+                  <div>
+                      <label class="block text-sm font-medium mb-1">
+                          Batas Waktu Respon Offering <span class="text-red-500">*</span>
+                      </label>
+                      <input
+                          type="datetime-local"
+                          name="response_deadline"
+                          class="border rounded w-full px-3 py-2"
+                          value="{{ old('response_deadline', $a->offering?->response_deadline?->format('Y-m-d\TH:i')) }}"
+                          
+                          required
+                      >
+                      <p class="text-xs text-gray-500 mt-1">
+                          <i class="fas fa-info-circle text-blue-500"></i>
+                          Jika peserta tidak merespons sampai waktu ini, maka dianggap <strong>menolak offering</strong>.
+                      </p>
+                  </div>
+
+                  {{-- Action Buttons --}}
+                  <div class="flex justify-end gap-2 mt-6 pt-4 border-t">
+                      <button type="button"
+                              onclick="document.getElementById('offeringModal-{{ $a->id }}').classList.add('hidden')"
+                              class="px-4 py-2 border rounded hover:bg-gray-50 transition">
+                          Batal
+                      </button>
+                      <button type="submit" 
+                              class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
+                          <i class="fas fa-save mr-1"></i> Simpan Offering
+                      </button>
+                  </div>
+              </form>
           </div>
-
-          {{-- Posisi --}}
-          <div>
-            <label class="block text-sm font-medium">Posisi yang Diharapkan</label>
-            <input type="text"
-                  class="border rounded w-full px-3 py-2 bg-gray-100 text-gray-700"
-                  value="{{ $a->position->name ?? '-' }}"
-                  readonly>
-          </div>
-
-          {{-- Bidang --}}
-          <div>
-            <label class="block text-sm">Bidang</label>
-            <select name="field_id"
-                    x-model="fieldId"
-                    @change="onFieldChange"
-                    class="border rounded w-full px-3 py-2"
-                    required>
-              <option value="">-- Pilih Bidang --</option>
-              <template x-for="f in fields" :key="f.id">
-                <option :value="f.id" x-text="f.name"></option>
-              </template>
-            </select>
-          </div>
-
-          {{-- Sub Bidang --}}
-          <div>
-            <label class="block text-sm">Sub Bidang</label>
-            <select name="sub_field_id"
-                    x-model="subFieldId"
-                    @change="onSubFieldChange"
-                    class="border rounded w-full px-3 py-2"
-                    required>
-              <option value="">-- Pilih Sub Bidang --</option>
-              <template x-for="sf in filteredSubFields" :key="sf.id">
-                <option :value="sf.id" x-text="sf.name"></option>
-              </template>
-            </select>
-          </div>
-
-          {{-- Jabatan --}}
-          <div>
-            <label class="block text-sm">Jabatan</label>
-            <select name="job_id" class="border rounded w-full px-3 py-2" required>
-              <option value="">-- Pilih Jabatan --</option>
-              @foreach($jobs as $job)
-                <option value="{{ $job->id }}" {{ optional($a->offering)->job_id == $job->id ? 'selected' : '' }}>
-                  {{ $job->name }}
-                </option>
-              @endforeach
-            </select>
-          </div>
-
-          {{-- Seksi --}}
-          <div>
-            <label class="block text-sm">Seksi</label>
-            <select name="seksi_id"
-                    x-model="seksiId"
-                    class="border rounded w-full px-3 py-2"
-                    required>
-              <option value="">-- Pilih Seksi --</option>
-              <template x-for="s in filteredSeksis" :key="s.id">
-                <option :value="s.id" x-text="s.name"></option>
-              </template>
-            </select>
-          </div>
-
-
-          {{-- Gaji & Tanggal --}}
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-sm">Gaji</label>
-              <input type="number" name="gaji" class="border rounded w-full px-3 py-2"
-                    value="{{ old('gaji', $a->offering->gaji ?? '') }}" required>
-            </div>
-            <div>
-              <label class="block text-sm">Uang Makan</label>
-              <input type="number" name="uang_makan" class="border rounded w-full px-3 py-2"
-                    value="{{ old('uang_makan', $a->offering->uang_makan ?? '') }}" required>
-            </div>
-            <div>
-              <label class="block text-sm">Uang Transport</label>
-              <input type="number" name="uang_transport" class="border rounded w-full px-3 py-2"
-                    value="{{ old('uang_transport', $a->offering->uang_transport ?? '') }}" required>
-            </div>
-            <div>
-              <label class="block text-sm">Tanggal Kontrak Mulai</label>
-              <input type="date" name="kontrak_mulai" class="border rounded w-full px-3 py-2"
-                    value="{{ old('kontrak_mulai', optional(optional($a->offering)->kontrak_mulai)->format('Y-m-d')) }}" required>
-            </div>
-            <div>
-              <label class="block text-sm">Tanggal Kontrak Selesai</label>
-              <input type="date" name="kontrak_selesai" class="border rounded w-full px-3 py-2"
-                    value="{{ old('kontrak_selesai', optional(optional($a->offering)->kontrak_selesai)->format('Y-m-d')) }}" required>
-            </div>
-          </div>
-
-          {{-- Link --}}
-          <div>
-            <label class="block text-sm">Link PKWT</label>
-            <input type="text" name="link_pkwt" class="border rounded w-full px-3 py-2"
-                  value="{{ old('link_pkwt', $a->offering->link_pkwt ?? '') }}" required>
-          </div>
-          <div>
-            <label class="block text-sm">Link Berkas</label>
-            <input type="url" name="link_berkas" class="border rounded w-full px-3 py-2"
-                  value="{{ old('link_berkas', $a->offering->link_berkas ?? '') }}" required>
-          </div>
-          <div>
-            <label class="block text-sm">Link Form Pelamar</label>
-            <input type="url" name="link_form_pelamar" class="border rounded w-full px-3 py-2"
-                  value="{{ old('link_form_pelamar', $a->offering->link_form_pelamar ?? '') }}" required>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium">
-              Batas Waktu Respon Offering
-            </label>
-
-            <input
-                type="datetime-local"
-                name="response_deadline"
-                class="border rounded w-full px-3 py-2"
-                value="{{ old(
-                    'response_deadline',
-                    $a->offering?->response_deadline?->format('Y-m-d\TH:i')
-                ) }}"
-                required
-            >
-
-            <p class="text-xs text-gray-500 mt-1">
-              Jika peserta tidak merespons sampai waktu ini, maka dianggap
-              <strong>menolak offering</strong>.
-            </p>
-          </div>
-
-          <div class="flex justify-end gap-2 mt-4">
-            <button type="button"
-                    onclick="document.getElementById('offeringModal-{{ $a->id }}').classList.add('hidden')"
-                    class="px-4 py-2 border rounded">Batal</button>
-            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Simpan</button>
-          </div>
-        </form>
       </div>
-    </div>
     @endforeach
 
 
     <div class="mt-4">{{ $applicants->links() }}</div>
   </div>
+
 {{-- ✅ Modal Email Offering --}}
 <div id="emailModalOffering" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
   <div class="bg-white rounded-lg shadow-lg w-full max-w-2xl p-5">
@@ -513,20 +668,23 @@
 
     {{-- Tab Terpilih --}}
     <div id="tabTerpilihOffering" class="tab-content-off hidden">
-      <form method="POST" action="{{ route('admin.applicant.seleksi.offering.sendEmail') }}" enctype="multipart/form-data">
+      <form method="POST" action="{{ route('admin.applicant.seleksi.offering.sendEmail') }}" 
+            enctype="multipart/form-data"
+            onsubmit="return validateSelectedOfferingEmail()">
         @csrf
         <input type="hidden" name="type" value="selected">
         <input type="hidden" name="ids" id="selectedIdsOffering">
 
         <div class="mb-3">
-          <label class="block text-sm font-medium">Subjek</label>
-          <input type="text" name="subject" class="border rounded w-full px-2 py-1" required>
+          <label class="block text-sm font-medium">Subjek <span class="text-red-500">*</span></label>
+          <input type="text" name="subject" class="border rounded w-full px-3 py-2" required>
         </div>
 
         <div class="mb-3">
-          <label class="block text-sm font-medium">Isi Email</label>
+          <label class="block text-sm font-medium">Isi Email <span class="text-red-500">*</span></label>
           <input id="messageSelectedOffering" type="hidden" name="message">
-          <trix-editor input="messageSelectedOffering" class="trix-content border rounded w-full"></trix-editor>
+          <trix-editor input="messageSelectedOffering" 
+                      class="trix-content border rounded w-full h-48"></trix-editor>
         </div>
 
         <div class="mb-3">
@@ -535,9 +693,15 @@
         </div>
 
         <div class="flex justify-end gap-2">
-          <button type="button" onclick="document.getElementById('emailModalOffering').classList.add('hidden')"
-                  class="px-3 py-1 border rounded">Batal</button>
-          <button type="submit" onclick="setSelectedIdsOffering()" class="px-3 py-1 rounded bg-blue-600 text-white">Kirim</button>
+          <button type="button" 
+                  onclick="document.getElementById('emailModalOffering').classList.add('hidden')"
+                  class="px-4 py-2 border rounded hover:bg-gray-50">
+            Batal
+          </button>
+          <button type="submit" 
+                  class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+            <i class="fas fa-paper-plane mr-1"></i> Kirim Email
+          </button>
         </div>
       </form>
     </div>
@@ -566,62 +730,68 @@
 
   {{-- ✅ Modal Filter Offering --}}
   <div id="filterModalOffering" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-    <div class="bg-white rounded-lg shadow-lg w-full max-w-lg p-6">
-      <div class="flex justify-between items-center border-b pb-3 mb-4">
-        <h3 class="text-lg font-semibold">Filter Data Offering</h3>
-        <button type="button"
-                onclick="document.getElementById('filterModalOffering').classList.add('hidden')"
-                class="text-gray-500 hover:text-gray-700 text-2xl leading-none">&times;</button>
+      <div class="bg-white rounded-lg shadow-lg w-full max-w-lg p-6">
+          <div class="flex justify-between items-center border-b pb-3 mb-4">
+              <h3 class="text-lg font-semibold">Filter Data Offering</h3>
+              <button type="button"
+                      onclick="document.getElementById('filterModalOffering').classList.add('hidden')"
+                      class="text-gray-500 hover:text-gray-700 text-2xl leading-none">&times;</button>
+          </div>
+
+          <form method="GET" action="{{ route('admin.applicant.seleksi.offering.index') }}" class="space-y-4">
+              {{-- Filter Batch --}}
+              <div>
+                  <label class="block text-sm font-medium mb-1">Batch</label>
+                  <select name="batch" class="border rounded w-full px-2 py-1 text-sm">
+                      <option value="">Semua Batch</option>
+                      @foreach($batches as $b)
+                          <option value="{{ $b->id }}" {{ request('batch') == $b->id ? 'selected' : '' }}>
+                              {{ $b->name }}
+                          </option>
+                      @endforeach
+                  </select>
+              </div>
+
+              {{-- Filter Posisi --}}
+              <div>
+                  <label class="block text-sm font-medium mb-1">Posisi</label>
+                  <select name="position" class="border rounded w-full px-2 py-1 text-sm">
+                      <option value="">Semua Posisi</option>
+                      @foreach($positions as $p)
+                          <option value="{{ $p->id }}" {{ request('position') == $p->id ? 'selected' : '' }}>
+                              {{ $p->name }}
+                          </option>
+                      @endforeach
+                  </select>
+              </div>
+
+              {{-- Filter Status (Mengganti Filter Jurusan) --}}
+              <div>
+                  <label class="block text-sm font-medium mb-1">Status</label>
+                  <select name="status" class="border rounded w-full px-2 py-1 text-sm">
+                      <option value="">Semua Status</option>
+                      <option value="Offering" {{ request('status') == 'Offering' ? 'selected' : '' }}>
+                          Offering
+                      </option>
+                      <option value="Menerima Offering" {{ request('status') == 'Menerima Offering' ? 'selected' : '' }}>
+                          Menerima Offering
+                      </option>
+                      <option value="Menolak Offering" {{ request('status') == 'Menolak Offering' ? 'selected' : '' }}>
+                          Menolak Offering
+                      </option>
+                  </select>
+              </div>
+
+              <div class="flex justify-end gap-2 pt-4">
+                  <button type="button"
+                          onclick="document.getElementById('filterModalOffering').classList.add('hidden')"
+                          class="px-3 py-1 border rounded hover:bg-gray-50">Batal</button>
+                  <button type="submit" class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">
+                      Terapkan Filter
+                  </button>
+              </div>
+          </form>
       </div>
-
-      <form method="GET" action="{{ route('admin.applicant.seleksi.offering.index') }}" class="space-y-4">
-        {{-- Filter Batch --}}
-        <div>
-          <label class="block text-sm font-medium">Batch</label>
-          <select name="batch" class="border rounded w-full px-2 py-1 text-sm">
-            <option value="">Semua Batch</option>
-            @foreach($batches as $b)
-              <option value="{{ $b->id }}" {{ request('batch') == $b->id ? 'selected' : '' }}>
-                {{ $b->name }}
-              </option>
-            @endforeach
-          </select>
-        </div>
-
-        {{-- Filter Posisi --}}
-        <div>
-          <label class="block text-sm font-medium">Posisi</label>
-          <select name="position" class="border rounded w-full px-2 py-1 text-sm">
-            <option value="">Semua Posisi</option>
-            @foreach($positions as $p)
-              <option value="{{ $p->id }}" {{ request('position') == $p->id ? 'selected' : '' }}>
-                {{ $p->name }}
-              </option>
-            @endforeach
-          </select>
-        </div>
-
-        {{-- Filter Jurusan --}}
-        <div>
-          <label class="block text-sm font-medium">Jurusan</label>
-          <select name="jurusan" class="border rounded w-full px-2 py-1 text-sm">
-            <option value="">Semua Jurusan</option>
-            @foreach($allJurusan as $j)
-              <option value="{{ $j }}" {{ request('jurusan') == $j ? 'selected' : '' }}>
-                {{ $j }}
-              </option>
-            @endforeach
-          </select>
-        </div>
-
-        <div class="flex justify-end gap-2">
-          <button type="button"
-                  onclick="document.getElementById('filterModalOffering').classList.add('hidden')"
-                  class="px-3 py-1 border rounded">Batal</button>
-          <button type="submit" class="px-3 py-1 bg-blue-600 text-white rounded">Terapkan</button>
-        </div>
-      </form>
-    </div>
   </div>
 
 </x-app-admin>
@@ -634,7 +804,7 @@
 <script>
   document.getElementById('useTemplateOffering')?.addEventListener('change', function() {
     const trix = document.querySelector("trix-editor[input=messageOffering]");
-    const subjectInput = document.getElementById('subjectOffering'); // ✅ tambahkan baris ini
+    const subjectInput = document.getElementById('subjectOffering');
 
     if (this.checked) {
       subjectInput.value = "INFORMASI OFFERING - PLN ICON PLUS";
@@ -679,122 +849,385 @@
       this.classList.add('border-blue-600','text-blue-600');
       document.querySelectorAll('.tab-content-off').forEach(c => c.classList.add('hidden'));
       document.getElementById(this.dataset.tab).classList.remove('hidden');
+      
+      // Update summary jika buka tab Terpilih
+      if (this.dataset.tab === 'tabTerpilihOffering') {
+        setTimeout(updateEmailSelectionSummary, 100);
+      }
     });
   });
 
-  function offeringForm(fields, subfields, seksis, initField, initSubField, initSeksi) {
-    return {
-      fields,
-      subfields,
-      seksis,
-
-      fieldId: initField,
-      subFieldId: initSubField,
-      seksiId: initSeksi,
-
-      get filteredSubFields() {
-        if (!this.fieldId) return this.subfields;
-        return this.subfields.filter(sf => sf.field_id == this.fieldId);
-      },
-
-      get filteredSeksis() {
-        if (this.subFieldId) {
-          return this.seksis.filter(s => s.sub_field_id == this.subFieldId);
-        }
-
-        if (this.fieldId) {
-          const subIds = this.subfields
-            .filter(sf => sf.field_id == this.fieldId)
-            .map(sf => sf.id);
-
-          return this.seksis.filter(s => subIds.includes(s.sub_field_id));
-        }
-
-        return this.seksis;
-      },
-
-      onFieldChange() {
-        this.subFieldId = null;
-        this.seksiId = null;
-      },
-
-      onSubFieldChange() {
-        this.seksiId = null;
+  function offeringForm() {
+      return {
+          // Data collections
+          fields: [],
+          subfields: [],
+          seksis: [],
+          
+          // Selected IDs
+          selectedFieldId: null,
+          selectedSubFieldId: null,
+          selectedSeksiId: null,
+          
+          // Computed properties
+          get filteredSubFields() {
+              if (!this.selectedFieldId) return [];
+              return this.subfields.filter(
+                  subfield => subfield.field_id == this.selectedFieldId
+              );
+          },
+          
+          get filteredSeksis() {
+              if (!this.selectedSubFieldId) return [];
+              return this.seksis.filter(
+                  seksi => seksi.sub_field_id == this.selectedSubFieldId
+              );
+          },
+          
+          // Initialize data
+          initData(initFieldId, initSubFieldId, initSeksiId, fieldsData, subfieldsData, seksisData) {
+              console.log('Initializing with:', {
+                  initFieldId, initSubFieldId, initSeksiId,
+                  fieldsCount: fieldsData.length,
+                  subfieldsCount: subfieldsData.length,
+                  seksisCount: seksisData.length
+              });
+              
+              // Set data collections
+              this.fields = fieldsData || [];
+              this.subfields = subfieldsData || [];
+              this.seksis = seksisData || [];
+              
+              // Set initial values if provided
+              if (initFieldId) {
+                  this.selectedFieldId = parseInt(initFieldId);
+                  
+                  // Cek apakah subfield valid untuk field ini
+                  if (initSubFieldId) {
+                      const subfieldValid = this.subfields.some(
+                          sf => sf.id == initSubFieldId && sf.field_id == this.selectedFieldId
+                      );
+                      
+                      if (subfieldValid) {
+                          this.selectedSubFieldId = parseInt(initSubFieldId);
+                          
+                          // Cek apakah seksi valid untuk subfield ini
+                          if (initSeksiId) {
+                              const seksiValid = this.seksis.some(
+                                  s => s.id == initSeksiId && s.sub_field_id == this.selectedSubFieldId
+                              );
+                              
+                              if (seksiValid) {
+                                  this.selectedSeksiId = parseInt(initSeksiId);
+                              }
+                          }
+                      }
+                  }
+              }
+              
+              console.log('After initialization:', {
+                  selectedFieldId: this.selectedFieldId,
+                  selectedSubFieldId: this.selectedSubFieldId,
+                  selectedSeksiId: this.selectedSeksiId,
+                  filteredSubFields: this.filteredSubFields.length,
+                  filteredSeksis: this.filteredSeksis.length
+              });
+          },
+          
+          // Event handlers
+          onFieldChange() {
+              console.log('Field changed to:', this.selectedFieldId);
+              
+              // Reset dependent fields
+              this.selectedSubFieldId = null;
+              this.selectedSeksiId = null;
+              
+              // Jika ada subfield sebelumnya yang masih valid, keep it
+              if (this.selectedFieldId && this.initSubFieldId) {
+                  const stillValid = this.subfields.some(
+                      sf => sf.id == this.initSubFieldId && sf.field_id == this.selectedFieldId
+                  );
+                  if (stillValid) {
+                      this.selectedSubFieldId = this.initSubFieldId;
+                  }
+              }
+          },
+          
+          onSubFieldChange() {
+              console.log('SubField changed to:', this.selectedSubFieldId);
+              
+              // Reset seksi
+              this.selectedSeksiId = null;
+              
+              // Jika ada seksi sebelumnya yang masih valid, keep it
+              if (this.selectedSubFieldId && this.initSeksiId) {
+                  const stillValid = this.seksis.some(
+                      s => s.id == this.initSeksiId && s.sub_field_id == this.selectedSubFieldId
+                  );
+                  if (stillValid) {
+                      this.selectedSeksiId = this.initSeksiId;
+                  }
+              }
+          },
+          
+          // Debug function
+          debug() {
+              console.log('Current state:', {
+                  fields: this.fields,
+                  selectedFieldId: this.selectedFieldId,
+                  selectedSubFieldId: this.selectedSubFieldId,
+                  selectedSeksiId: this.selectedSeksiId,
+                  filteredSubFields: this.filteredSubFields,
+                  filteredSeksis: this.filteredSeksis
+              });
+          }
       }
-    }
   }
 
-  // Confirm Modal
-    let selectedAction = null;
-
-    function getSelectedIds() {
-      return document.querySelectorAll('input[name="ids[]"]:checked');
-    }
-
-    function openConfirmModal(action) {
-      const selected = getSelectedIds();
-
-      // 🚫 TIDAK ADA YANG DICENTANG
-      if (selected.length === 0) {
-        alert('Pilih peserta terlebih dahulu.');
-        return;
+  // ============================================
+  // EMAIL VALIDATION FUNCTIONS
+  // ============================================
+  
+  // Function untuk validasi email di tab Terpilih
+  function validateSelectedOfferingEmail() {
+    const event = window.event || arguments.callee.caller.arguments[0];
+    let selectedIds = [];
+    let noOfferingData = [];
+    
+    // Ambil semua checkbox yang tercentang
+    document.querySelectorAll('input[name="ids[]"]:checked').forEach(cb => {
+      const hasOffering = cb.getAttribute('data-has-offering') === '1';
+      const applicantName = cb.getAttribute('data-applicant-name') || `ID: ${cb.value}`;
+      
+      if (hasOffering) {
+        selectedIds.push(cb.value);
+      } else {
+        noOfferingData.push(applicantName);
       }
-
-      // ✅ lanjut normal
-      selectedAction = action;
-
-      const msg = action === 'lolos'
-        ? "Apakah Anda yakin ingin meloloskan peserta yang dipilih?"
-        : "Apakah Anda yakin ingin menggagalkan peserta yang dipilih?";
-
-      document.getElementById('confirmMessage').innerText = msg;
-      document.getElementById('confirmModal').classList.remove('hidden');
-    }
-
-    document.getElementById('confirmYesBtn')?.addEventListener('click', function () {
-      const selected = getSelectedIds();
-
-      // 🔐 pengaman tambahan
-      if (selected.length === 0) {
-        alert('Tidak ada peserta yang dipilih.');
-        return;
-      }
-
-      const form = document.getElementById('bulkActionForm');
-
-      let input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = 'bulk_action';
-      input.value = selectedAction;
-
-      form.appendChild(input);
-      form.submit();
     });
     
-    document.getElementById('confirmYesBtn').addEventListener('click', function() {
-      if (selectedAction) {
-        const form = document.getElementById('bulkActionForm');
-        let input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = 'bulk_action';
-        input.value = selectedAction;
-        form.appendChild(input);
-        form.submit();
-      }
-    });
-
-  function setSelectedIdsOffering() {
-    let ids = [];
-    document.querySelectorAll('input[name="ids[]"]:checked').forEach(cb => ids.push(cb.value));
-    if (!ids.length) {
-      alert("Silakan pilih peserta terlebih dahulu."); event.preventDefault(); return false;
+    // CASE 1: Tidak ada yang dipilih
+    if (selectedIds.length === 0 && noOfferingData.length === 0) {
+      alert('Silakan pilih minimal 1 peserta terlebih dahulu.');
+      if (event) event.preventDefault();
+      return false;
     }
-    document.getElementById('selectedIdsOffering').value = ids.join(',');
+    
+    // CASE 2: Ada yang dipilih tapi tidak punya data offering
+    if (noOfferingData.length > 0) {
+      // Tampilkan daftar nama yang bermasalah
+      let errorMessage = '❌ TIDAK DAPAT MENGIRIM EMAIL!\n\n';
+      errorMessage += 'Pelamar berikut data Offeringnya belum diisi:\n\n';
+      
+      // Tampilkan maksimal 5 nama
+      const displayNames = noOfferingData.slice(0, 5);
+      displayNames.forEach(name => {
+        errorMessage += `• ${name}\n`;
+      });
+      
+      if (noOfferingData.length > 5) {
+        errorMessage += `• ... dan ${noOfferingData.length - 5} lainnya\n`;
+      }
+      
+      errorMessage += '\n⚠️ Silakan lengkapi data offering terlebih dahulu ';
+      errorMessage += 'melalui tombol edit (ikon pensil) di kolom Action.';
+      
+      alert(errorMessage);
+      
+      // Highlight rows yang bermasalah
+      document.querySelectorAll('input[name="ids[]"]:checked').forEach(cb => {
+        if (cb.getAttribute('data-has-offering') === '0') {
+          const row = cb.closest('tr');
+          row.classList.add('bg-red-50', 'border-l-4', 'border-l-red-500');
+          
+          // Auto-remove highlight setelah 3 detik
+          setTimeout(() => {
+            row.classList.remove('bg-red-50', 'border-l-4', 'border-l-red-500');
+          }, 3000);
+        }
+      });
+      
+      if (event) event.preventDefault();
+      return false;
+    }
+    
+    // CASE 3: Semua valid - set hidden input value
+    document.getElementById('selectedIdsOffering').value = selectedIds.join(',');
+    return true;
+  }
+  
+  // Function untuk update summary di modal
+  function updateEmailSelectionSummary() {
+    const checkedBoxes = document.querySelectorAll('input[name="ids[]"]:checked');
+    const withOffering = Array.from(checkedBoxes).filter(cb => 
+      cb.getAttribute('data-has-offering') === '1'
+    );
+    const withoutOffering = Array.from(checkedBoxes).filter(cb => 
+      cb.getAttribute('data-has-offering') === '0'
+    );
+    
+    const summaryElement = document.getElementById('selectionSummary');
+    if (!summaryElement) return;
+    
+    if (checkedBoxes.length === 0) {
+      summaryElement.innerHTML = '<span class="text-gray-500">Belum ada peserta terpilih</span>';
+    } else {
+      let html = `<div class="flex flex-col gap-1">`;
+      
+      if (withOffering.length > 0) {
+        html += `<span class="text-green-600 font-medium">✅ ${withOffering.length} peserta siap dikirim email</span>`;
+      }
+      
+      if (withoutOffering.length > 0) {
+        html += `<span class="text-red-600 font-medium">❌ ${withoutOffering.length} peserta tanpa data offering</span>`;
+        html += `<span class="text-xs text-gray-600">(Tidak akan dikirimi email)</span>`;
+      }
+      
+      html += `</div>`;
+      summaryElement.innerHTML = html;
+    }
   }
 
+  // ============================================
+  // BULK ACTION FUNCTIONS
+  // ============================================
+  
+  // Confirm Modal
+  // ============================================
+// BULK ACTION FUNCTIONS - SIMPLE ALERT VERSION
+// ============================================
+
+// Confirm Modal
+  let selectedAction = null;
+
+  function getSelectedIds() {
+    return document.querySelectorAll('input[name="ids[]"]:checked');
+  }
+
+  function openConfirmModal(action) {
+    const selected = getSelectedIds();
+
+    if (selected.length === 0) {
+      alert('Pilih peserta terlebih dahulu.');
+      return;
+    }
+
+    // ✅ CEK: Apakah ada yang tidak punya data offering?
+    let noOfferingData = [];
+    let hasInvalid = false;
+    
+    selected.forEach(cb => {
+      const hasOffering = cb.getAttribute('data-has-offering') === '1';
+      const applicantName = cb.getAttribute('data-applicant-name') || `ID: ${cb.value}`;
+      
+      if (!hasOffering) {
+        noOfferingData.push(applicantName);
+        hasInvalid = true;
+      }
+    });
+    
+    // 🔴 JIKA ADA YANG TIDAK PUNYA DATA OFFERING
+    if (hasInvalid) {
+      // Buat pesan alert
+      let errorMessage = '❌ TIDAK DAPAT MELAKUKAN AKSI!\n\n';
+      
+      if (action === 'accepted') {
+        errorMessage += 'Terdapat peserta yang belum memiliki data Offering:\n\n';
+      } else if (action === 'decline') {
+        errorMessage += 'Terdapat peserta yang belum memiliki data Offering:\n\n';
+      }
+      
+      // Tampilkan maksimal 3 nama
+      const displayNames = noOfferingData.slice(0, 3);
+      displayNames.forEach(name => {
+        errorMessage += `• ${name}\n`;
+      });
+      
+      if (noOfferingData.length > 3) {
+        errorMessage += `• ... dan ${noOfferingData.length - 3} lainnya\n`;
+      }
+      
+      errorMessage += '\n⚠️ Silakan lengkapi data offering terlebih dahulu.';
+      
+      // Tampilkan alert
+      alert(errorMessage);
+      
+      // Highlight rows yang bermasalah
+      selected.forEach(cb => {
+        if (cb.getAttribute('data-has-offering') === '0') {
+          const row = cb.closest('tr');
+          row.classList.add('bg-red-50', 'border-l-4', 'border-l-red-500');
+          
+          // Auto-remove highlight setelah 3 detik
+          setTimeout(() => {
+            row.classList.remove('bg-red-50', 'border-l-4', 'border-l-red-500');
+          }, 3000);
+        }
+      });
+      
+      return; // STOP, jangan lanjut ke modal konfirmasi
+    }
+
+    // ✅ SEMUA VALID - Lanjut ke modal konfirmasi
+    selectedAction = action;
+
+    let msg = '';
+    if (action === 'accepted') {
+      msg = "Apakah Anda yakin ingin MENERIMA offering untuk " + selected.length + " peserta yang dipilih?";
+    } else if (action === 'decline') {
+      msg = "Apakah Anda yakin ingin MENOLAK offering untuk " + selected.length + " peserta yang dipilih?";
+    }
+
+    document.getElementById('confirmMessage').innerText = msg;
+    document.getElementById('confirmModal').classList.remove('hidden');
+  }
+
+  // Event listener untuk modal konfirmasi
+  document.getElementById('confirmYesBtn')?.addEventListener('click', function () {
+    const selected = getSelectedIds();
+
+    if (selected.length === 0) {
+      alert('Tidak ada peserta yang dipilih.');
+      return;
+    }
+
+    const form = document.getElementById('bulkActionForm');
+
+    // hapus input lama jika ada
+    form.querySelectorAll('input[name="bulk_action"]').forEach(el => el.remove());
+
+    let input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'bulk_action';
+    input.value = selectedAction;
+
+    form.appendChild(input);
+    form.submit();
+  });
+  
+  // ============================================
+  // EVENT LISTENERS
+  // ============================================
+  
+  // Update summary saat checkbox berubah
+  document.addEventListener('change', function(e) {
+    if (e.target.matches('input[name="ids[]"]')) {
+      // Jika modal email terbuka, update summary
+      if (!document.getElementById('emailModalOffering').classList.contains('hidden')) {
+        updateEmailSelectionSummary();
+      }
+    }
+  });
+  
+  // Check All checkbox
   document.getElementById('checkAll')?.addEventListener('change', function () {
-    document.querySelectorAll('input[name="ids[]"]:not(:disabled)')
+    document.querySelectorAll('input[name="ids[]"]')
       .forEach(cb => cb.checked = this.checked);
+    
+    // Update summary jika modal terbuka
+    if (!document.getElementById('emailModalOffering').classList.contains('hidden')) {
+      updateEmailSelectionSummary();
+    }
   });
 </script>
 @endverbatim

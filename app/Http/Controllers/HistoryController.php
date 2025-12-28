@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Applicant;
 use App\Models\TestResult;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class HistoryController extends Controller
@@ -14,61 +15,96 @@ class HistoryController extends Controller
     {
         $userId = Auth::id();
 
-        // Ambil semua applicant.id milik user ini (dipakai untuk filter eager load answers)
+        // 🔹 Ambil semua applicant ID milik user
         $userApplicantIds = Applicant::where('user_id', $userId)->pluck('id');
 
+        // Ambil semua applicant milik user
         $applicants = Applicant::with([
             'position.test',
-            // Jadwal Technical Test untuk posisi (urut terbaru)
-            'position.technicalSchedules' => fn($q) => $q->orderByDesc('schedule_date'),
-            // Eager load answers milik user saja -> hemat query & data
-            'position.technicalSchedules.answers' => fn($q) => $q->whereIn('applicant_id', $userApplicantIds),
-            // Jadwal Interview untuk posisi (urut terbaru)
-            'position.interviewSchedules' => fn($q) => $q->orderByDesc('schedule_start'),
+
+            'position.technicalSchedules' => fn ($q) =>
+                $q->orderByDesc('schedule_date'),
+
+            'position.technicalSchedules.answers' => fn ($q) =>
+                $q->whereIn('applicant_id', $userApplicantIds),
+
+            'position.interviewSchedules' => fn ($q) =>
+                $q->orderByDesc('schedule_start'),
+
             'offering',
+            'offering.field',
+            'offering.subfield',
+            'offering.job',
+            'offering.seksi',
         ])
             ->where('user_id', $userId)
             ->latest()
             ->get();
 
+        /**
+         * 🔐 AUTO-REJECT OFFERING (SYSTEM)
+         * HANYA JIKA:
+         * - offering ada
+         * - BELUM ADA keputusan
+         * - deadline terlewati
+         * - status masih Offering
+         */
+        $applicants->each(function ($applicant) {
+            $offering = $applicant->offering;
+
+            if (
+                $offering &&
+                is_null($offering->decision) && // ✅ lebih aman
+                $offering->response_deadline &&
+                now()->greaterThan($offering->response_deadline) &&
+                $applicant->status === 'Offering'
+            ) {
+                DB::transaction(function () use ($offering, $applicant) {
+                    $offering->update([
+                        'decision'         => 'declined',
+                        'decision_by'      => 'system',
+                        'decision_reason'  => 'expired',
+                        'responded_at'     => now(),
+                    ]);
+
+                    $applicant->update([
+                        'status' => 'Menolak Offering',
+                    ]);
+                });
+            }
+        });
+
+        /**
+         * ===== STATUS TES TULIS & OFFERING EXPIRED CHECK =====
+         */
         $applicants->each(function ($applicant) {
             $test = $applicant->position?->test;
 
-            // Kalau posisinya gak punya tes tulis
             if (!$test) {
                 $applicant->hasStartedWrittenTest  = false;
                 $applicant->hasFinishedWrittenTest = false;
-                return;
+            } else {
+                $latestResult = TestResult::where('applicant_id', $applicant->id)
+                    ->where('test_id', $test->id)
+                    ->latest('id')
+                    ->first();
+
+                $applicant->hasStartedWrittenTest  = $latestResult && $latestResult->started_at;
+                $applicant->hasFinishedWrittenTest = $latestResult && $latestResult->finished_at;
             }
 
-            // Ambil test_result terbaru untuk applicant + test ini
-            $latestResult = TestResult::where('applicant_id', $applicant->id)
-                ->where('test_id', $test->id)
-                ->latest('id')
-                ->first();
-
-            $hasStarted  = $latestResult && !is_null($latestResult->started_at);
-            $hasFinished = $latestResult && !is_null($latestResult->finished_at);
-
-            $applicant->hasStartedWrittenTest  = $hasStarted;
-            $applicant->hasFinishedWrittenTest = $hasFinished;
-
-
-            // Set default
+            // ✅ PERBAIKAN: Gunakan response_deadline langsung dari database
             $applicant->isOfferingExpired = false;
-            $applicant->deadlineDate = null; // Inisialisasi awal agar tidak undefined
-
+            
             if ($applicant->offering) {
-                // Ambil waktu dibuatnya offering
-                $createdAt = $applicant->offering->created_at;
-
-                // 2. Tentukan Deadline (Tambah 5 hari kerja)
-                // Menggunakan addWeekdays(5) secara otomatis melompati Sabtu & Minggu
-                $applicant->deadlineDate = $createdAt->copy()->addWeekdays(5)->endOfDay();
-
-                // 3. Tentukan apakah sudah expired
-                // Cukup bandingkan waktu sekarang dengan deadlineDate
-                $applicant->isOfferingExpired = now()->greaterThan($applicant->deadlineDate);
+                // Ambil deadline langsung dari response_deadline
+                $applicant->deadlineDate = $applicant->offering->response_deadline;
+                
+                // Tentukan apakah expired
+                $applicant->isOfferingExpired = 
+                    $applicant->deadlineDate && 
+                    now()->greaterThan($applicant->deadlineDate) &&
+                    $applicant->status === 'Offering';
             }
         });
 

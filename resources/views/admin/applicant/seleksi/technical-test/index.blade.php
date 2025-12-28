@@ -173,11 +173,16 @@
                         && $a->latestEmailLog->success;
 
                     $isLocked = in_array($a->status, $finalTechStatuses, true) && $emailLocked;
+                    
+                    // ✅ TAMBAH: Cek apakah sudah dinilai
+                    $isScored = !is_null($ans?->score);
                   @endphp
 
                   <input type="checkbox"
                         name="ids[]"
                         value="{{ $a->id }}"
+                        data-status="{{ $a->status }}"
+                        data-scored="{{ $isScored ? '1' : '0' }}" {{-- ✅ ATRIBUT BARU --}}
                         {{ $isLocked ? 'disabled' : '' }}>
                 </td>
 
@@ -211,7 +216,13 @@
                 <td class="px-3 py-2 whitespace-nowrap">{{ $ans?->keterangan ?? '-' }}</td>
 
                 {{-- Nilai --}}
-                <td class="px-3 py-2 whitespace-nowrap">{{ is_null($ans?->score) ? '-' : $ans->score }}</td>
+                <td class="px-3 py-2 whitespace-nowrap">
+                  @if(is_null($ans?->score))
+                    <span class="text-red-500 font-semibold" title="Belum dinilai">-</span>
+                  @else
+                    {{ $ans->score }}
+                  @endif
+                </td>
 
                 {{-- Status peserta --}}
                 <td class="px-3 py-2 whitespace-nowrap">
@@ -640,14 +651,42 @@
       });
     });
 
-    // Selected IDs (tab Terpilih)
+    // Fungsi untuk mendapatkan ID yang terpilih (digunakan di tab Terpilih)
     function setSelectedIds() {
       let ids = [];
-      document.querySelectorAll('input[name="ids[]"]:checked').forEach(cb => ids.push(cb.value));
+      let hasUnprocessed = false;
+      let hasUnscored = false; // ✅ TAMBAH VARIABLE BARU
+
+      document.querySelectorAll('input[name="ids[]"]:checked').forEach(cb => {
+        ids.push(cb.value);
+
+        // 🔴 RULE TECHNICAL TEST
+        if (cb.dataset.status === 'Technical Test') {
+          hasUnprocessed = true;
+        }
+
+        // ✅ VALIDASI TAMBAHAN: Cek apakah sudah dinilai
+        if (cb.dataset.scored === '0') {
+          hasUnscored = true;
+        }
+      });
+
       if (ids.length === 0) {
         alert("Silakan pilih peserta terlebih dahulu.");
         return false;
       }
+
+      if (hasUnprocessed) {
+        alert("Terdapat peserta yang belum diloloskan atau digagalkan.");
+        return false;
+      }
+
+      // 🔴 TAMBAH VALIDASI: Untuk email terpilih
+      if (hasUnscored) {
+        alert("Terdapat peserta yang belum dinilai.");
+        return false;
+      }
+
       document.getElementById('selectedIds').value = ids.join(',');
       return true;
     }
@@ -666,10 +705,12 @@
     // Confirm Modal
     let selectedAction = null;
 
+    // Fungsi helper untuk mendapatkan checkbox yang tercentang
     function getSelectedIds() {
       return document.querySelectorAll('input[name="ids[]"]:checked');
     }
 
+    // Fungsi untuk membuka modal konfirmasi dengan validasi baru
     function openConfirmModal(action) {
       const selected = getSelectedIds();
 
@@ -679,13 +720,38 @@
         return;
       }
 
-      // ⛔ cegah kalau ada checkbox disabled ikut kepilih (defensive)
+      // ⛔ Cek jika ada checkbox disabled ikut kepilih (defensive)
       if ([...selected].some(cb => cb.disabled)) {
         alert('Ada peserta yang sudah final dan tidak bisa diproses ulang.');
         return;
       }
 
-      // ✅ lanjut normal
+      // 🔴 VALIDASI BARU: Untuk tombol LOLOS, cek apakah semua yang dipilih sudah dinilai
+      if (action === 'lolos') {
+        const unscoredParticipants = [];
+        
+        selected.forEach(cb => {
+          if (cb.dataset.scored === '0') { // 0 = belum dinilai
+            const row = cb.closest('tr');
+            const nameCell = row.querySelector('td:nth-child(2)'); // Kolom nama (indeks 2)
+            if (nameCell) {
+              unscoredParticipants.push(nameCell.textContent.trim());
+            }
+          }
+        });
+
+        if (unscoredParticipants.length > 0) {
+          let message = 'Terdapat peserta yang belum dinilai:\n\n';
+          unscoredParticipants.forEach((name, index) => {
+            message += `${index + 1}. ${name}\n`;
+          });
+          message += '\nHarap berikan nilai terlebih dahulu sebelum meloloskan.';
+          alert(message);
+          return;
+        }
+      }
+
+      // ✅ SEMUA VALIDASI BERHASIL
       selectedAction = action;
 
       const msg = action === 'lolos'

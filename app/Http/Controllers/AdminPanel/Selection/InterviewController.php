@@ -436,7 +436,20 @@ class InterviewController extends Controller
 
         foreach ($data['ids'] as $id) {
             try {
-                $a = Applicant::find($id);
+                $a = Applicant::with('latestEmailLog')->find($id);
+
+                if (!$a) {
+                    $failed++;
+                    $failedNames[] = "#{$id}";
+                    continue;
+                }
+
+                // 🔴 RULE BARU: hanya boleh proses jika masih Interview
+                if ($a->status !== 'Interview') {
+                    $failed++;
+                    $failedNames[] = $a->name . ' (status bukan Interview)';
+                    continue;
+                }
 
                 $finalInterviewStatuses = [
                     'Offering',
@@ -452,7 +465,7 @@ class InterviewController extends Controller
 
                 if (in_array($a->status, $finalInterviewStatuses, true) && $emailLocked) {
                     $failed++;
-                    $failedNames[] = $a->name;
+                    $failedNames[] = $a->name . ' (sudah final & email terkirim)';
                     continue;
                 }
 
