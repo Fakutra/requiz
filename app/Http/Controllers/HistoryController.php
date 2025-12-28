@@ -56,6 +56,7 @@ class HistoryController extends Controller
 
             // Set default
             $applicant->isOfferingExpired = false;
+            $applicant->deadlineDate = null; // Inisialisasi awal agar tidak undefined
 
             if ($applicant->offering) {
                 // Ambil waktu dibuatnya offering

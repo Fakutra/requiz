@@ -16,33 +16,7 @@ class LowonganController extends Controller
 {
     public function index(Request $request)
     {
-        $q   = trim($request->input('q', ''));
-        $edu = $request->input('edu', ''); // contoh: 'SMA/Sederajat', 'D3', 'D4', 'S1', 'S2', 'S3'
-
-        // Ambil semua posisi yang aktif dan batch-nya aktif
-        $positions = Position::query()
-            ->withCount('applicants')
-            ->where('status', 'Active')
-            ->whereHas('batch', function ($q) {
-                $q->where('status', 'Active');
-            })
-            // 🔍 Filter pencarian teks
-            ->when($q, function ($query) use ($q) {
-                $query->where(function ($qq) use ($q) {
-                    $qq->where('name', 'ILIKE', "%{$q}%")
-                    ->orWhere('slug', 'ILIKE', "%{$q}%")
-                    ->orWhere('description', 'ILIKE', "%{$q}%");
-                });
-            })
-            // 🎓 Filter jenjang pendidikan minimum
-            ->when($edu, function ($query) use ($edu) {
-                $query->where('pendidikan_minimum', $edu);
-            })
-            ->orderBy('id', 'asc')
-            ->paginate(9)
-            ->withQueryString(); // supaya query ?q=&edu= tetap terbawa di pagination
-
-        return view('joblist', compact('positions', 'q', 'edu'));
+        return view('joblist');
     }
 
     public function store(Request $request, Position $position)

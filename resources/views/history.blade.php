@@ -625,7 +625,7 @@
                 <br>
                 @if(!$applicant->isOfferingExpired)
                 <p>
-                    <strong>Batas respon</strong> offering maksimal 5 hari kerja pada tanggal <strong>{{ $applicant->deadlineDate->translatedFormat('d F Y') }}</strong>. Jika melewati batas waktu tersebut, maka kami anggap mengundurkan diri.
+                    <strong>Batas respon</strong> offering maksimal 5 hari kerja pada tanggal <strong>{{ $applicant->deadlineDate?->translatedFormat('d F Y') ?? 'Belum ada jadwal' }}</strong>. Jika melewati batas waktu tersebut, maka kami anggap mengundurkan diri.
                 </p>
                 @else
                 <p>

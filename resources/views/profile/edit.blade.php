@@ -10,12 +10,12 @@
                     <button @click="tab = 'info'"
                         :class="tab === 'info' ? 'bg-[#009DA9] text-white' : 'text-gray-700 hover:bg-gray-100'"
                         class="w-full text-left px-4 py-2 rounded-lg font-medium">
-                        Update Info
+                        Informasi Profil
                     </button>
                     <button @click="tab = 'password'"
                         :class="tab === 'password' ? 'bg-[#009DA9] text-white' : 'text-gray-700 hover:bg-gray-100'"
                         class="w-full text-left px-4 py-2 rounded-lg font-medium">
-                        Change Password
+                        Ganti Password
                     </button>
                 </nav>
             </aside>

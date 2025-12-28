@@ -7,6 +7,7 @@ use App\Models\Contact;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\View;
 
+
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -14,7 +15,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        \Illuminate\Pagination\Paginator::useTailwind();
     }
 
     /**
