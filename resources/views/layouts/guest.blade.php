@@ -27,6 +27,7 @@
 
     {{-- Datatables --}}
     {{-- <link rel="stylesheet" href="resources/css/dataTables.css" /> --}}
+
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
@@ -71,34 +72,34 @@
                 <h3 class="text-3xl font-bold mb-6">ReQuiz</h3>
 
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                @forelse($footerContacts as $c)
+                    @forelse($footerContacts as $c)
                     <div>
-                    <div class="text-lg font-semibold">{{ $c->narahubung ?? 'Kontak' }}</div>
+                        <div class="text-lg font-semibold">{{ $c->narahubung ?? 'Kontak' }}</div>
 
-                    @if($c->email)
+                        @if($c->email)
                         <a href="mailto:{{ $c->email }}" class="block text-sm text-gray-300 hover:text-white mt-1 no-underline">
-                        ✉️ {{ $c->email }}
+                            ✉️ {{ $c->email }}
                         </a>
-                    @endif
+                        @endif
 
-                    @php $wa = $c->wa_number; @endphp
+                        @php $wa = $c->wa_number; @endphp
                         @if($wa)
                         <a href="https://wa.me/{{ $wa }}" target="_blank" class="block text-sm text-gray-300 hover:text-white no-underline">
                             📱 {{ $c->phone }}
                         </a>
-                    @endif
+                        @endif
 
-                    @if($c->jam_operasional)
+                        @if($c->jam_operasional)
                         <div class="text-xs text-gray-400 mt-1">{{ $c->jam_operasional }}</div>
-                    @endif
+                        @endif
                     </div>
-                @empty
+                    @empty
                     <div class="text-gray-400">Kontak belum tersedia.</div>
-                @endforelse
+                    @endforelse
                 </div>
 
                 <div class="mt-8 border-t border-gray-700 pt-6 text-center text-sm text-gray-500">
-                © {{ now()->year }} ReQuiz. All rights reserved.
+                    © {{ now()->year }} ReQuiz. All rights reserved.
                 </div>
             </div>
         </footer>

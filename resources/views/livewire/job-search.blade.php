@@ -16,7 +16,7 @@
                 <input
                     wire:model.live.debounce.500ms="q"
                     type="text"
-                    placeholder="Cari lowongan..."
+                    placeholder="Ketik untuk mencari lowongan..."
                     class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#009DA9] focus:border-[#009DA9] outline-none shadow-sm" />
 
                 {{-- Indikator Loading (Muncul saat Livewire sedang fetch data) --}}
