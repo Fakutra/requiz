@@ -17,7 +17,7 @@
         </div>
         <div class="w-full px-8" id="job">
             <div class="max-w-7xl py-10 mx-auto">
-                <div class="flex flex-wrap justify-between align-items-center">
+                <div class="flex flex-wrap justify-between align-items-center mb-4">
                     <h1 class="font-bold text-2xl md:text-3xl">Lowongan tersedia</h1>
                     <a href="{{ route('joblist') }}">
                         <div class="flex flex-wrap gap-2 items-center text-[#009DA9]">
@@ -30,7 +30,7 @@
                 </div>
 
                 @if ($latestPositions->isNotEmpty())
-                <div class="grid grid-cols-1 mt-4 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     @foreach($latestPositions as $position)
                     <div class="bg-white flex flex-col justify-between h-full rounded-2xl shadow-md p-6
                                 hover:shadow-lg transition">
@@ -65,12 +65,20 @@
                     @endforeach
                 </div>
                 @else
-                <div class="flex-col justify-items-center md:p-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-14 text-red-600">
-                        <path fill-rule="evenodd" d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003ZM12 8.25a.75.75 0 0 1 .75.75v3.75a.75.75 0 0 1-1.5 0V9a.75.75 0 0 1 .75-.75Zm0 8.25a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" clip-rule="evenodd" />
-                    </svg>
-                    <h1 class="font-bold text-2xl mt-1 text-center">Tidak dapat menampilkan data</h1>
-                    <p class="text-gray-400 text-lg text-center">Belum ada lowongan pekerjaan yang buka saat ini, silahkan untuk memeriksa kembali dalam beberapa waktu ke depan.</p>
+                <div class="flex items-center justify-center min-h-[36vh] bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+                    <div class="text-center max-w-md px-6">
+                        <div class="bg-red-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-10 h-10 text-red-600">
+                                <path fill-rule="evenodd" d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748 c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5 L9.4 3.003ZM12 8.25a.75.75 0 0 1 .75.75v3.75a.75.75 0 0 1-1.5 0V9a.75.75 0 0 1 .75-.75Zm0 8.25a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <h1 class="text-xl md:text-2xl font-bold text-gray-800 mb-2">
+                            Lowongan belum tersedia
+                        </h1>
+                        <p class="text-gray-500 text-sm md:text-lg leading-relaxed">
+                            Saat ini belum ada lowongan pekerjaan yang dibuka. Silakan periksa kembali dalam beberapa waktu ke depan
+                        </p>
+                    </div>
                 </div>
                 @endif
             </div>
@@ -78,9 +86,9 @@
 
         <div class="w-full px-8" id="faq">
             <div class="max-w-7xl py-10 mx-auto">
-                <h1 class="font-bold text-2xl md:text-3xl">Frequently Asked Question</h1>
+                <h1 class="font-bold text-2xl md:text-3xl mb-4">Frequently Asked Question</h1>
 
-                <div class="max-w-7xl mx-auto mt-4 divide-y divide-gray-300">
+                <div class="max-w-7xl mx-auto divide-y divide-gray-300">
                     @forelse ($faqs as $i => $faq)
                     <div class="py-4" x-data="{ open: {{ $i === 0 ? 'true' : 'false' }} }">
                         <button type="button"
@@ -100,7 +108,18 @@
                         </div>
                     </div>
                     @empty
-                    <div class="text-gray-500">Belum ada FAQ.</div>
+                    <div class="flex items-center justify-center min-h-[36vh] bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+                        <div class="text-center max-w-md px-6">
+                            <div class="bg-red-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-10 h-10 text-red-600">
+                                    <path fill-rule="evenodd" d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748 c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5 L9.4 3.003ZM12 8.25a.75.75 0 0 1 .75.75v3.75a.75.75 0 0 1-1.5 0V9a.75.75 0 0 1 .75-.75Zm0 8.25a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                            <h1 class="text-xl md:text-2xl font-bold text-gray-800 mb-2">
+                                Belum ada konten yang ditampilkan
+                            </h1>
+                        </div>
+                    </div>
                     @endforelse
                 </div>
             </div>
@@ -108,8 +127,7 @@
 
         <div class="w-full px-8" id="about">
             <div class="max-w-7xl py-10 mx-auto">
-                <h1 class="font-bold text-2xl md:text-3xl">Tentang Kami</h1>
-
+                <h1 class="font-bold text-2xl md:text-3xl mb-4">Tentang Kami</h1>
                 @forelse($aboutBlocks as $block)
                 @php
                 $layout = $block->layout ?? 'image_left';
@@ -119,7 +137,7 @@
 
                 @switch($layout)
                 @case('image_right')
-                <div class="flex flex-col sm:flex-row gap-4 sm:gap-6 mt-6">
+                <div class="flex flex-col sm:flex-row gap-4 sm:gap-6">
                     <div class="flex-1 order-2 sm:order-2">
                         @if($img)
                         <img src="{{ Storage::url($img) }}" alt="{{ $alt }}" class="rounded-2xl w-full object-cover">
@@ -165,7 +183,18 @@
                 </div>
                 @endswitch
                 @empty
-                <div class="mt-4 text-gray-500">Belum ada konten yang ditampilkan.</div>
+                <div class="flex items-center justify-center min-h-[36vh] bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+                    <div class="text-center max-w-md px-6">
+                        <div class="bg-red-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-10 h-10 text-red-600">
+                                <path fill-rule="evenodd" d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748 c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5 L9.4 3.003ZM12 8.25a.75.75 0 0 1 .75.75v3.75a.75.75 0 0 1-1.5 0V9a.75.75 0 0 1 .75-.75Zm0 8.25a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <h1 class="text-xl md:text-2xl font-bold text-gray-800 mb-2">
+                            Belum ada konten yang ditampilkan
+                        </h1>
+                    </div>
+                </div>
                 @endforelse
             </div>
         </div>

@@ -15,26 +15,7 @@ class LowonganController extends Controller
 {
     public function index(Request $request)
     {
-        $q   = trim($request->input('q', ''));
-        $edu = $request->input('edu', '');
-
-        $positions = Position::query()
-            ->withCount('applicants')
-            ->where('status', 'Active')
-            ->whereHas('batch', fn ($q) => $q->where('status', 'Active'))
-            ->when($q, function ($query) use ($q) {
-                $query->where(function ($qq) use ($q) {
-                    $qq->where('name', 'ILIKE', "%{$q}%")
-                       ->orWhere('slug', 'ILIKE', "%{$q}%")
-                       ->orWhere('description', 'ILIKE', "%{$q}%");
-                });
-            })
-            ->when($edu, fn ($query) => $query->where('pendidikan_minimum', $edu))
-            ->orderBy('id', 'asc')
-            ->paginate(9)
-            ->withQueryString();
-
-        return view('joblist', compact('positions', 'q', 'edu'));
+        return view('joblist');
     }
 
     public function store(Request $request, Position $position)

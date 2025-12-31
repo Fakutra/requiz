@@ -59,7 +59,9 @@ use App\Http\Controllers\AdminPanel\Selection\TesTulisEmailController;
 use App\Http\Controllers\AdminPanel\Selection\TechnicalTestEmailController;
 use App\Http\Controllers\AdminPanel\Selection\InterviewEmailController;
 use App\Http\Controllers\AdminPanel\Selection\OfferingEmailController;
+use App\Http\Controllers\AdminPanel\SettingController;
 use App\Http\Controllers\OfferingResponseController;
+use Illuminate\Support\Facades\Storage;
 
 // ================= PUBLIC =================
 Route::get('/', [DashboardController::class, 'index'])->name('welcome');
@@ -69,9 +71,11 @@ Route::get('/jobdetail/{position:slug}', [LowonganController::class, 'show'])->n
 // Halaman publik Tentang Kami
 Route::get('/tentang-kami', [AboutController::class, 'show'])->name('about.show');
 
-Route::get('/dashboard', fn () => view('dashboard'))
+Route::get('/dashboard', fn() => view('dashboard'))
     ->middleware(['auth', 'verified', 'role:user'])
     ->name('dashboard');
+
+Route::get('/manual-book/download/{type}', [SettingController::class, 'download'])->name('manualbook.download');
 
 
 // ---------- Auth required (user) ----------
@@ -118,7 +122,7 @@ Route::middleware('auth', 'verified', 'role:user')->group(function () {
         ->name('quiz.finish');
 
     // Keep alive saat mengerjakan quiz
-    Route::get('/keepalive', fn () => response()->noContent())->name('keepalive');
+    Route::get('/keepalive', fn() => response()->noContent())->name('keepalive');
 
     // Peserta upload jawaban technical test untuk suatu schedule
     Route::post('technical-test/schedule/{schedule}/answer', [TechnicalTestAnswerController::class, 'store'])
@@ -210,7 +214,7 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/mark', [StageActionController::class, 'mark'])->name('mark');
         });
 
-        
+
 
         Route::post('admin/applicant/seleksi/update-status', [ActionsController::class, 'updateStatus'])
             ->name('admin.applicant.seleksi.updateStatus');
@@ -221,122 +225,119 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/admin/schedule', [ScheduleController::class, 'index'])->name('admin.schedule.index');
 
         // -------- Technical Test Schedules (CRUD admin + vendor) ----------
-        Route::get   ('admin/tech-schedule',            [TechnicalTestScheduleController::class, 'index'])->name('tech-schedule.index');
-        Route::post  ('admin/tech-schedule',            [TechnicalTestScheduleController::class, 'store'])->name('tech-schedule.store');
-        Route::put   ('admin/tech-schedule/{schedule}', [TechnicalTestScheduleController::class, 'update'])->name('tech-schedule.update');
+        Route::get('admin/tech-schedule',            [TechnicalTestScheduleController::class, 'index'])->name('tech-schedule.index');
+        Route::post('admin/tech-schedule',            [TechnicalTestScheduleController::class, 'store'])->name('tech-schedule.store');
+        Route::put('admin/tech-schedule/{schedule}', [TechnicalTestScheduleController::class, 'update'])->name('tech-schedule.update');
         Route::delete('admin/tech-schedule/{schedule}', [TechnicalTestScheduleController::class, 'destroy'])->name('tech-schedule.destroy');
 
         // -------- Interview Schedules (CRUD admin + vendor) ----------
-        Route::get   ('admin/interview-schedule',            [InterviewScheduleController::class, 'index'])->name('interview-schedule.index');
-        Route::post  ('admin/interview-schedule',            [InterviewScheduleController::class, 'store'])->name('interview-schedule.store');
-        Route::put   ('admin/interview-schedule/{schedule}', [InterviewScheduleController::class, 'update'])->name('interview-schedule.update');
+        Route::get('admin/interview-schedule',            [InterviewScheduleController::class, 'index'])->name('interview-schedule.index');
+        Route::post('admin/interview-schedule',            [InterviewScheduleController::class, 'store'])->name('interview-schedule.store');
+        Route::put('admin/interview-schedule/{schedule}', [InterviewScheduleController::class, 'update'])->name('interview-schedule.update');
         Route::delete('admin/interview-schedule/{schedule}', [InterviewScheduleController::class, 'destroy'])->name('interview-schedule.destroy');
     });
 
 
     // Master
-        Route::middleware(['auth', 'role:admin'])
-            ->prefix('admin')
-            ->name('admin.')
-            ->group(function () {
+    Route::middleware(['auth', 'role:admin'])
+        ->prefix('admin')
+        ->name('admin.')
+        ->group(function () {
 
-                // Bidang (CRUD)
-                Route::resource('fields', FieldController::class);
+            // Bidang (CRUD)
+            Route::resource('fields', FieldController::class);
 
-                // Sub Bidang (CRUD)
-                Route::resource('sub-fields', SubFieldController::class)
-                    ->names('subfields')
-                    ->parameters(['sub-fields' => 'subfield']);
-                    // supaya route name menjadi admin.subfields.* 
+            // Sub Bidang (CRUD)
+            Route::resource('sub-fields', SubFieldController::class)
+                ->names('subfields')
+                ->parameters(['sub-fields' => 'subfield']);
+            // supaya route name menjadi admin.subfields.* 
 
-                // Jabatan (CRUD)
-                Route::resource('jobs', JobController::class);
+            // Jabatan (CRUD)
+            Route::resource('jobs', JobController::class);
 
-                // Penempatan (CRUD)
-                Route::resource('seksi', SeksiController::class);
-            });
+            // Penempatan (CRUD)
+            Route::resource('seksi', SeksiController::class);
+        });
 
     /**
      * ========== ADMIN ONLY (role: admin) ==========
      * Semua konfigurasi & master data khusus admin.
      */
     Route::middleware('role:admin')->group(function () {
-
-        
-
         // -------- Applicant (read/export + write) ----------
-        Route::get   ('admin/applicant',        [ApplicantController::class, 'index'])->name('admin.applicant.index');
-        Route::get   ('admin/applicant/export', [ApplicantController::class, 'export'])->name('admin.applicant.export');
-        Route::put   ('admin/applicant/{applicant}',   [ApplicantController::class, 'update'])->name('admin.applicant.update');
+        Route::get('admin/applicant',        [ApplicantController::class, 'index'])->name('admin.applicant.index');
+        Route::get('admin/applicant/export', [ApplicantController::class, 'export'])->name('admin.applicant.export');
+        Route::put('admin/applicant/{applicant}',   [ApplicantController::class, 'update'])->name('admin.applicant.update');
         Route::delete('admin/applicant/{applicant}',   [ApplicantController::class, 'destroy'])->name('admin.applicant.destroy');
 
         // -------- User Admin Management ----------
-        Route::get   ('admin/admin',       [UserController::class, 'admin'])->name('admin.administrator.index');
-        Route::put   ('admin/user/vendor/{user}', [UserController::class, 'updateVendor'])->name('admin.user.updateVendor');
+        Route::get('admin/admin',       [UserController::class, 'admin'])->name('admin.administrator.index');
+        Route::put('admin/user/vendor/{user}', [UserController::class, 'updateVendor'])->name('admin.user.updateVendor');
 
         // -------- User Account Management ----------
-        Route::get   ('admin/user',        [UserController::class, 'index'])->name('admin.user.index');
-        Route::post  ('admin/user',        [UserController::class, 'store'])->name('admin.user.store');
-        Route::post  ('admin/user/vendor', [UserController::class, 'storeVendor'])->name('admin.user.storeVendor');
-        Route::put   ('admin/user/{user}', [UserController::class, 'update'])->name('admin.user.update');
+        Route::get('admin/user',        [UserController::class, 'index'])->name('admin.user.index');
+        Route::post('admin/user',        [UserController::class, 'store'])->name('admin.user.store');
+        Route::post('admin/user/vendor', [UserController::class, 'storeVendor'])->name('admin.user.storeVendor');
+        Route::put('admin/user/{user}', [UserController::class, 'update'])->name('admin.user.update');
         Route::delete('admin/user/{user}', [UserController::class, 'destroy'])->name('admin.user.destroy');
 
         // -------- Batch & Position (full CRUD) ----------
-        Route::post  ('admin/batch',           [BatchController::class, 'store'])->name('batch.store');
-        Route::get   ('admin/batch',           [BatchController::class, 'index'])->name('batch.index');
-        Route::get   ('admin/batch/{batch}',   [BatchController::class, 'show'])->name('batch.show');
-        Route::put   ('admin/batch/{id}',      [BatchController::class, 'update'])->name('batch.update');
+        Route::post('admin/batch',           [BatchController::class, 'store'])->name('batch.store');
+        Route::get('admin/batch',           [BatchController::class, 'index'])->name('batch.index');
+        Route::get('admin/batch/{batch}',   [BatchController::class, 'show'])->name('batch.show');
+        Route::put('admin/batch/{id}',      [BatchController::class, 'update'])->name('batch.update');
         Route::delete('admin/batch/{id}',      [BatchController::class, 'destroy'])->name('batch.destroy');
-        Route::get   ('admin/batch/checkSlug', [BatchController::class, 'checkSlug'])->name('batch.checkSlug');
+        Route::get('admin/batch/checkSlug', [BatchController::class, 'checkSlug'])->name('batch.checkSlug');
 
-        Route::post  ('admin/batch/{batch}/position', [PositionController::class, 'store'])->name('position.store');
-        Route::put   ('admin/position/{position}',    [PositionController::class, 'update'])->name('position.update');
+        Route::post('admin/batch/{batch}/position', [PositionController::class, 'store'])->name('position.store');
+        Route::put('admin/position/{position}',    [PositionController::class, 'update'])->name('position.update');
         Route::delete('admin/batch/position/{id}',    [PositionController::class, 'destroy'])->name('position.destroy');
-        Route::get   ('admin/batch/position/checkSlug', [PositionController::class, 'checkSlug'])->name('position.checkSlug');
+        Route::get('admin/batch/position/checkSlug', [PositionController::class, 'checkSlug'])->name('position.checkSlug');
 
         // -------- Test & Section (config) ----------
-        Route::post  ('admin/test',               [TestController::class, 'store'])->name('test.store');
-        Route::get   ('admin/test',               [TestController::class, 'index'])->name('test.index');
-        Route::get   ('admin/test/{test}',        [TestController::class, 'show'])->name('test.show');
-        Route::put   ('admin/test/{test}',        [TestController::class, 'update'])->name('test.update');
+        Route::post('admin/test',               [TestController::class, 'store'])->name('test.store');
+        Route::get('admin/test',               [TestController::class, 'index'])->name('test.index');
+        Route::get('admin/test/{test}',        [TestController::class, 'show'])->name('test.show');
+        Route::put('admin/test/{test}',        [TestController::class, 'update'])->name('test.update');
         Route::delete('admin/test/{test}',        [TestController::class, 'destroy'])->name('test.destroy');
-        Route::get   ('admin/test/checkSlug',     [TestController::class, 'checkSlug'])->name('test.checkSlug');
-        Route::post  ('/admin/tests/{test}/intro',[TestController::class, 'introStore'])->name('test.intro.store');
+        Route::get('admin/test/checkSlug',     [TestController::class, 'checkSlug'])->name('test.checkSlug');
+        Route::post('/admin/tests/{test}/intro', [TestController::class, 'introStore'])->name('test.intro.store');
 
-        Route::post  ('admin/test/{test}/section',   [TestSectionController::class, 'store'])->name('section.store');
-        Route::get   ('admin/section/checkSlug',     [TestSectionController::class, 'checkSlug'])->name('section.checkSlug');
-        Route::put   ('admin/section/{section}',     [TestSectionController::class, 'update'])->name('section.update');
-        Route::delete('admin/test/section/{section}',[TestSectionController::class, 'destroy'])->name('section.destroy');
+        Route::post('admin/test/{test}/section',   [TestSectionController::class, 'store'])->name('section.store');
+        Route::get('admin/section/checkSlug',     [TestSectionController::class, 'checkSlug'])->name('section.checkSlug');
+        Route::put('admin/section/{section}',     [TestSectionController::class, 'update'])->name('section.update');
+        Route::delete('admin/test/section/{section}', [TestSectionController::class, 'destroy'])->name('section.destroy');
 
         // -------- Question ----------
-        Route::get   ('admin/question',               [QuestionController::class, 'index'])->name('question.index');
-        Route::post  ('admin/question',               [QuestionController::class, 'store'])->name('question.store');
-        Route::put   ('admin/question/{question}',    [QuestionController::class, 'update'])->name('question.update');
+        Route::get('admin/question',               [QuestionController::class, 'index'])->name('question.index');
+        Route::post('admin/question',               [QuestionController::class, 'store'])->name('question.store');
+        Route::put('admin/question/{question}',    [QuestionController::class, 'update'])->name('question.update');
         Route::delete('admin/question/{question}',    [QuestionController::class, 'destroy'])->name('question.destroy');
-        Route::post  ('admin/question/import',        [QuestionController::class, 'import'])->name('question.import');
-        Route::get   ('admin/question/template',      [QuestionController::class, 'downloadTemplate'])->name('question.template');
+        Route::post('admin/question/import',        [QuestionController::class, 'import'])->name('question.import');
+        Route::get('admin/question/template',      [QuestionController::class, 'downloadTemplate'])->name('question.template');
 
         // -------- Bundle (config + index/show) ----------
-        Route::post  ('admin/bundle',                       [QuestionBundleController::class, 'store'])->name('bundle.store');
-        Route::get   ('admin/bundle',                       [QuestionBundleController::class, 'index'])->name('bundle.index');
-        Route::get   ('admin/bundle/{bundle}',              [QuestionBundleController::class, 'show'])->name('bundle.show');
-        Route::put   ('admin/bundle/{bundle}',              [QuestionBundleController::class, 'update'])->name('bundle.update');
+        Route::post('admin/bundle',                       [QuestionBundleController::class, 'store'])->name('bundle.store');
+        Route::get('admin/bundle',                       [QuestionBundleController::class, 'index'])->name('bundle.index');
+        Route::get('admin/bundle/{bundle}',              [QuestionBundleController::class, 'show'])->name('bundle.show');
+        Route::put('admin/bundle/{bundle}',              [QuestionBundleController::class, 'update'])->name('bundle.update');
         Route::delete('admin/bundle/{bundle}',              [QuestionBundleController::class, 'destroy'])->name('bundle.destroy');
-        Route::get   ('admin/bundle/checkSlug',             [QuestionBundleController::class, 'checkSlug'])->name('bundle.checkSlug');
-        Route::post  ('admin/bundle/{bundle}/questions',    [QuestionBundleController::class, 'addQuestion'])->name('bundle.questions.add');
+        Route::get('admin/bundle/checkSlug',             [QuestionBundleController::class, 'checkSlug'])->name('bundle.checkSlug');
+        Route::post('admin/bundle/{bundle}/questions',    [QuestionBundleController::class, 'addQuestion'])->name('bundle.questions.add');
         Route::delete('admin/bundle/{bundle}/questions/{question}', [QuestionBundleController::class, 'removeQuestion'])->name('bundle.questions.remove');
 
         // -------- Quiz Results ----------
-        Route::get   ('admin/quiz-results',              [QuizResultController::class, 'index'])->name('quiz_results.index');
-        Route::get   ('admin/quiz-results/{testResult}', [QuizResultController::class, 'show'])->name('quiz_results.show');
+        Route::get('admin/quiz-results',              [QuizResultController::class, 'index'])->name('quiz_results.index');
+        Route::get('admin/quiz-results/{testResult}', [QuizResultController::class, 'show'])->name('quiz_results.show');
 
         // -------- Essay Grading ----------
-        Route::get   ('essay-grading',                     [EssayGradingController::class, 'index'])->name('essay_grading.index');
-        Route::patch ('essay-grading/result/{testResult}', [EssayGradingController::class, 'updateResult'])->name('essay_grading.update_result');
+        Route::get('essay-grading',                     [EssayGradingController::class, 'index'])->name('essay_grading.index');
+        Route::patch('essay-grading/result/{testResult}', [EssayGradingController::class, 'updateResult'])->name('essay_grading.update_result');
 
         // Admin: Penilaian Technical Test (update saja + index)
-        Route::get   ('admin/tech-answers', [TechnicalTestAnswerController::class, 'index'])->name('tech-answers.index');
-        Route::patch ('admin/tech-answers/{answer}', [TechnicalTestAnswerController::class, 'update'])->name('tech-answers.update');
+        Route::get('admin/tech-answers', [TechnicalTestAnswerController::class, 'index'])->name('tech-answers.index');
+        Route::patch('admin/tech-answers/{answer}', [TechnicalTestAnswerController::class, 'update'])->name('tech-answers.update');
 
         // -------- Activity Logs ----------
         Route::get('/admin/logs', [ActivityLogController::class, 'index'])
@@ -351,16 +352,16 @@ Route::middleware(['auth'])->group(function () {
         });
 
         // ===== FAQ 
-        Route::get   ('admin/faq',        [FaqController::class, 'index'])->name('admin.faq.index');
-        Route::post  ('admin/faq',        [FaqController::class, 'store'])->name('admin.faq.store');
-        Route::put   ('admin/faq/{faq}',  [FaqController::class, 'update'])->name('admin.faq.update');
+        Route::get('admin/faq',        [FaqController::class, 'index'])->name('admin.faq.index');
+        Route::post('admin/faq',        [FaqController::class, 'store'])->name('admin.faq.store');
+        Route::put('admin/faq/{faq}',  [FaqController::class, 'update'])->name('admin.faq.update');
         Route::delete('admin/faq/{faq}',  [FaqController::class, 'destroy'])->name('admin.faq.destroy');
 
         // ======= About Us (admin area) =========
-        Route::get   ('/admin/about',         [AboutController::class, 'index'])->name('admin.about.index');
-        Route::post  ('/admin/about',         [AboutController::class, 'store'])->name('admin.about.store');
-        Route::put   ('/admin/about/{about}', [AboutController::class, 'update'])->name('admin.about.update');
-        Route::delete('/admin/about/{about}', [AboutController::class,'destroy'])->name('admin.about.destroy');
+        Route::get('/admin/about',         [AboutController::class, 'index'])->name('admin.about.index');
+        Route::post('/admin/about',         [AboutController::class, 'store'])->name('admin.about.store');
+        Route::put('/admin/about/{about}', [AboutController::class, 'update'])->name('admin.about.update');
+        Route::delete('/admin/about/{about}', [AboutController::class, 'destroy'])->name('admin.about.destroy');
 
         // ======= Contact (admin) =========
         Route::prefix('admin')->name('admin.')->group(function () {
@@ -370,12 +371,17 @@ Route::middleware(['auth'])->group(function () {
         });
 
         // Privacy (admin static page)
-        Route::get('admin/privacy', fn () => view('admin.privacy.index'))->name('admin.privacy.index');
+        Route::get('admin/privacy', fn() => view('admin.privacy.index'))->name('admin.privacy.index');
+
+        // Manual Book
+        Route::get('admin/manual-book/', [SettingController::class, 'index'])->name('admin.manualbook.index');
+        Route::post('admin/manual-book/upload', [SettingController::class, 'upload'])->name('admin.manualbook.upload');
+        Route::delete('/manual-book/delete/{type}', [SettingController::class, 'destroy'])->name('admin.manualbook.delete');
 
         // -------- SK Regis ----------
-        Route::get   ('admin/skregis',           [SkregisController::class, 'index'])->name('admin.skregis.index');
-        Route::post  ('admin/skregis',           [SkregisController::class, 'store'])->name('admin.skregis.store');
-        Route::put   ('admin/skregis/{skregis}', [SkregisController::class, 'update'])->name('admin.skregis.update');
+        Route::get('admin/skregis',           [SkregisController::class, 'index'])->name('admin.skregis.index');
+        Route::post('admin/skregis',           [SkregisController::class, 'store'])->name('admin.skregis.store');
+        Route::put('admin/skregis/{skregis}', [SkregisController::class, 'update'])->name('admin.skregis.update');
         Route::delete('admin/skregis/{skregis}', [SkregisController::class, 'destroy'])->name('admin.skregis.destroy');
 
         // -------- Report----------
@@ -383,9 +389,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/admin/report/export', [ReportController::class, 'export'])->name('admin.report.export');
 
         // --------- Vendor Master (admin only) -----------
-        Route::get   ('admin/vendor',          [VendorController::class, 'index'])->name('admin.vendor.index');
-        Route::post  ('admin/vendor',          [VendorController::class, 'store'])->name('admin.vendor.store');
+        Route::get('admin/vendor',          [VendorController::class, 'index'])->name('admin.vendor.index');
+        Route::post('admin/vendor',          [VendorController::class, 'store'])->name('admin.vendor.store');
         Route::delete('admin/vendor/{vendor}', [VendorController::class, 'destroy'])->name('admin.vendor.destroy');
-        Route::put   ('admin/vendor/{vendor}', [VendorController::class, 'update'])->name('admin.vendor.update');
+        Route::put('admin/vendor/{vendor}', [VendorController::class, 'update'])->name('admin.vendor.update');
     });
 });
