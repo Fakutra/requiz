@@ -100,7 +100,7 @@
 
                         @php
                         $setting = \App\Models\Setting::first();
-                        $path = $setting->manual_book_path;
+                        $path = $setting?->manual_book_path;
                         @endphp
 
                         @if($path)

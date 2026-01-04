@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('manual_book_path')->nullable();
             $table->string('admin_manual_path')->after('manual_book_path')->nullable();
+            $table->string('vendor_manual_path')->after('admin_book_path')->nullable();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->timestamps();
         });
