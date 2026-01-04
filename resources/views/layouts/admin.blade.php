@@ -97,16 +97,26 @@
 
                 @php
                 $setting = \App\Models\Setting::first();
-                $path = $setting->admin_manual_path;
+                $userRole = auth()->user()->role;
+
+                // Tentukan property path dan label berdasarkan role
+                if ($userRole === 'admin') {
+                $path = $setting?->admin_manual_path;
+                $type = 'admin';
+                } else {
+                $path = $setting?->vendor_manual_path;
+                $type = 'vendor';
+                }
                 @endphp
 
-                <a
-                    href="{{ $path ? route('manualbook.download', 'admin') : 'javascript:void(0)' }}"
+                <a href="{{ $path ? route('manualbook.download', $type) : 'javascript:void(0)' }}"
                     onclick="{{ $path ? '' : 'showEmptyAlert()' }}"
-                    class="flex flex-row gap-2 text-gray-600 items-center border border-gray-300 hover:bg-gray-50 hover:border-gray-400 transition rounded-md p-2 no-underline">
+                    class="flex flex-row gap-2 text-gray-600 items-center border border-gray-300 transition rounded-md p-2 no-underline">
+
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
                     </svg>
+
                     <span>Unduh Manual Book</span>
                 </a>
 

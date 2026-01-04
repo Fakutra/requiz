@@ -21,70 +21,94 @@ class SettingController extends Controller
     {
         $request->validate([
             'manual_book' => 'required|mimes:pdf|max:10000',
-            'type' => 'required|in:applicant,admin'
+            'type' => 'required|in:applicant,admin,vendor'
         ]);
 
         $setting = Setting::first() ?? new Setting();
         $file = $request->file('manual_book');
+        $type = $request->type;
 
-        // Tentukan folder dan kolom database berdasarkan type
-        if ($request->type === 'applicant') {
-            $path = $file->store('manual_books/applicant', 'public');
-            $setting->manual_book_path = $path;
-        } else {
-            $path = $file->store('manual_books/admin', 'public');
-            $setting->admin_manual_path = $path;
-        }
+        // Tentukan folder penyimpanan
+        $path = $file->store("manual_books/$type", 'public');
 
+        // Tentukan kolom mana yang diisi berdasarkan type
+        match ($type) {
+            'applicant' => $setting->manual_book_path = $path,
+            'admin'     => $setting->admin_manual_path = $path,
+            'vendor'    => $setting->vendor_manual_path = $path,
+        };
+
+        $setting->user_id = auth()->id();
         $setting->save();
 
-        return back()->with('success', 'Manual Book ' . ucfirst($request->type) . ' berhasil diperbarui!');
+        return back()->with('success', 'Manual Book ' . ucfirst($type) . ' berhasil di-upload!');
     }
 
     public function download($type)
     {
         $setting = Setting::first();
-        $path = ($type === 'admin') ? $setting->admin_manual_path : $setting->manual_book_path;
 
-        // dd($path, storage_path('app/public/' . $path), file_exists(storage_path('app/public/' . $path)));
+        // 1. Tentukan path berdasarkan type (Admin, Vendor, atau Applicant)
+        $path = match ($type) {
+            'admin'     => $setting->admin_manual_path,
+            'vendor'    => $setting->vendor_manual_path, // Pastikan kolom ini sudah ada di DB
+            'applicant' => $setting->manual_book_path,
+            default     => null
+        };
 
-        // Bersihkan path
+        if (!$path) return back()->with('error', 'Path file tidak terkonfigurasi');
+
+        // Bersihkan path dan ambil path absolut
         $path = trim(str_replace('[null]', '', $path));
-
-        // Ambil path absolut di server
         $fullPathOnServer = storage_path('app/public/' . $path);
 
-        // Gunakan fungsi PHP native file_exists untuk tes
+        // 2. Cek fisik file dan tentukan nama download-nya
         if (!empty($path) && file_exists($fullPathOnServer)) {
-            $namaFile = ($type === 'admin') ? 'Manual_Book_Admin.pdf' : 'Manual_Book_Applicant.pdf';
+            $namaFile = match ($type) {
+                'admin'     => 'Manual_Book_Admin.pdf',
+                'vendor'    => 'Manual_Book_Vendor.pdf',
+                'applicant' => 'Manual_Book_Applicant.pdf',
+                default     => 'Manual_Book.pdf'
+            };
+
             return response()->download($fullPathOnServer, $namaFile, [
                 'Content-Type' => 'application/pdf',
             ]);
         }
 
-        return back()->with('error', 'File tidak ditemukan di: ' . $fullPathOnServer);
+        return back()->with('error', 'File tidak ditemukan di server');
     }
 
     public function destroy($type)
     {
         $setting = Setting::first();
-        if (!$setting) return back()->with('error', 'Data tidak ditemukan.');
+        if (!$setting) return back()->with('error', 'Data setting tidak ditemukan');
 
-        // Pilih kolom berdasarkan type
-        $column = ($type === 'admin') ? 'admin_manual_path' : 'manual_book_path';
+        // Pilih kolom database berdasarkan type
+        $column = match ($type) {
+            'admin'     => 'admin_manual_path',
+            'vendor'    => 'vendor_manual_path',
+            'applicant' => 'manual_book_path',
+            default     => null
+        };
+
+        if (!$column) return back()->with('error', 'Role tidak dikenali');
+
         $path = $setting->$column;
 
         if ($path) {
-            // Hapus file dari storage
-            Storage::disk('public')->delete($path);
+            // Hapus file fisik dari storage/app/public/
+            if (Storage::disk('public')->exists($path)) {
+                Storage::disk('public')->delete($path);
+            }
 
-            // Kosongkan kolom di database
+            // Kosongkan value di database
             $setting->$column = null;
             $setting->save();
 
-            return back()->with('success', "Manual Book " . ucfirst($type) . " berhasil dihapus.");
+            return back()->with('success', "Manual Book " . ucfirst($type) . " berhasil dihapus");
         }
 
-        return back()->with('error', 'File tidak ada');
+        return back()->with('error', 'File memang sudah tidak ada');
     }
 }

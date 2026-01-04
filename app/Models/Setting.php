@@ -10,6 +10,8 @@ class Setting extends Model
     protected $fillable = [
         'user_id',
         'manual_book_path',
+        'admin_book_path',
+        'vendor_book_path',
     ];
 
     public function user()
