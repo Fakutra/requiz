@@ -10,7 +10,7 @@
                 {!! $test->intro_rendered ?: '<p>Tidak ada deskripsi singkat untuk kuis ini.</p>' !!}
             </div>
 
-            <p class="text-gray-700 font-medium mb-8">Selamat mengerjakan dan semoga berhasil.</p>
+            {{-- <p class="text-gray-700 font-medium mb-8">Selamat mengerjakan dan semoga berhasil.</p> --}}
 
             <div class="flex justify-center gap-5 text-center">
                 <a href="{{ route('history.index') }}"

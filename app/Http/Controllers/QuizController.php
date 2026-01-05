@@ -123,6 +123,21 @@ class QuizController extends Controller
         }
         $currentSection = $sections->firstWhere('id', $currentSectionId);
 
+        // ====== TENTUKAN APAKAH INI SECTION TERAKHIR ======
+        $isLastSection = false;
+        $sectionIds = $sections->pluck('id')->toArray();
+        $currentIndex = array_search($currentSection->id, $sectionIds);
+        
+        // Jika ini adalah elemen terakhir dalam array, maka ini section terakhir
+        if ($currentIndex !== false && $currentIndex === (count($sectionIds) - 1)) {
+            $isLastSection = true;
+        }
+        
+        // Jika hanya ada 1 section, otomatis last section
+        if ($sections->count() === 1) {
+            $isLastSection = true;
+        }
+
         // Row section result aktif
         $sectionResult = TestSectionResult::firstOrCreate(
             ['test_result_id' => $testResult->id, 'test_section_id' => $currentSection->id]
@@ -269,7 +284,6 @@ class QuizController extends Controller
         $prevUrl = URL::signedRoute('quiz.start', ['slug' => $test->slug, 'no' => $prevNo]);
         $nextUrl = URL::signedRoute('quiz.start', ['slug' => $test->slug, 'no' => $nextNo]);
 
-
         return response()->view('quiz', [
             'test'           => $test,
             'sections'       => $sections,
@@ -285,6 +299,7 @@ class QuizController extends Controller
             'testResult'     => $testResult,
             'sectionResult'  => $sectionResult,
             'deadline'       => $deadline,
+            'isLastSection'  => $isLastSection, // ← TAMBAHKAN INI
         ])->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
             ->header('Pragma', 'no-cache');
     }

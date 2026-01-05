@@ -8,6 +8,11 @@
             -ms-user-select: none;
             user-select: none;
         }
+        
+        .strong-warning {
+            font-weight: 700;
+            color: #dc2626;
+        }
     </style>
 
     <div class="py-4">
@@ -62,7 +67,7 @@
                                     </svg>
                                 </button>
 
-                                {{-- NEXT --}}
+                                {{-- NEXT (panah →) --}}
                                 <button type="button" id="next-btn"
                                     class="btn-next inline-flex items-center rounded-xl bg-blue-600 px-5 py-2 text-white shadow-sm transition hover:bg-blue-700 {{ $currentNo < $totalQuestions ? '' : 'hidden' }}"
                                     data-no="{{ $currentNo+1 <= $totalQuestions ? $currentNo+1 : '' }}">
@@ -73,10 +78,10 @@
                                     </svg>
                                 </button>
 
-                                {{-- SUBMIT (last question) --}}
+                                {{-- SUBMIT (hanya di soal terakhir) --}}
                                 <button type="submit" id="submit-btn"
                                     class="inline-flex items-center rounded-xl bg-blue-600 px-5 py-2 text-white shadow-sm transition hover:bg-blue-700 {{ $currentNo >= $totalQuestions ? '' : 'hidden' }}">
-                                    Selesai Tes
+                                    {{ $isLastSection ? 'Selesai Tes' : 'Selanjutnya' }}
                                 </button>
                             </div>
                         </div>
@@ -126,13 +131,51 @@
             <div id="confirmFinishModal" class="fixed inset-0 z-50 hidden">
                 <div class="absolute inset-0 bg-black/50"></div>
                 <div class="relative mx-auto my-12 max-w-md rounded-2xl bg-white p-6 shadow-xl">
-                    <h3 class="text-lg font-semibold text-gray-900">Yakin mau lanjut?</h3>
-                    <p class="mt-2 text-sm text-gray-600">
-                        Waktu pada section ini masih ada. Setelah melanjutkan, kamu <span class="font-semibold">tidak bisa kembali</span> ke section ini.
-                    </p>
+                    <h3 class="text-lg font-semibold text-gray-900">
+                        @if($isLastSection)
+                            Konfirmasi Selesai Tes
+                        @else
+                            Konfirmasi Lanjut Section
+                        @endif
+                    </h3>
+                    
+                    <div class="mt-2 text-sm text-gray-600">
+                        @if($isLastSection)
+                            <!-- Pesan untuk SELESAI TES -->
+                            <div class="space-y-2">
+                                <p>Waktu Tes masih ada.</p>
+                                <p>Apakah kamu yakin ingin menyelesaikan tes?</p>
+                            </div>
+                        @else
+                            <!-- Pesan untuk SECTION SELANJUTNYA -->
+                            <div class="space-y-2">
+                                <p>Waktu pada section ini masih ada.</p>
+                                <p>
+                                    Setelah melanjutkan, kamu 
+                                    <span class="strong-warning">TIDAK BISA</span> 
+                                    kembali ke section ini.
+                                </p>
+                                <p>Apakah kamu yakin ingin melanjutkan?</p>
+                            </div>
+                        @endif
+                    </div>
+                    
                     <div class="mt-6 flex justify-end gap-2">
-                        <button type="button" class="px-4 h-10 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50" data-finish-cancel>Batal</button>
-                        <button type="button" class="px-4 h-10 rounded-lg bg-blue-600 text-white hover:bg-blue-700" data-finish-confirm>Ya, lanjut</button>
+                        <button type="button" 
+                            class="px-4 h-10 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+                            data-finish-cancel>
+                            Batal
+                        </button>
+                        
+                        <button type="button" 
+                            class="px-4 h-10 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                            data-finish-confirm>
+                            @if($isLastSection)
+                                Ya, Selesaikan Tes
+                            @else
+                                Ya, Lanjutkan
+                            @endif
+                        </button>
                     </div>
                 </div>
             </div>
@@ -419,6 +462,12 @@
                 if (submitBtn) {
                     const isLast = currentNo === totalQuestions;
                     submitBtn.classList.toggle('hidden', !isLast);
+                    
+                    // Update teks tombol berdasarkan isLastSection
+                    if (isLast) {
+                        const isLastSection = @json($isLastSection ?? false);
+                        submitBtn.textContent = isLastSection ? 'Selesai Tes' : 'Section Selanjutnya';
+                    }
                 }
 
                 refreshNavigatorHighlight();
