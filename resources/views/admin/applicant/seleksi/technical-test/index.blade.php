@@ -9,6 +9,25 @@
       </a>
 
       <h2 class="text-lg font-semibold leading-none m-0">Seleksi Technical Test</h2>
+      <div class="ml-auto flex items-center">
+
+        <!-- Panah kiri (nempel) -->
+        <a href="{{ route('admin.applicant.seleksi.tes_tulis.index',['batch'=>$batchId]) }}" 
+          class="text-gray-600 hover:text-gray-900 flex items-center">
+          <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+        </a>
+
+        <!-- Panah kanan -->
+        <a href="{{ route('admin.applicant.seleksi.interview.index',['batch'=>$batchId]) }}" 
+          class="text-gray-600 hover:text-gray-900 flex items-center">
+          <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+        </a>
+
+      </div>
     </div>
 
     {{-- Toolbar --}}
