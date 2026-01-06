@@ -283,9 +283,32 @@
             markAllUrl: '',
 
             init(el) {
-                this.notifications = JSON.parse(el.dataset.notifications);
-                this.unread = Number(el.dataset.unread);
-                this.markAllUrl = el.dataset.markAllUrl;
+                // ✅ TAMBAHKAN NULL CHECKING DI SINI
+                if (!el || !el.dataset) {
+                    console.log('Notification: Guest user - no element or dataset');
+                    return; // Stop jika element tidak ada
+                }
+                
+                // ✅ PARSE DENGAN TRY-CATCH DAN DEFAULT VALUES
+                try {
+                    // Gunakan empty array default jika tidak ada data
+                    this.notifications = JSON.parse(el.dataset.notifications || '[]');
+                } catch (error) {
+                    console.error('Notification: Error parsing JSON', error);
+                    this.notifications = [];
+                }
+                
+                // ✅ GUNAKAN DEFAULT VALUE 0 jika tidak ada
+                this.unread = Number(el.dataset.unread || 0);
+                
+                // ✅ GUNAKAN DEFAULT '#' jika tidak ada URL
+                this.markAllUrl = el.dataset.markAllUrl || '#';
+                
+                console.log('Notification component initialized:', {
+                    notificationsCount: this.notifications.length,
+                    unread: this.unread,
+                    hasMarkAllUrl: this.markAllUrl !== '#'
+                });
             },
 
             timeAgo(iso) {
@@ -298,6 +321,12 @@
             },
 
             async markAllAndClear() {
+                // ✅ CEK JIKA TIDAK ADA NOTIFIKASI
+                if (this.notifications.length === 0) {
+                    console.log('No notifications to mark as read');
+                    return;
+                }
+                
                 this.unread = 0;
                 const now = new Date().toISOString();
                 this.notifications = this.notifications.map(n => ({
@@ -305,21 +334,31 @@
                     read_at: n.read_at ?? now
                 }));
 
-                await fetch(this.markAllUrl, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                        'Accept': 'application/json'
+                // ✅ CEK JIKA markAllUrl ADA
+                if (this.markAllUrl && this.markAllUrl !== '#') {
+                    try {
+                        await fetch(this.markAllUrl, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                'Accept': 'application/json'
+                            }
+                        });
+                        console.log('All notifications marked as read');
+                    } catch (error) {
+                        console.error('Error marking notifications as read:', error);
                     }
-                });
+                }
             },
 
             openNotification(n) {
                 if (!n.read_at) {
                     n.read_at = new Date().toISOString();
-                    this.unread--;
+                    this.unread = Math.max(0, this.unread - 1); // Jangan minus
                 }
-                if (n.data?.link) window.location.href = n.data.link;
+                if (n.data?.link) {
+                    window.location.href = n.data.link;
+                }
             }
         }
     }
