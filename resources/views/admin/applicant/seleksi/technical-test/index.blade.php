@@ -210,25 +210,37 @@
 
                 {{-- Jawaban --}}
                 <td class="px-3 py-2 whitespace-nowrap">
-                  @if($ans && $ans->answer_url)
-                    <div class="flex items-center gap-3">
-                      <a href="{{ $ans->answer_url }}" target="_blank"
-                        class="text-red-600 hover:text-red-800"
-                        title="Lihat Jawaban (PDF)">
-                        <i class="fas fa-file-pdf fa-lg"></i>
-                      </a>
+                    @if($ans && $ans->answer_path)
+                        <div class="flex items-center gap-3">
+                            {{-- ⭐ PERBAIKAN: Generate URL yang benar --}}
+                            @php
+                                // Cek format answer_path
+                                if (str_contains($ans->answer_path, '/')) {
+                                    // Format lama: "technical_test_answers/{id}/filename.pdf"
+                                    $pdfUrl = asset('storage/' . $ans->answer_path);
+                                } else {
+                                    // Format baru: hanya nama file
+                                    $pdfUrl = asset('storage/technical_test_answers/' . $ans->answer_path);
+                                }
+                            @endphp
+                            
+                            <a href="{{ $pdfUrl }}" target="_blank"
+                                class="text-red-600 hover:text-red-800"
+                                title="Lihat Jawaban (PDF)">
+                                <i class="fas fa-file-pdf fa-lg"></i>
+                            </a>
 
-                      @if($ans->screen_record_url)
-                        <a href="{{ $ans->screen_record_url }}" target="_blank"
-                          class="text-purple-600 hover:text-purple-800"
-                          title="Lihat Rekaman Layar">
-                          <i class="fas fa-video fa-lg"></i>
-                        </a>
-                      @endif
-                    </div>
-                  @else
-                    <span class="text-gray-400">Belum upload</span>
-                  @endif
+                            @if($ans->screen_record_url)
+                                <a href="{{ $ans->screen_record_url }}" target="_blank"
+                                    class="text-purple-600 hover:text-purple-800"
+                                    title="Lihat Rekaman Layar">
+                                    <i class="fas fa-video fa-lg"></i>
+                                </a>
+                            @endif
+                        </div>
+                    @else
+                        <span class="text-gray-400">Belum upload</span>
+                    @endif
                 </td>
 
                 {{-- Keterangan --}}
@@ -397,24 +409,53 @@
 
             {{-- Kolom Kiri: PDF Preview --}}
             <div class="border rounded overflow-hidden">
-              @if($ans->answer_path)
-                <iframe src="{{ asset('storage/'.$ans->answer_path) }}" 
-                        class="w-full h-[500px]" frameborder="0"></iframe>
-              @else
-                <div class="p-4 bg-gray-50 text-sm text-gray-600 h-[500px] flex items-center justify-center">
-                  Tidak ada file PDF yang bisa ditampilkan.
-                </div>
-              @endif
+                @if($ans->answer_path)
+                    @php
+                        // ⭐ PERBAIKAN: Generate URL yang benar
+                        if (str_contains($ans->answer_path, '/')) {
+                            // Format lama: "technical_test_answers/{id}/filename.pdf"
+                            $pdfUrl = asset('storage/' . $ans->answer_path);
+                        } else {
+                            // Format baru: hanya nama file
+                            $pdfUrl = asset('storage/technical_test_answers/' . $ans->answer_path);
+                        }
+                    @endphp
+                    
+                    <iframe src="{{ $pdfUrl }}" 
+                            class="w-full h-[500px]" 
+                            frameborder="0"
+                            title="Preview Jawaban PDF">
+                    </iframe>
+                    
+                    {{-- Fallback jika iframe tidak bisa load --}}
+                    <div class="hidden iframe-fallback">
+                        <div class="p-4 text-center">
+                            <p class="text-gray-600 mb-2">PDF tidak bisa ditampilkan di preview.</p>
+                            <a href="{{ $pdfUrl }}" target="_blank" 
+                              class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                                <i class="fas fa-external-link-alt"></i>
+                                Buka di Tab Baru
+                            </a>
+                        </div>
+                    </div>
+                @else
+                    <div class="p-4 bg-gray-50 text-sm text-gray-600 h-[500px] flex items-center justify-center">
+                        Tidak ada file PDF yang bisa ditampilkan.
+                    </div>
+                @endif
 
-              {{-- Optional: Link Rekaman --}}
-              @if($ans->screen_record_url)
-                <div class="p-2 text-center border-t bg-gray-50">
-                  <a href="{{ $ans->screen_record_url }}" target="_blank" 
-                    class="text-blue-600 text-sm hover:underline">
-                    🔗 Lihat rekaman screen test
-                  </a>
-                </div>
-              @endif
+                {{-- Optional: Link Rekaman --}}
+                @if($ans->screen_record_url)
+                    <div class="p-3 text-center border-t bg-gray-50 flex items-center justify-between">
+                        <span class="text-sm text-gray-700">
+                            <i class="fas fa-video mr-1"></i> Rekaman Screen Test
+                        </span>
+                        <a href="{{ $ans->screen_record_url }}" target="_blank" 
+                            class="text-blue-600 text-sm hover:underline font-medium">
+                            Buka di Tab Baru
+                        </a>
+                    </div>
+                @endif
             </div>
 
             {{-- Kolom Kanan: Form Penilaian --}}

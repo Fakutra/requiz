@@ -296,18 +296,6 @@
                     <div>
                         <h4 class="text-md font-semibold text-[#009DA9] mb-3">Technical Test</h4>
 
-                        {{-- INFO STATUS PERIODE --}}
-                        {{-- @if (!$isActivePeriod && $statusMessage)
-                        <div class="mb-4 p-3 rounded-lg {{ $now->lt($techSched->schedule_date ?? now()) ? 'bg-amber-50 border border-amber-200 text-amber-700' : 'bg-rose-50 border border-rose-200 text-rose-700' }}">
-                            <div class="flex items-center gap-2">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                <span class="font-medium">{{ $statusMessage }}</span>
-                            </div>
-                        </div>
-                        @endif --}}
-
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                             <div>
                                 <div class="text-zinc-600">Dijadwalkan pada:</div>
@@ -339,19 +327,6 @@
                                 </div>
                                 @endif
                             </div>
-
-                            {{-- @if (!empty($techSched->module_url) || !empty($techSched->module_path))
-                            <div>
-                                <div class="text-zinc-600">Modul / Brief</div>
-                                <div class="font-medium">
-                                    @if (!empty($techSched->module_url))
-                                    <a href="{{ $techSched->module_url }}" class="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">Buka Modul</a>
-                                    @else
-                                    <a href="{{ \Illuminate\Support\Facades\Storage::url($techSched->module_path) }}" class="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">Unduh Modul</a>
-                                    @endif
-                                </div>
-                            </div>
-                            @endif --}}
                         </div>
 
                         @if ($latestTech)
@@ -359,7 +334,7 @@
                             <div class="font-medium">Upload Terbaru:</div>
                             <div>PDF:
                                 <a class="text-blue-600 hover:underline"
-                                    href="{{ '/storage/'.$latestTech->answer_path }}"
+                                    href="{{ asset('storage/technical_test_answers/' . $latestTech->answer_path) }}"
                                     target="_blank" rel="noopener noreferrer">
                                     Lihat berkas
                                 </a>
@@ -376,7 +351,7 @@
                             @endif
 
                             <div class="text-gray-500">
-                                Dikumpulkan: {{ $latestTech->submitted_at?->translatedFormat('d F Y, H:i') ?? '—' }}
+                                Diunggah pada: {{ $latestTech->submitted_at?->translatedFormat('d F Y, H:i') ?? '—' }}
                             </div>
                         </div>
                         @endif

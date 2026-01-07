@@ -11,6 +11,7 @@ use App\Models\TechnicalTestSchedule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str; // ⭐ TAMBAHKAN INI!
 
 class TechnicalTestAnswerController extends Controller
 {
@@ -80,12 +81,18 @@ class TechnicalTestAnswerController extends Controller
                 ->with('error', 'Gagal mengunggah jawaban karena batas waktu upload sudah lewat.');
         }
 
-        $path = null; // ← FIX: declare dulu biar intelephense gak error
+        $path = null;
+        $randomFilename = null; // ⭐ VARIABLE BARU
 
         try {
-            // upload file
-            $path = $request->file('answer_pdf')->store(
-                'technical_test_answers/'.$applicant->id,
+            // ⭐⭐ PERBAIKAN KEAMANAN: Generate nama file acak
+            $originalExtension = $request->file('answer_pdf')->getClientOriginalExtension();
+            $randomFilename = Str::random(40) . '.' . $originalExtension;
+            
+            // ⭐⭐ SIMPAN TANPA FOLDER ID PELAMAR
+            $path = $request->file('answer_pdf')->storeAs(
+                'technical_test_answers', // Hanya folder utama
+                $randomFilename,          // Nama file acak
                 'public'
             );
 
@@ -95,7 +102,7 @@ class TechnicalTestAnswerController extends Controller
                     'applicant_id'               => $applicant->id,
                 ],
                 [
-                    'answer_path'       => $path,
+                    'answer_path'       => $randomFilename, // ⭐ SIMPAN NAMA FILE SAJA
                     'screen_record_url' => $validated['screen_record_url'],
                     'submitted_at'      => now(),
                 ]
