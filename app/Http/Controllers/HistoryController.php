@@ -106,11 +106,64 @@ class HistoryController extends Controller
                     now()->greaterThan($applicant->deadlineDate) &&
                     $applicant->status === 'Offering';
             }
+            
+            // 🔥 PERBAIKAN BARU: Hitung status technical test
+            $this->calculateTechnicalTestStatus($applicant);
         });
 
         return response()
             ->view('history', compact('applicants'))
             ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
             ->header('Pragma', 'no-cache');
+    }
+    
+    /**
+     * Calculate technical test status for applicant
+     */
+    private function calculateTechnicalTestStatus($applicant)
+    {
+        $now = now();
+        
+        // Ambil jadwal technical test terbaru
+        $techSched = $applicant->position?->technicalSchedules?->first();
+        
+        if ($techSched) {
+            $scheduleDate = $techSched->schedule_date;
+            $uploadDeadline = $techSched->upload_deadline;
+            
+            // KEDUA TOMBOL AKTIF JIKA: schedule_date ≤ sekarang ≤ upload_deadline
+            $isActivePeriod = false;
+            
+            if ($scheduleDate && $uploadDeadline) {
+                // PERIODE AKTIF: antara schedule_date dan upload_deadline (inklusif)
+                $isActivePeriod = $now->between($scheduleDate, $uploadDeadline, true);
+            } elseif ($scheduleDate && !$uploadDeadline) {
+                // Hanya schedule_date: aktif setelah schedule_date
+                $isActivePeriod = $now->gte($scheduleDate);
+            } elseif (!$scheduleDate && $uploadDeadline) {
+                // Hanya upload_deadline: aktif sebelum deadline
+                $isActivePeriod = $now->lte($uploadDeadline);
+            } else {
+                // Tidak ada keduanya: selalu aktif
+                $isActivePeriod = true;
+            }
+            
+            // Simpan status ke applicant object
+            $applicant->techTestActive = $isActivePeriod;
+            $applicant->techSchedule = $techSched;
+            $applicant->techScheduleDate = $scheduleDate;
+            $applicant->techUploadDeadline = $uploadDeadline;
+            
+            // Status message untuk user
+            if (!$isActivePeriod) {
+                if ($scheduleDate && $now->lt($scheduleDate)) {
+                    $applicant->techStatusMessage = 'Technical test dimulai: ' . 
+                        $scheduleDate->translatedFormat('l, d F Y, H:i');
+                } elseif ($uploadDeadline && $now->gt($uploadDeadline)) {
+                    $applicant->techStatusMessage = 'Batas waktu upload telah berakhir: ' . 
+                        $uploadDeadline->translatedFormat('l, d F Y, H:i');
+                }
+            }
+        }
     }
 }

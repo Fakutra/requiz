@@ -81,7 +81,7 @@
                                 {{-- SUBMIT (hanya di soal terakhir) --}}
                                 <button type="submit" id="submit-btn"
                                     class="inline-flex items-center rounded-xl bg-blue-600 px-5 py-2 text-white shadow-sm transition hover:bg-blue-700 {{ $currentNo >= $totalQuestions ? '' : 'hidden' }}">
-                                    {{ $isLastSection ? 'Selesai Tes' : 'Selanjutnya' }}
+                                    {{ $isLastSection ? 'Selesai Tes' : 'Section Selanjutnya' }}
                                 </button>
                             </div>
                         </div>
