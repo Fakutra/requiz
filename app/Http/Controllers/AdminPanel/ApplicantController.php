@@ -173,8 +173,35 @@ class ApplicantController extends Controller
                 'doc_tambahan'    => $data['doc_tambahan'] ?? $applicant->doc_tambahan,
             ]);
 
+            // Build redirect URL dengan semua parameter
+            $redirectParams = [
+                'tab' => 'applicant', // Hardcode tab ke applicant
+            ];
+            
+            // Preserve filter parameters
+            $preserveParams = ['search', 'position', 'batch', 'page'];
+            foreach ($preserveParams as $param) {
+                if ($request->has($param)) {
+                    $redirectParams[$param] = $request->input($param);
+                }
+            }
+            
+            // Jika dari form dengan hidden fields
+            if ($request->has('_return_search')) {
+                $redirectParams['search'] = $request->input('_return_search');
+            }
+            if ($request->has('_return_position')) {
+                $redirectParams['position'] = $request->input('_return_position');
+            }
+            if ($request->has('_return_batch')) {
+                $redirectParams['batch'] = $request->input('_return_batch');
+            }
+            if ($request->has('_return_page')) {
+                $redirectParams['page'] = $request->input('_return_page');
+            }
+            
             return redirect()
-                ->route('admin.applicant.index', $request->only('search','position','batch','page'))
+                ->route('admin.user.index', $redirectParams)
                 ->with('success','Data pelamar berhasil diperbarui.');
 
         } catch (\Throwable $e) {
@@ -189,7 +216,7 @@ class ApplicantController extends Controller
     /**
      * DESTROY: konfirmasi via modal
      */
-    public function destroy(Applicant $applicant)
+    public function destroy(Request $request, Applicant $applicant)
     {
         try {
             $name = $applicant->name;
@@ -210,8 +237,33 @@ class ApplicantController extends Controller
                 "Nama: {$name}"
             );
 
+            // Build redirect parameters - preserve filters
+            $redirectParams = ['tab' => 'applicant'];
+            
+            // Preserve filter parameters jika ada di request
+            $preserveParams = ['search', 'position', 'batch', 'page'];
+            foreach ($preserveParams as $param) {
+                if ($request->has($param)) {
+                    $redirectParams[$param] = $request->input($param);
+                }
+            }
+            
+            // Jika dari form dengan hidden fields
+            if ($request->has('_return_search')) {
+                $redirectParams['search'] = $request->input('_return_search');
+            }
+            if ($request->has('_return_position')) {
+                $redirectParams['position'] = $request->input('_return_position');
+            }
+            if ($request->has('_return_batch')) {
+                $redirectParams['batch'] = $request->input('_return_batch');
+            }
+            if ($request->has('_return_page')) {
+                $redirectParams['page'] = $request->input('_return_page');
+            }
+
             return redirect()
-                ->route('admin.applicant.index')
+                ->route('admin.user.index', $redirectParams)
                 ->with('success','Data pelamar berhasil dihapus.');
 
         } catch (\Throwable $e) {

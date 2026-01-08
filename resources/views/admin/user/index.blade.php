@@ -1004,8 +1004,8 @@
                     message: ''
                 },
 
-                baseUpdateUrl: @json(route('admin.user.update', ['user' => '__ID__'])),
-                baseDestroyUrl: @json(route('admin.user.destroy', ['user' => '__ID__'])),
+                baseUpdateUrl: @json(route('admin.applicant.update', ['applicant' => '__ID__'])),
+                baseDestroyUrl: @json(route('admin.applicant.destroy', ['applicant' => '__ID__'])),
                 storageBase: @json(asset('storage')),
 
                 init() {
