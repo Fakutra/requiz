@@ -339,7 +339,7 @@
                             <th class="px-4 py-2 text-left whitespace-nowrap">No.</th>
                             <th class="px-4 py-2 text-left whitespace-nowrap">Nama</th>
                             <th class="px-4 py-2 text-left whitespace-nowrap">Email</th>
-                            <th class="px-4 py-2 text-left whitespace-nowrap">Nomor Telepon</th>
+                            <!-- <th class="px-4 py-2 text-left whitespace-nowrap">Nomor Telepon</th> -->
                             <th class="px-4 py-2 text-left whitespace-nowrap">Asal Vendor</th>
                             <th class="px-4 py-2 text-center whitespace-nowrap">Aksi</th>
                         </tr>
@@ -352,7 +352,7 @@
                             </td>
                             <td class="px-4 py-2">{{ $user->name }}</td>
                             <td class="px-4 py-2">{{ $user->email }}</td>
-                            <td class="px-4 py-2">{{ $user->phone_number }}</td>
+                            <!-- <td class="px-4 py-2">{{ $user->phone_number }}</td> -->
                             <td class="px-4 py-2">{{ $user->vendor->nama_vendor ?? '-' }}</td>
                             <td class="px-4 py-2 text-center">
                                 <div class="flex justify-center items-center gap-2">
@@ -421,10 +421,10 @@
                             <label class="block text-sm">Email</label>
                             <input type="email" name="email" class="border rounded w-full px-3 py-2 text-sm" required>
                         </div>
-                        <div class="mb-3">
+                        <!-- <div class="mb-3">
                             <label class="block text-sm">Nomor Telepon</label>
                             <input type="number" name="phone_number" class="border rounded w-full px-3 py-2 text-sm" required>
-                        </div>
+                        </div> -->
                         <div class="mb-3">
                             <label class="block text-sm">Asal Vendor</label>
                             <select name="vendor_id" class="border rounded w-full px-3 py-2 text-sm" required>
@@ -499,13 +499,13 @@
                                     :value="userToEdit.email" required>
                             </div>
 
-                            {{-- Nomor Telepon --}}
+                            <!-- {{-- Nomor Telepon --}}
                             <div class="mb-3">
                                 <label class="block text-sm">Nomor Telepon</label>
                                 <input type="text" name="phone_number"
                                     class="border rounded w-full px-3 py-2 text-sm"
                                     :value="userToEdit.phone_number ?? ''" required>
-                            </div>
+                            </div> -->
 
                             {{-- Asal Vendor --}}
                             <div class="mb-3">
