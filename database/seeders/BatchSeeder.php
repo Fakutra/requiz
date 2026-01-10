@@ -16,7 +16,7 @@ class BatchSeeder extends Seeder
                 'name' => 'Batch 1',
                 'status' => 'Active',
                 'start_date' => '2025-07-01',
-                'end_date' => '2025-07-31',
+                'end_date' => '2026-07-31',
                 'positions' => [
                     'Software Engineer',
                     'Data Analyst',
@@ -29,7 +29,7 @@ class BatchSeeder extends Seeder
                 'name' => 'Batch 2',
                 'status' => 'Active',
                 'start_date' => '2025-08-01',
-                'end_date' => '2025-08-31',
+                'end_date' => '2026-08-31',
                 'positions' => [
                     'Project Manager',
                     'Quality Assurance',
@@ -42,7 +42,7 @@ class BatchSeeder extends Seeder
                 'name' => 'Batch 3',
                 'status' => 'Active',
                 'start_date' => '2025-09-01',
-                'end_date' => '2025-09-30',
+                'end_date' => '2026-09-30',
                 'positions' => [
                     'Product Owner',
                     'Frontend Developer',
@@ -111,23 +111,23 @@ class BatchSeeder extends Seeder
                     },
 
                     // === Kolom tambahan ===
-                    'skills'       => match ($name) {
-                        'Software Engineer'       => 'PHP, Java, JavaScript',
-                        'Data Analyst'             => 'SQL, Python, Excel',
-                        'UI/UX Designer'           => 'Figma, Adobe XD, Wireframing',
-                        'Network Engineer'         => 'Cisco, Mikrotik, LAN/WAN',
-                        'Technical Writer'         => 'Microsoft Office, Grammarly, Documentation',
-                        'Project Manager'          => 'Leadership, Planning, Communication',
-                        'Quality Assurance'        => 'Testing, Postman, Selenium',
-                        'System Administrator'     => 'Linux, Windows Server, Virtualization',
-                        'Database Administrator'   => 'MySQL, PostgreSQL, Backup',
-                        'Cyber Security Specialist'=> 'Firewall, Penetration Testing, Monitoring',
-                        'Product Owner'            => 'Scrum, Backlog, Agile Tools',
-                        'Frontend Developer'       => 'HTML, CSS, JavaScript',
-                        'Backend Developer'        => 'Laravel, Node.js, API',
-                        'DevOps Engineer'          => 'Docker, CI/CD, GitLab',
-                        'IT Support'               => 'Troubleshooting, Microsoft Office, Networking',
-                        default                    => 'Microsoft Office, Communication',
+                    'skills' => match ($name) {
+                        'Software Engineer' => ['PHP', 'Java', 'JavaScript', 'Laravel', 'Spring Boot', 'React'],
+                        'Data Analyst' => ['SQL', 'Python', 'Excel', 'R', 'Tableau', 'Power BI', 'Data Visualization'],
+                        'UI/UX Designer' => ['Figma', 'Adobe XD', 'Wireframing', 'Prototyping', 'User Research', 'UI Design'],
+                        'Network Engineer' => ['Cisco', 'Mikrotik', 'LAN/WAN', 'Routing', 'Switching', 'Network Security'],
+                        'Technical Writer' => ['Microsoft Office', 'Grammarly', 'Documentation', 'Technical Writing', 'Content Management'],
+                        'Project Manager' => ['Leadership', 'Planning', 'Communication', 'Agile', 'Scrum', 'Risk Management'],
+                        'Quality Assurance' => ['Testing', 'Postman', 'Selenium', 'JUnit', 'Test Automation', 'Bug Tracking'],
+                        'System Administrator' => ['Linux', 'Windows Server', 'Virtualization', 'Bash Scripting', 'System Monitoring'],
+                        'Database Administrator' => ['MySQL', 'PostgreSQL', 'Backup', 'Query Optimization', 'Database Design'],
+                        'Cyber Security Specialist' => ['Firewall', 'Penetration Testing', 'Monitoring', 'SIEM', 'Vulnerability Assessment'],
+                        'Product Owner' => ['Scrum', 'Backlog', 'Agile Tools', 'Product Management', 'User Stories'],
+                        'Frontend Developer' => ['HTML', 'CSS', 'JavaScript', 'React', 'Vue.js', 'TypeScript', 'Responsive Design'],
+                        'Backend Developer' => ['Laravel', 'Node.js', 'API', 'Express.js', 'REST API', 'Database Design'],
+                        'DevOps Engineer' => ['Docker', 'CI/CD', 'GitLab', 'Kubernetes', 'AWS', 'Infrastructure as Code'],
+                        'IT Support' => ['Troubleshooting', 'Microsoft Office', 'Networking', 'Hardware Repair', 'Customer Service'],
+                        default => ['Microsoft Office', 'Communication', 'Problem Solving', 'Teamwork']
                     },
 
                     'requirements' => "Min. GPA ≥ 3.00\nUsia maksimal 35 tahun",

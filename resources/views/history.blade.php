@@ -267,167 +267,196 @@
 
                 {{-- ===== TECHNICAL TEST ===== --}}
                 @if ($showTech)
-                @php
-                $now = now();
-                $techSched = $techSched
-                ?? optional($applicant->position->technicalSchedules ?? collect())
-                ->sortByDesc('schedule_date')->first();
+                    @php
+                        $now = now();
+                        
+                        // 🔥 PERBAIKAN: Ambil data dari controller yang sudah dihitung
+                        $techSched = $applicant->techSchedule ?? optional($applicant->position->technicalSchedules ?? collect())
+                            ->sortByDesc('schedule_date')->first();
+                        
+                        // 🔥 PERBAIKAN: Gunakan status yang sudah dihitung di controller
+                        $isActivePeriod = $applicant->techTestActive ?? false;
+                        
+                        // 🔥 PERBAIKAN: Ambil dari eager loaded answers (FIX N+1)
+                        $latestTech = null;
+                        if ($techSched && $techSched->answers) {
+                            $latestTech = $techSched->answers
+                                ->where('applicant_id', $applicant->id)
+                                ->sortByDesc('submitted_at')
+                                ->first();
+                        }
+                        
+                        $modalKey = $techSched?->id ? $techSched->id . '-' . $applicant->id : 'x-' . $applicant->id;
+                        
+                        // Status message
+                        $statusMessage = $applicant->techStatusMessage ?? '';
+                    @endphp
 
-                $withinDeadline = isset($techSched->upload_deadline) ? $now->lte($techSched->upload_deadline) : true;
-                $latestTech = $latestTech
-                ?? \App\Models\TechnicalTestAnswer::where('applicant_id',$applicant->id)
-                ->latest('submitted_at')->first();
+                    @if ($techSched)
+                    <div>
+                        <h4 class="text-md font-semibold text-[#009DA9] mb-3">Technical Test</h4>
 
-                $modalKey = $techSched?->id ? $techSched->id . '-' . $applicant->id : 'x-' . $applicant->id;
-                @endphp
-
-                @if ($techSched)
-                <div>
-                    <h4 class="text-md font-semibold text-[#009DA9] mb-3">Technical Test</h4>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                        <div>
-                            <div class="text-zinc-600">Dijadwalkan pada:</div>
-                            <div class="font-medium text-zinc-900">
-                                {{ $techSched->schedule_date?->translatedFormat('l, d F Y, H:i') ?? '—' }}
-                            </div>
-
-                            @if (!empty($techSched->zoom_id) || !empty($techSched->zoom_passcode))
-                            <div class="mt-2 text-gray-500 text-sm">
-                                <div>ID: {{ $techSched->zoom_id ?? '—' }}</div>
-                                <div>Passcode: {{ $techSched->zoom_passcode ?? '—' }}</div>
-                            </div>
-                            @endif
-                        </div>
-
-                        <div>
-                            <div class="text-zinc-600">Batas Upload:</div>
-                            <div class="font-medium {{ ($techSched->upload_deadline && $now->gt($techSched->upload_deadline)) ? 'text-rose-600' : 'text-zinc-900' }}">
-                                {{ $techSched->upload_deadline?->translatedFormat('l, d F Y, H:i') ?? '—' }}
-                            </div>
-
-                            {{-- ✅ TAMBAHKAN KETERANGAN/NOTE DI SINI --}}
-                            @if($techSched->keterangan)
-                            <div class="mt-2">
-                                <div class="text-zinc-600">Keterangan:</div>
-                                <div class="font-medium text-zinc-900 mt-1">
-                                    {{ $techSched->keterangan }}
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                            <div>
+                                <div class="text-zinc-600">Dijadwalkan pada:</div>
+                                <div class="font-medium text-zinc-900">
+                                    {{ $techSched->schedule_date?->translatedFormat('l, d F Y, H:i') ?? '—' }}
                                 </div>
-                            </div>
-                            @endif
-                        </div>
 
-                        @if (!empty($techSched->module_url) || !empty($techSched->module_path))
-                        <div>
-                            <div class="text-zinc-600">Modul / Brief</div>
-                            <div class="font-medium">
-                                @if (!empty($techSched->module_url))
-                                <a href="{{ $techSched->module_url }}" class="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">Buka Modul</a>
-                                @else
-                                <a href="{{ \Illuminate\Support\Facades\Storage::url($techSched->module_path) }}" class="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">Unduh Modul</a>
+                                @if (!empty($techSched->zoom_id) || !empty($techSched->zoom_passcode))
+                                <div class="mt-2 text-gray-500 text-sm">
+                                    <div>ID: {{ $techSched->zoom_id ?? '—' }}</div>
+                                    <div>Passcode: {{ $techSched->zoom_passcode ?? '—' }}</div>
+                                </div>
+                                @endif
+                            </div>
+
+                            <div>
+                                <div class="text-zinc-600">Batas Upload:</div>
+                                <div class="font-medium {{ ($techSched->upload_deadline && $now->gt($techSched->upload_deadline)) ? 'text-rose-600' : 'text-zinc-900' }}">
+                                    {{ $techSched->upload_deadline?->translatedFormat('l, d F Y, H:i') ?? '—' }}
+                                </div>
+
+                                {{-- ✅ TAMBAHKAN KETERANGAN/NOTE DI SINI --}}
+                                @if($techSched->keterangan)
+                                <div class="mt-2">
+                                    <div class="text-zinc-600">Keterangan:</div>
+                                    <div class="font-medium text-zinc-900 mt-1">
+                                        {{ $techSched->keterangan }}
+                                    </div>
+                                </div>
                                 @endif
                             </div>
                         </div>
+
+                        @if ($latestTech)
+                        <div class="mt-5 text-sm text-gray-700">
+                            <div class="font-medium">Upload Terbaru:</div>
+                            <div>PDF:
+                                <a class="text-blue-600 hover:underline"
+                                    href="{{ asset('storage/technical_test_answers/' . $latestTech->answer_path) }}"
+                                    target="_blank" rel="noopener noreferrer">
+                                    Lihat berkas
+                                </a>
+                            </div>
+
+                            @if (!empty($latestTech->screen_record_url))
+                            <div>Rekaman Layar:
+                                <a class="text-blue-600 hover:underline"
+                                    href="{{ $latestTech->screen_record_url }}"
+                                    target="_blank" rel="noopener noreferrer">
+                                    Buka tautan
+                                </a>
+                            </div>
+                            @endif
+
+                            <div class="text-gray-500">
+                                Diunggah pada: {{ $latestTech->submitted_at?->translatedFormat('d F Y, H:i') ?? '—' }}
+                            </div>
+                        </div>
                         @endif
+
+                        {{-- 🔥 PERBAIKAN: TOMBOL ZOOM DAN UPLOAD --}}
+                        <div class="mt-6 flex flex-wrap items-center gap-2">
+                            @if (!empty($techSched->zoom_link))
+                                <button type="button"
+                                    @if ($isActivePeriod)
+                                        onclick="window.open('{{ $techSched->zoom_link }}', '_blank', 'noopener,noreferrer')"
+                                    @else
+                                        disabled
+                                    @endif
+                                    class="px-4 h-10 rounded-lg border border-[#009DA9] text-[#009DA9] text-sm font-medium hover:bg-[#009DA9]/10 inline-flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                                    </svg>
+                                    Buka Link Zoom
+                                </button>
+                            @else
+                                <span class="text-gray-500">Belum ada link</span>
+                            @endif
+
+                            {{-- 🔥 PERBAIKAN: Tombol Upload menggunakan $isActivePeriod --}}
+                            <button type="button"
+                                class="px-4 h-10 inline-flex items-center rounded-lg bg-[#009DA9] text-white text-sm font-medium hover:bg-[#008a95] disabled:opacity-50 disabled:cursor-not-allowed"
+                                data-open-upload="upload-{{ $techSched->id }}-{{ $applicant->id }}" 
+                                {{ $isActivePeriod ? '' : 'disabled' }}>
+                                {{ $latestTech ? 'Upload Ulang Jawaban' : 'Upload Jawaban Technical Test' }}
+                            </button>
+                            
+                            {{-- INFO TAMBAHAN --}}
+                            @if (!$isActivePeriod)
+                                <span class="text-sm {{ $now->lt($techSched->schedule_date ?? now()) ? 'text-amber-600' : 'text-rose-600' }}">
+                                    @if($now->lt($techSched->schedule_date ?? now()))
+                                        🔒 Tombol akan aktif saat jadwal dimulai
+                                    @else
+                                        🔒 Periode technical test telah berakhir
+                                    @endif
+                                </span>
+                            @endif
+                        </div>
+
+                        {{-- Modal Upload --}}
+                        <div data-modal="upload-{{ $techSched->id }}-{{ $applicant->id }}" class="fixed inset-0 z-50 hidden">
+                            <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" data-close-upload="upload-{{ $techSched->id }}-{{ $applicant->id }}"></div>
+                            <div class="relative mx-auto my-12 max-w-md rounded-2xl bg-white p-6 shadow-xl">
+                                <h3 class="text-lg font-semibold text-zinc-900">Upload Jawaban Technical Test</h3>
+                                
+                                {{-- PERINGATAN JIKA TIDAK DALAM PERIODE AKTIF --}}
+                                @if (!$isActivePeriod)
+                                <div class="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-lg">
+                                    <div class="flex items-center gap-2 text-rose-700">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.342 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                                        </svg>
+                                        <span class="font-medium">Periode upload tidak aktif</span>
+                                    </div>
+                                    <p class="mt-1 text-sm text-rose-600">
+                                        @if($now->lt($techSched->schedule_date ?? now()))
+                                            Upload akan dibuka mulai {{ $techSched->schedule_date?->translatedFormat('l, d F Y, H:i') ?? '' }}
+                                        @else
+                                            Batas waktu upload telah berakhir pada {{ $techSched->upload_deadline?->translatedFormat('l, d F Y, H:i') ?? '' }}
+                                        @endif
+                                    </p>
+                                </div>
+                                @endif
+                                
+                                <form class="mt-4 space-y-4" method="POST"
+                                    action="{{ route('technical.answers.store', $techSched) }}" enctype="multipart/form-data">
+                                    @csrf
+                                    <input type="hidden" name="applicant_id" value="{{ $applicant->id }}">
+                                    <div>
+                                        <label class="block text-sm font-medium text-zinc-700">File Jawaban</label>
+                                        <input type="file" name="answer_pdf" accept="application/pdf" required
+                                            class="mt-1 block w-full text-sm rounded-lg border border-zinc-300 p-2"
+                                            {{ $isActivePeriod ? '' : 'disabled' }}>
+                                        <p class="mt-1 text-xs text-zinc-500">Maks 1MB. Format PDF.</p>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-zinc-700">Link Rekaman Layar (Google Drive)</label>
+                                        <input type="url" name="screen_record_url" required placeholder="https://drive.google.com/..."
+                                            value="{{ old('screen_record_url', optional($latestTech)->screen_record_url) }}"
+                                            class="mt-1 block w-full text-sm rounded-lg border border-zinc-300 p-2"
+                                            {{ $isActivePeriod ? '' : 'disabled' }}>
+                                    </div>
+                                    <div class="mt-6 flex justify-end gap-2">
+                                        <button type="button"
+                                            class="px-4 h-10 rounded-lg border border-zinc-300 text-zinc-700 hover:bg-zinc-50"
+                                            data-close-upload="upload-{{ $techSched->id }}-{{ $applicant->id }}">Batal</button>
+                                        <button type="submit" class="px-4 h-10 rounded-lg bg-[#009DA9] text-white hover:bg-[#008a95]"
+                                            {{ $isActivePeriod ? '' : 'disabled' }}>Kirim</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
                     </div>
-
-                    @if ($latestTech)
-                    <div class="mt-5 text-sm text-gray-700">
-                        <div class="font-medium">Upload Terbaru:</div>
-                        <div>PDF:
-                            <a class="text-blue-600 hover:underline"
-                                href="{{ '/storage/'.$latestTech->answer_path }}"
-                                target="_blank" rel="noopener noreferrer">
-                                Lihat berkas
-                            </a>
-                        </div>
-
-                        @if (!empty($latestTech->screen_record_url))
-                        <div>Rekaman Layar:
-                            <a class="text-blue-600 hover:underline"
-                                href="{{ $latestTech->screen_record_url }}"
-                                target="_blank" rel="noopener noreferrer">
-                                Buka tautan
-                            </a>
-                        </div>
-                        @endif
-
-                        <div class="text-gray-500">
-                            Dikumpulkan: {{ $latestTech->submitted_at?->translatedFormat('d F Y, H:i') ?? '—' }}
-                        </div>
+                    @else
+                    <div class="text-yellow-700 bg-yellow-50 border border-yellow-300 rounded-md p-3 flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                        </svg>
+                        <span>Jadwal Technical Test belum ditentukan.</span>
                     </div>
                     @endif
-
-                    <div class="mt-6 flex flex-wrap items-center gap-2">
-                        @if (!empty($techSched->zoom_link))
-                        @php
-                        // tombol zoom hanya aktif kalau belum lewat upload_deadline
-                        $canJoinTechZoom = $withinDeadline;
-                        @endphp
-
-                        <button type="button"
-                            @if ($canJoinTechZoom)
-                            onclick="window.open('{{ $techSched->zoom_link }}', '_blank', 'noopener,noreferrer')"
-                            @else
-                            disabled
-                            @endif
-                            class="px-4 h-10 rounded-lg border border-[#009DA9] text-[#009DA9] text-sm font-medium hover:bg-[#009DA9]/10 inline-flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                            </svg>
-                            Buka Link Zoom
-                        </button>
-                        @else
-                        <span class="text-gray-500">Belum ada link</span>
-                        @endif
-
-                        <button type="button"
-                            class="px-4 h-10 inline-flex items-center rounded-lg bg-[#009DA9] text-white text-sm font-medium hover:bg-[#008a95] disabled:opacity-50 disabled:cursor-not-allowed"
-                            data-open-upload="upload-{{ $techSched->id }}-{{ $applicant->id }}" {{ $withinDeadline ? '' : 'disabled' }}>
-                            {{ $latestTech ? 'Upload Ulang Jawaban' : 'Upload Jawaban Technical Test' }}
-                        </button>
-                    </div>
-
-                    {{-- Modal Upload tetap sama --}}
-                    <div data-modal="upload-{{ $techSched->id }}-{{ $applicant->id }}" class="fixed inset-0 z-50 hidden">
-                        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" data-close-upload="upload-{{ $techSched->id }}-{{ $applicant->id }}"></div>
-                        <div class="relative mx-auto my-12 max-w-md rounded-2xl bg-white p-6 shadow-xl">
-                            <h3 class="text-lg font-semibold text-zinc-900">Upload Jawaban Technical Test</h3>
-                            <form class="mt-4 space-y-4" method="POST"
-                                action="{{ route('technical.answers.store', $techSched) }}" enctype="multipart/form-data">
-                                @csrf
-                                <input type="hidden" name="applicant_id" value="{{ $applicant->id }}">
-                                <div>
-                                    <label class="block text-sm font-medium text-zinc-700">File Jawaban</label>
-                                    <input type="file" name="answer_pdf" accept="application/pdf" required
-                                        class="mt-1 block w-full text-sm rounded-lg border border-zinc-300 p-2">
-                                    <p class="mt-1 text-xs text-zinc-500">Maks 1MB. Format PDF.</p>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-zinc-700">Link Rekaman Layar (Google Drive)</label>
-                                    <input type="url" name="screen_record_url" required placeholder="https://drive.google.com/..."
-                                        value="{{ old('screen_record_url', optional($latestTech)->screen_record_url) }}"
-                                        class="mt-1 block w-full text-sm rounded-lg border border-zinc-300 p-2">
-                                </div>
-                                <div class="mt-6 flex justify-end gap-2">
-                                    <button type="button"
-                                        class="px-4 h-10 rounded-lg border border-zinc-300 text-zinc-700 hover:bg-zinc-50"
-                                        data-close-upload="upload-{{ $techSched->id }}-{{ $applicant->id }}">Batal</button>
-                                    <button type="submit" class="px-4 h-10 rounded-lg bg-[#009DA9] text-white hover:bg-[#008a95]"
-                                        {{ $withinDeadline ? '' : 'disabled' }}>Kirim</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-                @else
-                <div class="text-yellow-700 bg-yellow-50 border border-yellow-300 rounded-md p-3 flex items-center justify-center gap-2">
-                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0Zm-9 3.75h.008v.008H12v-.008Z" />
-                    </svg>
-                    <span>Jadwal Technical Test belum ditentukan.</span>
-                </div>
-                @endif
                 @endif
 
 
