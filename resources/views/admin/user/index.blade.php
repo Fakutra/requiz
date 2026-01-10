@@ -871,7 +871,7 @@
 
                                 <div>
                                     <label class="block text-sm font-medium">Status</label>
-                                    <select name="status" x-model="form.status" class="w-full mt-1 border rounded px-3 py-2 text-sm">
+                                    <select name="status" x-model="form.status" class="w-full mt-1 border rounded px-3 py-2 text-sm bg-gray-100 text-gray-500 border-gray-300 cursor-not-allowed opacity-75 shadow-none appearance-none" disabled>
                                         <optgroup label="Tahap">
                                             <option>Seleksi Administrasi</option>
                                             <option>Tes Tulis</option>

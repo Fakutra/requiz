@@ -25,7 +25,7 @@
                         mohon untuk melamar job yang sesuai dengan kualifikasi yang Anda miliki.
                     </p>
                 </div>
-                @livewire('job-search')
+                <livewire:job-search />
             </div>
         </div>
     </div>
